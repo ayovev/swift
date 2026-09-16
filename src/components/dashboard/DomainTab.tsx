@@ -6,7 +6,7 @@ import { WorkoutList } from "./WorkoutList";
 import { DOMAIN_BLURBS, type DashboardData, type Domain } from "@/types/dashboard";
 
 /**
- * One GPP domain's tab (FR-5.1–5.4). A single component drives all ten —
+ * One GPP domain's tab. A single component drives all ten —
  * the domains differ in data, not in structure.
  */
 export function DomainTab({ domain, data }: { domain: Domain; data: DashboardData }) {

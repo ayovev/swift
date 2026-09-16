@@ -21,7 +21,7 @@ interface StackedShareChartProps {
 /**
  * Normalized stacked area — each month sums to 100%, so the chart answers
  * "what share of my training was this?" rather than "how much did I do?".
- * Used for both the 10-domain mix (FR-4.5) and the M/W/G mix (FR-4.6).
+ * Used for both the 10-domain mix and the M/W/G mix.
  */
 export function StackedShareChart({
   data,

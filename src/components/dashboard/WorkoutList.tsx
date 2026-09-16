@@ -22,7 +22,7 @@ export interface WorkoutListRow {
 const PAGE_SIZE = 50;
 
 /**
- * The collapsible audit list (FR-5.4, FR-6.4).
+ * The collapsible audit list.
  *
  * Showing WHY each workout was classified is the point: the classifier is a
  * keyword heuristic, not ground truth, and an athlete whose gym names workouts

@@ -4,8 +4,8 @@ import type { Modality } from "@/types/modality";
 /**
  * The movement vocabulary behind the M/W/G modality classifier.
  *
- * This is new work for Swift — no validated reference exists (REQUIREMENTS.md
- * §2). It follows CANONICAL CrossFit semantics:
+ * This is new work for Swift — no validated reference implementation exists
+ * for it. It follows CANONICAL CrossFit semantics:
  *
  *   M — Metabolic conditioning, MONOSTRUCTURAL ONLY. Running, rowing, biking,
  *       skiing, jumping rope. Not "anything that makes you breathe hard".
@@ -15,8 +15,8 @@ import type { Modality } from "@/types/modality";
  * So Fran (thrusters + pull-ups) is 50 W / 50 G / 0 M, exactly as CrossFit
  * defines it — punishing metabolic work, but not monostructural.
  *
- * EXTENDING THIS LEXICON (FR-3.4)
- * -------------------------------
+ * EXTENDING THIS LEXICON
+ * ----------------------
  * Add an entry with its phrase (lowercase), modality, and display label.
  * Ordering in this array does NOT matter: the classifier claims character
  * ranges longest-phrase-first, so "power clean" always wins over "clean"

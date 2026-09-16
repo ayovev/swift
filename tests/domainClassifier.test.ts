@@ -14,7 +14,7 @@ function domainsOf(title: string, description = "", barbellLift = ""): Domain[] 
   return [...classifyDomains(classifiableText({ title, description, barbell_lift: barbellLift }))];
 }
 
-describe("GPP classifier — each of the ten domains (TR-1)", () => {
+describe("GPP classifier — each of the ten domains", () => {
   it("Cardiovascular/Respiratory Endurance", () => {
     expect(classify("FOR TIME", "Row 2000m")).toHaveProperty(
       "Cardiovascular/Respiratory Endurance"
@@ -87,7 +87,7 @@ describe("GPP classifier — each of the ten domains (TR-1)", () => {
   });
 });
 
-describe("GPP classifier — multi-domain workouts (TR-1)", () => {
+describe("GPP classifier — multi-domain workouts", () => {
   it("tags Fran across strength, power, gymnastics-adjacent and conditioning domains", () => {
     const hits = classify("FRAN", "21-15-9 Thrusters (95/65) Pull-ups for time");
     // thruster -> Strength + Power; for time -> Cardio, Stamina, Speed;

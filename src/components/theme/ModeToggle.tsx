@@ -10,7 +10,7 @@ const OPTIONS: { value: ModePreference; label: string; Icon: typeof Sun }[] = [
   { value: "system", label: "System", Icon: Monitor },
 ];
 
-/** Light / dark / follow-system (FR-8.1, FR-8.5). */
+/** Light / dark / follow-system. */
 export function ModeToggle() {
   const { mode, setMode } = useTheme();
 

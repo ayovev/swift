@@ -5,7 +5,7 @@ import type { MonthlyCount } from "@/types/dashboard";
 
 const CONFIG = { count: { label: "Workouts", color: "var(--primary)" } } as const;
 
-/** Workout frequency over time (FR-4.1). */
+/** Workout frequency over time. */
 export function ConsistencyChart({ monthly }: { monthly: MonthlyCount[] }) {
   const data = monthly.map((m) => ({ ...m, label: formatMonth(m.month) }));
 

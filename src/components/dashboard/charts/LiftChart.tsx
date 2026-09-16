@@ -10,7 +10,7 @@ const CONFIG = {
 } as const;
 
 /**
- * One lift's progression (FR-4.2).
+ * One lift's progression.
  *
  * Plotted as points rather than a single connected line, because a SugarWOD
  * log mixes rep schemes: a 165 lb 5RM and a 165 lb single are not the same

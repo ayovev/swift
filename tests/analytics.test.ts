@@ -40,7 +40,7 @@ describe("analytics — disabled without a key (the shipped default)", () => {
   });
 });
 
-describe("analytics — privacy-preserving configuration (FR-9.3)", () => {
+describe("analytics — privacy-preserving configuration", () => {
   it("disables person profiles, session recording and autocapture", async () => {
     const { initAnalytics } = await loadAnalytics("phc_test");
     initAnalytics();
@@ -66,7 +66,7 @@ describe("analytics — privacy-preserving configuration (FR-9.3)", () => {
   });
 });
 
-describe("analytics — event payloads carry no workout content (FR-9.2)", () => {
+describe("analytics — event payloads carry no workout content", () => {
   it("sends the key lifecycle events named in the acceptance criteria", async () => {
     const { initAnalytics, capture, bucketRowCount, bucketDuration } =
       await loadAnalytics("phc_test");

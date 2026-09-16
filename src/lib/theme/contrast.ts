@@ -1,5 +1,5 @@
 /**
- * Colour maths for the theming system (FR-8.3, Accessibility NFR).
+ * Colour maths for the theming system, and its accessibility guarantees.
  *
  * The accent colour is user-selectable, so "does this have enough contrast?"
  * cannot be settled by eye at design time — it has to hold for every swatch in

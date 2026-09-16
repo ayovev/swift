@@ -12,7 +12,7 @@ interface TrendStatProps {
 /** "Meaningful" here is a judgement call, stated once rather than scattered. */
 const MEANINGFUL_DELTA = 1;
 
-/** Early-vs-late comparison (FR-5.2, FR-6.2). */
+/** Early-vs-late comparison. */
 export function TrendStat({ earlyPct, latePct, delta, unitLabel }: TrendStatProps) {
   const flat = Math.abs(delta) < MEANINGFUL_DELTA;
   const Icon = flat ? ArrowRight : delta > 0 ? ArrowUpRight : ArrowDownRight;

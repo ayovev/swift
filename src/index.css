@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Swift's base UI is black-and-white in both modes (REQUIREMENTS.md §3, FR-8.1).
+ * Swift's base UI is black-and-white in both modes.
  * Every token below is achromatic — chroma is exactly 0. The single accent the
  * athlete picks is the ONLY colour in the interface, and it arrives as CSS
  * custom properties written to :root by src/lib/theme/useTheme.ts.
@@ -135,7 +135,7 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* One consistent focus treatment, in the accent, everywhere (FR-8.2). */
+  /* One consistent focus treatment, in the accent, everywhere. */
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
   }

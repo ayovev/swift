@@ -7,7 +7,7 @@ interface UploadDropzoneProps {
   onFile: (file: File) => void;
 }
 
-/** Drag-and-drop or click-to-browse CSV input (FR-1.1, FR-1.5). */
+/** Drag-and-drop or click-to-browse CSV input. */
 export function UploadDropzone({ loading, onFile }: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);

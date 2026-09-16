@@ -100,7 +100,7 @@ export function sharesTo100(weights: Record<Modality, number>, total: number): M
 }
 
 /**
- * Classify one workout's proportional composition across M/W/G (FR-3.1–3.3).
+ * Classify one workout's proportional composition across M/W/G.
  *
  * Each distinct movement contributes equal weight to its modality. A workout
  * naming a run, a kettlebell swing and a pull-up is 33.3 M / 33.3 W / 33.4 G.

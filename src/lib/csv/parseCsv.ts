@@ -4,7 +4,7 @@ import { REQUIRED_COLUMNS, type SugarWodRow } from "@/types/sugarwod";
 /**
  * Why a parse failed. Used verbatim as a PostHog event property — it is a
  * fixed vocabulary, never derived from file contents, so no workout data or
- * filename can leak through it (FR-9.2).
+ * filename can leak through it.
  */
 export type CsvErrorCategory =
   | "unreadable"
@@ -85,7 +85,7 @@ function validate(
  * Parse and validate a SugarWOD "Export Workouts" CSV.
  *
  * Runs entirely in the browser — the file is read via the File API and never
- * transmitted anywhere (FR-1.4, Privacy NFR).
+ * transmitted anywhere. That is the product's core privacy promise.
  *
  * @param input a picked/dropped File, or raw CSV text (used by demo mode and tests).
  */

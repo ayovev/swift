@@ -5,10 +5,11 @@ dashboard: consistency over time, lift/benchmark progression, PRs, a breakdown a
 10 CrossFit GPP domains, and a proportional M/W/G modality mix. Vite + React 19 +
 TypeScript 7, Tailwind v4, shadcn/ui, Recharts, Vitest. Deployed as a static SPA on Vercel.
 
-`REQUIREMENTS.md` at the repo root is the v1 spec and is still authoritative for *what* the
-product must do. Code comments cite its IDs (`FR-2.5`, `TR-3`, `FR-9.2`, …) — keep doing
-that; it is how a reviewer traces a behaviour back to a requirement. This file covers *how*
-the code works and which parts must not be "improved".
+This file covers *how* the code works and which parts must not be "improved". `README.md`
+covers what the product is and how to run it. Between them they are now the whole written
+record: the original v1 requirements document has been retired, so where a behaviour is
+deliberate, the reason lives in a comment or a test next to it rather than in a spec
+elsewhere. Keep it that way — if you change something load-bearing, move its reason with it.
 
 ## Commands
 
@@ -192,7 +193,7 @@ primitives, focus rings and Recharts series pick it up with no per-component wir
   the tests for what it adds; the suite is the argument that the deviations are intentional.
 - `tests/fixtures/sampleRows.ts` loads the bundled export through the **real** production
   parser, not a test-only shortcut. Use `loadSampleRows()` / `loadSampleCsvText()`.
-- **Classification changes must be measured against the real sample export** (TR-3), not just
+- **Classification changes must be measured against the real sample export**, not just
   hand-written cases. Hand-written cases are for documenting intent; the export is what tells
   you the true effect. The parity fixture is committed, so the suite needs neither Python nor
   the PoC — `scripts/generate_parity_fixture.py` is only for regenerating it if the *reference*

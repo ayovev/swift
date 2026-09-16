@@ -19,7 +19,7 @@ function Stat({ value, label, sub }: { value: string; label: string; sub?: strin
   );
 }
 
-/** The Overview tab (FR-4.1–4.6). */
+/** The Overview tab. */
 export function OverviewTab({ insights }: { insights: Insights }) {
   const { dashboard, modality } = insights;
   const { summary } = dashboard;

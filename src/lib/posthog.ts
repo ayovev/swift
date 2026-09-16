@@ -2,7 +2,7 @@ import posthog from "posthog-js";
 import type { CsvErrorCategory } from "./csv/parseCsv";
 
 /**
- * Anonymous product analytics (FR-9.1–9.3).
+ * Anonymous product analytics.
  *
  * THE RULE: usage and failure signals only. No workout content, no filenames,
  * no derived training data, no identifiers of any kind. Swift has no accounts,
@@ -55,7 +55,7 @@ export function initAnalytics(): void {
     capture_pageview: false,
     capture_pageleave: false,
     // Session recording would capture the athlete's workout data on screen —
-    // exactly what FR-9.2 forbids.
+    // exactly the workout content this must never capture.
     disable_session_recording: true,
     autocapture: false,
     persistence: "localStorage",
@@ -69,7 +69,7 @@ export function capture(event: SwiftEvent): void {
   posthog.capture(event.name, event.props);
 }
 
-/** Coarse timing bucket for the performance NFR, not a precise measurement. */
+/** Coarse timing bucket for the performance budget, not a precise measurement. */
 export function bucketDuration(ms: number): string {
   if (ms < 500) return "under_500ms";
   if (ms < 1500) return "500ms_1.5s";

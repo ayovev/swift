@@ -4,8 +4,8 @@ DEV-ONLY, RUN ONCE. Not application code, not part of the build, never bundled.
 Generates tests/fixtures/python_reference_output.json by running the validated
 Python reference implementation (from the Stride proof-of-concept) over the
 bundled sample export. tests/buildDashboardData.parity.test.ts then asserts the
-TypeScript port reproduces it — which is the evidence for REQUIREMENTS.md
-TR-3 and TR-4.
+TypeScript port reproduces it, which is what demonstrates the port is faithful
+to the validated reference.
 
 The fixture is committed, so the test suite never needs Python or the PoC. You
 only need to re-run this if the reference implementation itself changes.

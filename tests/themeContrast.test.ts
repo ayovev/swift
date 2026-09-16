@@ -78,9 +78,9 @@ describe("accent ramps", () => {
   });
 });
 
-describe("accent contrast — every swatch, both modes (FR-8.3)", () => {
-  // This is the automated half of the FR-8.1–8.5 acceptance criterion: a
-  // user-selectable accent means contrast cannot be checked once by eye.
+describe("accent contrast — every swatch, both modes", () => {
+  // A user-selectable accent means contrast cannot be checked once by eye —
+  // it has to hold for every swatch in both modes, so it is asserted here.
 
   it("keeps button text readable on every accent-filled surface", () => {
     for (const mode of MODES) {

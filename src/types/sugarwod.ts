@@ -1,7 +1,7 @@
 /**
  * Shape of a single row in a SugarWOD "Export Workouts" CSV.
  *
- * v1 assumes one stable export schema (REQUIREMENTS.md §4.1). Every field
+ * v1 assumes one stable SugarWOD export schema. Every field
  * arrives as a string from PapaParse; empty cells are empty strings, and a
  * few columns are absent-in-practice rather than absent-in-schema, so all
  * consumers must tolerate "".

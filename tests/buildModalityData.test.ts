@@ -77,7 +77,7 @@ describe("buildModalityData — shape and invariants", () => {
   });
 });
 
-describe("buildModalityData — drill-down lists (FR-6.4)", () => {
+describe("buildModalityData — drill-down lists", () => {
   it("lists only workouts with a nonzero share, newest first", () => {
     const data = build([
       row("01/05/2025", "ROW", "2000m row"),
@@ -99,7 +99,7 @@ describe("buildModalityData — drill-down lists (FR-6.4)", () => {
   });
 });
 
-describe("buildModalityData — early vs late (FR-6.2)", () => {
+describe("buildModalityData — early vs late", () => {
   it("detects a shift from lifting toward conditioning", () => {
     const rows = [
       ...Array.from({ length: 6 }, (_, i) => row(`01/0${i + 1}/2025`, "BACK SQUAT", "5x3 back squat")),
@@ -113,7 +113,7 @@ describe("buildModalityData — early vs late (FR-6.2)", () => {
   });
 });
 
-describe("buildModalityData — against the real sample export (TR-3)", () => {
+describe("buildModalityData — against the real sample export", () => {
   let data: ModalityData;
   let totalRows: number;
 

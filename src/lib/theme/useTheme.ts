@@ -70,7 +70,7 @@ const isModePreference = (value: unknown): value is ModePreference =>
   value === "light" || value === "dark" || value === "system";
 
 /**
- * Theme state for the whole app (FR-8.1, FR-8.4, FR-8.5).
+ * Theme state for the whole app.
  *
  * Defaults to the system colour scheme and a sensible accent; both persist to
  * localStorage so a return visit isn't reset. The accent's derived CSS

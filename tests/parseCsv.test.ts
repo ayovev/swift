@@ -38,7 +38,7 @@ describe("parseSugarWodCsv — valid input", () => {
   });
 });
 
-describe("parseSugarWodCsv — plain-language failures (FR-1.3)", () => {
+describe("parseSugarWodCsv — plain-language failures", () => {
   it("rejects an empty string without leaking parser internals", async () => {
     const err = await failure("");
     expect(err.category).toBe("empty");

@@ -13,7 +13,7 @@ const STEPS = [
   },
 ] as const;
 
-/** The three-step explainer (FR-8.7). */
+/** The three-step explainer. */
 export function HowItWorks() {
   return (
     <ol className="grid gap-6 sm:grid-cols-3">

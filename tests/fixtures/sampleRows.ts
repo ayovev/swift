@@ -7,7 +7,7 @@ import type { SugarWodRow } from "@/types/sugarwod";
 // the jsdom environment, where import.meta.url is an http:// URL.
 const SAMPLE_CSV_PATH = resolve(process.cwd(), "public/sample/sugarwod-sample-export.csv");
 
-/** The bundled demo export — the one validated real-world dataset (TR-3). */
+/** The bundled demo export — the one validated real-world dataset. */
 export function loadSampleCsvText(): string {
   return readFileSync(SAMPLE_CSV_PATH, "utf8");
 }

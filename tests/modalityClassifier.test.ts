@@ -17,7 +17,7 @@ const sumOf = (split: ModalitySplit) =>
 const labels = (title: string, description = "") =>
   findMovements(classifiableText({ title, description })).map((m) => m.label);
 
-describe("modality classifier — single-modality workouts (TR-2)", () => {
+describe("modality classifier — single-modality workouts", () => {
   it("a barbell lift is 100% Weightlifting", () => {
     const { split } = classify("BACK SQUAT", "Back Squat 5-5-3-3-1", "Back Squat");
     expect(split).toEqual({ M: 0, W: 100, G: 0 });
@@ -41,7 +41,7 @@ describe("modality classifier — single-modality workouts (TR-2)", () => {
   });
 });
 
-describe("modality classifier — blended workouts (TR-2)", () => {
+describe("modality classifier — blended workouts", () => {
   it("scores Fran as 50 W / 50 G / 0 M, per canonical CrossFit", () => {
     // The decisive case: Fran is brutal metabolic work, but it is not
     // monostructural, so M is zero. Thrusters (W) + pull-ups (G).
@@ -169,7 +169,7 @@ describe("modality classifier — unclassified workouts", () => {
   });
 });
 
-describe("modality classifier — transparency (FR-3.3)", () => {
+describe("modality classifier — transparency", () => {
   it("reports which movement drove each modality", () => {
     const { movements } = classify("TRIPLET", "400m run, 21 kb swings, 12 pull-ups");
     const byModality = Object.fromEntries(movements.map((m) => [m.modality, m.label]));

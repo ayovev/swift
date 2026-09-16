@@ -55,7 +55,7 @@ function BenchmarkCard({ name, entries }: { name: string; entries: BenchmarkEntr
   );
 }
 
-/** Named benchmark history (FR-4.3). */
+/** Named benchmark history. */
 export function BenchmarkCards({ benchmarks }: { benchmarks: Record<string, BenchmarkEntry[]> }) {
   const names = Object.keys(benchmarks).sort();
 

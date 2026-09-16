@@ -29,8 +29,8 @@ interface ClassifiedRow {
 }
 
 /**
- * Aggregate M/W/G classifications into everything the modality tabs need
- * (FR-6.1–6.4). Deliberately mirrors the shape of the GPP domain aggregates in
+ * Aggregate M/W/G classifications into everything the modality tabs need.
+ * Deliberately mirrors the shape of the GPP domain aggregates in
  * buildDashboardData, so the tab components can be near-identical.
  *
  * Workouts where no movement was recognised are EXCLUDED from every average

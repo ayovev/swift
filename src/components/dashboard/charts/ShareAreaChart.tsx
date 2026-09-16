@@ -11,8 +11,8 @@ interface ShareAreaChartProps {
 }
 
 /**
- * A single series' share of training over time — the per-domain (FR-5.1) and
- * per-modality (FR-6.1) chart.
+ * A single series' share of training over time — the per-domain and
+ * per-modality chart.
  *
  * The Y axis is auto-scaled to the data, not fixed at 0–100: Flexibility
  * rarely exceeds a few percent, and a fixed domain renders it as a flat line

@@ -11,7 +11,7 @@ import {
 } from "@/types/modality";
 
 /**
- * One modality's tab (FR-6.1–6.4). Mirrors DomainTab, but the numbers mean
+ * One modality's tab. Mirrors DomainTab, but the numbers mean
  * something different: a domain is a yes/no tag, a modality is a proportion of
  * each workout, so these are average shares rather than counts.
  */

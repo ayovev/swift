@@ -1,4 +1,4 @@
-// Shapes for the M/W/G modality classifier (REQUIREMENTS.md §4.3, §4.6).
+// Shapes for the M/W/G modality classifier.
 //
 // Unlike the 10 GPP domains — which are independent yes/no tags — the three
 // modalities are a PROPORTIONAL split of a single workout. A thruster/pull-up
@@ -82,7 +82,7 @@ export interface ModalityTrendDirectionStat {
   delta: number;
 }
 
-/** A workout in a modality's drill-down list (FR-6.4). */
+/** A workout in a modality's drill-down list. */
 export interface ModalityWorkoutEntry {
   /** YY-MM-DD, matching the GPP workout lists. */
   date: string;

@@ -8,7 +8,7 @@ import {
 } from "./contrast";
 
 /**
- * The accent system (FR-8.2, FR-8.3).
+ * The accent system.
  *
  * Swift's base UI is pure black-and-white. The accent is the only chromatic
  * element, so it has to carry every interactive affordance — buttons, links,
@@ -101,7 +101,7 @@ const SHADE_CHROMA_SCALE: Record<Shade, number> = {
 
 export type AccentRamp = Record<Shade, Oklch>;
 
-/** Derive a swatch's full shade range (FR-8.3). */
+/** Derive a swatch's full shade range. */
 export function deriveRamp(swatch: AccentSwatch): AccentRamp {
   const ramp = {} as AccentRamp;
   for (const shade of SHADES) {

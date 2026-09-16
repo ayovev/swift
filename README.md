@@ -102,7 +102,3 @@ Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather t
 ## Deployment
 
 Static SPA on Vercel. `vercel.json` is already configured — `npm run build`, output in `dist`, with a catch-all rewrite to `index.html`. There is no backend to deploy or operate. If PostHog is wanted in production, set `VITE_PUBLIC_POSTHOG_KEY` (and optionally `VITE_PUBLIC_POSTHOG_HOST`) as build-time environment variables; without them the deployed app simply runs without analytics.
-
----
-
-`REQUIREMENTS.md` at the root is the original v1 requirements document, kept as reference for why things are the way they are.

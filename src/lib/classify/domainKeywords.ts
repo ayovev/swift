@@ -66,8 +66,8 @@ export const DOMAIN_KEYWORDS: Record<Domain, readonly string[]> = {
 /**
  * Substring false positives, corrected.
  *
- * DELIBERATE DEVIATION from the Python reference (REQUIREMENTS.md FR-2.5 asks
- * for behavioral consistency with it). Each entry below was found by scanning
+ * DELIBERATE DEVIATION from the Python reference, which this port otherwise
+ * stays behaviorally consistent with. Each entry below was found by scanning
  * the 1,209-row validation export for keyword matches whose surrounding word
  * is not the movement the keyword names. The complete measured effect is
  * THREE rows out of 1,209, and every one is the reference being wrong:

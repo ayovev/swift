@@ -13,7 +13,7 @@ import { useTheme } from "@/lib/theme/useTheme";
 import { cn } from "@/lib/utils";
 
 /**
- * A curated set of accent swatches (FR-8.2). Deliberately not a free colour
+ * A curated set of accent swatches. Deliberately not a free colour
  * picker for v1 — every swatch here is contrast-tested against both modes
  * (tests/themeContrast.test.ts), which an arbitrary hex value would not be.
  */

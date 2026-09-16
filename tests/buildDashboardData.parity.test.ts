@@ -5,7 +5,7 @@ import reference from "./fixtures/python_reference_output.json" with { type: "js
 import { loadSampleRows } from "./fixtures/sampleRows";
 
 /**
- * Behavioral parity with the validated Python reference (TR-3, TR-4), checked
+ * Behavioral parity with the validated Python reference, checked
  * across all 1,209 rows of the sample export.
  *
  * Two documented, deliberate deviations are pinned rather than blanket-tolerated:

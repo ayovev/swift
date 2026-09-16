@@ -6,7 +6,7 @@ import type { PrTimelineEntry } from "@/types/dashboard";
 
 const INITIAL_VISIBLE = 12;
 
-/** Chronological PR history, most recent first (FR-4.4). */
+/** Chronological PR history, most recent first. */
 export function PrTimeline({ prs }: { prs: PrTimelineEntry[] }) {
   const [expanded, setExpanded] = useState(false);
 
