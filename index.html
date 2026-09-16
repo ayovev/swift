@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Swift turns your SugarWOD export into a picture of how you actually train. Everything runs in your browser — nothing is uploaded."
+    />
+    <title>Swift — your training log, read back to you</title>
+    <script>
+      // Apply the stored theme before first paint so there is no flash of the
+      // wrong mode. Mirrors the logic in src/lib/theme/useTheme.ts.
+      (function () {
+        try {
+          var stored = JSON.parse(localStorage.getItem("swift.theme") || "{}");
+          var mode = stored.mode || "system";
+          var dark =
+            mode === "dark" ||
+            (mode === "system" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+          if (stored.accent) {
+            document.documentElement.setAttribute("data-accent", stored.accent);
+          }
+        } catch (e) {
+          /* localStorage unavailable — fall back to the CSS defaults */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

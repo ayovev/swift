@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dist-ssr/
+*.local
+
+# env — .env.example is committed, real values are not
+.env
+.env.local
+.env.*.local
+
+# editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# test / tooling caches
+coverage/
+.vitest/
+*.tsbuildinfo
+
+# vercel
+.vercel
