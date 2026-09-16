@@ -34,7 +34,11 @@ type SwiftEvent =
   | { name: "upload_failed"; props: { reason: CsvErrorCategory } }
   | { name: "sample_data_used"; props?: undefined }
   | { name: "tab_viewed"; props: { tab: string; source: DataSource } }
-  | { name: "theme_changed"; props: { mode?: string; accent?: string } };
+  | { name: "theme_changed"; props: { mode?: string; accent?: string } }
+  | {
+      name: "date_range_changed";
+      props: { preset: "last_3_months" | "last_6_months" | "last_year" | "all_time" | "custom" };
+    };
 
 let enabled = false;
 
