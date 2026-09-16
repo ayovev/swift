@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { AlertCircle } from "lucide-react";
+import inbodyLogo from "@/assets/inbody-logo.png";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadDropzone } from "@/components/landing/UploadDropzone";
@@ -30,6 +31,19 @@ const METRICS: { key: Exclude<keyof BodyCompPoint, "bucket">; label: string; uni
 ];
 
 /**
+ * The data source's own mark, not Swift's — kept in its native colour on a
+ * fixed white chip in both themes, the usual treatment for a partner's
+ * trademark (it isn't ours to recolour into the accent system).
+ */
+function InBodySourceMark() {
+  return (
+    <div className="flex h-8 shrink-0 items-center rounded-md border border-border bg-white px-2.5 shadow-sm">
+      <img src={inbodyLogo} alt="InBody" className="h-4 w-auto" />
+    </div>
+  );
+}
+
+/**
  * Body composition, from an independently-uploaded InBody export. Fully
  * optional and never joined to the SugarWOD data row-for-row — the two
  * datasets only share a bucketing scheme (bucketKey/Granularity), so a
@@ -45,7 +59,8 @@ export function BodyCompTab({ state, granularity, onFile }: BodyCompTabProps) {
   if (!data) {
     return (
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-center gap-3 pb-2">
+          <InBodySourceMark />
           <CardTitle className="text-base">Body composition</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -83,7 +98,8 @@ export function BodyCompTab({ state, granularity, onFile }: BodyCompTabProps) {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-center gap-3 pb-2">
+          <InBodySourceMark />
           <CardTitle className="text-base">Body composition</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
