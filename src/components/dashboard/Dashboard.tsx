@@ -5,12 +5,13 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { AccentPicker } from "@/components/theme/AccentPicker";
 import { ModeToggle } from "@/components/theme/ModeToggle";
 import { SwiftMark } from "@/components/SwiftMark";
+import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
 import { DateRangePicker } from "./DateRangePicker";
 import { DomainTab } from "./DomainTab";
 import { GranularityPicker } from "./GranularityPicker";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
-import { ALL_TABS, OVERVIEW_TAB, TabNav } from "./TabNav";
+import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, TabNav } from "./TabNav";
 import { formatDate } from "./charts/chartUtils";
 import type { DateRange } from "@/lib/analytics/dateRange";
 import type { Granularity } from "@/lib/analytics/granularity";
@@ -28,6 +29,8 @@ interface DashboardProps {
   granularity: Granularity;
   onGranularityChange: (granularity: Granularity) => void;
   onReset: () => void;
+  bodyComp: BodyCompState;
+  onBodyCompFile: (file: File) => void;
 }
 
 /** Years between the first and last logged workout, to a sensible precision. */
@@ -50,6 +53,8 @@ export function Dashboard({
   granularity,
   onGranularityChange,
   onReset,
+  bodyComp,
+  onBodyCompFile,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   const { summary } = insights.dashboard;
@@ -139,6 +144,10 @@ export function Dashboard({
               <ModalityTab modality={modality} data={insights.modality} granularity={granularity} />
             </TabsContent>
           ))}
+
+          <TabsContent value={BODY_COMP_TAB}>
+            <BodyCompTab state={bodyComp} granularity={granularity} onFile={onBodyCompFile} />
+          </TabsContent>
         </Tabs>
 
         <footer className="mt-12 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground">

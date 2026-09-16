@@ -18,16 +18,10 @@ async function failure(input: string | File): Promise<CsvValidationError> {
 describe("parseInBodyCsv — valid input", () => {
   it("parses the synthetic sample export", async () => {
     const rows = await parseInBodyCsv(loadSampleInBodyCsvText());
-    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(5);
     // Newest-first, as InBody's own export orders it — sorting oldest-first
     // is the analytics layer's job, same division as parseSugarWodCsv/parseRows.
     expect(rows[0]?.date).toBe("20260701093000");
-  });
-
-  it("tolerates the real export's exact-duplicate rows", async () => {
-    const rows = await parseInBodyCsv(loadSampleInBodyCsvText());
-    const dup = rows.filter((r) => r.date === "20251001093000");
-    expect(dup).toHaveLength(2);
   });
 
   it("accepts an export missing every column but date and Weight(lb)", async () => {

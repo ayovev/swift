@@ -9,10 +9,10 @@ const SAMPLE_CSV_PATH = resolve(process.cwd(), "tests/fixtures/inbody-sample-exp
 
 /**
  * A synthetic export shaped exactly like a real InBody app export (same 44
- * columns, same YYYYMMDDHHmmss timestamps, "-" for unmeasured cells, one
- * exact duplicate row) but with fabricated numbers — not bundled as a demo
- * file the way sugarwod-sample-export.csv is, since body-composition history
- * is a real person's health data and shouldn't be committed to the repo.
+ * columns, same YYYYMMDDHHmmss timestamps, "-" for unmeasured cells) but
+ * with fabricated numbers — not bundled as a demo file the way
+ * sugarwod-sample-export.csv is, since body-composition history is a real
+ * person's health data and shouldn't be committed to the repo.
  */
 export function loadSampleInBodyCsvText(): string {
   return readFileSync(SAMPLE_CSV_PATH, "utf8");

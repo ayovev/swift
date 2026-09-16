@@ -4,14 +4,19 @@ import { MODALITY_LIST, MODALITY_SHORT_LABELS } from "@/types/modality";
 import { cn } from "@/lib/utils";
 
 export const OVERVIEW_TAB = "overview";
+export const BODY_COMP_TAB = "body-comp";
 
 export interface TabDescriptor {
   value: string;
   label: string;
-  group: "Overview" | "Physical skills" | "Modalities";
+  group: "Overview" | "Physical skills" | "Modalities" | "Body composition";
 }
 
-/** All 14 tabs: Overview, ten GPP domains, three modalities. */
+/**
+ * All 15 tabs: Overview, ten GPP domains, three modalities, and Body Comp —
+ * the last one built from a wholly separate InBody upload, always present
+ * in the nav even before any InBody data is loaded (see BodyCompTab).
+ */
 export const ALL_TABS: TabDescriptor[] = [
   { value: OVERVIEW_TAB, label: "Overview", group: "Overview" },
   ...DOMAIN_LIST.map((d) => ({
@@ -24,9 +29,10 @@ export const ALL_TABS: TabDescriptor[] = [
     label: MODALITY_SHORT_LABELS[m],
     group: "Modalities" as const,
   })),
+  { value: BODY_COMP_TAB, label: "Body Comp", group: "Body composition" },
 ];
 
-const GROUPS = ["Overview", "Physical skills", "Modalities"] as const;
+const GROUPS = ["Overview", "Physical skills", "Modalities", "Body composition"] as const;
 
 /**
  * Fourteen tabs is too many for one undifferentiated strip, and far too many
