@@ -2,14 +2,6 @@ import { DOMAIN_LIST, DOMAIN_SHORT_LABELS, type Domain } from "@/types/dashboard
 import { MODALITY_LIST, MODALITY_SHORT_LABELS, type Modality } from "@/types/modality";
 import type { ChartConfig } from "@/components/ui/chart";
 
-/** "2025-03" -> "Mar '25" */
-export function formatMonth(ym: string): string {
-  const [year, month] = ym.split("-");
-  if (!year || !month) return ym;
-  const date = new Date(Number(year), Number(month) - 1, 1);
-  return `${date.toLocaleString("en-US", { month: "short" })} '${year.slice(2)}`;
-}
-
 /** "2025-03-14" -> "14 Mar 2025" */
 export function formatDate(iso: string): string {
   const [year, month, day] = iso.split("-");
@@ -23,12 +15,6 @@ export function formatShortDate(yyMmDd: string): string {
   const [yy, mm, dd] = yyMmDd.split("-");
   if (!yy || !mm || !dd) return yyMmDd;
   return formatDate(`20${yy}-${mm}-${dd}`);
-}
-
-/** Recharts renders a tick per point by default; at 47 months that's a smear. */
-export function monthTickInterval(pointCount: number): number {
-  if (pointCount <= 12) return 0;
-  return Math.max(1, Math.ceil(pointCount / 10) - 1);
 }
 
 /**

@@ -5,6 +5,7 @@ import { LiftGrid } from "./charts/LiftChart";
 import { PrTimeline } from "./charts/PrTimeline";
 import { StackedShareChart } from "./charts/StackedShareChart";
 import { DOMAIN_CHART_CONFIG, MODALITY_CHART_CONFIG } from "./charts/chartUtils";
+import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
 import { DOMAIN_LIST } from "@/types/dashboard";
 import { MODALITY_LIST } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
@@ -20,9 +21,16 @@ function Stat({ value, label, sub }: { value: string; label: string; sub?: strin
 }
 
 /** The Overview tab. */
-export function OverviewTab({ insights }: { insights: Insights }) {
+export function OverviewTab({
+  insights,
+  granularity,
+}: {
+  insights: Insights;
+  granularity: Granularity;
+}) {
   const { dashboard, modality } = insights;
   const { summary } = dashboard;
+  const noun = GRANULARITY_NOUN[granularity];
 
   const rxShare =
     summary.rx_count + summary.scaled_count > 0
@@ -36,13 +44,13 @@ export function OverviewTab({ insights }: { insights: Insights }) {
           <Stat
             value={summary.total_logged.toLocaleString()}
             label="workouts logged"
-            sub={`${summary.avg_per_month.toFixed(1)} a month on average`}
+            sub={`${summary.avg_per_bucket.toFixed(1)} a ${noun} on average`}
           />
           <Stat value={summary.total_prs.toLocaleString()} label="personal records" />
           <Stat value={`${rxShare.toFixed(0)}%`} label="as prescribed" sub={`${summary.scaled_count.toLocaleString()} scaled`} />
           <Stat
-            value={String(dashboard.monthly.length)}
-            label="months of training"
+            value={String(dashboard.buckets.length)}
+            label={`${noun}s of training`}
             sub="every one of them counted"
           />
         </CardContent>
@@ -53,7 +61,7 @@ export function OverviewTab({ insights }: { insights: Insights }) {
           <CardTitle className="text-sm font-medium">Showing up</CardTitle>
         </CardHeader>
         <CardContent>
-          <ConsistencyChart monthly={dashboard.monthly} />
+          <ConsistencyChart buckets={dashboard.buckets} granularity={granularity} />
         </CardContent>
       </Card>
 
@@ -64,13 +72,14 @@ export function OverviewTab({ insights }: { insights: Insights }) {
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-sm text-muted-foreground">
-              The ten general physical skills as a share of each month's training.
+              The ten general physical skills as a share of each {noun}'s training.
             </p>
             <StackedShareChart
-              data={dashboard.stacked.monthly_shares}
+              data={dashboard.stacked.bucket_shares}
               keys={DOMAIN_LIST}
               config={DOMAIN_CHART_CONFIG}
               label="Normalized stacked area chart of the ten physical skills over time"
+              granularity={granularity}
             />
           </CardContent>
         </Card>
@@ -81,13 +90,14 @@ export function OverviewTab({ insights }: { insights: Insights }) {
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-sm text-muted-foreground">
-              How each month split across the three CrossFit modalities.
+              How each {noun} split across the three CrossFit modalities.
             </p>
             <StackedShareChart
-              data={modality.modality_stacked.monthly_shares as unknown as Record<string, string | number>[]}
+              data={modality.modality_stacked.bucket_shares as unknown as Record<string, string | number>[]}
               keys={MODALITY_LIST}
               config={MODALITY_CHART_CONFIG}
               label="Normalized stacked area chart of metabolic, weightlifting and gymnastics work over time"
+              granularity={granularity}
             />
           </CardContent>
         </Card>

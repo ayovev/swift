@@ -7,11 +7,13 @@ import { ModeToggle } from "@/components/theme/ModeToggle";
 import { SwiftMark } from "@/components/SwiftMark";
 import { DateRangePicker } from "./DateRangePicker";
 import { DomainTab } from "./DomainTab";
+import { GranularityPicker } from "./GranularityPicker";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
 import { ALL_TABS, OVERVIEW_TAB, TabNav } from "./TabNav";
 import { formatDate } from "./charts/chartUtils";
 import type { DateRange } from "@/lib/analytics/dateRange";
+import type { Granularity } from "@/lib/analytics/granularity";
 import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
@@ -23,6 +25,8 @@ interface DashboardProps {
   source: DataSource;
   range: DateRange | null;
   onRangeChange: (range: DateRange | null) => void;
+  granularity: Granularity;
+  onGranularityChange: (granularity: Granularity) => void;
   onReset: () => void;
 }
 
@@ -38,7 +42,15 @@ function spanLabel(startIso: string, endIso: string): string {
   return `${years.toFixed(1)} years and counting`;
 }
 
-export function Dashboard({ insights, source, range, onRangeChange, onReset }: DashboardProps) {
+export function Dashboard({
+  insights,
+  source,
+  range,
+  onRangeChange,
+  granularity,
+  onGranularityChange,
+  onReset,
+}: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   const { summary } = insights.dashboard;
 
@@ -79,6 +91,9 @@ export function Dashboard({ insights, source, range, onRangeChange, onReset }: D
                 onChange={onRangeChange}
               />
             ) : null}
+            {insights.dateBounds ? (
+              <GranularityPicker value={granularity} onChange={onGranularityChange} />
+            ) : null}
             <AccentPicker />
             <ModeToggle />
             <Button variant="outline" size="sm" onClick={onReset} className="h-8 gap-2">
@@ -110,18 +125,18 @@ export function Dashboard({ insights, source, range, onRangeChange, onReset }: D
           <TabNav value={tab} onValueChange={onTabChange} />
 
           <TabsContent value={OVERVIEW_TAB}>
-            <OverviewTab insights={insights} />
+            <OverviewTab insights={insights} granularity={granularity} />
           </TabsContent>
 
           {DOMAIN_LIST.map((domain: Domain) => (
             <TabsContent key={domain} value={`domain:${domain}`}>
-              <DomainTab domain={domain} data={insights.dashboard} />
+              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} />
             </TabsContent>
           ))}
 
           {MODALITY_LIST.map((modality: Modality) => (
             <TabsContent key={modality} value={`modality:${modality}`}>
-              <ModalityTab modality={modality} data={insights.modality} />
+              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} />
             </TabsContent>
           ))}
         </Tabs>

@@ -3,13 +3,22 @@ import { ShareAreaChart } from "./charts/ShareAreaChart";
 import { domainColor } from "./charts/chartUtils";
 import { TrendStat } from "./TrendStat";
 import { WorkoutList } from "./WorkoutList";
+import { GRANULARITY_NOUN, granularityLabel, type Granularity } from "@/lib/analytics/granularity";
 import { DOMAIN_BLURBS, type DashboardData, type Domain } from "@/types/dashboard";
 
 /**
  * One GPP domain's tab. A single component drives all ten —
  * the domains differ in data, not in structure.
  */
-export function DomainTab({ domain, data }: { domain: Domain; data: DashboardData }) {
+export function DomainTab({
+  domain,
+  data,
+  granularity,
+}: {
+  domain: Domain;
+  data: DashboardData;
+  granularity: Granularity;
+}) {
   const trend = data.domain_trends[domain];
   const direction = data.trend_direction[domain];
   const overall = data.overall[domain];
@@ -39,14 +48,17 @@ export function DomainTab({ domain, data }: { domain: Domain; data: DashboardDat
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Share of training, month by month</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Share of training, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <ShareAreaChart
-            data={trend.map((p) => ({ month: p.month, value: p.pct }))}
+            data={trend.map((p) => ({ bucket: p.bucket, value: p.pct }))}
             color={domainColor(domain)}
             seriesLabel={domain}
-            label={`Monthly share of workouts touching ${domain}`}
+            label={`${granularityLabel(granularity)} share of workouts touching ${domain}`}
+            granularity={granularity}
           />
         </CardContent>
       </Card>

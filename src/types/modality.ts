@@ -60,12 +60,12 @@ export interface ModalityClassification {
 }
 
 export interface ModalityTrendPoint {
-  month: string;
-  /** Mean share of this modality across that month's CLASSIFIED workouts. */
+  bucket: string;
+  /** Mean share of this modality across that bucket's CLASSIFIED workouts. */
   avg_share: number;
-  /** Workouts that month with a nonzero share of this modality. */
+  /** Workouts in that bucket with a nonzero share of this modality. */
   count: number;
-  /** Classified workouts that month (the denominator for avg_share). */
+  /** Classified workouts in that bucket (the denominator for avg_share). */
   total: number;
 }
 
@@ -95,8 +95,8 @@ export interface ModalityWorkoutEntry {
   movements: string[];
 }
 
-export interface ModalityStackedShare {
-  month: string;
+export interface ModalityBucketShare {
+  bucket: string;
   M: number;
   W: number;
   G: number;
@@ -104,7 +104,7 @@ export interface ModalityStackedShare {
 
 export interface ModalityStacked {
   modality_names: readonly Modality[];
-  monthly_shares: ModalityStackedShare[];
+  bucket_shares: ModalityBucketShare[];
 }
 
 export interface ModalityData {
