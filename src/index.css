@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+/*
+ * Swift's base UI is black-and-white in both modes (REQUIREMENTS.md §3, FR-8.1).
+ * Every token below is achromatic — chroma is exactly 0. The single accent the
+ * athlete picks is the ONLY colour in the interface, and it arrives as CSS
+ * custom properties written to :root by src/lib/theme/useTheme.ts.
+ *
+ * The accent tokens (--primary, --ring, --chart-*, --accent-*) are declared
+ * here with neutral fallbacks so the app still renders sensibly for the one
+ * frame before hydration, and if JavaScript never runs at all.
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --radius: 0.625rem;
+
+  /* Achromatic base — light mode. */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.505 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+
+  /* Accent fallbacks, replaced at runtime by the derived ramp. */
+  --primary: oklch(0.556 0 0);
+  --primary-foreground: oklch(1 0 0);
+  --primary-hover: oklch(0.47 0 0);
+  --accent-link: oklch(0.47 0 0);
+  --accent-subtle: oklch(0.971 0 0);
+  --accent-border: oklch(0.885 0 0);
+  --ring: oklch(0.556 0 0);
+
+  --chart-1: oklch(0.42 0 0);
+  --chart-2: oklch(0.47 0 0);
+  --chart-3: oklch(0.52 0 0);
+  --chart-4: oklch(0.57 0 0);
+  --chart-5: oklch(0.62 0 0);
+  --chart-6: oklch(0.67 0 0);
+  --chart-7: oklch(0.72 0 0);
+  --chart-8: oklch(0.77 0 0);
+  --chart-9: oklch(0.82 0 0);
+  --chart-10: oklch(0.86 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 18%);
+
+  --primary: oklch(0.72 0 0);
+  --primary-foreground: oklch(0.145 0 0);
+  --primary-hover: oklch(0.808 0 0);
+  --accent-link: oklch(0.808 0 0);
+  --accent-subtle: oklch(0.26 0 0);
+  --accent-border: oklch(0.398 0 0);
+  --ring: oklch(0.72 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-link: var(--accent-link);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-border: var(--accent-border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --color-chart-9: var(--chart-9);
+  --color-chart-10: var(--chart-10);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+
+  /* One consistent focus treatment, in the accent, everywhere (FR-8.2). */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Tabular numbers keep charts, stats and tables from jittering. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

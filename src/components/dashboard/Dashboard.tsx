@@ -1,0 +1,132 @@
+import { useCallback, useState } from "react";
+import { FlaskConical, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { AccentPicker } from "@/components/theme/AccentPicker";
+import { ModeToggle } from "@/components/theme/ModeToggle";
+import { SwiftMark } from "@/components/SwiftMark";
+import { DomainTab } from "./DomainTab";
+import { ModalityTab } from "./ModalityTab";
+import { OverviewTab } from "./OverviewTab";
+import { ALL_TABS, OVERVIEW_TAB, TabNav } from "./TabNav";
+import { formatDate } from "./charts/chartUtils";
+import { capture } from "@/lib/posthog";
+import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
+import { MODALITY_LIST, type Modality } from "@/types/modality";
+import type { Insights } from "@/lib/analytics/buildInsights";
+import type { DataSource } from "@/App";
+
+interface DashboardProps {
+  insights: Insights;
+  source: DataSource;
+  onReset: () => void;
+}
+
+/** Years between the first and last logged workout, to a sensible precision. */
+function spanLabel(startIso: string, endIso: string): string {
+  const start = new Date(startIso);
+  const end = new Date(endIso);
+  const years = (end.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+  if (years < 1) {
+    const months = Math.max(1, Math.round(years * 12));
+    return `${months} month${months === 1 ? "" : "s"} and counting`;
+  }
+  return `${years.toFixed(1)} years and counting`;
+}
+
+export function Dashboard({ insights, source, onReset }: DashboardProps) {
+  const [tab, setTab] = useState<string>(OVERVIEW_TAB);
+  const { summary } = insights.dashboard;
+
+  const onTabChange = useCallback(
+    (value: string) => {
+      setTab(value);
+      const label = ALL_TABS.find((t) => t.value === value)?.label ?? value;
+      capture({ name: "tab_viewed", props: { tab: label, source } });
+    },
+    [source]
+  );
+
+  return (
+    <div className="min-h-svh bg-background">
+      {source === "sample" ? (
+        <div
+          role="status"
+          className="flex items-center justify-center gap-2 border-b border-accent-border bg-accent-subtle px-5 py-2 text-center text-sm"
+        >
+          <FlaskConical className="size-3.5 shrink-0 text-accent-link" aria-hidden="true" />
+          <span>
+            <strong className="font-medium">Sample data.</strong>{" "}
+            <span className="text-muted-foreground">
+              This is someone else's training log, here so you can look around.
+            </span>
+          </span>
+        </div>
+      ) : null}
+
+      <header className="border-b border-border">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <SwiftMark />
+          <div className="flex items-center gap-2">
+            <AccentPicker />
+            <ModeToggle />
+            <Button variant="outline" size="sm" onClick={onReset} className="h-8 gap-2">
+              <RotateCcw className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Start over</span>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-7xl px-5 py-6 sm:py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Your training log
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {formatDate(summary.date_start)} — {formatDate(summary.date_end)} ·{" "}
+            {spanLabel(summary.date_start, summary.date_end)}
+          </p>
+        </div>
+
+        <Tabs value={tab} onValueChange={onTabChange} className="gap-6">
+          <TabNav value={tab} onValueChange={onTabChange} />
+
+          <TabsContent value={OVERVIEW_TAB}>
+            <OverviewTab insights={insights} />
+          </TabsContent>
+
+          {DOMAIN_LIST.map((domain: Domain) => (
+            <TabsContent key={domain} value={`domain:${domain}`}>
+              <DomainTab domain={domain} data={insights.dashboard} />
+            </TabsContent>
+          ))}
+
+          {MODALITY_LIST.map((modality: Modality) => (
+            <TabsContent key={modality} value={`modality:${modality}`}>
+              <ModalityTab modality={modality} data={insights.modality} />
+            </TabsContent>
+          ))}
+        </Tabs>
+
+        <footer className="mt-12 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground">
+          <p className="max-w-3xl">
+            Workouts are classified automatically from their names and descriptions, so a workout
+            can land somewhere surprising if your gym names things unusually — every tab shows its
+            reasoning so you can check. Flexibility sits low for almost everyone, because mobility
+            work rarely gets logged as its own entry rather than because nobody stretches.
+            {insights.modality.unclassified_count > 0 ? (
+              <>
+                {" "}
+                {insights.modality.unclassified_count.toLocaleString()} of{" "}
+                {summary.total_logged.toLocaleString()} entries had no recognisable movement in them
+                and sit outside the cardio/weights/gymnastics split.
+              </>
+            ) : null}
+          </p>
+          <p className="mt-3">Your file never left this browser.</p>
+        </footer>
+      </main>
+    </div>
+  );
+}
