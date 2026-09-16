@@ -148,8 +148,9 @@ describe("modality classifier — the substring traps", () => {
     expect(labels("DU TEST", "2 minutes max dus")).toEqual(["Double-unders"]);
   });
 
-  it("covers the irregular plural the GPP keyword list misses", () => {
-    // "carries" is not a substring of "carry" — the GPP list never matches it.
+  it("reaches stem-changing inflections like carry/carries", () => {
+    // Handled by the shared matcher's consonant+y -> i rule, not by a
+    // hand-added "carries" entry in the lexicon.
     const { movements } = classify("ACCESSORY", "3 sets of double kb oh carries");
     expect(movements.some((m) => m.label === "Loaded carry")).toBe(true);
   });

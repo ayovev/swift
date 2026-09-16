@@ -4,6 +4,7 @@ import {
   findAllMatches,
   findMatch,
   matches,
+  searchForms,
 } from "@/lib/classify/matcher";
 
 describe("matcher — substring mode (the default)", () => {
@@ -54,6 +55,55 @@ describe("matcher — exclusions", () => {
 
   it("does not let an exclusion swallow a longer legitimate match", () => {
     expect(matches("rowing machine", { phrase: "row", exclude: ["throw"] })).toBe(true);
+  });
+});
+
+describe("matcher — stem-changing inflection (consonant + y)", () => {
+  // Substring matching already covers everything that APPENDS to the keyword.
+  // The one gap is English's y -> i stem change, handled once here rather than
+  // by hand-adding surface forms to every keyword list.
+
+  it("reaches the y -> i forms of a keyword", () => {
+    expect(matches("double kb oh carries", { phrase: "carry" })).toBe(true);
+    expect(matches("suitcase carried for 50m", { phrase: "carry" })).toBe(true);
+    expect(matches("build to your heaviest set", { phrase: "heavy" })).toBe(true);
+    expect(matches("go heavier than last week", { phrase: "heavy" })).toBe(true);
+  });
+
+  it("still reaches the plain and appended forms", () => {
+    expect(matches("farmer carry", { phrase: "carry" })).toBe(true);
+    expect(matches("spend 2:00 carrying it", { phrase: "carry" })).toBe(true);
+    expect(matches("heavy singles", { phrase: "heavy" })).toBe(true);
+  });
+
+  it("only applies after a consonant, never a vowel", () => {
+    // "day" must not become "dai", which would match "daily".
+    expect(searchForms("day")).toEqual(["day"]);
+    expect(searchForms("carry")).toEqual(["carry", "carri"]);
+    expect(searchForms("heavy")).toEqual(["heavy", "heavi"]);
+  });
+
+  it("leaves keywords without a trailing y alone", () => {
+    expect(searchForms("run")).toEqual(["run"]);
+    expect(searchForms("wall ball")).toEqual(["wall ball"]);
+    expect(searchForms(" cal ")).toEqual([" cal "]);
+  });
+
+  it("does not let the stem bypass an exclusion", () => {
+    const rule = { phrase: "carry", exclude: ["carryover"] } as const;
+    expect(matches("carryover day", rule)).toBe(false);
+    // ...while the genuine inflected form still matches.
+    expect(matches("kb carries", rule)).toBe(true);
+  });
+
+  it("reports the earliest match across all forms", () => {
+    // "carries" appears before "carry" here; the index must be the earlier one.
+    expect(findMatch("kb carries then a farmer carry", { phrase: "carry" })).toBe(3);
+  });
+
+  it("does not double-count a phrase and its stem in the same text", () => {
+    // "carrying" contains "carry"; the stem must not add a second overlapping hit.
+    expect(findAllMatches("carrying", { phrase: "carry" })).toEqual([[0, 5]]);
   });
 });
 

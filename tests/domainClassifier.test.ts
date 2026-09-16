@@ -167,16 +167,39 @@ describe("GPP classifier — substring false-positive corrections", () => {
   });
 });
 
+describe("GPP classifier — stem-changing inflections (consonant + y)", () => {
+  // Substring matching covers every inflection that appends to the keyword
+  // (carry/carrying, run/running, press/presses). The stem-changing y -> i
+  // rule is handled by the shared matcher, so keyword lists stay clean.
+
+  it('"carries" matches the keyword "carry"', () => {
+    expect(classify("ACCESSORY", "3 sets of double kb oh carries").Strength).toBe("carry");
+    expect(classify("ACCESSORY", "3 sets of double kb oh carries").Balance).toBe("carry");
+  });
+
+  it('"heaviest" and "heavier" match the keyword "heavy"', () => {
+    expect(classify("BUILD", "build to your heaviest set").Strength).toBe("heavy");
+    expect(classify("BUILD", "go heavier than last week").Strength).toBe("heavy");
+  });
+
+  it('still matches the plain and appended forms', () => {
+    expect(classify("FARMER CARRY", "3 sets of farmer carry").Balance).toBe("carry");
+    expect(classify("CARRYING", "spend 2:00 carrying the kettlebells").Balance).toBe("carry");
+    expect(classify("HEAVY DAY", "heavy singles").Strength).toBe("heavy");
+  });
+
+  it('does not let the stem resurrect an excluded false positive', () => {
+    // "carryover" is excluded; the stem must not smuggle it back in.
+    expect(classify("CARRYOVER", "")).not.toHaveProperty("Balance");
+  });
+});
+
 describe("GPP classifier — known limitations, pinned deliberately", () => {
   // These are inherited from the Python reference's keyword lists. They are
   // NOT bugs introduced by the port, and fixing them would mean widening the
   // keyword lists — a much larger behavioral change than the false-positive
   // corrections above, and out of scope for the agreed deviation. Pinned here
   // so the limitation is visible and any future change is deliberate.
-
-  it('irregular plurals are missed: "carries" does not match the keyword "carry"', () => {
-    expect(classify("ACCESSORY", "3 sets of double kb oh carries").Strength).not.toBe("carry");
-  });
 
   it("Flexibility is under-represented because mobility work is rarely logged", () => {
     // Noted in the reference's caveat #5 and surfaced as a UI caveat.

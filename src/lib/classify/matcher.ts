@@ -23,6 +23,23 @@
  * The cost of substring matching is a small number of genuine false positives
  * ("carry" inside "carryover"), which `exclude` handles surgically — see
  * domainKeywords.ts for the measured list.
+ *
+ * ---------------------------------------------------------------------------
+ * INFLECTION
+ * ---------------------------------------------------------------------------
+ * Substring matching already covers every inflection that simply APPENDS to
+ * the keyword: run/runs/running, press/presses, burpee/burpees, carry/carrying.
+ * The one class it cannot reach is where the stem itself changes, and English
+ * has essentially one such rule in play here — a consonant followed by "y"
+ * becomes "i" before a suffix:
+ *
+ *     carry  -> carries, carried        heavy -> heavier, heaviest
+ *
+ * So rather than hand-adding "carries" to keyword lists one word at a time —
+ * which fixes this export and not the next athlete's — every rule also matches
+ * on its "...i" stem. Measured against the 1,209-row sample, the stems land
+ * only on genuine inflections (carries, carriesas, heavier, heaviest) and
+ * nothing spurious.
  * ---------------------------------------------------------------------------
  */
 
@@ -52,6 +69,30 @@ export type MatchRange = readonly [start: number, end: number];
 
 const isLetter = (ch: string | undefined): boolean =>
   ch !== undefined && ch >= "a" && ch <= "z";
+
+const isVowel = (ch: string): boolean => "aeiou".includes(ch);
+
+/**
+ * The forms a rule searches for: the phrase itself, plus its consonant+y -> i
+ * stem when it has one. "carry" also searches "carri"; "run" and "wall ball"
+ * search only themselves.
+ *
+ * Returns the stem WITHOUT a trailing "y", so plain substring matching then
+ * picks up carries/carried/carrier on its own.
+ */
+export function searchForms(phrase: string): string[] {
+  const penultimate = phrase.at(-2);
+  if (
+    phrase.length > 2 &&
+    phrase.endsWith("y") &&
+    penultimate !== undefined &&
+    isLetter(penultimate) &&
+    !isVowel(penultimate)
+  ) {
+    return [phrase, `${phrase.slice(0, -1)}i`];
+  }
+  return [phrase];
+}
 
 /** Every range in `text` covered by any of the exclusion strings. */
 function excludedRanges(text: string, exclude: readonly string[]): MatchRange[] {
@@ -91,54 +132,69 @@ function tokenBoundariesOk(text: string, start: number, end: number): boolean {
  * `text` must already be lowercased.
  */
 export function findAllMatches(text: string, rule: MatchRule): MatchRange[] {
-  const { phrase } = rule;
-  if (phrase === "") return [];
+  if (rule.phrase === "") return [];
 
   const mode = rule.mode ?? "substring";
   const exclusions = rule.exclude ? excludedRanges(text, rule.exclude) : [];
   const found: MatchRange[] = [];
 
-  let from = 0;
-  for (;;) {
-    const at = text.indexOf(phrase, from);
-    if (at === -1) break;
-    const end = at + phrase.length;
+  for (const form of searchForms(rule.phrase)) {
+    let from = 0;
+    for (;;) {
+      const at = text.indexOf(form, from);
+      if (at === -1) break;
+      const end = at + form.length;
 
-    const ok =
-      !isExcluded(at, end, exclusions) &&
-      (mode === "substring" || tokenBoundariesOk(text, at, end));
+      const ok =
+        !isExcluded(at, end, exclusions) &&
+        (mode === "substring" || tokenBoundariesOk(text, at, end));
 
-    if (ok) {
-      found.push([at, end]);
-      from = end; // non-overlapping
-    } else {
-      from = at + 1;
+      if (ok) {
+        found.push([at, end]);
+        from = end; // non-overlapping within this form
+      } else {
+        from = at + 1;
+      }
     }
   }
-  return found;
+
+  // A phrase and its stem can both land on the same text ("carry"/"carri"
+  // inside "carrying"), so drop overlaps and report left to right.
+  found.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
+  const merged: MatchRange[] = [];
+  for (const range of found) {
+    const last = merged[merged.length - 1];
+    if (last && range[0] < last[1]) continue;
+    merged.push(range);
+  }
+  return merged;
 }
 
 /** Index of the first real match, or -1. `text` must be lowercased. */
 export function findMatch(text: string, rule: MatchRule): number {
-  const { phrase } = rule;
-  if (phrase === "") return -1;
+  if (rule.phrase === "") return -1;
 
   const mode = rule.mode ?? "substring";
   const exclusions = rule.exclude ? excludedRanges(text, rule.exclude) : [];
+  let earliest = -1;
 
-  let from = 0;
-  for (;;) {
-    const at = text.indexOf(phrase, from);
-    if (at === -1) return -1;
-    const end = at + phrase.length;
-    if (
-      !isExcluded(at, end, exclusions) &&
-      (mode === "substring" || tokenBoundariesOk(text, at, end))
-    ) {
-      return at;
+  for (const form of searchForms(rule.phrase)) {
+    let from = 0;
+    for (;;) {
+      const at = text.indexOf(form, from);
+      if (at === -1) break;
+      const end = at + form.length;
+      if (
+        !isExcluded(at, end, exclusions) &&
+        (mode === "substring" || tokenBoundariesOk(text, at, end))
+      ) {
+        if (earliest === -1 || at < earliest) earliest = at;
+        break;
+      }
+      from = at + 1;
     }
-    from = at + 1;
   }
+  return earliest;
 }
 
 /** Whether `rule` matches anywhere in `text`. `text` must be lowercased. */

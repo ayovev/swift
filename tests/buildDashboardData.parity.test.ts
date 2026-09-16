@@ -29,6 +29,7 @@ import { loadSampleRows } from "./fixtures/sampleRows";
  * Format: `[domain] YY-MM-DD|TITLE` then either a keyword change or a drop.
  */
 const EXPECTED_DIFF: readonly string[] = [
+  // --- substring false positives, corrected -------------------------------
   // "throw" is not a rower. Cardio still applies (the workout is "for time"),
   // but it is now reported on the keyword that genuinely matched.
   'KEYWORD [Cardiovascular/Respiratory Endurance] 24-09-09|THROW & SIT UP: "row" -> "for time"',
@@ -38,6 +39,26 @@ const EXPECTED_DIFF: readonly string[] = [
   // strength or balance work, so both tags correctly disappear.
   'DROPPED [Strength] 26-04-22|CARRYOVER (was "carry")',
   'DROPPED [Balance] 26-04-22|CARRYOVER (was "carry")',
+
+  // --- inflection: "carry" now reaches "carries" --------------------------
+  // KB carry accessory sessions. The reference missed these entirely for
+  // Balance, because "carries" is not a substring of "carry". These are the
+  // gap being closed, not a regression.
+  'ADDED [Balance] 23-12-04|Accessory: ("carry")',
+  'ADDED [Balance] 23-11-29|Accessory: ("carry")',
+  'ADDED [Balance] 23-11-27|Accessory: ("carry")',
+  'ADDED [Balance] 23-11-22|Accessory: ("carry")',
+  'ADDED [Balance] 23-11-20|Accessory: ("carry")',
+  'ADDED [Balance] 23-11-15|Accessory: ("carry")',
+  'ADDED [Balance] 23-11-13|Accessory: ("carry")',
+  // Same rows for Strength: already tagged, but "carry" sits earlier in the
+  // keyword list than the generic "accessory", so the reported reason gets
+  // more specific. The other three carry rows say "as heavy as possible",
+  // and "heavy" precedes "carry" in the list, so those are unchanged.
+  'KEYWORD [Strength] 23-12-04|Accessory:: "accessory" -> "carry"',
+  'KEYWORD [Strength] 23-11-27|Accessory:: "accessory" -> "carry"',
+  'KEYWORD [Strength] 23-11-20|Accessory:: "accessory" -> "carry"',
+  'KEYWORD [Strength] 23-11-13|Accessory:: "accessory" -> "carry"',
 ];
 
 /** Every difference between our workout_lists and the reference's. */
@@ -74,6 +95,8 @@ interface ReferenceShape {
 
 const ref = reference as unknown as ReferenceShape;
 const PCT_TOLERANCE = 0.1;
+/** Most workouts any single month/domain cell may gain or lose to a correction. */
+const MAX_MONTHLY_COUNT_SHIFT = 6;
 /** Guards against binary-float noise like 0.20000000000000284. */
 const EPS = 1e-9;
 
@@ -151,10 +174,11 @@ describe("parity — per-row domain classification across all 1,209 rows", () =>
     expect(diffWorkoutLists(actual, ref).sort()).toEqual([...EXPECTED_DIFF].sort());
   });
 
-  it("tags the same total number of workout/domain pairs, minus the two dropped", () => {
+  it("nets out at five more workout/domain pairs than the reference", () => {
+    // +7 Balance tags the reference missed on "carries", -2 bogus CARRYOVER tags.
     const mineTotal = DOMAIN_LIST.reduce((n, d) => n + actual.workout_lists[d].length, 0);
     const refTotal = DOMAIN_LIST.reduce((n, d) => n + (ref.workout_lists[d] ?? []).length, 0);
-    expect(mineTotal).toBe(refTotal - 2);
+    expect(mineTotal).toBe(refTotal + 5);
   });
 });
 
@@ -171,15 +195,22 @@ describe("parity — aggregates (percentages within ±0.1)", () => {
         if (!other) return;
         expect(point.month).toBe(other.month);
         expect(point.total, `${domain} ${point.month} total`).toBe(other.total);
-        // Counts differ only where a correction applies.
-        expect(
-          Math.abs(point.count - other.count),
-          `${domain} ${point.month} count`
-        ).toBeLessThanOrEqual(1);
+        // Counts differ only where a correction applies. The carry additions
+        // cluster in Nov 2023 (six of the seven).
+        const countShift = Math.abs(point.count - other.count);
+        expect(countShift, `${domain} ${point.month} count`).toBeLessThanOrEqual(
+          MAX_MONTHLY_COUNT_SHIFT
+        );
+        // Allow exactly the percentage movement THIS cell's own count change
+        // explains, and no more — so a month that gained six workouts may move
+        // a lot, while every untouched month is still held to the rounding
+        // tolerance. A blanket allowance would hide a real regression.
         expect(
           Math.abs(point.pct - other.pct),
           `${domain} ${point.month} pct`
-        ).toBeLessThanOrEqual(PCT_TOLERANCE + 1e-9 + (100 * 1) / Math.max(other.total, 1));
+        ).toBeLessThanOrEqual(
+          PCT_TOLERANCE + 1e-9 + (100 * countShift) / Math.max(other.total, 1)
+        );
       });
     }
   });
@@ -189,10 +220,15 @@ describe("parity — aggregates (percentages within ±0.1)", () => {
       const other = ref.overall[domain];
       expect(other).toBeDefined();
       if (!other) continue;
-      // Only the corrected rows move a count, and each moves it by one.
-      expect(Math.abs(actual.overall[domain].count - other.count)).toBeLessThanOrEqual(1);
-      expect(Math.abs(actual.overall[domain].pct - other.pct)).toBeLessThanOrEqual(
-        PCT_TOLERANCE + 0.1 + EPS
+      // Only corrected rows move a count: +7 Balance, -1 Strength, -1 Balance.
+      const countShift = Math.abs(actual.overall[domain].count - other.count);
+      expect(countShift, `${domain} overall count`).toBeLessThanOrEqual(7);
+      // Same self-scaling rule as the monthly cells.
+      expect(
+        Math.abs(actual.overall[domain].pct - other.pct),
+        `${domain} overall pct`
+      ).toBeLessThanOrEqual(
+        PCT_TOLERANCE + (100 * countShift) / actual.summary.total_logged + EPS
       );
     }
   });
@@ -210,7 +246,10 @@ describe("parity — aggregates (percentages within ±0.1)", () => {
       for (const domain of DOMAIN_LIST) {
         const a = row[domain] as number;
         const b = other[domain] as number;
-        expect(Math.abs(a - b), `${domain} ${String(row.month)}`).toBeLessThanOrEqual(1.5);
+        // Stacked shares divide by TOTAL TAGS, so adding Balance tags in one
+        // month shifts every other domain's share in that month too. Measured
+        // maximum across all 47 months is 5.5 points, in Nov 2023.
+        expect(Math.abs(a - b), `${domain} ${String(row.month)}`).toBeLessThanOrEqual(6);
       }
     });
   });
@@ -225,9 +264,13 @@ describe("parity — aggregates (percentages within ±0.1)", () => {
     //   3. pandas' unstable quicksort orders same-date workouts arbitrarily,
     //      so one workout can fall on the other side of the early/late
     //      midpoint — worth ~0.17 on a ~600-workout half.
+    //   4. the seven Balance tags the reference missed on "carries", all of
+    //      which land in the early half.
     // A real regression would move these by whole points, not tenths.
-    const EARLY_LATE_BOUND = 0.2;
-    const DELTA_BOUND = 0.4;
+    // Measured maxima. Balance is the outlier: all seven carry additions fall
+    // in the early half (Nov-Dec 2023), worth 1.1 points there.
+    const EARLY_LATE_BOUND = 1.2;
+    const DELTA_BOUND = 1.5;
 
     for (const domain of DOMAIN_LIST) {
       const other = ref.trend_direction[domain];

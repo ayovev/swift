@@ -114,10 +114,9 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { phrase: "sandbag", modality: "W", label: "Sandbag" },
   { phrase: "sled", modality: "W", label: "Sled" },
   { phrase: "farmer", modality: "W", label: "Farmer carry" },
-  // "carry" and its irregular plural "carries" — the GPP keyword list only
-  // has "carry", so it misses "carries". The lexicon covers both.
+  // "carries" needs no separate entry: the shared matcher also searches the
+  // consonant+y -> i stem, so "carry" reaches carries/carried. See matcher.ts.
   { phrase: "carry", modality: "W", label: "Loaded carry", exclude: ["carryover"] },
-  { phrase: "carries", modality: "W", label: "Loaded carry" },
   { phrase: "step-over", modality: "W", label: "Box step-over" },
   { phrase: "step-up", modality: "W", label: "Box step-up" },
   { phrase: "devil press", modality: "W", label: "Devil press" },
