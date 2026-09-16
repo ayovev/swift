@@ -119,6 +119,7 @@ describe("analytics — event payloads carry no workout content", () => {
     });
     capture({ name: "tab_viewed", props: { tab: "Strength", source: "upload" } });
     capture({ name: "theme_changed", props: { mode: "dark", accent: "amber" } });
+    capture({ name: "date_range_changed", props: { preset: "last_3_months" } });
 
     // Cross-check every payload against real content from the sample export:
     // workout titles, descriptions and athlete notes must appear nowhere.

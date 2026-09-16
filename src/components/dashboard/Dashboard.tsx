@@ -5,11 +5,13 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { AccentPicker } from "@/components/theme/AccentPicker";
 import { ModeToggle } from "@/components/theme/ModeToggle";
 import { SwiftMark } from "@/components/SwiftMark";
+import { DateRangePicker } from "./DateRangePicker";
 import { DomainTab } from "./DomainTab";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
 import { ALL_TABS, OVERVIEW_TAB, TabNav } from "./TabNav";
 import { formatDate } from "./charts/chartUtils";
+import type { DateRange } from "@/lib/analytics/dateRange";
 import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
@@ -19,6 +21,8 @@ import type { DataSource } from "@/App";
 interface DashboardProps {
   insights: Insights;
   source: DataSource;
+  range: DateRange | null;
+  onRangeChange: (range: DateRange | null) => void;
   onReset: () => void;
 }
 
@@ -34,7 +38,7 @@ function spanLabel(startIso: string, endIso: string): string {
   return `${years.toFixed(1)} years and counting`;
 }
 
-export function Dashboard({ insights, source, onReset }: DashboardProps) {
+export function Dashboard({ insights, source, range, onRangeChange, onReset }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   const { summary } = insights.dashboard;
 
@@ -67,7 +71,14 @@ export function Dashboard({ insights, source, onReset }: DashboardProps) {
       <header className="border-b border-border">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-4">
           <SwiftMark />
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {insights.dateBounds ? (
+              <DateRangePicker
+                dateBounds={insights.dateBounds}
+                value={range}
+                onChange={onRangeChange}
+              />
+            ) : null}
             <AccentPicker />
             <ModeToggle />
             <Button variant="outline" size="sm" onClick={onReset} className="h-8 gap-2">
@@ -84,8 +95,14 @@ export function Dashboard({ insights, source, onReset }: DashboardProps) {
             Your training log
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatDate(summary.date_start)} — {formatDate(summary.date_end)} ·{" "}
-            {spanLabel(summary.date_start, summary.date_end)}
+            {summary.total_logged > 0 ? (
+              <>
+                {formatDate(summary.date_start)} — {formatDate(summary.date_end)} ·{" "}
+                {spanLabel(summary.date_start, summary.date_end)}
+              </>
+            ) : (
+              "No workouts logged in this date range"
+            )}
           </p>
         </div>
 

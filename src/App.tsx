@@ -1,9 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Landing } from "@/components/landing/Landing";
-import { buildInsights, type Insights } from "@/lib/analytics/buildInsights";
+import { buildInsights } from "@/lib/analytics/buildInsights";
+import type { DateRange } from "@/lib/analytics/dateRange";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
+import type { SugarWodRow } from "@/types/sugarwod";
 
 export type DataSource = "upload" | "sample";
 
@@ -11,12 +13,18 @@ type AppState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; insights: Insights; source: DataSource };
+  | { status: "ready"; rows: SugarWodRow[]; source: DataSource };
 
 const SAMPLE_CSV_URL = "/sample/sugarwod-sample-export.csv";
 
 export default function App() {
   const [state, setState] = useState<AppState>({ status: "idle" });
+  const [range, setRange] = useState<DateRange | null>(null);
+
+  const insights = useMemo(
+    () => (state.status === "ready" ? buildInsights(state.rows, range) : null),
+    [state, range]
+  );
 
   const run = useCallback(async (source: DataSource, load: () => Promise<File | string>) => {
     setState({ status: "loading" });
@@ -26,7 +34,6 @@ export default function App() {
     try {
       const input = await load();
       const rows = await parseSugarWodCsv(input);
-      const insights = buildInsights(rows);
 
       capture({
         name: "upload_succeeded",
@@ -35,7 +42,8 @@ export default function App() {
           duration_bucket: bucketDuration(performance.now() - startedAt),
         },
       });
-      setState({ status: "ready", insights, source });
+      setRange(null);
+      setState({ status: "ready", rows, source });
     } catch (err) {
       const message =
         err instanceof CsvValidationError
@@ -70,10 +78,21 @@ export default function App() {
     [run]
   );
 
-  const reset = useCallback(() => setState({ status: "idle" }), []);
+  const reset = useCallback(() => {
+    setState({ status: "idle" });
+    setRange(null);
+  }, []);
 
-  if (state.status === "ready") {
-    return <Dashboard insights={state.insights} source={state.source} onReset={reset} />;
+  if (state.status === "ready" && insights) {
+    return (
+      <Dashboard
+        insights={insights}
+        source={state.source}
+        range={range}
+        onRangeChange={setRange}
+        onReset={reset}
+      />
+    );
   }
 
   return (
