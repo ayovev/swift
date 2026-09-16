@@ -1,5 +1,7 @@
 # Swift
 
+[![CI](https://github.com/ayovev/swift/actions/workflows/ci.yml/badge.svg)](https://github.com/ayovev/swift/actions/workflows/ci.yml)
+
 Swift turns a SugarWOD training-history CSV export into an interactive dashboard. You drop in the CSV your gym's training log gives you, and Swift reads back what years of workouts actually add up to: how consistently you showed up month over month, how your named lifts progressed, your history on named benchmark workouts, a timeline of logged PRs, how your training emphasis is spread across the ten CrossFit general physical skills (the GPP domains), and the proportional mix of metabolic conditioning, weightlifting and gymnastics work in your log. It is for an individual athlete who already has a SugarWOD export and wants to see the shape of their own training — there are no coach views, no multi-athlete comparisons, and nothing to set up.
 
 ## Privacy

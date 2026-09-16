@@ -1,0 +1,42 @@
+name: CI
+
+# Every branch, not just main: a working branch gets the same signal without
+# needing a PR open. Deliberately no `pull_request` trigger — with push covering
+# all branches it would run the same commit twice, and a push-triggered run
+# already reports as a check on the PR. (Fork PRs would need it; there are none.)
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# This job only reads the repo. Nothing here deploys or writes.
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '26'
+          cache: npm
+
+      # `ci`, not `install` — installs exactly package-lock.json and fails if it
+      # has drifted from package.json. npm only; never yarn or pnpm.
+      - run: npm ci
+
+      # `build` is `tsc -b && vite build`, so this type-checks too. A separate
+      # `npm run typecheck` step would be the same compile twice.
+      - run: npm run build
+
+      # The whole suite, jsdom. No secrets, no network, no Python: the sample
+      # export and the parity fixture are both committed. Runs from the repo
+      # root because tests/fixtures/sampleRows.ts resolves from process.cwd().
+      - run: npm test
