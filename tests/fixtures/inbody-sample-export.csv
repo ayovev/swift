@@ -1,0 +1,7 @@
+date,Measurement device.,Weight(lb),Skeletal Muscle Mass(lb),Soft Lean Mass(lb),Body Fat Mass(lb),BMI(kg/m²),Percent Body Fat(%),Basal Metabolic Rate(kJ),InBody Score,Right Arm Lean Mass(lb),Left Arm Lean Mass(lb),Trunk Lean Mass(lb),Right Leg Lean Mass(lb),Left leg Lean Mass(lb),Right Arm Fat Mass(lb),Left Arm Fat Mass(lb),Trunk Fat Mass(lb),Right Leg Fat Mass(lb),Left Leg Fat Mass(lb),Right Arm ECW Ratio,Left Arm ECW Ratio,Trunk ECW Ratio,Right Leg ECW Ratio,Left Leg ECW Ratio,Waist Hip Ratio,Waist Circumference(inch),Visceral Fat Area(cm²),Visceral Fat Level(Level),Total Body Water(lb),Intracellular Water(lb),Extracellular Water(lb),ECW Ratio,Upper-Lower,Upper,Lower,Leg Muscle Level(Level),Leg Lean Mass(lb),Protein(lb),Mineral(lb),Bone Mineral Content(lb),Body Cell Mass(lb),SMI(kg/m²),Whole Body Phase Angle(°)
+20260701093000,570,180.2,88.5,-,20.1,24.6,11.2,7820,88,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-
+20260401093000,570,182.0,87.9,-,21.4,24.9,11.8,7790,87,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-
+20260101093000,570,184.5,87.0,-,23.0,25.3,12.5,7750,86,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-
+20251001093000,570,186.0,86.2,-,24.5,25.7,13.2,7710,85,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-
+20250701093000,570,188.0,85.0,-,26.0,26.1,13.8,7670,84,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-
+

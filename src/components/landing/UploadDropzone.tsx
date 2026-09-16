@@ -5,10 +5,21 @@ import { cn } from "@/lib/utils";
 interface UploadDropzoneProps {
   loading: boolean;
   onFile: (file: File) => void;
+  ariaLabel?: string;
+  loadingLabel?: string;
+  loadingHint?: string;
+  hint?: string;
 }
 
 /** Drag-and-drop or click-to-browse CSV input. */
-export function UploadDropzone({ loading, onFile }: UploadDropzoneProps) {
+export function UploadDropzone({
+  loading,
+  onFile,
+  ariaLabel = "Upload your SugarWOD CSV export",
+  loadingLabel = "Reading your training history…",
+  loadingHint = "Four years of workouts takes a second or two.",
+  hint = "The .csv file SugarWOD gives you from Export Workouts",
+}: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
 
@@ -44,7 +55,7 @@ export function UploadDropzone({ loading, onFile }: UploadDropzoneProps) {
       }}
       role="button"
       tabIndex={0}
-      aria-label="Upload your SugarWOD CSV export"
+      aria-label={ariaLabel}
       aria-busy={loading}
       className={cn(
         "group relative flex w-full cursor-pointer flex-col items-center justify-center gap-3",
@@ -58,10 +69,8 @@ export function UploadDropzone({ loading, onFile }: UploadDropzoneProps) {
       {loading ? (
         <>
           <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
-          <p className="text-sm font-medium">Reading your training history…</p>
-          <p className="text-xs text-muted-foreground">
-            Four years of workouts takes a second or two.
-          </p>
+          <p className="text-sm font-medium">{loadingLabel}</p>
+          <p className="text-xs text-muted-foreground">{loadingHint}</p>
         </>
       ) : (
         <>
@@ -72,9 +81,7 @@ export function UploadDropzone({ loading, onFile }: UploadDropzoneProps) {
           <p className="text-sm font-medium">
             Drop your CSV here, or <span className="text-accent-link underline underline-offset-4">browse</span>
           </p>
-          <p className="text-xs text-muted-foreground">
-            The .csv file SugarWOD gives you from Export Workouts
-          </p>
+          <p className="text-xs text-muted-foreground">{hint}</p>
         </>
       )}
 

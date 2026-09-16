@@ -1,10 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
+import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Landing } from "@/components/landing/Landing";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import type { DateRange } from "@/lib/analytics/dateRange";
 import type { Granularity } from "@/lib/analytics/granularity";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
+import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
 import type { SugarWodRow } from "@/types/sugarwod";
 
@@ -22,6 +24,7 @@ export default function App() {
   const [state, setState] = useState<AppState>({ status: "idle" });
   const [range, setRange] = useState<DateRange | null>(null);
   const [granularity, setGranularity] = useState<Granularity>("monthly");
+  const [bodyComp, setBodyComp] = useState<BodyCompState>({ status: "idle" });
 
   const insights = useMemo(
     () => (state.status === "ready" ? buildInsights(state.rows, range, granularity) : null),
@@ -68,6 +71,26 @@ export default function App() {
     [run]
   );
 
+  // A wholly separate upload, independent of the SugarWOD flow above: its own
+  // state, its own parser, never joined to `state.rows`. See BodyCompTab.
+  const handleBodyCompFile = useCallback((file: File) => {
+    setBodyComp({ status: "loading" });
+    void (async () => {
+      try {
+        const rows = await parseInBodyCsv(file);
+        setBodyComp({ status: "ready", rows });
+      } catch (err) {
+        const message =
+          err instanceof CsvValidationError
+            ? err.message
+            : err instanceof Error
+              ? `Something went wrong reading that file: ${err.message}`
+              : "Something went wrong reading that file.";
+        setBodyComp({ status: "error", message });
+      }
+    })();
+  }, []);
+
   const handleSample = useCallback(
     () =>
       void run("sample", async () => {
@@ -85,6 +108,7 @@ export default function App() {
     setState({ status: "idle" });
     setRange(null);
     setGranularity("monthly");
+    setBodyComp({ status: "idle" });
   }, []);
 
   if (state.status === "ready" && insights) {
@@ -97,6 +121,8 @@ export default function App() {
         granularity={granularity}
         onGranularityChange={setGranularity}
         onReset={reset}
+        bodyComp={bodyComp}
+        onBodyCompFile={handleBodyCompFile}
       />
     );
   }
