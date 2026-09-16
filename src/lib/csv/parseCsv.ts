@@ -26,6 +26,29 @@ export class CsvValidationError extends Error {
 /** A date cell SugarWOD writes as MM/DD/YYYY. Cheap shape check only. */
 const DATE_SHAPE = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
 
+const EMPTY_MESSAGE = "That file is empty — there's nothing in it to read.";
+
+/**
+ * PapaParse's own error text is written for developers ("Unable to auto-detect
+ * delimiting character; defaulted to ','"), which is not something to show an
+ * athlete who just picked the wrong file. Map the codes we can anticipate to
+ * plain language and fall back to a generic sentence rather than leaking
+ * parser internals into the UI.
+ */
+function plainParseMessage(error: Papa.ParseError | undefined): string {
+  switch (error?.code) {
+    case "UndetectableDelimiter":
+      return "That file doesn't look like a CSV — Swift couldn't find any columns in it.";
+    case "TooFewFields":
+    case "TooManyFields":
+      return "That CSV's rows don't all have the same number of columns, so it can't be read reliably.";
+    case "MissingQuotes":
+      return "That CSV has an unclosed quote in it, so it can't be read reliably.";
+    default:
+      return "Swift couldn't read that file as a CSV. Re-export it from SugarWOD and try again.";
+  }
+}
+
 function validate(
   rows: SugarWodRow[],
   fields: readonly string[]
@@ -78,12 +101,15 @@ export function parseSugarWodCsv(input: File | string): Promise<SugarWodRow[]> {
         // PapaParse reports recoverable quirks (a short row, a stray quote)
         // as errors. Only give up when nothing parsed at all; otherwise a
         // single odd line would reject an otherwise-fine 1,200-row export.
-        if (results.data.length === 0 && results.errors.length > 0) {
-          const [first] = results.errors;
-          throw new CsvValidationError(
-            "malformed",
-            `Couldn't read that CSV${first ? `: ${first.message}` : "."}`
-          );
+        if (results.data.length === 0) {
+          const fields = results.meta.fields ?? [];
+          // No rows AND no header means there was nothing there at all.
+          if (fields.length === 0) {
+            throw new CsvValidationError(
+              results.errors.length > 0 ? "malformed" : "empty",
+              results.errors.length > 0 ? plainParseMessage(results.errors[0]) : EMPTY_MESSAGE
+            );
+          }
         }
         resolve(validate(results.data, results.meta.fields ?? []));
       } catch (err) {
@@ -92,7 +118,18 @@ export function parseSugarWodCsv(input: File | string): Promise<SugarWodRow[]> {
     };
 
     if (typeof input === "string") {
+      if (input.trim() === "") {
+        reject(new CsvValidationError("empty", EMPTY_MESSAGE));
+        return;
+      }
       handle(Papa.parse<SugarWodRow>(input, config));
+      return;
+    }
+
+    // A zero-byte file never reaches the parser — checking size up front gives
+    // a straight answer instead of a delimiter-detection complaint.
+    if (input.size === 0) {
+      reject(new CsvValidationError("empty", EMPTY_MESSAGE));
       return;
     }
 
