@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { CartesianGrid, Scatter, ScatterChart, XAxis, YAxis, ZAxis } from "recharts";
+import type { TooltipContentProps } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { REP_MAX_BUCKET_LABELS, repMaxBucket } from "@/lib/analytics/repMax";
 import { AXIS_PROPS, NUM_AXIS_WIDTH, formatDate } from "./chartUtils";
@@ -71,23 +72,33 @@ export function LiftChart({ liftName, entries }: { liftName: string; entries: Li
           />
           <ZAxis range={[36, 36]} />
           <ChartTooltip
-            content={
-              <ChartTooltipContent
-                hideLabel
-                formatter={(_value, _name, item) => {
-                  const p = item?.payload as (typeof data)[number] | undefined;
-                  if (!p) return null;
-                  return (
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-medium tabular">{p.value.toLocaleString()}</span>
-                      <span className="text-muted-foreground">{formatDate(p.date)}</span>
-                      <span className="text-muted-foreground">{p.scheme}</span>
-                      {p.pr ? <span className="text-accent-link">Personal record</span> : null}
-                    </div>
-                  );
-                }}
-              />
-            }
+            content={({ active, payload, label }: TooltipContentProps) => {
+              // A Scatter point reports two tooltip payload entries, one for
+              // its x value and one for its y value (Recharts always splits
+              // them this way), both carrying the same row as `.payload`.
+              // Keep only the y entry or the row renders twice.
+              const filtered = payload.filter((item) => item.dataKey === "value");
+              return (
+                <ChartTooltipContent
+                  active={active}
+                  payload={filtered}
+                  label={label}
+                  hideLabel
+                  formatter={(_value, _name, item) => {
+                    const p = item?.payload as (typeof data)[number] | undefined;
+                    if (!p) return null;
+                    return (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium tabular">{p.value.toLocaleString()}</span>
+                        <span className="text-muted-foreground">{formatDate(p.date)}</span>
+                        <span className="text-muted-foreground">{p.scheme}</span>
+                        {p.pr ? <span className="text-accent-link">Personal record</span> : null}
+                      </div>
+                    );
+                  }}
+                />
+              );
+            }}
           />
           <Scatter data={data} fill="var(--primary)" fillOpacity={0.75} />
         </ScatterChart>
