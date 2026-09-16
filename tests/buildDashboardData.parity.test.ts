@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildDashboardData } from "@/lib/analytics/buildDashboardData";
-import { DOMAIN_LIST, type DashboardData, type Domain } from "@/types/dashboard";
+import { DOMAIN_LIST, type DashboardData } from "@/types/dashboard";
 import reference from "./fixtures/python_reference_output.json" with { type: "json" };
 import { loadSampleRows } from "./fixtures/sampleRows";
 
