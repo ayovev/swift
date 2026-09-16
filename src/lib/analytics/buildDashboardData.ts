@@ -3,17 +3,18 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import { classifyWithReasons } from "@/lib/classify/domainKeywords";
 import { classifiableText } from "@/lib/classify/matcher";
 import { parseRepMax } from "./repMax";
+import { bucketKey, type Granularity } from "./granularity";
 import { DOMAIN_LIST } from "@/types/dashboard";
 import type {
   BenchmarkEntry,
+  BucketCount,
   DashboardData,
   Domain,
   DomainTrendPoint,
   LiftEntry,
-  MonthlyCount,
   OverallDomainStat,
   PrTimelineEntry,
-  StackedMonthlyShare,
+  StackedBucketShare,
   SugarWodRow,
   TrendDirectionStat,
   WorkoutListEntry,
@@ -67,21 +68,21 @@ export interface ParsedRow {
   text: string;
   domainHits: Partial<Record<Domain, string>>;
   domains: Set<Domain>;
-  /** YYYY-MM */
-  ym: string;
+  /** The row's aggregation bucket key, shaped by the selected granularity (default "YYYY-MM"). */
+  bucket: string;
 }
 
 /**
  * Parse, classify, and sort rows oldest-first. Exported because the modality
  * pipeline consumes the same parsed rows rather than re-parsing the file.
  */
-export function parseRows(rows: SugarWodRow[]): ParsedRow[] {
+export function parseRows(rows: SugarWodRow[], granularity: Granularity = "monthly"): ParsedRow[] {
   const parsed: ParsedRow[] = [];
 
   for (const raw of rows) {
     const dateParsed = parseDate(raw.date ?? "");
     // parseCsv already dropped undated rows; skip defensively rather than
-    // letting one bad cell produce NaN months downstream.
+    // letting one bad cell produce NaN buckets downstream.
     if (!dateParsed.isValid()) continue;
 
     const text = classifiableText(raw);
@@ -94,7 +95,7 @@ export function parseRows(rows: SugarWodRow[]): ParsedRow[] {
       text,
       domainHits,
       domains: new Set(Object.keys(domainHits) as Domain[]),
-      ym: dateParsed.format("YYYY-MM"),
+      bucket: bucketKey(dateParsed, granularity),
     });
   }
 
@@ -102,8 +103,11 @@ export function parseRows(rows: SugarWodRow[]): ParsedRow[] {
   return parsed;
 }
 
-export function buildDashboardData(rows: SugarWodRow[]): DashboardData {
-  const df = parseRows(rows);
+export function buildDashboardData(
+  rows: SugarWodRow[],
+  granularity: Granularity = "monthly"
+): DashboardData {
+  const df = parseRows(rows, granularity);
   return buildFromParsedRows(df);
 }
 
@@ -120,7 +124,7 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
     total_prs: df.filter((r) => r.raw.pr === "PR").length,
     rx_count: df.filter((r) => r.raw.rx_or_scaled === "RX").length,
     scaled_count: df.filter((r) => r.raw.rx_or_scaled === "SCALED").length,
-    avg_per_month: 0, // filled in once months are known
+    avg_per_bucket: 0, // filled in once buckets are known
   };
 
   // --- lifts: Load-scored barbell entries with enough history to plot ---
@@ -153,16 +157,16 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
     }));
   }
 
-  // --- monthly counts ---
-  const monthlyMap = new Map<string, number>();
-  for (const r of df) monthlyMap.set(r.ym, (monthlyMap.get(r.ym) ?? 0) + 1);
-  const monthly: MonthlyCount[] = [...monthlyMap.entries()].map(([month, count]) => ({
-    month,
+  // --- bucket counts ---
+  const bucketMap = new Map<string, number>();
+  for (const r of df) bucketMap.set(r.bucket, (bucketMap.get(r.bucket) ?? 0) + 1);
+  const buckets: BucketCount[] = [...bucketMap.entries()].map(([bucket, count]) => ({
+    bucket,
     count,
   }));
-  const allMonths = [...monthlyMap.keys()].sort();
-  summary.avg_per_month =
-    allMonths.length > 0 ? Math.round((totalWorkouts / allMonths.length) * 10) / 10 : 0;
+  const allBuckets = [...bucketMap.keys()].sort();
+  summary.avg_per_bucket =
+    allBuckets.length > 0 ? Math.round((totalWorkouts / allBuckets.length) * 10) / 10 : 0;
 
   // --- PR timeline ---
   const pr_timeline: PrTimelineEntry[] = df
@@ -174,22 +178,23 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
       barbell_lift: r.raw.barbell_lift || null,
     }));
 
-  // --- per-domain monthly trend ---
-  // Group once rather than re-filtering the whole set per domain per month;
-  // at 1,200 rows x 10 domains x ~47 months the naive version is noticeably slow.
-  const byMonth = new Map<string, ParsedRow[]>();
+  // --- per-domain trend, one point per bucket ---
+  // Group once rather than re-filtering the whole set per domain per bucket;
+  // at 1,200 rows x 10 domains x ~47 monthly buckets the naive version is
+  // noticeably slow (and worse at daily/weekly granularity).
+  const byBucket = new Map<string, ParsedRow[]>();
   for (const r of df) {
-    const bucket = byMonth.get(r.ym);
-    if (bucket) bucket.push(r);
-    else byMonth.set(r.ym, [r]);
+    const group = byBucket.get(r.bucket);
+    if (group) group.push(r);
+    else byBucket.set(r.bucket, [r]);
   }
 
   const domain_trends = {} as Record<Domain, DomainTrendPoint[]>;
   for (const domain of DOMAIN_LIST) {
-    domain_trends[domain] = allMonths.map((month) => {
-      const group = byMonth.get(month) ?? [];
+    domain_trends[domain] = allBuckets.map((bucket) => {
+      const group = byBucket.get(bucket) ?? [];
       const count = group.filter((r) => r.domains.has(domain)).length;
-      return { month, count, pct: pct1(count, group.length), total: group.length };
+      return { bucket, count, pct: pct1(count, group.length), total: group.length };
     });
   }
 
@@ -227,13 +232,13 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
     }
   }
 
-  // --- normalized monthly domain shares (sums to 100 per month) ---
+  // --- normalized per-bucket domain shares (sums to 100 per bucket) ---
   // Deliberately NOT the same as domain_trends[d].pct: domains overlap, so
   // those sum to ~300%. This view divides by total tags, not total workouts.
-  const monthly_shares: StackedMonthlyShare[] = allMonths.map((month, i) => {
+  const bucket_shares: StackedBucketShare[] = allBuckets.map((bucket, i) => {
     const counts = DOMAIN_LIST.map((d) => domain_trends[d][i]?.count ?? 0);
     const totalTags = counts.reduce((sum, c) => sum + c, 0);
-    const row: StackedMonthlyShare = { month };
+    const row: StackedBucketShare = { bucket };
     DOMAIN_LIST.forEach((d, di) => {
       row[d] = pct1(counts[di] ?? 0, totalTags);
     });
@@ -244,12 +249,12 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
     summary,
     lifts,
     benchmarks,
-    monthly,
+    buckets,
     pr_timeline,
     domain_trends,
     overall,
     trend_direction,
     workout_lists,
-    stacked: { domain_names: DOMAIN_LIST, monthly_shares },
+    stacked: { domain_names: DOMAIN_LIST, bucket_shares },
   };
 }

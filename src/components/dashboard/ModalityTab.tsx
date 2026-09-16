@@ -3,6 +3,7 @@ import { ShareAreaChart } from "./charts/ShareAreaChart";
 import { modalityColor } from "./charts/chartUtils";
 import { TrendStat } from "./TrendStat";
 import { WorkoutList } from "./WorkoutList";
+import { GRANULARITY_NOUN, granularityLabel, type Granularity } from "@/lib/analytics/granularity";
 import {
   MODALITY_BLURBS,
   MODALITY_NAMES,
@@ -15,7 +16,15 @@ import {
  * something different: a domain is a yes/no tag, a modality is a proportion of
  * each workout, so these are average shares rather than counts.
  */
-export function ModalityTab({ modality, data }: { modality: Modality; data: ModalityData }) {
+export function ModalityTab({
+  modality,
+  data,
+  granularity,
+}: {
+  modality: Modality;
+  data: ModalityData;
+  granularity: Granularity;
+}) {
   const trend = data.modality_trends[modality];
   const direction = data.modality_trend_direction[modality];
   const overall = data.modality_overall[modality];
@@ -49,14 +58,17 @@ export function ModalityTab({ modality, data }: { modality: Modality; data: Moda
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Share of training, month by month</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Share of training, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <ShareAreaChart
-            data={trend.map((p) => ({ month: p.month, value: p.avg_share }))}
+            data={trend.map((p) => ({ bucket: p.bucket, value: p.avg_share }))}
             color={modalityColor(modality)}
             seriesLabel={name}
-            label={`Monthly average share of training spent on ${name}`}
+            label={`${granularityLabel(granularity)} average share of training spent on ${name}`}
+            granularity={granularity}
           />
         </CardContent>
       </Card>

@@ -3,10 +3,10 @@ import { MODALITY_LIST } from "@/types/modality";
 import type { ParsedRow } from "./buildDashboardData";
 import type {
   Modality,
+  ModalityBucketShare,
   ModalityClassification,
   ModalityData,
   ModalityOverallStat,
-  ModalityStackedShare,
   ModalityTrendDirectionStat,
   ModalityTrendPoint,
   ModalityWorkoutEntry,
@@ -47,21 +47,21 @@ export function buildModalityData(parsedRows: readonly ParsedRow[]): ModalityDat
   const classified = all.filter((r) => r.modality.classified);
   const unclassified_count = all.length - classified.length;
 
-  // --- monthly trends -----------------------------------------------------
-  const byMonth = new Map<string, ClassifiedRow[]>();
+  // --- per-bucket trends ----------------------------------------------------
+  const byBucket = new Map<string, ClassifiedRow[]>();
   for (const r of classified) {
-    const bucket = byMonth.get(r.row.ym);
-    if (bucket) bucket.push(r);
-    else byMonth.set(r.row.ym, [r]);
+    const group = byBucket.get(r.row.bucket);
+    if (group) group.push(r);
+    else byBucket.set(r.row.bucket, [r]);
   }
-  const allMonths = [...byMonth.keys()].sort();
+  const allBuckets = [...byBucket.keys()].sort();
 
   const modality_trends = {} as Record<Modality, ModalityTrendPoint[]>;
   for (const m of MODALITY_LIST) {
-    modality_trends[m] = allMonths.map((month) => {
-      const group = byMonth.get(month) ?? [];
+    modality_trends[m] = allBuckets.map((bucket) => {
+      const group = byBucket.get(bucket) ?? [];
       return {
-        month,
+        bucket,
         avg_share: meanShare(group, m),
         count: group.filter((r) => r.modality.split[m] > 0).length,
         total: group.length,
@@ -106,18 +106,18 @@ export function buildModalityData(parsedRows: readonly ParsedRow[]): ModalityDat
       }));
   }
 
-  // --- normalized monthly stack ------------------------------------------
-  // Each workout's split already sums to 100, so the monthly means do too —
+  // --- normalized per-bucket stack -----------------------------------------
+  // Each workout's split already sums to 100, so the per-bucket means do too —
   // but independently rounded means can drift, so re-normalize for the chart.
-  const monthly_shares: ModalityStackedShare[] = allMonths.map((month) => {
-    const group = byMonth.get(month) ?? [];
+  const bucket_shares: ModalityBucketShare[] = allBuckets.map((bucket) => {
+    const group = byBucket.get(bucket) ?? [];
     const weights = { M: 0, W: 0, G: 0 } as Record<Modality, number>;
     for (const r of group) {
       for (const m of MODALITY_LIST) weights[m] += r.modality.split[m];
     }
     const total = MODALITY_LIST.reduce((n, m) => n + weights[m], 0);
     const shares = sharesTo100(weights, total);
-    return { month, M: shares.M, W: shares.W, G: shares.G };
+    return { bucket, M: shares.M, W: shares.W, G: shares.G };
   });
 
   return {
@@ -125,7 +125,7 @@ export function buildModalityData(parsedRows: readonly ParsedRow[]): ModalityDat
     modality_overall,
     modality_trend_direction,
     modality_workout_lists,
-    modality_stacked: { modality_names: MODALITY_LIST, monthly_shares },
+    modality_stacked: { modality_names: MODALITY_LIST, bucket_shares },
     unclassified_count,
     classified_count: classified.length,
   };

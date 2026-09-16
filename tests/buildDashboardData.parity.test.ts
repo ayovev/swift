@@ -162,7 +162,9 @@ describe("parity — lifts, benchmarks, PRs, months (exact)", () => {
   });
 
   it("produces identical monthly counts", () => {
-    expect(actual.monthly).toEqual(ref.monthly);
+    // actual.buckets uses the generic `bucket` key; remap to the reference's
+    // `month` field name for comparison, values and order unchanged.
+    expect(actual.buckets.map((b) => ({ month: b.bucket, count: b.count }))).toEqual(ref.monthly);
   });
 });
 
@@ -193,12 +195,12 @@ describe("parity — aggregates (percentages within ±0.1)", () => {
         const other = theirs[i];
         expect(other).toBeDefined();
         if (!other) return;
-        expect(point.month).toBe(other.month);
-        expect(point.total, `${domain} ${point.month} total`).toBe(other.total);
+        expect(point.bucket).toBe(other.month);
+        expect(point.total, `${domain} ${point.bucket} total`).toBe(other.total);
         // Counts differ only where a correction applies. The carry additions
         // cluster in Nov 2023 (six of the seven).
         const countShift = Math.abs(point.count - other.count);
-        expect(countShift, `${domain} ${point.month} count`).toBeLessThanOrEqual(
+        expect(countShift, `${domain} ${point.bucket} count`).toBeLessThanOrEqual(
           MAX_MONTHLY_COUNT_SHIFT
         );
         // Allow exactly the percentage movement THIS cell's own count change
@@ -207,7 +209,7 @@ describe("parity — aggregates (percentages within ±0.1)", () => {
         // tolerance. A blanket allowance would hide a real regression.
         expect(
           Math.abs(point.pct - other.pct),
-          `${domain} ${point.month} pct`
+          `${domain} ${point.bucket} pct`
         ).toBeLessThanOrEqual(
           PCT_TOLERANCE + 1e-9 + (100 * countShift) / Math.max(other.total, 1)
         );
@@ -234,7 +236,7 @@ describe("parity — aggregates (percentages within ±0.1)", () => {
   });
 
   it("matches the normalized stacked monthly shares", () => {
-    const mine = actual.stacked.monthly_shares;
+    const mine = actual.stacked.bucket_shares;
     const theirs = ref.stacked.monthly_shares;
     expect(mine.length).toBe(theirs.length);
 
@@ -242,14 +244,14 @@ describe("parity — aggregates (percentages within ±0.1)", () => {
       const other = theirs[i];
       expect(other).toBeDefined();
       if (!other) return;
-      expect(row.month).toBe(other.month);
+      expect(row.bucket).toBe(other.month);
       for (const domain of DOMAIN_LIST) {
         const a = row[domain] as number;
         const b = other[domain] as number;
         // Stacked shares divide by TOTAL TAGS, so adding Balance tags in one
         // month shifts every other domain's share in that month too. Measured
         // maximum across all 47 months is 5.5 points, in Nov 2023.
-        expect(Math.abs(a - b), `${domain} ${String(row.month)}`).toBeLessThanOrEqual(6);
+        expect(Math.abs(a - b), `${domain} ${String(row.bucket)}`).toBeLessThanOrEqual(6);
       }
     });
   });

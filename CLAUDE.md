@@ -117,8 +117,13 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   GPP-classified exactly once and shared, because at ~1,200 rows doing it twice is the
   difference between comfortably inside the 5-second performance budget and not. Do not make
   `buildModalityData` re-parse the file, and do not add a second `parseRows()` call path.
-  Similarly, both aggregators pre-group rows by month into a `Map` rather than re-filtering
-  the full set per domain per month (10 domains × ~47 months is noticeably slow otherwise).
+  `parseRows()` also takes the selected `Granularity` (`granularity.ts`; daily/weekly/monthly/
+  quarterly/yearly, monthly by default) and bakes each row's aggregation bucket key into
+  `ParsedRow.bucket` once, up front — the aggregators below never see or choose a granularity
+  themselves, they just group by whatever `bucket` already says. Similarly, both aggregators
+  pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
+  bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
+  buckets are more numerous still).
 - **components**: `Dashboard.tsx` renders 14 tabs (`TabNav.tsx` → `ALL_TABS`). A single
   `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality tabs —
   they differ in data, not structure. `buildModalityData`'s output shape deliberately mirrors
@@ -127,8 +132,8 @@ a broadening rule must land only on genuine inflections, and it will move the pa
 Two things that look like the same idea but are not — don't unify them:
 
 - **The 10 GPP domains are independent, non-exclusive tags.** Most workouts hit three or
-  more, so `domain_trends[d].pct` (share of workouts in that month) sums to ~300% across
-  domains. `stacked.monthly_shares` is the separate normalized view that divides by *total
+  more, so `domain_trends[d].pct` (share of workouts in that bucket) sums to ~300% across
+  domains. `stacked.bucket_shares` is the separate normalized view that divides by *total
   tags*, not total workouts, so it sums to 100.
 - **The 3 modalities are a proportional split of one workout, summing to 100.** Each distinct
   movement contributes equal weight to its modality; `sharesTo100()` uses largest-remainder

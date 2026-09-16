@@ -79,8 +79,8 @@ export interface BenchmarkEntry {
   pr: boolean;
 }
 
-export interface MonthlyCount {
-  month: string;
+export interface BucketCount {
+  bucket: string;
   count: number;
 }
 
@@ -92,9 +92,9 @@ export interface PrTimelineEntry {
 }
 
 export interface DomainTrendPoint {
-  month: string;
+  bucket: string;
   count: number;
-  /** Share of THAT month's workouts touching this domain. Domains overlap, so
+  /** Share of THAT bucket's workouts touching this domain. Domains overlap, so
    *  these do not sum to 100 across domains — see `stacked` for that view. */
   pct: number;
   total: number;
@@ -114,14 +114,14 @@ export interface TrendDirectionStat {
 /** [date (YY-MM-DD), workout title, the keyword that triggered the match] */
 export type WorkoutListEntry = [date: string, title: string, matchedKeyword: string];
 
-export interface StackedMonthlyShare {
-  month: string;
+export interface StackedBucketShare {
+  bucket: string;
   [domain: string]: string | number;
 }
 
 export interface Stacked {
   domain_names: readonly Domain[];
-  monthly_shares: StackedMonthlyShare[];
+  bucket_shares: StackedBucketShare[];
 }
 
 export interface DashboardSummary {
@@ -132,14 +132,14 @@ export interface DashboardSummary {
   rx_count: number;
   scaled_count: number;
   /** ADDITIVE (not in the Python reference). */
-  avg_per_month: number;
+  avg_per_bucket: number;
 }
 
 export interface DashboardData {
   summary: DashboardSummary;
   lifts: Record<string, LiftEntry[]>;
   benchmarks: Record<string, BenchmarkEntry[]>;
-  monthly: MonthlyCount[];
+  buckets: BucketCount[];
   pr_timeline: PrTimelineEntry[];
   domain_trends: Record<Domain, DomainTrendPoint[]>;
   overall: Record<Domain, OverallDomainStat>;

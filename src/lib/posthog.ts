@@ -38,6 +38,10 @@ type SwiftEvent =
   | {
       name: "date_range_changed";
       props: { preset: "last_3_months" | "last_6_months" | "last_year" | "all_time" | "custom" };
+    }
+  | {
+      name: "granularity_changed";
+      props: { granularity: "daily" | "weekly" | "monthly" | "quarterly" | "yearly" };
     };
 
 let enabled = false;

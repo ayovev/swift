@@ -3,6 +3,7 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Landing } from "@/components/landing/Landing";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import type { DateRange } from "@/lib/analytics/dateRange";
+import type { Granularity } from "@/lib/analytics/granularity";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -20,10 +21,11 @@ const SAMPLE_CSV_URL = "/sample/sugarwod-sample-export.csv";
 export default function App() {
   const [state, setState] = useState<AppState>({ status: "idle" });
   const [range, setRange] = useState<DateRange | null>(null);
+  const [granularity, setGranularity] = useState<Granularity>("monthly");
 
   const insights = useMemo(
-    () => (state.status === "ready" ? buildInsights(state.rows, range) : null),
-    [state, range]
+    () => (state.status === "ready" ? buildInsights(state.rows, range, granularity) : null),
+    [state, range, granularity]
   );
 
   const run = useCallback(async (source: DataSource, load: () => Promise<File | string>) => {
@@ -43,6 +45,7 @@ export default function App() {
         },
       });
       setRange(null);
+      setGranularity("monthly");
       setState({ status: "ready", rows, source });
     } catch (err) {
       const message =
@@ -81,6 +84,7 @@ export default function App() {
   const reset = useCallback(() => {
     setState({ status: "idle" });
     setRange(null);
+    setGranularity("monthly");
   }, []);
 
   if (state.status === "ready" && insights) {
@@ -90,6 +94,8 @@ export default function App() {
         source={state.source}
         range={range}
         onRangeChange={setRange}
+        granularity={granularity}
+        onGranularityChange={setGranularity}
         onReset={reset}
       />
     );

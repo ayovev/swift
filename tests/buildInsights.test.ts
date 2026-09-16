@@ -79,3 +79,31 @@ describe("buildInsights — range filters both aggregators consistently", () => 
     expect(filtered.summary.total_logged).toBe(3);
   });
 });
+
+describe("buildInsights — granularity", () => {
+  it("defaults to monthly buckets when no granularity is passed", () => {
+    const { dashboard } = buildInsights(ROWS);
+    expect(dashboard.buckets.map((b) => b.bucket)).toEqual(["2025-01", "2025-06", "2025-12"]);
+  });
+
+  it("buckets daily when asked", () => {
+    const { dashboard } = buildInsights(ROWS, null, "daily");
+    expect(dashboard.buckets.map((b) => b.bucket)).toEqual([
+      "2025-01-05",
+      "2025-06-10",
+      "2025-12-20",
+    ]);
+  });
+
+  it("buckets yearly when asked, collapsing all three rows into one bucket", () => {
+    const { dashboard } = buildInsights(ROWS, null, "yearly");
+    expect(dashboard.buckets).toEqual([{ bucket: "2025", count: 3 }]);
+  });
+
+  it("produces matching bucket keys for both pipelines when every row classifies", () => {
+    const { dashboard, modality } = buildInsights(ROWS, null, "quarterly");
+    const domainBuckets = dashboard.stacked.bucket_shares.map((s) => s.bucket);
+    const modalityBuckets = modality.modality_stacked.bucket_shares.map((s) => s.bucket);
+    expect(modalityBuckets).toEqual(domainBuckets);
+  });
+});

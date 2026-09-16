@@ -7,7 +7,8 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { AXIS_PROPS, PCT_AXIS_WIDTH, formatMonth, monthTickInterval } from "./chartUtils";
+import { AXIS_PROPS, PCT_AXIS_WIDTH } from "./chartUtils";
+import { bucketTickInterval, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
 
 interface StackedShareChartProps {
   data: Record<string, string | number>[];
@@ -15,6 +16,7 @@ interface StackedShareChartProps {
   keys: readonly string[];
   config: ChartConfig;
   label: string;
+  granularity: Granularity;
   className?: string;
 }
 
@@ -28,15 +30,16 @@ export function StackedShareChart({
   keys,
   config,
   label,
+  granularity,
   className = "h-[300px] w-full min-w-0",
 }: StackedShareChartProps) {
-  const rows = data.map((d) => ({ ...d, label: formatMonth(String(d.month)) }));
+  const rows = data.map((d) => ({ ...d, label: formatBucketLabel(String(d.bucket), granularity) }));
 
   return (
     <ChartContainer config={config} className={className} role="img" aria-label={label}>
       <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} stackOffset="expand">
         <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey="label" interval={monthTickInterval(rows.length)} {...AXIS_PROPS} />
+        <XAxis dataKey="label" interval={bucketTickInterval(rows.length)} {...AXIS_PROPS} />
         <YAxis
           width={PCT_AXIS_WIDTH}
           tickFormatter={(v: number) => `${Math.round(v * 100)}%`}

@@ -1,13 +1,15 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, PCT_AXIS_WIDTH, formatMonth, monthTickInterval } from "./chartUtils";
+import { AXIS_PROPS, PCT_AXIS_WIDTH } from "./chartUtils";
+import { bucketTickInterval, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
 
 interface ShareAreaChartProps {
-  data: { month: string; value: number }[];
+  data: { bucket: string; value: number }[];
   color: string;
   label: string;
   /** Tooltip/axis wording — domains count workouts, modalities average shares. */
   seriesLabel: string;
+  granularity: Granularity;
 }
 
 /**
@@ -18,8 +20,8 @@ interface ShareAreaChartProps {
  * rarely exceeds a few percent, and a fixed domain renders it as a flat line
  * along the axis that says nothing.
  */
-export function ShareAreaChart({ data, color, label, seriesLabel }: ShareAreaChartProps) {
-  const rows = data.map((d) => ({ ...d, label: formatMonth(d.month) }));
+export function ShareAreaChart({ data, color, label, seriesLabel, granularity }: ShareAreaChartProps) {
+  const rows = data.map((d) => ({ ...d, label: formatBucketLabel(d.bucket, granularity) }));
   const peak = Math.max(10, ...rows.map((r) => r.value));
   const config: ChartConfig = { value: { label: seriesLabel, color } };
 
@@ -33,7 +35,7 @@ export function ShareAreaChart({ data, color, label, seriesLabel }: ShareAreaCha
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey="label" interval={monthTickInterval(rows.length)} {...AXIS_PROPS} />
+        <XAxis dataKey="label" interval={bucketTickInterval(rows.length)} {...AXIS_PROPS} />
         <YAxis
           width={PCT_AXIS_WIDTH}
           domain={[0, Math.ceil(peak / 10) * 10]}

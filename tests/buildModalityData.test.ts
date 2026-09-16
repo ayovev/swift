@@ -32,7 +32,7 @@ describe("buildModalityData — shape and invariants", () => {
       row("02/03/2025", "CINDY", "pull-ups, push-ups, air squats"),
     ]);
     for (const m of MODALITY_LIST) {
-      expect(data.modality_trends[m].map((p) => p.month)).toEqual(["2025-01", "2025-02"]);
+      expect(data.modality_trends[m].map((p) => p.bucket)).toEqual(["2025-01", "2025-02"]);
     }
   });
 
@@ -42,9 +42,9 @@ describe("buildModalityData — shape and invariants", () => {
       row("01/12/2025", "FRAN", "21-15-9 thrusters and pull-ups"),
       row("02/02/2025", "ROW", "5000m row"),
     ]);
-    for (const share of data.modality_stacked.monthly_shares) {
+    for (const share of data.modality_stacked.bucket_shares) {
       const sum = Math.round((share.M + share.W + share.G) * 10) / 10;
-      expect(sum, share.month).toBe(100);
+      expect(sum, share.bucket).toBe(100);
     }
   });
 
@@ -73,7 +73,7 @@ describe("buildModalityData — shape and invariants", () => {
   it("handles an entirely empty input", () => {
     const empty = build([]);
     expect(empty.classified_count).toBe(0);
-    expect(empty.modality_stacked.monthly_shares).toEqual([]);
+    expect(empty.modality_stacked.bucket_shares).toEqual([]);
   });
 });
 
@@ -141,9 +141,9 @@ describe("buildModalityData — against the real sample export", () => {
   });
 
   it("keeps every month's stack normalized across 47 months of real data", () => {
-    expect(data.modality_stacked.monthly_shares.length).toBeGreaterThan(40);
-    for (const share of data.modality_stacked.monthly_shares) {
-      expect(Math.round((share.M + share.W + share.G) * 10) / 10, share.month).toBe(100);
+    expect(data.modality_stacked.bucket_shares.length).toBeGreaterThan(40);
+    for (const share of data.modality_stacked.bucket_shares) {
+      expect(Math.round((share.M + share.W + share.G) * 10) / 10, share.bucket).toBe(100);
     }
   });
 
