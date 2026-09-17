@@ -29,13 +29,21 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
 
 ## Hard constraints — do not break these
 
-1. **No backend, no accounts, no persistence of training data.** Parsing, classification and
-   aggregation all run in the browser (`src/lib/csv/parseCsv.ts` reads a `File`/string; the
+1. **No backend, no accounts. Training data never leaves the browser.** Parsing, classification
+   and aggregation all run in the browser (`src/lib/csv/parseCsv.ts` reads a `File`/string; the
    pipeline is pure functions). **No training data may ever leave the browser.** There is no
    API layer to add one to, and this promise is the product. The only request that carries
    workout data is the app *downloading* its own bundled demo file
    (`public/sample/sugarwod-sample-export.csv`) in `src/App.tsx` — that's a download from our
    own origin, not an upload of anyone's log.
+
+   The one deliberate exception to "nothing persists" is still local-only: an athlete's
+   uploaded rows (SugarWOD and, separately, InBody) are cached in the browser's own IndexedDB
+   (`src/lib/storage/`) purely so a reload doesn't force a re-upload. It doesn't relax the rule
+   above — the data still never leaves the browser, and there is still no backend or account
+   behind it. `App.tsx`'s "Start over" control wipes it via `idbClearAll()`, and the bundled
+   sample file is deliberately never written to this store, so demo mode never leaves anything
+   behind. This does not extend to analytics — constraint 2 below is unaffected.
 2. **Analytics may only send closed-vocabulary usage events.** See `src/lib/posthog.ts`: the
    `SwiftEvent` union *is* the entire analytics surface, and it is deliberately narrow rather
    than `Record<string, unknown>`. Never add workout content, movement names, athlete notes,
