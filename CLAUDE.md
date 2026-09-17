@@ -236,6 +236,42 @@ and Recharts series pick it up with no per-component wiring.
   localStorage key from `useTheme.ts` to avoid a flash of the wrong mode. **Change both together.**
   Theme reads/writes are wrapped in try/catch — private browsing must never break the app.
 
+## Voice & personality
+
+The copy in this app reads like a training partner who's good with data, not a coach trying
+to motivate you. That's a deliberate stance, not an accident: the person exporting a SugarWOD
+CSV already tracks their own training and doesn't need to be sold on why it matters, so the
+UI never performs enthusiasm on their behalf. The landing page's own tagline is the whole
+thesis in one line: "Your training log, read back to you."
+
+- **State what's true; don't cheer for it.** `OverviewTab.tsx`'s stat labels ("workouts
+  logged", "personal records") and `HowItWorks.tsx`'s steps describe what happened in plain
+  terms, never "Great job!" or "You're crushing it." The numbers and charts do the motivating.
+- **Use the sport's own vocabulary, verbatim.** RX, Scaled, PR, the ten GPP domain names,
+  M/W/G — these come from CrossFit/SugarWOD and are never softened or renamed for
+  friendliness. See `DOMAIN_BLURBS`/`MODALITY_BLURBS` (`types/dashboard.ts`,
+  `types/modality.ts`) and the tab labels in `TabNav.tsx`.
+- **Plain language over clever language.** `plainParseMessage()` (`src/lib/csv/parseCsv.ts`)
+  set this precedent for errors; it applies everywhere else too — empty states, hints, button
+  labels. If a sentence needs a second read, rewrite it.
+- **No gamification affect.** No streaks, no badges, no confetti-toned copy, no exclamation
+  points as a default register. There are zero exclamation points in the app's UI copy today
+  ("`!important`" Tailwind modifiers in generated class strings don't count) — that's the bar.
+- **Respect the athlete's competence.** Don't explain CrossFit to CrossFitters, and don't
+  over-hedge a limitation — state it once and move on, the way `unclassified_count` is
+  surfaced honestly rather than apologized for (see Architecture: classify → analytics →
+  components above).
+- **Privacy is a stated fact, not a marketed feature.** "Your file never leaves this browser.
+  There's no account and no server." (`Landing.tsx`) is the model: plain declarative sentence,
+  no trust-badge styling, no "we take your privacy seriously."
+- **Errors are stated, not apologized for.** No "Oops," no "Sorry about that." A failure gets
+  a direct sentence naming what's wrong, per `plainParseMessage()` and `CsvValidationError`
+  messages in `parseCsv.ts`.
+
+This isn't a green light for a copy pass — the existing strings above already hold this line
+and don't need rewriting on this basis alone. Treat it as the filter new copy should pass
+through, not a backlog of fixes.
+
 ## Testing conventions
 
 - Tests live in `tests/`, Vitest with jsdom (`vite.config.ts`, `tests/setup.ts`); only
