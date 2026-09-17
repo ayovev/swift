@@ -132,9 +132,11 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 14 tabs (`TabNav.tsx` → `ALL_TABS`). A single
-  `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality tabs —
-  they differ in data, not structure. `buildModalityData`'s output shape deliberately mirrors
+- **components**: `Dashboard.tsx` renders 15 tabs (`TabNav.tsx` → `ALL_TABS`): Overview, the
+  ten GPP domains, the three modalities, and Body Comp. A single `DomainTab` drives all ten
+  domain tabs and a single `ModalityTab` all three modality tabs — they differ in data, not
+  structure. Body Comp is its own component (`BodyCompTab.tsx`), always present in the nav even
+  before any InBody data is loaded. `buildModalityData`'s output shape deliberately mirrors
   `buildDashboardData`'s so those two components stay near-identical; keep that symmetry.
 
 Two things that look like the same idea but are not — don't unify them:
@@ -205,9 +207,11 @@ This doesn't relax hard constraint #1 above — the cache is still local-only an
 ## Theming
 
 Black-and-white base in both modes, plus **one** user-selected accent — the only chromatic
-element in the UI. Every token in `src/index.css` is achromatic (chroma exactly 0); the accent
-arrives as CSS custom properties written to `:root` by `src/lib/theme/useTheme.ts`, so shadcn
-primitives, focus rings and Recharts series pick it up with no per-component wiring.
+element the athlete controls. Every token in `src/index.css` is achromatic (chroma exactly 0),
+with one fixed exception: `--destructive`, the error/delete-action red, which stays a constant
+semantic colour rather than deriving from the accent. The accent itself arrives as CSS custom
+properties written to `:root` by `src/lib/theme/useTheme.ts`, so shadcn primitives, focus rings
+and Recharts series pick it up with no per-component wiring.
 
 - A swatch in `ACCENT_SWATCHES` (`src/lib/theme/palette.ts`) is an **OKLCH hue + peak chroma**,
   not a list of hex values. `deriveRamp()` derives the 50–950 ramp from fixed perceptual

@@ -12,7 +12,7 @@ Swift has no backend, no database, and no accounts. The CSV is read through the 
 
 Your data does stick around locally, though: Swift caches your uploaded rows in the browser's own IndexedDB storage so closing the tab and coming back doesn't force a re-upload. That cache never leaves your browser — it's not transmitted or synced anywhere — and you clear it any time by clicking **Start over**, or by clearing your browser's site data yourself. The bundled sample export is never cached this way, so trying it out never leaves anything behind.
 
-The app does send anonymous product-usage events to PostHog (page opened, upload attempted / succeeded / failed, sample data used, tab viewed, theme changed) when a PostHog key is configured. Those payloads carry only fixed strings and coarse buckets — never workout text, filenames, row counts, or any identifier. `src/lib/posthog.ts` types the entire event surface deliberately narrowly so it stays that way, and `tests/analytics.test.ts` asserts it.
+The app does send anonymous product-usage events to PostHog (page opened, upload attempted / succeeded / failed, sample data used, tab viewed, theme changed, date range changed, granularity changed) when a PostHog key is configured. Those payloads carry only fixed strings and coarse buckets — never workout text, filenames, row counts, or any identifier. `src/lib/posthog.ts` types the entire event surface deliberately narrowly so it stays that way, and `tests/analytics.test.ts` asserts it.
 
 ## Quick start
 
@@ -69,7 +69,7 @@ scripts/             dev-only: regenerates the parity fixture (not part of the b
 - **`src/lib/analytics`** — `buildInsights.ts` is the entry point: rows are parsed and classified once, then `buildDashboardData.ts` (GPP domains, lifts, benchmarks, PRs, monthly counts) and `buildModalityData.ts` (M/W/G aggregates) both read the same parsed rows.
 - **`src/lib/theme`** — the base UI is black and white in matching light and dark modes; a single user-chosen accent colour is derived into a full 50–950 shade ramp so it holds contrast in both modes.
 - **`src/lib/storage`** — one IndexedDB database, one key per uploaded dataset; wraps the raw API so the rest of the app only ever calls typed save/load/clear functions.
-- **`src/components`** — `landing/` for the upload path and explainer, `dashboard/` for the Overview tab plus the ten per-domain and three per-modality tabs, `ui/` for the shadcn/ui primitives the rest builds on.
+- **`src/components`** — `landing/` for the upload path and explainer, `dashboard/` for the Overview tab, the ten per-domain and three per-modality tabs, and the independent Body Comp tab, `ui/` for the shadcn/ui primitives the rest builds on.
 
 Stack: Vite, React, TypeScript, Tailwind CSS, shadcn/ui, Recharts, PapaParse, dayjs. No plain `.js`/`.jsx` source files.
 
@@ -108,6 +108,9 @@ Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather t
 - `parseCsv.test.ts` — the failure paths and their plain-language messages.
 - `themeContrast.test.ts` — every accent swatch holds adequate contrast in both light and dark mode.
 - `analytics.test.ts` — analytics stays off without a key, and no event payload can carry workout content.
+- `idbStore.test.ts` — the generic IndexedDB primitives: get/set/delete/clear round trips, isolated per test with a `fake-indexeddb` polyfill since jsdom has no native IndexedDB.
+- `workoutStorage.test.ts` / `bodyCompStorage.test.ts` — save/load/clear round trips for each persisted dataset, using real parsed rows.
+- `App.test.tsx` — the app shell end to end: restoring persisted data on mount, persisting a fresh upload, and "Start over" actually clearing storage rather than just the in-memory view.
 
 `scripts/generate_parity_fixture.py` regenerated the Python reference fixture once, against the proof-of-concept implementation. It is dev-only and never bundled; the committed fixture means the test suite needs no Python.
 
