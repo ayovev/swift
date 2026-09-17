@@ -29,13 +29,21 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
 
 ## Hard constraints — do not break these
 
-1. **No backend, no accounts, no persistence of training data.** Parsing, classification and
-   aggregation all run in the browser (`src/lib/csv/parseCsv.ts` reads a `File`/string; the
+1. **No backend, no accounts. Training data never leaves the browser.** Parsing, classification
+   and aggregation all run in the browser (`src/lib/csv/parseCsv.ts` reads a `File`/string; the
    pipeline is pure functions). **No training data may ever leave the browser.** There is no
    API layer to add one to, and this promise is the product. The only request that carries
    workout data is the app *downloading* its own bundled demo file
    (`public/sample/sugarwod-sample-export.csv`) in `src/App.tsx` — that's a download from our
    own origin, not an upload of anyone's log.
+
+   The one deliberate exception to "nothing persists" is still local-only: an athlete's
+   uploaded rows (SugarWOD and, separately, InBody) are cached in the browser's own IndexedDB
+   (`src/lib/storage/`) purely so a reload doesn't force a re-upload. It doesn't relax the rule
+   above — the data still never leaves the browser, and there is still no backend or account
+   behind it. `App.tsx`'s "Start over" control wipes it via `idbClearAll()`, and the bundled
+   sample file is deliberately never written to this store, so demo mode never leaves anything
+   behind. This does not extend to analytics — constraint 2 below is unaffected.
 2. **Analytics may only send closed-vocabulary usage events.** See `src/lib/posthog.ts`: the
    `SwiftEvent` union *is* the entire analytics surface, and it is deliberately narrow rather
    than `Record<string, unknown>`. Never add workout content, movement names, athlete notes,
@@ -124,9 +132,11 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 14 tabs (`TabNav.tsx` → `ALL_TABS`). A single
-  `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality tabs —
-  they differ in data, not structure. `buildModalityData`'s output shape deliberately mirrors
+- **components**: `Dashboard.tsx` renders 15 tabs (`TabNav.tsx` → `ALL_TABS`): Overview, the
+  ten GPP domains, the three modalities, and Body Comp. A single `DomainTab` drives all ten
+  domain tabs and a single `ModalityTab` all three modality tabs — they differ in data, not
+  structure. Body Comp is its own component (`BodyCompTab.tsx`), always present in the nav even
+  before any InBody data is loaded. `buildModalityData`'s output shape deliberately mirrors
   `buildDashboardData`'s so those two components stay near-identical; keep that symmetry.
 
 Two things that look like the same idea but are not — don't unify them:
@@ -160,12 +170,48 @@ though it cannot change *whether* the domain matched.
 `repMax.ts` parses rep-max notation out of lift titles; it is additive to the Python
 reference, so the parity test strips it before comparing lift series.
 
+## Architecture: app state and local persistence
+
+`src/App.tsx` owns two independent state machines — `AppState` (SugarWOD rows) and
+`BodyCompState` (InBody rows, from `BodyCompTab.tsx`) — that are deliberately never joined (see
+the comment above `handleBodyCompFile`). Both now sit on top of a browser-local persistence
+layer, `src/lib/storage/`, added after the app initially held everything in memory only.
+
+- **`idbStore.ts`** is the only file that touches `indexedDB` directly: one database
+  (`"swift"`), one object store (`"csv-uploads"`), keyed by string. A single store rather than
+  one per dataset means a future dataset is just a new key — never a version bump or an
+  `onupgradeneeded` migration. Every exported function (`idbGet`/`idbSet`/`idbDelete`/
+  `idbClearAll`) swallows its own failures and resolves to a safe default, mirroring
+  `readStored`/`writeStored` in `src/lib/theme/useTheme.ts` — persistence is a convenience,
+  never a requirement, so a blocked or disabled database must not break the app.
+- **`workoutStorage.ts`** / **`bodyCompStorage.ts`** are thin typed wrappers, one key each
+  (`"workout-rows"`, `"body-comp-rows"`). Nothing outside `src/lib/storage/` calls `idbGet`/
+  `idbSet`/`idbDelete` directly — a new dataset gets its own wrapper file, not a call site that
+  reaches past it.
+- **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
+  existing loading UI — no new component) and a mount-only effect loads both datasets from
+  storage in parallel before deciding whether to show the dashboard or the upload screen.
+- **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
+  bundled sample file is deliberately never cached, so demo mode never leaves anything behind.
+  A successful InBody parse always persists (there's no sample-data concept for it).
+- **Clear point**: `reset()` calls `idbClearAll()` alongside its existing state resets. This
+  isn't just UX — without it, "Start over" would only reset in-memory state, and a reload would
+  silently restore the data the button just appeared to discard.
+- `range`, `granularity`, and the theme preference are deliberately **not** persisted through
+  this layer — only the two uploaded CSV datasets are. Theme keeps using its own `localStorage`
+  key (see Theming below); that's a separate mechanism for a separate concern.
+
+This doesn't relax hard constraint #1 above — the cache is still local-only and still wiped by
+"Start over"; see that section for the actual invariant.
+
 ## Theming
 
 Black-and-white base in both modes, plus **one** user-selected accent — the only chromatic
-element in the UI. Every token in `src/index.css` is achromatic (chroma exactly 0); the accent
-arrives as CSS custom properties written to `:root` by `src/lib/theme/useTheme.ts`, so shadcn
-primitives, focus rings and Recharts series pick it up with no per-component wiring.
+element the athlete controls. Every token in `src/index.css` is achromatic (chroma exactly 0),
+with one fixed exception: `--destructive`, the error/delete-action red, which stays a constant
+semantic colour rather than deriving from the accent. The accent itself arrives as CSS custom
+properties written to `:root` by `src/lib/theme/useTheme.ts`, so shadcn primitives, focus rings
+and Recharts series pick it up with no per-component wiring.
 
 - A swatch in `ACCENT_SWATCHES` (`src/lib/theme/palette.ts`) is an **OKLCH hue + peak chroma**,
   not a list of hex values. `deriveRamp()` derives the 50–950 ramp from fixed perceptual
