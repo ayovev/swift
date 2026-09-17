@@ -168,6 +168,40 @@ though it cannot change *whether* the domain matched.
 `repMax.ts` parses rep-max notation out of lift titles; it is additive to the Python
 reference, so the parity test strips it before comparing lift series.
 
+## Architecture: app state and local persistence
+
+`src/App.tsx` owns two independent state machines — `AppState` (SugarWOD rows) and
+`BodyCompState` (InBody rows, from `BodyCompTab.tsx`) — that are deliberately never joined (see
+the comment above `handleBodyCompFile`). Both now sit on top of a browser-local persistence
+layer, `src/lib/storage/`, added after the app initially held everything in memory only.
+
+- **`idbStore.ts`** is the only file that touches `indexedDB` directly: one database
+  (`"swift"`), one object store (`"csv-uploads"`), keyed by string. A single store rather than
+  one per dataset means a future dataset is just a new key — never a version bump or an
+  `onupgradeneeded` migration. Every exported function (`idbGet`/`idbSet`/`idbDelete`/
+  `idbClearAll`) swallows its own failures and resolves to a safe default, mirroring
+  `readStored`/`writeStored` in `src/lib/theme/useTheme.ts` — persistence is a convenience,
+  never a requirement, so a blocked or disabled database must not break the app.
+- **`workoutStorage.ts`** / **`bodyCompStorage.ts`** are thin typed wrappers, one key each
+  (`"workout-rows"`, `"body-comp-rows"`). Nothing outside `src/lib/storage/` calls `idbGet`/
+  `idbSet`/`idbDelete` directly — a new dataset gets its own wrapper file, not a call site that
+  reaches past it.
+- **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
+  existing loading UI — no new component) and a mount-only effect loads both datasets from
+  storage in parallel before deciding whether to show the dashboard or the upload screen.
+- **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
+  bundled sample file is deliberately never cached, so demo mode never leaves anything behind.
+  A successful InBody parse always persists (there's no sample-data concept for it).
+- **Clear point**: `reset()` calls `idbClearAll()` alongside its existing state resets. This
+  isn't just UX — without it, "Start over" would only reset in-memory state, and a reload would
+  silently restore the data the button just appeared to discard.
+- `range`, `granularity`, and the theme preference are deliberately **not** persisted through
+  this layer — only the two uploaded CSV datasets are. Theme keeps using its own `localStorage`
+  key (see Theming below); that's a separate mechanism for a separate concern.
+
+This doesn't relax hard constraint #1 above — the cache is still local-only and still wiped by
+"Start over"; see that section for the actual invariant.
+
 ## Theming
 
 Black-and-white base in both modes, plus **one** user-selected accent — the only chromatic
