@@ -9,7 +9,7 @@ export const BODY_COMP_TAB = "body-comp";
 export interface TabDescriptor {
   value: string;
   label: string;
-  group: "Overview" | "Physical skills" | "Modalities" | "Body composition";
+  group: "Overview" | "Domains" | "Modalities" | "Body composition";
 }
 
 /**
@@ -22,7 +22,7 @@ export const ALL_TABS: TabDescriptor[] = [
   ...DOMAIN_LIST.map((d) => ({
     value: `domain:${d}`,
     label: DOMAIN_SHORT_LABELS[d],
-    group: "Physical skills" as const,
+    group: "Domains" as const,
   })),
   ...MODALITY_LIST.map((m) => ({
     value: `modality:${m}`,
@@ -32,13 +32,16 @@ export const ALL_TABS: TabDescriptor[] = [
   { value: BODY_COMP_TAB, label: "Body Comp", group: "Body composition" },
 ];
 
-const GROUPS = ["Overview", "Physical skills", "Modalities", "Body composition"] as const;
+const GROUPS = ["Overview", "Domains", "Modalities", "Body composition"] as const;
 
 /**
  * Fourteen tabs is too many for one undifferentiated strip, and far too many
- * for a phone. On wide viewports they are grouped and horizontally scrollable;
- * on narrow ones the whole thing collapses to a native select, which is both
- * more usable and better for assistive tech than a 14-wide scroller.
+ * for a phone. On wide viewports they are clustered into labeled groups
+ * (Domains / Modalities / Body composition) with a divider and a small
+ * uppercase caption above each, so the strip reads as three sections instead
+ * of one long row; on narrow ones the whole thing collapses to a native
+ * select with the same groups as `optgroup`s, which is both more usable and
+ * better for assistive tech than a 14-wide scroller.
  */
 export function TabNav({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
   return (
@@ -80,28 +83,39 @@ export function TabNav({ value, onValueChange }: { value: string; onValueChange:
 
       {/* Desktop / tablet */}
       <div className="-mx-1 hidden overflow-x-auto px-1 pb-1 sm:block">
-        <TabsList className="h-auto w-max gap-1 bg-transparent p-0">
+        <TabsList className="h-auto w-max items-start gap-1 bg-transparent p-0">
           {GROUPS.map((group, groupIndex) => (
-            <div key={group} className="flex items-center gap-1">
+            <div key={group} className="flex items-start gap-1">
               {groupIndex > 0 ? (
                 <span
-                  className="mx-2 hidden h-5 w-px shrink-0 bg-border md:block"
+                  className="mx-2 hidden h-5 w-px shrink-0 self-center bg-border md:block"
                   aria-hidden="true"
                 />
               ) : null}
-              {ALL_TABS.filter((t) => t.group === group).map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className={cn(
-                    "shrink-0 rounded-md border border-transparent px-3 py-1.5 text-sm",
-                    "data-[state=active]:border-accent-border data-[state=active]:bg-accent-subtle",
-                    "data-[state=active]:text-accent-link data-[state=active]:shadow-none"
-                  )}
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
+              <div className="flex flex-col gap-1">
+                {group === "Overview" ? (
+                  <span className="h-[13px]" aria-hidden="true" />
+                ) : (
+                  <span className="px-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {group}
+                  </span>
+                )}
+                <div className="flex gap-1">
+                  {ALL_TABS.filter((t) => t.group === group).map((tab) => (
+                    <TabsTrigger
+                      key={tab.value}
+                      value={tab.value}
+                      className={cn(
+                        "shrink-0 rounded-md border border-transparent px-3 py-1.5 text-sm",
+                        "data-[state=active]:border-accent-border data-[state=active]:bg-accent-subtle",
+                        "data-[state=active]:text-accent-link data-[state=active]:shadow-none"
+                      )}
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </div>
+              </div>
             </div>
           ))}
         </TabsList>
