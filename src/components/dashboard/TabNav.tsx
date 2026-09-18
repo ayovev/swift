@@ -143,8 +143,13 @@ export function TabNav({ value, onValueChange }: { value: string; onValueChange:
           })}
         </div>
 
-        {subTabs.length > 0 ? (
-          <div className="-mx-1 mt-2 overflow-x-auto px-1 pb-1">
+        {/*
+         * Always reserve this row's height, even for Overview/Body Comp where
+         * there's nothing to put in it — otherwise switching to/from Domains
+         * or Modalities shifts everything below the nav up or down.
+         */}
+        <div className="-mx-1 mt-2 overflow-x-auto px-1 pb-1">
+          {subTabs.length > 0 ? (
             <TabsList className="h-auto w-max gap-1 bg-transparent p-0">
               {subTabs.map((tab) => (
                 <TabsTrigger
@@ -160,8 +165,12 @@ export function TabNav({ value, onValueChange }: { value: string; onValueChange:
                 </TabsTrigger>
               ))}
             </TabsList>
-          </div>
-        ) : null}
+          ) : (
+            <span aria-hidden="true" className="invisible inline-block shrink-0 rounded-md border border-transparent px-3 py-1.5 text-sm">
+              &nbsp;
+            </span>
+          )}
+        </div>
       </div>
     </>
   );
