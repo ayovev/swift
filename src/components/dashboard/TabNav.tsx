@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DOMAIN_LIST, DOMAIN_SHORT_LABELS } from "@/types/dashboard";
 import { MODALITY_LIST, MODALITY_SHORT_LABELS } from "@/types/modality";
@@ -33,17 +34,54 @@ export const ALL_TABS: TabDescriptor[] = [
 ];
 
 const GROUPS = ["Overview", "Domains", "Modalities", "Body composition"] as const;
+type Group = (typeof GROUPS)[number];
+
+const GROUP_LABELS: Record<Group, string> = {
+  Overview: "Overview",
+  Domains: "Domains",
+  Modalities: "Modalities",
+  "Body composition": "Body Comp",
+};
+
+/** Overview and Body Comp are single tabs; only these two have more than one. */
+const EXPANDABLE_GROUPS: readonly Group[] = ["Domains", "Modalities"];
+
+function groupOf(value: string): Group {
+  return ALL_TABS.find((t) => t.value === value)?.group ?? "Overview";
+}
 
 /**
  * Fourteen tabs is too many for one undifferentiated strip, and far too many
- * for a phone. On wide viewports they are clustered into labeled groups
- * (Domains / Modalities / Body composition) with a divider and a small
- * uppercase caption above each, so the strip reads as three sections instead
- * of one long row; on narrow ones the whole thing collapses to a native
- * select with the same groups as `optgroup`s, which is both more usable and
- * better for assistive tech than a 14-wide scroller.
+ * for a phone. On wide viewports a single row of four group pills (Overview /
+ * Domains / Modalities / Body Comp) is always visible; picking "Domains" or
+ * "Modalities" expands a second row underneath with just that group's tabs,
+ * so at most one ten-wide or three-wide row is ever showing instead of all
+ * fourteen at once. On narrow viewports the whole thing collapses to a
+ * native select with the same groups as `optgroup`s, which is both more
+ * usable and better for assistive tech than a scroller.
  */
 export function TabNav({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
+  const activeGroup = groupOf(value);
+
+  // Remembers the last sub-tab visited within each expandable group, so
+  // switching back to "Domains" returns to where you left off rather than
+  // always resetting to the first domain.
+  const lastActive = useRef<Partial<Record<Group, string>>>({});
+  if (EXPANDABLE_GROUPS.includes(activeGroup)) {
+    lastActive.current[activeGroup] = value;
+  }
+
+  const selectGroup = (group: Group) => {
+    if (group === "Overview") return onValueChange(OVERVIEW_TAB);
+    if (group === "Body composition") return onValueChange(BODY_COMP_TAB);
+    const fallback = ALL_TABS.find((t) => t.group === group)?.value ?? OVERVIEW_TAB;
+    onValueChange(lastActive.current[group] ?? fallback);
+  };
+
+  const subTabs = EXPANDABLE_GROUPS.includes(activeGroup)
+    ? ALL_TABS.filter((t) => t.group === activeGroup)
+    : [];
+
   return (
     <>
       {/* Mobile */}
@@ -82,43 +120,48 @@ export function TabNav({ value, onValueChange }: { value: string; onValueChange:
       </div>
 
       {/* Desktop / tablet */}
-      <div className="-mx-1 hidden overflow-x-auto px-1 pb-1 sm:block">
-        <TabsList className="h-auto w-max items-start gap-1 bg-transparent p-0">
-          {GROUPS.map((group, groupIndex) => (
-            <div key={group} className="flex items-start gap-1">
-              {groupIndex > 0 ? (
-                <span
-                  className="mx-2 hidden h-5 w-px shrink-0 self-center bg-border md:block"
-                  aria-hidden="true"
-                />
-              ) : null}
-              <div className="flex flex-col gap-1">
-                {group === "Overview" ? (
-                  <span className="h-[13px]" aria-hidden="true" />
-                ) : (
-                  <span className="px-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {group}
-                  </span>
+      <div className="hidden sm:block">
+        <div role="group" aria-label="View group" className="inline-flex gap-1 rounded-lg border border-border p-1">
+          {GROUPS.map((group) => {
+            const isActive = group === activeGroup;
+            return (
+              <button
+                key={group}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => selectGroup(group)}
+                className={cn(
+                  "shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-accent-subtle text-accent-link"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
-                <div className="flex gap-1">
-                  {ALL_TABS.filter((t) => t.group === group).map((tab) => (
-                    <TabsTrigger
-                      key={tab.value}
-                      value={tab.value}
-                      className={cn(
-                        "shrink-0 rounded-md border border-transparent px-3 py-1.5 text-sm",
-                        "data-[state=active]:border-accent-border data-[state=active]:bg-accent-subtle",
-                        "data-[state=active]:text-accent-link data-[state=active]:shadow-none"
-                      )}
-                    >
-                      {tab.label}
-                    </TabsTrigger>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </TabsList>
+              >
+                {GROUP_LABELS[group]}
+              </button>
+            );
+          })}
+        </div>
+
+        {subTabs.length > 0 ? (
+          <div className="-mx-1 mt-2 overflow-x-auto px-1 pb-1">
+            <TabsList className="h-auto w-max gap-1 bg-transparent p-0">
+              {subTabs.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className={cn(
+                    "shrink-0 rounded-md border border-transparent px-3 py-1.5 text-sm",
+                    "data-[state=active]:border-accent-border data-[state=active]:bg-accent-subtle",
+                    "data-[state=active]:text-accent-link data-[state=active]:shadow-none"
+                  )}
+                >
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+        ) : null}
       </div>
     </>
   );
