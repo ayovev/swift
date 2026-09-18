@@ -1,5 +1,11 @@
-import { useRef } from "react";
-import { TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { DOMAIN_LIST, DOMAIN_SHORT_LABELS } from "@/types/dashboard";
 import { MODALITY_LIST, MODALITY_SHORT_LABELS } from "@/types/modality";
 import { cn } from "@/lib/utils";
@@ -43,8 +49,11 @@ const GROUP_LABELS: Record<Group, string> = {
   "Body composition": "Body Comp",
 };
 
-/** Overview and Body Comp are single tabs; only these two have more than one. */
-const EXPANDABLE_GROUPS: readonly Group[] = ["Domains", "Modalities"];
+/** Overview and Body Comp are single tabs and select directly; the other two open a menu. */
+const DIRECT_VALUES: Partial<Record<Group, string>> = {
+  Overview: OVERVIEW_TAB,
+  "Body composition": BODY_COMP_TAB,
+};
 
 function groupOf(value: string): Group {
   return ALL_TABS.find((t) => t.value === value)?.group ?? "Overview";
@@ -52,35 +61,20 @@ function groupOf(value: string): Group {
 
 /**
  * Fourteen tabs is too many for one undifferentiated strip, and far too many
- * for a phone. On wide viewports a single row of four group pills (Overview /
- * Domains / Modalities / Body Comp) is always visible; picking "Domains" or
- * "Modalities" expands a second row underneath with just that group's tabs,
- * so at most one ten-wide or three-wide row is ever showing instead of all
- * fourteen at once. On narrow viewports the whole thing collapses to a
- * native select with the same groups as `optgroup`s, which is both more
- * usable and better for assistive tech than a scroller.
+ * for a phone. On wide viewports the nav is a single row of four pills —
+ * Overview and Body Comp select directly since each is one tab, while
+ * Domains and Modalities open a dropdown of their own tabs instead of
+ * expanding a second row underneath. That keeps the nav's height constant
+ * (no row that appears/disappears and shifts the page) without reserving
+ * blank space for it either — the menu overlays instead of taking up
+ * layout. The active pill shows the current tab's own name (e.g. "Strength")
+ * so which one you're on is visible without opening the menu. On narrow
+ * viewports the whole thing collapses to a native select with the same
+ * groups as `optgroup`s, which is both more usable and better for
+ * assistive tech than a scroller.
  */
 export function TabNav({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
   const activeGroup = groupOf(value);
-
-  // Remembers the last sub-tab visited within each expandable group, so
-  // switching back to "Domains" returns to where you left off rather than
-  // always resetting to the first domain.
-  const lastActive = useRef<Partial<Record<Group, string>>>({});
-  if (EXPANDABLE_GROUPS.includes(activeGroup)) {
-    lastActive.current[activeGroup] = value;
-  }
-
-  const selectGroup = (group: Group) => {
-    if (group === "Overview") return onValueChange(OVERVIEW_TAB);
-    if (group === "Body composition") return onValueChange(BODY_COMP_TAB);
-    const fallback = ALL_TABS.find((t) => t.group === group)?.value ?? OVERVIEW_TAB;
-    onValueChange(lastActive.current[group] ?? fallback);
-  };
-
-  const subTabs = EXPANDABLE_GROUPS.includes(activeGroup)
-    ? ALL_TABS.filter((t) => t.group === activeGroup)
-    : [];
 
   return (
     <>
@@ -120,57 +114,56 @@ export function TabNav({ value, onValueChange }: { value: string; onValueChange:
       </div>
 
       {/* Desktop / tablet */}
-      <div className="hidden sm:block">
-        <div role="group" aria-label="View group" className="inline-flex gap-1 rounded-lg border border-border p-1">
-          {GROUPS.map((group) => {
-            const isActive = group === activeGroup;
+      <div
+        role="group"
+        aria-label="View"
+        className="hidden w-fit gap-1 rounded-lg border border-border p-1 sm:inline-flex"
+      >
+        {GROUPS.map((group) => {
+          const isActive = group === activeGroup;
+          const directValue = DIRECT_VALUES[group];
+          const pillClass = cn(
+            "flex shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            isActive ? "bg-accent-subtle text-accent-link" : "text-muted-foreground hover:text-foreground"
+          );
+
+          if (directValue !== undefined) {
             return (
               <button
                 key={group}
                 type="button"
                 aria-pressed={isActive}
-                onClick={() => selectGroup(group)}
-                className={cn(
-                  "shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-accent-subtle text-accent-link"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
+                onClick={() => onValueChange(directValue)}
+                className={pillClass}
               >
                 {GROUP_LABELS[group]}
               </button>
             );
-          })}
-        </div>
+          }
 
-        {/*
-         * Always reserve this row's height, even for Overview/Body Comp where
-         * there's nothing to put in it — otherwise switching to/from Domains
-         * or Modalities shifts everything below the nav up or down.
-         */}
-        <div className="-mx-1 mt-2 overflow-x-auto px-1 pb-1">
-          {subTabs.length > 0 ? (
-            <TabsList className="h-auto w-max gap-1 bg-transparent p-0">
-              {subTabs.map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className={cn(
-                    "shrink-0 rounded-md border border-transparent px-3 py-1.5 text-sm",
-                    "data-[state=active]:border-accent-border data-[state=active]:bg-accent-subtle",
-                    "data-[state=active]:text-accent-link data-[state=active]:shadow-none"
-                  )}
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          ) : (
-            <span aria-hidden="true" className="invisible inline-block shrink-0 rounded-md border border-transparent px-3 py-1.5 text-sm">
-              &nbsp;
-            </span>
-          )}
-        </div>
+          const groupTabs = ALL_TABS.filter((t) => t.group === group);
+          const current = groupTabs.find((t) => t.value === value);
+
+          return (
+            <DropdownMenu key={group}>
+              <DropdownMenuTrigger asChild>
+                <button type="button" aria-pressed={isActive} className={pillClass}>
+                  {current?.label ?? GROUP_LABELS[group]}
+                  <ChevronDown className="size-3.5" aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
+                  {groupTabs.map((tab) => (
+                    <DropdownMenuRadioItem key={tab.value} value={tab.value}>
+                      {tab.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        })}
       </div>
     </>
   );
