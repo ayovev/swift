@@ -37,7 +37,16 @@ type SwiftEvent =
   | { name: "theme_changed"; props: { mode?: string; accent?: string } }
   | {
       name: "date_range_changed";
-      props: { preset: "last_3_months" | "last_6_months" | "last_year" | "all_time" | "custom" };
+      props: {
+        preset:
+          | "last_1_month"
+          | "last_3_months"
+          | "last_6_months"
+          | "last_9_months"
+          | "last_year"
+          | "all_time"
+          | "custom";
+      };
     }
   | {
       name: "granularity_changed";

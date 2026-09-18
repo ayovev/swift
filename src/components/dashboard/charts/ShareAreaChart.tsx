@@ -1,6 +1,6 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, PCT_AXIS_WIDTH } from "./chartUtils";
+import { AXIS_PROPS, PCT_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
 import { bucketTickInterval, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
 
 interface ShareAreaChartProps {
@@ -23,6 +23,7 @@ interface ShareAreaChartProps {
 export function ShareAreaChart({ data, color, label, seriesLabel, granularity }: ShareAreaChartProps) {
   const rows = data.map((d) => ({ ...d, label: formatBucketLabel(d.bucket, granularity) }));
   const peak = Math.max(10, ...rows.map((r) => r.value));
+  const { domain: yDomain, ticks: yTicks } = niceAxisTicks(0, peak);
   const config: ChartConfig = { value: { label: seriesLabel, color } };
 
   return (
@@ -38,7 +39,9 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity }:
         <XAxis dataKey="label" interval={bucketTickInterval(rows.length)} {...AXIS_PROPS} />
         <YAxis
           width={PCT_AXIS_WIDTH}
-          domain={[0, Math.ceil(peak / 10) * 10]}
+          domain={yDomain}
+          ticks={yTicks}
+          interval={0} // see niceAxisTicks() in chartUtils.ts for why
           tickFormatter={(v: number) => `${v}%`}
           {...AXIS_PROPS}
         />

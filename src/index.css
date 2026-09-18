@@ -34,6 +34,18 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
 
+  /*
+   * Temporary comparison-mode tokens for lift rep-max coloring (see
+   * OverviewTab.tsx's fixed/accent toggle). Fixed, non-accent-derived colors
+   * are a second exception to the achromatic-base rule above, on trial
+   * alongside an accent-derived alternative until one is chosen — see
+   * CLAUDE.md before making this permanent.
+   */
+  --repmax-1: oklch(0.577 0.245 27);
+  --repmax-2: oklch(0.65 0.19 55);
+  --repmax-3: oklch(0.72 0.16 95);
+  --repmax-5: oklch(0.55 0.18 250);
+
   /* Accent fallbacks, replaced at runtime by the derived ramp. */
   --primary: oklch(0.556 0 0);
   --primary-foreground: oklch(1 0 0);
@@ -73,6 +85,11 @@
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 18%);
 
+  --repmax-1: oklch(0.704 0.191 22);
+  --repmax-2: oklch(0.75 0.17 55);
+  --repmax-3: oklch(0.85 0.16 95);
+  --repmax-5: oklch(0.75 0.15 250);
+
   --primary: oklch(0.72 0 0);
   --primary-foreground: oklch(0.145 0 0);
   --primary-hover: oklch(0.808 0 0);
@@ -103,6 +120,10 @@
   --color-accent-border: var(--accent-border);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-repmax-1: var(--repmax-1);
+  --color-repmax-2: var(--repmax-2);
+  --color-repmax-3: var(--repmax-3);
+  --color-repmax-5: var(--repmax-5);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
