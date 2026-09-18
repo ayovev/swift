@@ -2,13 +2,67 @@ import { useMemo } from "react";
 import { CartesianGrid, Scatter, ScatterChart, XAxis, YAxis, ZAxis } from "recharts";
 import type { TooltipContentProps } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { REP_MAX_BUCKET_LABELS, repMaxBucket } from "@/lib/analytics/repMax";
-import { AXIS_PROPS, NUM_AXIS_WIDTH, formatDate } from "./chartUtils";
+import {
+  repMaxCategory,
+  repMaxLabel,
+  type TrackedRepMaxCategory,
+} from "@/lib/analytics/repMax";
+import {
+  AXIS_PROPS,
+  FIXED_REPMAX_COLORS,
+  NUM_AXIS_WIDTH,
+  accentRepMaxColors,
+  formatDate,
+  niceAxisTicks,
+  niceTimeTicks,
+} from "./chartUtils";
+import { getSwatch } from "@/lib/theme/palette";
+import { useTheme } from "@/lib/theme/useTheme";
 import type { LiftEntry } from "@/types/dashboard";
 
 const CONFIG = {
   value: { label: "Load", color: "var(--primary)" },
 } as const;
+
+/** Rep-max dot colors, so a record doesn't require hovering to spot. */
+export type RepMaxColorMode = "fixed" | "accent";
+
+/** Which rep-max scheme's points to show — "all" or exactly one tracked scheme. */
+export type RepMaxFilter = "all" | TrackedRepMaxCategory;
+
+function LiftDot({
+  cx,
+  cy,
+  payload,
+  colorFor,
+}: {
+  cx?: number;
+  cy?: number;
+  payload?: { pr: boolean; repMax: number | null };
+  colorFor: (repMax: number | null) => string;
+}) {
+  if (cx === undefined || cy === undefined || !payload) return null;
+  const r = 4;
+  const fill = colorFor(payload.repMax);
+  // A PR only gets the diamond treatment for the 4 tracked rep-max schemes —
+  // an "other" rep scheme (a 4RM, a 6+RM, unspecified) isn't one we claim to
+  // track precisely enough to call out as a record shape.
+  const isTrackedPr = payload.pr && repMaxCategory(payload.repMax) !== "other";
+  if (isTrackedPr) {
+    return (
+      <rect
+        x={cx - r}
+        y={cy - r}
+        width={r * 2}
+        height={r * 2}
+        transform={`rotate(45 ${cx} ${cy})`}
+        fill={fill}
+        fillOpacity={0.85}
+      />
+    );
+  }
+  return <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.85} />;
+}
 
 /**
  * One lift's progression.
@@ -19,18 +73,53 @@ const CONFIG = {
  * rep scheme is inferred where the workout text allows (see repMax.ts) and
  * shown in the tooltip; points are connected only within the same scheme.
  */
-export function LiftChart({ liftName, entries }: { liftName: string; entries: LiftEntry[] }) {
-  const data = useMemo(
+export function LiftChart({
+  liftName,
+  entries,
+  colorMode,
+  repMaxFilter,
+  xDomain,
+  xTicks,
+}: {
+  liftName: string;
+  entries: LiftEntry[];
+  colorMode: RepMaxColorMode;
+  repMaxFilter: RepMaxFilter;
+  // Shared across every chart in the grid (see LiftGrid) so the same
+  // calendar date lands at the same horizontal position in every small
+  // multiple — each chart auto-scaling to its own tight date range instead
+  // made otherwise-identical-looking ticks (e.g. "Jan 1, 2024") sit at a
+  // different pixel offset per chart, which reads as misaligned even though
+  // each individual axis was internally correct.
+  xDomain: [number, number];
+  xTicks: number[];
+}) {
+  const { accent, resolvedMode } = useTheme();
+  const allData = useMemo(
     () =>
       entries
         .filter((e) => e.value > 0)
         .map((e) => ({
           ...e,
           t: new Date(e.date).getTime(),
-          scheme: REP_MAX_BUCKET_LABELS[repMaxBucket(e.repMax)],
+          scheme: repMaxLabel(e.repMax),
+          category: repMaxCategory(e.repMax),
         })),
     [entries]
   );
+
+  const data = useMemo(
+    () =>
+      repMaxFilter === "all" ? allData : allData.filter((d) => d.category === repMaxFilter),
+    [allData, repMaxFilter]
+  );
+
+  const colors = useMemo(
+    () =>
+      colorMode === "fixed" ? FIXED_REPMAX_COLORS : accentRepMaxColors(getSwatch(accent), resolvedMode),
+    [colorMode, accent, resolvedMode]
+  );
+  const colorFor = (repMax: number | null) => colors[repMaxCategory(repMax)];
 
   if (data.length < 2) return null;
 
@@ -38,6 +127,7 @@ export function LiftChart({ liftName, entries }: { liftName: string; entries: Li
   const worst = Math.min(...data.map((d) => d.value));
   // Auto-scaled from the data — a fixed domain squashes lighter lifts flat.
   const pad = Math.max(5, (best - worst) * 0.15);
+  const { domain: yDomain, ticks: yTicks } = niceAxisTicks(Math.max(0, worst - pad), best + pad);
 
   return (
     <div>
@@ -58,15 +148,18 @@ export function LiftChart({ liftName, entries }: { liftName: string; entries: Li
           <XAxis
             dataKey="t"
             type="number"
-            domain={["dataMin", "dataMax"]}
+            domain={xDomain}
+            ticks={xTicks}
+            interval={0} // see niceAxisTicks() in chartUtils.ts for why
             tickFormatter={(t: number) => formatDate(new Date(t).toISOString().slice(0, 10))}
-            minTickGap={44}
             {...AXIS_PROPS}
           />
           <YAxis
             dataKey="value"
             type="number"
-            domain={[Math.max(0, worst - pad), best + pad]}
+            domain={yDomain}
+            ticks={yTicks}
+            interval={0} // see niceAxisTicks() in chartUtils.ts for why
             width={NUM_AXIS_WIDTH}
             {...AXIS_PROPS}
           />
@@ -100,7 +193,7 @@ export function LiftChart({ liftName, entries }: { liftName: string; entries: Li
               );
             }}
           />
-          <Scatter data={data} fill="var(--primary)" fillOpacity={0.75} />
+          <Scatter data={data} shape={<LiftDot colorFor={colorFor} />} />
         </ScatterChart>
       </ChartContainer>
     </div>
@@ -108,7 +201,15 @@ export function LiftChart({ liftName, entries }: { liftName: string; entries: Li
 }
 
 /** Small multiples of the lifts with enough history to say anything. */
-export function LiftGrid({ lifts }: { lifts: Record<string, LiftEntry[]> }) {
+export function LiftGrid({
+  lifts,
+  colorMode,
+  repMaxFilter,
+}: {
+  lifts: Record<string, LiftEntry[]>;
+  colorMode: RepMaxColorMode;
+  repMaxFilter: RepMaxFilter;
+}) {
   const entries = useMemo(
     () =>
       Object.entries(lifts)
@@ -125,10 +226,47 @@ export function LiftGrid({ lifts }: { lifts: Record<string, LiftEntry[]> }) {
     );
   }
 
+  // Mirrors LiftChart's own "at least 2 points" cutoff, filtered the same way,
+  // so an empty result here means every chart below would render nothing.
+  const visible = entries.filter(
+    ([, series]) =>
+      series.filter(
+        (e) =>
+          e.value > 0 && (repMaxFilter === "all" || repMaxCategory(e.repMax) === repMaxFilter)
+      ).length >= 2
+  );
+
+  if (visible.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No lift has at least two logged efforts at that rep scheme.
+      </p>
+    );
+  }
+
+  // One shared time domain and tick set for every chart below — see the
+  // xDomain/xTicks comment on LiftChart for why per-chart auto-scaling
+  // makes identical-looking dates land at different pixel positions.
+  const times = visible.flatMap(([, series]) =>
+    series
+      .filter((e) => e.value > 0 && (repMaxFilter === "all" || repMaxCategory(e.repMax) === repMaxFilter))
+      .map((e) => new Date(e.date).getTime())
+  );
+  const xDomain: [number, number] = [Math.min(...times), Math.max(...times)];
+  const xTicks = niceTimeTicks(xDomain[0], xDomain[1]);
+
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
-      {entries.map(([name, series]) => (
-        <LiftChart key={name} liftName={name} entries={series} />
+      {visible.map(([name, series]) => (
+        <LiftChart
+          key={name}
+          liftName={name}
+          entries={series}
+          colorMode={colorMode}
+          repMaxFilter={repMaxFilter}
+          xDomain={xDomain}
+          xTicks={xTicks}
+        />
       ))}
     </div>
   );

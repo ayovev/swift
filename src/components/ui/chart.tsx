@@ -113,7 +113,19 @@ ${colorConfig
   )
 }
 
-const ChartTooltip = RechartsPrimitive.Tooltip
+/**
+ * Recharts animates the tooltip wrapper's position toward the cursor by
+ * default, which reads as lag on a wide chart — the tooltip visibly chases
+ * the pointer instead of appearing where it is. Defaulting the animation off
+ * here (rather than per chart) fixes every chart that uses ChartTooltip at
+ * once; a caller can still pass isAnimationActive explicitly to override it.
+ */
+function ChartTooltip({
+  isAnimationActive = false,
+  ...props
+}: React.ComponentProps<typeof RechartsPrimitive.Tooltip>) {
+  return <RechartsPrimitive.Tooltip isAnimationActive={isAnimationActive} {...props} />
+}
 
 function ChartTooltipContent({
   active,

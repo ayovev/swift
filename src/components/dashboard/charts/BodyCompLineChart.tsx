@@ -1,6 +1,6 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, NUM_AXIS_WIDTH } from "./chartUtils";
+import { AXIS_PROPS, NUM_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
 import {
   bucketTickInterval,
   formatBucketLabel,
@@ -37,6 +37,7 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
   const best = Math.max(...rows.map((r) => r.value));
   const worst = Math.min(...rows.map((r) => r.value));
   const pad = Math.max(1, (best - worst) * 0.15);
+  const { domain: yDomain, ticks: yTicks } = niceAxisTicks(worst - pad, best + pad);
   const latest = rows[rows.length - 1]!.value;
   const config: ChartConfig = { value: { label: seriesLabel, color: "var(--primary)" } };
 
@@ -65,7 +66,9 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
           />
           <YAxis
             width={NUM_AXIS_WIDTH}
-            domain={[Math.floor(worst - pad), Math.ceil(best + pad)]}
+            domain={yDomain}
+            ticks={yTicks}
+            interval={0} // see niceAxisTicks() in chartUtils.ts for why
             tickFormatter={(v: number) => `${v}${unit}`}
             {...AXIS_PROPS}
           />

@@ -1,6 +1,6 @@
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { AXIS_PROPS, NUM_AXIS_WIDTH } from "./chartUtils";
+import { AXIS_PROPS, AXIS_TICK_COUNT, NUM_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
 import {
   bucketTickInterval,
   formatBucketLabel,
@@ -21,6 +21,8 @@ export function ConsistencyChart({
 }) {
   const data = buckets.map((b) => ({ ...b, label: formatBucketLabel(b.bucket, granularity) }));
   const noun = GRANULARITY_NOUN[granularity];
+  const best = Math.max(1, ...data.map((d) => d.count));
+  const { domain: yDomain, ticks: yTicks } = niceAxisTicks(0, best, AXIS_TICK_COUNT, true);
 
   return (
     <ChartContainer
@@ -32,7 +34,13 @@ export function ConsistencyChart({
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis dataKey="label" interval={bucketTickInterval(data.length)} {...AXIS_PROPS} />
-        <YAxis allowDecimals={false} width={NUM_AXIS_WIDTH} {...AXIS_PROPS} />
+        <YAxis
+          width={NUM_AXIS_WIDTH}
+          domain={yDomain}
+          ticks={yTicks}
+          interval={0} // see niceAxisTicks() in chartUtils.ts for why
+          {...AXIS_PROPS}
+        />
         <ChartTooltip content={<ChartTooltipContent labelKey="label" />} />
         <Bar dataKey="count" fill="var(--primary)" radius={[3, 3, 0, 0]} />
       </BarChart>

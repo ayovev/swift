@@ -7,7 +7,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { AXIS_PROPS, PCT_AXIS_WIDTH } from "./chartUtils";
+import { AXIS_PROPS, PCT_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
 import { bucketTickInterval, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
 
 interface StackedShareChartProps {
@@ -34,6 +34,8 @@ export function StackedShareChart({
   className = "h-[300px] w-full min-w-0",
 }: StackedShareChartProps) {
   const rows = data.map((d) => ({ ...d, label: formatBucketLabel(String(d.bucket), granularity) }));
+  // stackOffset="expand" always normalizes each bucket to sum to exactly 1.
+  const { domain: yDomain, ticks: yTicks } = niceAxisTicks(0, 1);
 
   return (
     <ChartContainer config={config} className={className} role="img" aria-label={label}>
@@ -42,6 +44,9 @@ export function StackedShareChart({
         <XAxis dataKey="label" interval={bucketTickInterval(rows.length)} {...AXIS_PROPS} />
         <YAxis
           width={PCT_AXIS_WIDTH}
+          domain={yDomain}
+          ticks={yTicks}
+          interval={0} // see niceAxisTicks() in chartUtils.ts for why
           tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
           {...AXIS_PROPS}
         />

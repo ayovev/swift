@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { formatDate } from "./charts/chartUtils";
 import {
   computePresetRange,
+  presetFitsDataSpan,
   PRESET_OPTIONS,
   type DateRange,
   type DateRangePreset,
@@ -65,20 +66,24 @@ export function DateRangePicker({ dateBounds, value, onChange }: DateRangePicker
       <PopoverContent align="end" className="w-auto p-0">
         <div className="flex flex-col sm:flex-row">
           <div className="flex flex-col gap-1 border-b border-border p-2 sm:w-40 sm:border-r sm:border-b-0">
-            {PRESET_OPTIONS.map((option) => (
-              <Button
-                key={option.id}
-                variant="ghost"
-                size="sm"
-                onClick={() => selectPreset(option.id)}
-                className={cn(
-                  "justify-start",
-                  preset === option.id && "bg-accent-subtle text-accent-link"
-                )}
-              >
-                {option.label}
-              </Button>
-            ))}
+            {PRESET_OPTIONS.map((option) => {
+              const fits = presetFitsDataSpan(option, dateBounds);
+              return (
+                <Button
+                  key={option.id}
+                  variant="ghost"
+                  size="sm"
+                  disabled={!fits}
+                  onClick={() => selectPreset(option.id)}
+                  className={cn(
+                    "justify-start",
+                    preset === option.id && "bg-accent-subtle text-accent-link"
+                  )}
+                >
+                  {option.label}
+                </Button>
+              );
+            })}
           </div>
           <Calendar
             mode="range"

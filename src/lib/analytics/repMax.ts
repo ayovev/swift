@@ -17,8 +17,6 @@
  * it's unknown, so the UI shows those as "rep scheme not specified".
  */
 
-export type RepMaxBucket = "1RM" | "2-3RM" | "4-5RM" | "6+RM" | "unspecified";
-
 const EXPLICIT_RM_RE = /(\d+)\s*-?\s*rm\b/i;
 // Three or more hyphenated numbers — a ladder, not a date or a "21-15-9" pair.
 const LADDER_RE = /\d+(?:-\d+){2,}/;
@@ -41,26 +39,53 @@ export function parseRepMax(text: string): number | null {
   return null;
 }
 
-export function repMaxBucket(reps: number | null): RepMaxBucket {
-  if (reps === null) return "unspecified";
-  if (reps <= 1) return "1RM";
-  if (reps <= 3) return "2-3RM";
-  if (reps <= 5) return "4-5RM";
-  return "6+RM";
+/**
+ * The four rep-max schemes SugarWOD athletes actually chase (1/2/3/5RM), plus a
+ * neutral catch-all for everything else a workout might be — a 4RM off a rep
+ * ladder, a 6+RM, or unspecified. Coloring dots by exact reps only makes sense
+ * for the schemes people actually train toward; folding the rest into "other"
+ * avoids implying a 4RM is a 5RM just because they're chart-adjacent.
+ */
+export type RepMaxCategory = "1RM" | "2RM" | "3RM" | "5RM" | "other";
+
+export function repMaxCategory(reps: number | null): RepMaxCategory {
+  if (reps === 1) return "1RM";
+  if (reps === 2) return "2RM";
+  if (reps === 3) return "3RM";
+  if (reps === 5) return "5RM";
+  return "other";
 }
 
-export const REP_MAX_BUCKET_ORDER: readonly RepMaxBucket[] = [
-  "1RM",
-  "2-3RM",
-  "4-5RM",
-  "6+RM",
-  "unspecified",
-];
+export function repMaxLabel(reps: number | null): string {
+  return reps === null ? "rep scheme not specified" : `${reps}-rep max`;
+}
 
-export const REP_MAX_BUCKET_LABELS: Record<RepMaxBucket, string> = {
-  "1RM": "1-rep max",
-  "2-3RM": "2–3 rep max",
-  "4-5RM": "4–5 rep max",
-  "6+RM": "6+ rep max",
-  unspecified: "rep scheme not specified",
-};
+/** The 4 rep-max schemes precise enough to filter, chart, and summarize by. */
+export type TrackedRepMaxCategory = Exclude<RepMaxCategory, "other">;
+
+export interface RepMaxPr {
+  value: number;
+  date: string;
+}
+
+/**
+ * A lift's current standing PR for each tracked rep-max scheme, taken from
+ * whichever PR-flagged entries the source data has for that lift. A lift can
+ * be PR'd more than once at the same scheme over the years (e.g. two 1RM
+ * PRs), so this keeps the highest value seen, not just the most recent.
+ */
+export function currentTrackedPrs(
+  entries: readonly { value: number; pr: boolean; date: string; repMax: number | null }[]
+): Partial<Record<TrackedRepMaxCategory, RepMaxPr>> {
+  const best: Partial<Record<TrackedRepMaxCategory, RepMaxPr>> = {};
+  for (const entry of entries) {
+    if (!entry.pr) continue;
+    const category = repMaxCategory(entry.repMax);
+    if (category === "other") continue;
+    const current = best[category];
+    if (!current || entry.value > current.value) {
+      best[category] = { value: entry.value, date: entry.date };
+    }
+  }
+  return best;
+}

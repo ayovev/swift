@@ -1,7 +1,6 @@
-import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "./SegmentedControl";
 import { GRANULARITY_OPTIONS, type Granularity } from "@/lib/analytics/granularity";
 import { capture } from "@/lib/posthog";
-import { cn } from "@/lib/utils";
 
 interface GranularityPickerProps {
   value: Granularity;
@@ -21,27 +20,11 @@ export function GranularityPicker({ value, onChange }: GranularityPickerProps) {
   };
 
   return (
-    <div
-      role="group"
-      aria-label="Chart granularity"
-      className="flex items-center gap-0.5 rounded-md border border-border p-0.5"
-    >
-      {GRANULARITY_OPTIONS.map((option) => (
-        <Button
-          key={option.id}
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => select(option.id)}
-          aria-pressed={value === option.id}
-          className={cn(
-            "h-7 px-2.5 text-xs",
-            value === option.id && "bg-accent-subtle text-accent-link"
-          )}
-        >
-          {option.label}
-        </Button>
-      ))}
-    </div>
+    <SegmentedControl
+      value={value}
+      onChange={select}
+      options={GRANULARITY_OPTIONS}
+      ariaLabel="Chart granularity"
+    />
   );
 }

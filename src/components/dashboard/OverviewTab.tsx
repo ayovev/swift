@@ -1,14 +1,110 @@
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BenchmarkCards } from "./charts/BenchmarkCards";
 import { ConsistencyChart } from "./charts/ConsistencyChart";
-import { LiftGrid } from "./charts/LiftChart";
+import { LiftGrid, type RepMaxColorMode, type RepMaxFilter } from "./charts/LiftChart";
 import { PrTimeline } from "./charts/PrTimeline";
+import { RepMaxPrTable } from "./charts/RepMaxPrTable";
+import { SegmentedControl, type SegmentedControlOption } from "./SegmentedControl";
 import { StackedShareChart } from "./charts/StackedShareChart";
-import { DOMAIN_CHART_CONFIG, MODALITY_CHART_CONFIG } from "./charts/chartUtils";
+import {
+  DOMAIN_CHART_CONFIG,
+  FIXED_REPMAX_COLORS,
+  MODALITY_CHART_CONFIG,
+  REP_MAX_CATEGORY_ORDER,
+  accentRepMaxColors,
+} from "./charts/chartUtils";
 import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
+import { getSwatch } from "@/lib/theme/palette";
+import { useTheme } from "@/lib/theme/useTheme";
 import { DOMAIN_LIST } from "@/types/dashboard";
 import { MODALITY_LIST } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
+
+const REP_MAX_CATEGORY_LABELS = {
+  "1RM": "1-rep max",
+  "2RM": "2-rep max",
+  "3RM": "3-rep max",
+  "5RM": "5-rep max",
+} as const;
+
+const REP_MAX_FILTER_OPTIONS: readonly SegmentedControlOption<RepMaxFilter>[] = [
+  { id: "all", label: "All" },
+  ...REP_MAX_CATEGORY_ORDER.map((category) => ({ id: category, label: category })),
+];
+
+const REP_MAX_COLOR_MODE_OPTIONS: readonly SegmentedControlOption<RepMaxColorMode>[] = [
+  { id: "fixed", label: "Fixed colors" },
+  { id: "accent", label: "Accent-derived" },
+];
+
+/**
+ * Temporary side-by-side comparison of two rep-max coloring approaches: fixed
+ * literal colors vs. colors derived from the athlete's own accent hue. Not a
+ * permanent setting — once one wins, this toggle and the losing color path
+ * get deleted (see CLAUDE.md's theming section before making a choice final).
+ */
+function RepMaxLegend({
+  colorMode,
+  onColorModeChange,
+  repMaxFilter,
+  onRepMaxFilterChange,
+}: {
+  colorMode: RepMaxColorMode;
+  onColorModeChange: (mode: RepMaxColorMode) => void;
+  repMaxFilter: RepMaxFilter;
+  onRepMaxFilterChange: (filter: RepMaxFilter) => void;
+}) {
+  const { accent, resolvedMode } = useTheme();
+  const colors = useMemo(
+    () =>
+      colorMode === "fixed" ? FIXED_REPMAX_COLORS : accentRepMaxColors(getSwatch(accent), resolvedMode),
+    [colorMode, accent, resolvedMode]
+  );
+
+  return (
+    <div className="mb-4 flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <SegmentedControl
+          value={repMaxFilter}
+          onChange={onRepMaxFilterChange}
+          options={REP_MAX_FILTER_OPTIONS}
+          ariaLabel="Filter by rep-max scheme"
+        />
+        <div className="ml-auto">
+          <SegmentedControl
+            value={colorMode}
+            onChange={onColorModeChange}
+            options={REP_MAX_COLOR_MODE_OPTIONS}
+            ariaLabel="Rep-max color mode"
+          />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {REP_MAX_CATEGORY_ORDER.map((category) => (
+          <span key={category} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span
+              className="h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: colors[category] }}
+            />
+            {REP_MAX_CATEGORY_LABELS[category]}
+          </span>
+        ))}
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{ backgroundColor: colors.other }}
+          />
+          other
+        </span>
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="h-2 w-2 shrink-0 rotate-45 bg-muted-foreground" />
+          personal record
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function Stat({ value, label, sub }: { value: string; label: string; sub?: string }) {
   return (
@@ -31,6 +127,8 @@ export function OverviewTab({
   const { dashboard, modality } = insights;
   const { summary } = dashboard;
   const noun = GRANULARITY_NOUN[granularity];
+  const [repMaxColorMode, setRepMaxColorMode] = useState<RepMaxColorMode>("fixed");
+  const [repMaxFilter, setRepMaxFilter] = useState<RepMaxFilter>("all");
 
   const rxShare =
     summary.rx_count + summary.scaled_count > 0
@@ -108,11 +206,18 @@ export function OverviewTab({
           <CardTitle className="text-sm font-medium">What got heavier</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="mb-5 text-sm text-muted-foreground">
-            Each point is one logged effort. Rep schemes differ between sessions, so hover to see
-            whether a number was a heavy single or the top of a set.
+          <p className="mb-3 text-sm text-muted-foreground">
+            Each point is one logged effort, colored by rep scheme; a diamond marks a personal
+            record.
           </p>
-          <LiftGrid lifts={dashboard.lifts} />
+          <RepMaxPrTable lifts={dashboard.lifts} />
+          <RepMaxLegend
+            colorMode={repMaxColorMode}
+            onColorModeChange={setRepMaxColorMode}
+            repMaxFilter={repMaxFilter}
+            onRepMaxFilterChange={setRepMaxFilter}
+          />
+          <LiftGrid lifts={dashboard.lifts} colorMode={repMaxColorMode} repMaxFilter={repMaxFilter} />
         </CardContent>
       </Card>
 

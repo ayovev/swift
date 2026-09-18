@@ -1,5 +1,6 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ACTIVE_SEGMENT_CLASSES } from "@/components/dashboard/SegmentedControl";
 import { capture } from "@/lib/posthog";
 import { useTheme, type ModePreference } from "@/lib/theme/useTheme";
 import { cn } from "@/lib/utils";
@@ -18,7 +19,7 @@ export function ModeToggle() {
     <div
       role="radiogroup"
       aria-label="Colour mode"
-      className="inline-flex items-center rounded-lg border border-border bg-card p-0.5"
+      className="flex items-center gap-0.5 rounded-md border border-border p-0.5"
     >
       {OPTIONS.map(({ value, label, Icon }) => {
         const active = mode === value;
@@ -35,10 +36,7 @@ export function ModeToggle() {
               setMode(value);
               capture({ name: "theme_changed", props: { mode: value } });
             }}
-            className={cn(
-              "h-7 w-8 rounded-md px-0 text-muted-foreground hover:text-foreground",
-              active && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
-            )}
+            className={cn("h-7 w-8 px-0", active && ACTIVE_SEGMENT_CLASSES)}
           >
             <Icon className="size-3.5" aria-hidden="true" />
           </Button>
