@@ -1,4 +1,11 @@
-import { TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { DOMAIN_LIST, DOMAIN_SHORT_LABELS } from "@/types/dashboard";
 import { MODALITY_LIST, MODALITY_SHORT_LABELS } from "@/types/modality";
 import { cn } from "@/lib/utils";
@@ -9,7 +16,7 @@ export const BODY_COMP_TAB = "body-comp";
 export interface TabDescriptor {
   value: string;
   label: string;
-  group: "Overview" | "Physical skills" | "Modalities" | "Body composition";
+  group: "Overview" | "Domains" | "Modalities" | "Body composition";
 }
 
 /**
@@ -22,7 +29,7 @@ export const ALL_TABS: TabDescriptor[] = [
   ...DOMAIN_LIST.map((d) => ({
     value: `domain:${d}`,
     label: DOMAIN_SHORT_LABELS[d],
-    group: "Physical skills" as const,
+    group: "Domains" as const,
   })),
   ...MODALITY_LIST.map((m) => ({
     value: `modality:${m}`,
@@ -32,15 +39,43 @@ export const ALL_TABS: TabDescriptor[] = [
   { value: BODY_COMP_TAB, label: "Body Comp", group: "Body composition" },
 ];
 
-const GROUPS = ["Overview", "Physical skills", "Modalities", "Body composition"] as const;
+const GROUPS = ["Overview", "Domains", "Modalities", "Body composition"] as const;
+type Group = (typeof GROUPS)[number];
+
+const GROUP_LABELS: Record<Group, string> = {
+  Overview: "Overview",
+  Domains: "Domains",
+  Modalities: "Modalities",
+  "Body composition": "Body Comp",
+};
+
+/** Overview and Body Comp are single tabs and select directly; the other two open a menu. */
+const DIRECT_VALUES: Partial<Record<Group, string>> = {
+  Overview: OVERVIEW_TAB,
+  "Body composition": BODY_COMP_TAB,
+};
+
+function groupOf(value: string): Group {
+  return ALL_TABS.find((t) => t.value === value)?.group ?? "Overview";
+}
 
 /**
  * Fourteen tabs is too many for one undifferentiated strip, and far too many
- * for a phone. On wide viewports they are grouped and horizontally scrollable;
- * on narrow ones the whole thing collapses to a native select, which is both
- * more usable and better for assistive tech than a 14-wide scroller.
+ * for a phone. On wide viewports the nav is a single row of four pills —
+ * Overview and Body Comp select directly since each is one tab, while
+ * Domains and Modalities open a dropdown of their own tabs instead of
+ * expanding a second row underneath. That keeps the nav's height constant
+ * (no row that appears/disappears and shifts the page) without reserving
+ * blank space for it either — the menu overlays instead of taking up
+ * layout. The active pill shows the current tab's own name (e.g. "Strength")
+ * so which one you're on is visible without opening the menu. On narrow
+ * viewports the whole thing collapses to a native select with the same
+ * groups as `optgroup`s, which is both more usable and better for
+ * assistive tech than a scroller.
  */
 export function TabNav({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
+  const activeGroup = groupOf(value);
+
   return (
     <>
       {/* Mobile */}
@@ -79,32 +114,56 @@ export function TabNav({ value, onValueChange }: { value: string; onValueChange:
       </div>
 
       {/* Desktop / tablet */}
-      <div className="-mx-1 hidden overflow-x-auto px-1 pb-1 sm:block">
-        <TabsList className="h-auto w-max gap-1 bg-transparent p-0">
-          {GROUPS.map((group, groupIndex) => (
-            <div key={group} className="flex items-center gap-1">
-              {groupIndex > 0 ? (
-                <span
-                  className="mx-2 hidden h-5 w-px shrink-0 bg-border md:block"
-                  aria-hidden="true"
-                />
-              ) : null}
-              {ALL_TABS.filter((t) => t.group === group).map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className={cn(
-                    "shrink-0 rounded-md border border-transparent px-3 py-1.5 text-sm",
-                    "data-[state=active]:border-accent-border data-[state=active]:bg-accent-subtle",
-                    "data-[state=active]:text-accent-link data-[state=active]:shadow-none"
-                  )}
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </div>
-          ))}
-        </TabsList>
+      <div
+        role="group"
+        aria-label="View"
+        className="hidden w-fit gap-1 rounded-lg border border-border p-1 sm:inline-flex"
+      >
+        {GROUPS.map((group) => {
+          const isActive = group === activeGroup;
+          const directValue = DIRECT_VALUES[group];
+          const pillClass = cn(
+            "flex shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            isActive ? "bg-accent-subtle text-accent-link" : "text-muted-foreground hover:text-foreground"
+          );
+
+          if (directValue !== undefined) {
+            return (
+              <button
+                key={group}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => onValueChange(directValue)}
+                className={pillClass}
+              >
+                {GROUP_LABELS[group]}
+              </button>
+            );
+          }
+
+          const groupTabs = ALL_TABS.filter((t) => t.group === group);
+          const current = groupTabs.find((t) => t.value === value);
+
+          return (
+            <DropdownMenu key={group}>
+              <DropdownMenuTrigger asChild>
+                <button type="button" aria-pressed={isActive} className={pillClass}>
+                  {current?.label ?? GROUP_LABELS[group]}
+                  <ChevronDown className="size-3.5" aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuRadioGroup value={value} onValueChange={onValueChange}>
+                  {groupTabs.map((tab) => (
+                    <DropdownMenuRadioItem key={tab.value} value={tab.value}>
+                      {tab.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        })}
       </div>
     </>
   );
