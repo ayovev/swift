@@ -3,6 +3,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AccentPicker } from "@/components/theme/AccentPicker";
 import { ModeToggle } from "@/components/theme/ModeToggle";
+import { ExportGuide } from "./ExportGuide";
 import { HowItWorks } from "./HowItWorks";
 import { UploadDropzone } from "./UploadDropzone";
 import { SwiftMark } from "@/components/SwiftMark";
@@ -64,6 +65,8 @@ export function Landing({ loading, error, onFile, onSample, onDismissError }: La
               Your file never leaves this browser. There's no account and no server.
             </p>
           </div>
+
+          <ExportGuide />
         </section>
 
         <section className="mt-20 border-t border-border pt-12" aria-labelledby="how-it-works">
