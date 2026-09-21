@@ -242,7 +242,7 @@ The copy in this app reads like a training partner who's good with data, not a c
 to motivate you. That's a deliberate stance, not an accident: the person exporting a SugarWOD
 CSV already tracks their own training and doesn't need to be sold on why it matters, so the
 UI never performs enthusiasm on their behalf. The landing page's own tagline is the whole
-thesis in one line: "Your training log, read back to you."
+thesis in one line: "The workout ends. The work doesn't."
 
 - **State what's true; don't cheer for it.** `OverviewTab.tsx`'s stat labels ("workouts
   logged", "personal records") and `HowItWorks.tsx`'s steps describe what happened in plain

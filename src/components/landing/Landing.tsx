@@ -30,7 +30,7 @@ export function Landing({ loading, error, onFile, onSample, onDismissError }: La
       <main className="mx-auto w-full max-w-5xl px-5 pb-24">
         <section className="mx-auto max-w-2xl pt-10 text-center sm:pt-16">
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-            Your training log, read back to you.
+            The workout ends. The work doesn't.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
             Upload your SugarWOD export and see what years of workouts add up to — how often you
