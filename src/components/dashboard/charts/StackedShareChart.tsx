@@ -51,7 +51,7 @@ export function StackedShareChart({
           {...AXIS_PROPS}
         />
         <ChartTooltip
-          content={<ChartTooltipContent labelKey="label" formatter={(value, name) => (
+          content={<ChartTooltipContent formatter={(value, name) => (
             <div className="flex w-full items-center justify-between gap-3">
               <span className="text-muted-foreground">{config[name as string]?.label ?? name}</span>
               <span className="font-medium tabular">{Number(value).toFixed(1)}%</span>

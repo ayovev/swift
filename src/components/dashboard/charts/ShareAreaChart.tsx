@@ -48,7 +48,6 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity }:
         <ChartTooltip
           content={
             <ChartTooltipContent
-              labelKey="label"
               formatter={(value) => (
                 <span className="font-medium tabular">{Number(value).toFixed(1)}%</span>
               )}

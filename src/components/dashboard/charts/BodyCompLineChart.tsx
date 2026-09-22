@@ -75,7 +75,6 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
           <ChartTooltip
             content={
               <ChartTooltipContent
-                labelKey="label"
                 formatter={(value) => (
                   <span className="font-medium tabular">
                     {Number(value).toFixed(1)}
