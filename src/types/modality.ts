@@ -95,6 +95,24 @@ export interface ModalityWorkoutEntry {
   movements: string[];
 }
 
+/** One row in the full, unfiltered running list of every logged workout —
+ *  unlike modality_workout_lists (one list per modality, only workouts with a
+ *  nonzero share of THAT modality), this carries every classified workout
+ *  exactly once, most recent first, for the Workouts tab. */
+export interface AllWorkoutsEntry {
+  /** YY-MM-DD, matching the GPP workout lists. */
+  date: string;
+  title: string;
+  /** All zero when `classified` is false. */
+  split: ModalitySplit;
+  /** Movement labels recognised anywhere in the workout, in text order. */
+  movements: string[];
+  /** false when no movement was recognised — the split above is meaningless
+   *  zeroes rather than a real 0/0/0 split, so the UI must say so rather than
+   *  drawing an empty bar as if it were data. */
+  classified: boolean;
+}
+
 export interface ModalityBucketShare {
   bucket: string;
   M: number;
@@ -112,6 +130,8 @@ export interface ModalityData {
   modality_overall: Record<Modality, ModalityOverallStat>;
   modality_trend_direction: Record<Modality, ModalityTrendDirectionStat>;
   modality_workout_lists: Record<Modality, ModalityWorkoutEntry[]>;
+  /** Every logged workout, most recent first — the Workouts tab's source list. */
+  all_workouts: AllWorkoutsEntry[];
   modality_stacked: ModalityStacked;
   /** Workouts where no movement was recognised. Surfaced as a UI caveat so
    *  the percentages are read with the right amount of trust. */

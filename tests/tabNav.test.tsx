@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, TabNav } from "@/components/dashboard/TabNav";
+import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, WORKOUTS_TAB, TabNav } from "@/components/dashboard/TabNav";
 import { DOMAIN_LIST } from "@/types/dashboard";
 import { MODALITY_LIST } from "@/types/modality";
 
@@ -16,22 +16,26 @@ const flexibilityTab = ALL_TABS.find((t) => t.group === "Domains" && t.label ===
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("TabNav — ALL_TABS", () => {
-  it("has one entry per Overview, GPP domain, modality and Body Comp", () => {
-    expect(ALL_TABS).toHaveLength(1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1);
+  it("has one entry per Overview, Workouts, GPP domain, modality and Body Comp", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1);
     expect(ALL_TABS.filter((t) => t.group === "Domains")).toHaveLength(DOMAIN_LIST.length);
     expect(ALL_TABS.filter((t) => t.group === "Modalities")).toHaveLength(MODALITY_LIST.length);
     expect(ALL_TABS.filter((t) => t.group === "Overview")).toHaveLength(1);
+    expect(ALL_TABS.filter((t) => t.group === "Workouts")).toHaveLength(1);
     expect(ALL_TABS.filter((t) => t.group === "Body composition")).toHaveLength(1);
   });
 });
 
 describe("TabNav — desktop group pills", () => {
-  it("selects Overview and Body Comp directly, with no menu", () => {
+  it("selects Overview, Workouts and Body Comp directly, with no menu", () => {
     const onValueChange = vi.fn();
     render(<TabNav value={strengthTab.value} onValueChange={onValueChange} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Overview" }));
     expect(onValueChange).toHaveBeenCalledWith(OVERVIEW_TAB);
+
+    fireEvent.click(screen.getByRole("button", { name: "Workouts" }));
+    expect(onValueChange).toHaveBeenCalledWith(WORKOUTS_TAB);
 
     fireEvent.click(screen.getByRole("button", { name: "Body Comp" }));
     expect(onValueChange).toHaveBeenCalledWith(BODY_COMP_TAB);
@@ -92,6 +96,7 @@ describe("TabNav — mobile select", () => {
     const select = screen.getByLabelText("Choose a view") as HTMLSelectElement;
 
     expect(within(select).getAllByRole("option")).toHaveLength(ALL_TABS.length);
+    expect(within(select).getByRole("group", { name: "Workouts" })).toBeInTheDocument();
     expect(within(select).getByRole("group", { name: "Domains" })).toBeInTheDocument();
     expect(within(select).getByRole("group", { name: "Modalities" })).toBeInTheDocument();
     expect(within(select).getByRole("group", { name: "Body composition" })).toBeInTheDocument();

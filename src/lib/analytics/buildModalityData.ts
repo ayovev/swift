@@ -2,6 +2,7 @@ import { classifyModality, movementsFor, sharesTo100 } from "@/lib/classify/clas
 import { MODALITY_LIST } from "@/types/modality";
 import type { ParsedRow } from "./buildDashboardData";
 import type {
+  AllWorkoutsEntry,
   Modality,
   ModalityBucketShare,
   ModalityClassification,
@@ -106,6 +107,15 @@ export function buildModalityData(parsedRows: readonly ParsedRow[]): ModalityDat
       }));
   }
 
+  // --- full running list, most recent first --------------------------------
+  const all_workouts: AllWorkoutsEntry[] = [...all].reverse().map((r) => ({
+    date: r.row.dateParsed.format("YY-MM-DD"),
+    title: r.row.raw.title,
+    split: r.modality.split,
+    movements: r.modality.movements.map((m) => m.label),
+    classified: r.modality.classified,
+  }));
+
   // --- normalized per-bucket stack -----------------------------------------
   // Each workout's split already sums to 100, so the per-bucket means do too —
   // but independently rounded means can drift, so re-normalize for the chart.
@@ -125,6 +135,7 @@ export function buildModalityData(parsedRows: readonly ParsedRow[]): ModalityDat
     modality_overall,
     modality_trend_direction,
     modality_workout_lists,
+    all_workouts,
     modality_stacked: { modality_names: MODALITY_LIST, bucket_shares },
     unclassified_count,
     classified_count: classified.length,

@@ -99,6 +99,37 @@ describe("buildModalityData — drill-down lists", () => {
   });
 });
 
+describe("buildModalityData — all_workouts", () => {
+  it("lists every row exactly once, most recent first, classified or not", () => {
+    const data = build([
+      row("01/05/2025", "ROW", "2000m row"),
+      row("01/06/2025", "DAILY LAZY MACROS POINTS", "week 1 points"),
+      row("02/05/2025", "FRAN", "21-15-9 thrusters and pull-ups"),
+    ]);
+    expect(data.all_workouts.map((w) => w.title)).toEqual([
+      "FRAN",
+      "DAILY LAZY MACROS POINTS",
+      "ROW",
+    ]);
+  });
+
+  it("gives an unclassified row a zeroed split and classified: false", () => {
+    const data = build([row("01/06/2025", "DAILY LAZY MACROS POINTS", "week 1 points")]);
+    const [entry] = data.all_workouts;
+    expect(entry?.classified).toBe(false);
+    expect(entry?.split).toEqual({ M: 0, W: 0, G: 0 });
+    expect(entry?.movements).toEqual([]);
+  });
+
+  it("carries the full split and driving movements for a classified row", () => {
+    const data = build([row("01/05/2025", "FRAN", "21-15-9 thrusters and pull-ups")]);
+    const [entry] = data.all_workouts;
+    expect(entry?.classified).toBe(true);
+    expect(entry?.split).toEqual({ M: 0, W: 50, G: 50 });
+    expect(entry?.movements).toEqual(["Thruster", "Pull-ups"]);
+  });
+});
+
 describe("buildModalityData — early vs late", () => {
   it("detects a shift from lifting toward conditioning", () => {
     const rows = [
