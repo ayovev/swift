@@ -127,7 +127,7 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
                   {rows.map((w, i) => {
                     const key = `${w.date}-${w.title}-${i}`;
                     const isOpen = expanded.has(key);
-                    const hasDetail = w.description || w.result || w.rx || w.pr;
+                    const hasDetail = w.description || w.notes || w.result || w.rx || w.pr;
                     return (
                       <Fragment key={key}>
                         <tr className="border-t border-border align-top">
@@ -210,6 +210,14 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
                               ) : (
                                 <p className="text-sm text-muted-foreground">No description logged.</p>
                               )}
+                              {w.notes ? (
+                                <div className="mt-3 flex max-w-2xl flex-col gap-1.5 border-t border-border pt-3 text-sm leading-relaxed text-muted-foreground">
+                                  <div className="text-xs font-semibold tracking-wide">Notes</div>
+                                  {formatWorkoutDescription(w.notes).map((line, j) => (
+                                    <p key={j}>{line}</p>
+                                  ))}
+                                </div>
+                              ) : null}
                             </td>
                           </tr>
                         ) : null}

@@ -154,6 +154,22 @@ describe("buildModalityData — all_workouts", () => {
     const data = build([row("01/05/2025", "ROW", "2000m row")]);
     expect(data.all_workouts[0]?.pr).toBe(false);
   });
+
+  it("carries the raw notes through untouched", () => {
+    const data = build([
+      row("01/05/2025", "FRAN", "21-15-9 thrusters and pull-ups", { notes: "65# thrusters, felt heavy" }),
+    ]);
+    expect(data.all_workouts[0]?.notes).toBe("65# thrusters, felt heavy");
+  });
+
+  it("defaults notes to \"\" when the column is absent from the row", () => {
+    const bare = row("01/05/2025", "ROW", "2000m row");
+    // A slim export can omit `notes` entirely (it's not a required column —
+    // see sugarwod.ts) rather than sending an empty string for it.
+    delete (bare as Partial<SugarWodRow>).notes;
+    const data = build([bare]);
+    expect(data.all_workouts[0]?.notes).toBe("");
+  });
 });
 
 describe("buildModalityData — early vs late", () => {

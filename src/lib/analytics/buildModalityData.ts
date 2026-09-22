@@ -112,6 +112,9 @@ export function buildModalityData(parsedRows: readonly ParsedRow[]): ModalityDat
     date: r.row.dateParsed.format("YY-MM-DD"),
     title: r.row.raw.title,
     description: r.row.raw.description,
+    // `notes` is excluded from REQUIRED_COLUMNS (see sugarwod.ts), so a slim
+    // export can leave it entirely absent from a parsed row rather than "".
+    notes: r.row.raw.notes ?? "",
     result: r.row.raw.best_result_display,
     rx: r.row.raw.rx_or_scaled,
     pr: r.row.raw.pr === "PR",

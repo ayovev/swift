@@ -106,6 +106,11 @@ export interface AllWorkoutsEntry {
   /** Raw SugarWOD workout text — untouched, so it can read as glued-together
    *  as the export itself does (see matcher.ts's header comment). */
   description: string;
+  /** The athlete's own free-text note, e.g. a load used or how it felt —
+   *  raw and untouched like `description`, and subject to the same
+   *  glued-together export quirk (SugarWOD joins multiple notes with no
+   *  separator too, e.g. "25# DBSingle unders"). "" when none was logged. */
+  notes: string;
   /** Human-formatted score, e.g. "3:45" or "165" — "" when nothing was logged. */
   result: string;
   /** Literally "RX" or "SCALED", or "" for neither. */
