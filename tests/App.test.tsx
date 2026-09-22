@@ -59,6 +59,23 @@ describe("App — local persistence", () => {
     await screen.findByRole("button", { name: /start over/i });
   });
 
+  it("chalks in a workout/PR summary right after upload, then hands off to the dashboard", async () => {
+    const { container } = renderApp();
+    await screen.findByRole("button", { name: /upload your sugarwod csv export/i });
+
+    const input = container.querySelector('input[type="file"]');
+    if (!input) throw new Error("expected the upload dropzone to render a file input");
+    const file = new File([loadSampleCsvText()], "export.csv", { type: "text/csv" });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    // Numbers count up, so match the shape rather than a settled value —
+    // this is a beat, not a stop, and it hands off to the dashboard next.
+    await screen.findByText(/[\d,]+ workouts logged · [\d,]+ personal records/i, undefined, {
+      timeout: 3000,
+    });
+    await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+  });
+
   it("'Start over' clears persisted data, not just the in-memory view", async () => {
     const rows = (await loadSampleRows()).slice(0, 5);
     const bodyRows = await loadSampleInBodyRows();

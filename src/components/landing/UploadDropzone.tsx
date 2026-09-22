@@ -9,6 +9,15 @@ interface UploadDropzoneProps {
   loadingLabel?: string;
   loadingHint?: string;
   hint?: string;
+  /** "bar" is Landing's plate-loaded loading bar; every other caller keeps the spinner. */
+  loadingVariant?: "spinner" | "bar";
+  /**
+   * "outline" (default) is the standing dashed box every other caller uses.
+   * "soft" is Landing's — no visible border at rest, just a faint tint, so it
+   * doesn't read as a box nested inside the hero. The border still appears
+   * on hover, drag and focus, so the drop target stays legible.
+   */
+  frame?: "outline" | "soft";
 }
 
 /** Drag-and-drop or click-to-browse CSV input. */
@@ -19,6 +28,8 @@ export function UploadDropzone({
   loadingLabel = "Reading your training history…",
   loadingHint = "Four years of workouts takes a second or two.",
   hint = "The .csv file SugarWOD gives you from Export Workouts",
+  loadingVariant = "spinner",
+  frame = "outline",
 }: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -59,16 +70,24 @@ export function UploadDropzone({
       aria-busy={loading}
       className={cn(
         "group relative flex w-full cursor-pointer flex-col items-center justify-center gap-3",
-        "rounded-xl border-2 border-dashed border-border px-6 py-12 text-center",
+        "rounded-xl border-2 border-dashed px-6 py-12 text-center",
         "transition-colors hover:border-primary hover:bg-accent-subtle",
+        "focus-visible:border-primary focus-visible:bg-accent-subtle",
         "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring",
+        frame === "soft" ? "border-transparent bg-muted/40" : "border-border",
         dragActive && "border-primary bg-accent-subtle",
         loading && "pointer-events-none opacity-70"
       )}
     >
       {loading ? (
         <>
-          <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
+          {loadingVariant === "bar" ? (
+            <div className="h-1.5 w-40 overflow-hidden rounded-full bg-muted" role="presentation">
+              <div className="h-full w-1/3 animate-[load-bar_1.1s_ease-in-out_infinite] rounded-full bg-primary" />
+            </div>
+          ) : (
+            <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
+          )}
           <p className="text-sm font-medium">{loadingLabel}</p>
           <p className="text-xs text-muted-foreground">{loadingHint}</p>
         </>

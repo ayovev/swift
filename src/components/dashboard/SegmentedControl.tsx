@@ -7,8 +7,9 @@ export interface SegmentedControlOption<T extends string> {
 }
 
 /**
- * The active-item accent classes, shared with ModeToggle (which hand-renders
- * its own buttons for icon support but is otherwise the same control family).
+ * The active-item accent classes, shared with ThemeControls' mode buttons
+ * (which hand-render for icon support but are otherwise the same control
+ * family).
  * The ghost Button variant's own hover is two separate rules — plain
  * hover:bg-accent and a differently-opacity'd dark:hover:bg-accent/50 — so
  * both have to be pinned here or the active item only keeps its accent tint

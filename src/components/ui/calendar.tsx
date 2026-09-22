@@ -38,7 +38,7 @@ function CalendarDayButton({ className, day: _day, modifiers, ...props }: DayBut
  * Thin Tailwind wrapper around react-day-picker — no default rdp stylesheet
  * is imported, so every visual state is driven by `classNames` here instead.
  * Selected/range colouring uses `--primary` (the athlete's accent), matching
- * how AccentPicker and TabNav mark an active selection.
+ * how ThemeControls and TabNav mark an active selection.
  */
 function Calendar({
   className,
