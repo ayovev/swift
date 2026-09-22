@@ -1,11 +1,14 @@
 import { MODALITY_LIST, MODALITY_SHORT_LABELS, type ModalitySplit } from "@/types/modality";
-import { modalityColor } from "./chartUtils";
+import { FIXED_MODALITY_COLORS } from "./chartUtils";
 
 /**
  * One workout's M/W/G split as a thin horizontal stacked bar — the per-row
- * visual on the Workouts tab. Segments use the same modalityColor() as every
- * other modality chart, so a bar here reads as "the same three colors" as the
- * stacked area chart on Overview and the modality tabs, not a new palette.
+ * visual on the Workouts tab. Segments use FIXED_MODALITY_COLORS, the fixed
+ * red/green/blue-reading steps from the lift chart's own rep-max ramp,
+ * rather than the accent-derived modalityColor() used elsewhere (the
+ * stacked area chart on Overview, the modality tabs) — a bar this dense with
+ * rows reads better against colors that don't shift with the athlete's
+ * chosen accent.
  *
  * Zero-share modalities render no segment at all (a 0-width div would still
  * need a rounded end), and the bar rounds whichever segments land first/last
@@ -36,7 +39,7 @@ export function ModalityBar({ split, classified }: { split: ModalitySplit; class
             className={i === 0 ? "rounded-l-full" : i === segments.length - 1 ? "rounded-r-full" : ""}
             style={{
               width: `${split[m]}%`,
-              backgroundColor: modalityColor(m),
+              backgroundColor: FIXED_MODALITY_COLORS[m],
               boxShadow: i < segments.length - 1 ? "inset -2px 0 0 0 var(--background)" : undefined,
             }}
           />

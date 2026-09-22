@@ -3,8 +3,7 @@ import { Search } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ModalityBar } from "./charts/ModalityBar";
-import { modalityColor } from "./charts/chartUtils";
-import { formatShortDate } from "./charts/chartUtils";
+import { FIXED_MODALITY_COLORS, formatShortDate } from "./charts/chartUtils";
 import { cn } from "@/lib/utils";
 import { MODALITY_LIST, MODALITY_SHORT_LABELS, type ModalityData } from "@/types/modality";
 
@@ -50,7 +49,7 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
               <span key={m} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: modalityColor(m) }}
+                  style={{ backgroundColor: FIXED_MODALITY_COLORS[m] }}
                   aria-hidden="true"
                 />
                 {MODALITY_SHORT_LABELS[m]}
