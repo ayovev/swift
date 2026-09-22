@@ -66,11 +66,7 @@ export function Landing({ loading, reveal, error, onFile, onSample, onDismissErr
             actually been building.
           </p>
 
-          <p className="mt-10 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-            Today's WOD
-          </p>
-
-          <div className="mt-4">
+          <div className="mt-9">
             {reveal ? (
               <UploadReveal workoutCount={reveal.workoutCount} prCount={reveal.prCount} />
             ) : (
