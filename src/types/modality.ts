@@ -103,6 +103,14 @@ export interface AllWorkoutsEntry {
   /** YY-MM-DD, matching the GPP workout lists. */
   date: string;
   title: string;
+  /** Raw SugarWOD workout text — untouched, so it can read as glued-together
+   *  as the export itself does (see matcher.ts's header comment). */
+  description: string;
+  /** Human-formatted score, e.g. "3:45" or "165" — "" when nothing was logged. */
+  result: string;
+  /** Literally "RX" or "SCALED", or "" for neither. */
+  rx: string;
+  pr: boolean;
   /** All zero when `classified` is false. */
   split: ModalitySplit;
   /** Movement labels recognised anywhere in the workout, in text order. */

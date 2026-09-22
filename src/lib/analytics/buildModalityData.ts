@@ -111,6 +111,10 @@ export function buildModalityData(parsedRows: readonly ParsedRow[]): ModalityDat
   const all_workouts: AllWorkoutsEntry[] = [...all].reverse().map((r) => ({
     date: r.row.dateParsed.format("YY-MM-DD"),
     title: r.row.raw.title,
+    description: r.row.raw.description,
+    result: r.row.raw.best_result_display,
+    rx: r.row.raw.rx_or_scaled,
+    pr: r.row.raw.pr === "PR",
     split: r.modality.split,
     movements: r.modality.movements.map((m) => m.label),
     classified: r.modality.classified,

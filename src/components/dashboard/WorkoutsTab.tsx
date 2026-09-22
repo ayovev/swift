@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Fragment, useMemo, useState } from "react";
+import { ChevronRight, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ModalityBar } from "./charts/ModalityBar";
@@ -14,10 +15,24 @@ const PAGE_SIZE = 50;
  * split as a stacked progress bar — see ModalityBar. Unlike WorkoutList (an
  * audit trail scoped to one domain or modality, collapsed behind "show all"),
  * this tab's whole point IS the list, so it renders open by default.
+ *
+ * Each row expands in place to the workout's full description and score —
+ * data already sitting in ParsedRow.raw and unused elsewhere in this tab, so
+ * no new parsing or fetch is involved, just surfacing it on click.
  */
 export function WorkoutsTab({ data }: { data: ModalityData }) {
   const [query, setQuery] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+
+  const toggle = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -95,7 +110,8 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
             <div className="overflow-hidden rounded-lg border border-border">
               <table className="w-full text-sm">
                 <caption className="sr-only">
-                  Every logged workout with its metabolic/weightlifting/gymnastics split
+                  Every logged workout with its metabolic/weightlifting/gymnastics split; each row
+                  expands to the full description and score
                 </caption>
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
@@ -107,29 +123,85 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((w, i) => (
-                    <tr key={`${w.date}-${w.title}-${i}`} className="border-t border-border align-top">
-                      <td className="whitespace-nowrap px-3 py-2 text-muted-foreground tabular">
-                        {formatShortDate(w.date)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <div>{w.title || <span className="text-muted-foreground">Untitled</span>}</div>
-                        {w.movements.length > 0 ? (
-                          <div className="mt-0.5 text-xs text-muted-foreground">
-                            {w.movements.join(", ")}
-                          </div>
+                  {rows.map((w, i) => {
+                    const key = `${w.date}-${w.title}-${i}`;
+                    const isOpen = expanded.has(key);
+                    const hasDetail = w.description || w.result || w.rx || w.pr;
+                    return (
+                      <Fragment key={key}>
+                        <tr className="border-t border-border align-top">
+                          <td className="whitespace-nowrap px-3 py-2 text-muted-foreground tabular">
+                            {formatShortDate(w.date)}
+                          </td>
+                          <td className="px-3 py-2">
+                            <button
+                              type="button"
+                              onClick={() => toggle(key)}
+                              aria-expanded={isOpen}
+                              disabled={!hasDetail}
+                              className={cn(
+                                "flex w-full items-start gap-1.5 text-left",
+                                hasDetail && "cursor-pointer"
+                              )}
+                            >
+                              <ChevronRight
+                                className={cn(
+                                  "mt-0.5 size-3.5 shrink-0 text-muted-foreground transition-transform",
+                                  isOpen && "rotate-90",
+                                  !hasDetail && "invisible"
+                                )}
+                                aria-hidden="true"
+                              />
+                              <span>
+                                <div>{w.title || <span className="text-muted-foreground">Untitled</span>}</div>
+                                {w.movements.length > 0 ? (
+                                  <div className="mt-0.5 text-xs text-muted-foreground">
+                                    {w.movements.join(", ")}
+                                  </div>
+                                ) : null}
+                              </span>
+                            </button>
+                          </td>
+                          <td className="px-3 py-2">
+                            <ModalityBar split={w.split} classified={w.classified} />
+                            <div className="mt-1 text-xs text-muted-foreground tabular">
+                              {w.classified
+                                ? `M ${w.split.M.toFixed(0)} / W ${w.split.W.toFixed(0)} / G ${w.split.G.toFixed(0)}`
+                                : "not classified"}
+                            </div>
+                          </td>
+                        </tr>
+                        {isOpen ? (
+                          <tr className="border-t border-border bg-muted/30">
+                            <td colSpan={3} className="px-3 py-3 pl-9">
+                              {w.description ? (
+                                <p className="max-w-2xl text-sm leading-relaxed">{w.description}</p>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">No description logged.</p>
+                              )}
+                              {w.result || w.rx || w.pr ? (
+                                <div className="mt-2 flex flex-wrap items-center gap-2.5 text-xs">
+                                  {w.pr ? (
+                                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                                      PR
+                                    </Badge>
+                                  ) : null}
+                                  {w.result ? (
+                                    <span className="font-medium tabular">{w.result}</span>
+                                  ) : null}
+                                  {w.rx ? (
+                                    <span className="uppercase tracking-wide text-muted-foreground">
+                                      {w.rx.toLowerCase()}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                            </td>
+                          </tr>
                         ) : null}
-                      </td>
-                      <td className="px-3 py-2">
-                        <ModalityBar split={w.split} classified={w.classified} />
-                        <div className="mt-1 text-xs text-muted-foreground tabular">
-                          {w.classified
-                            ? `M ${w.split.M.toFixed(0)} / W ${w.split.W.toFixed(0)} / G ${w.split.G.toFixed(0)}`
-                            : "not classified"}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

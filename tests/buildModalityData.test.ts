@@ -6,7 +6,12 @@ import type { SugarWodRow } from "@/types/sugarwod";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
 /** Minimal row builder — only the fields the modality pipeline reads. */
-function row(date: string, title: string, description = ""): SugarWodRow {
+function row(
+  date: string,
+  title: string,
+  description = "",
+  overrides: Partial<SugarWodRow> = {}
+): SugarWodRow {
   return {
     date,
     title,
@@ -19,6 +24,7 @@ function row(date: string, title: string, description = ""): SugarWodRow {
     notes: "",
     rx_or_scaled: "RX",
     pr: "",
+    ...overrides,
   };
 }
 
@@ -127,6 +133,26 @@ describe("buildModalityData — all_workouts", () => {
     expect(entry?.classified).toBe(true);
     expect(entry?.split).toEqual({ M: 0, W: 50, G: 50 });
     expect(entry?.movements).toEqual(["Thruster", "Pull-ups"]);
+  });
+
+  it("carries the raw description, score, RX/scaled and PR flag through untouched", () => {
+    const data = build([
+      row("01/05/2025", "FRAN", "21-15-9 thrusters and pull-ups", {
+        best_result_display: "3:45",
+        rx_or_scaled: "SCALED",
+        pr: "PR",
+      }),
+    ]);
+    const [entry] = data.all_workouts;
+    expect(entry?.description).toBe("21-15-9 thrusters and pull-ups");
+    expect(entry?.result).toBe("3:45");
+    expect(entry?.rx).toBe("SCALED");
+    expect(entry?.pr).toBe(true);
+  });
+
+  it("reports pr: false when the row isn't flagged as a PR", () => {
+    const data = build([row("01/05/2025", "ROW", "2000m row")]);
+    expect(data.all_workouts[0]?.pr).toBe(false);
   });
 });
 
