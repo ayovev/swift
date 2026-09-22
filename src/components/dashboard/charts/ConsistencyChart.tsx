@@ -41,7 +41,7 @@ export function ConsistencyChart({
           interval={0} // see niceAxisTicks() in chartUtils.ts for why
           {...AXIS_PROPS}
         />
-        <ChartTooltip content={<ChartTooltipContent labelKey="label" />} />
+        <ChartTooltip content={<ChartTooltipContent />} />
         <Bar dataKey="count" fill="var(--primary)" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ChartContainer>
