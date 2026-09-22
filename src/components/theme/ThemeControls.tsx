@@ -35,16 +35,18 @@ export function ThemeControls() {
     <div className="flex items-center gap-1.5 rounded-md border border-border p-0.5">
       <Popover open={accentOpen} onOpenChange={setAccentOpen}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             aria-label={`Accent colour: ${getSwatch(accent).name}`}
-            className={cn(
-              "ml-1 size-3.5 shrink-0 rounded-full border border-border transition-transform",
-              "hover:scale-105",
-              "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            )}
-            style={{ backgroundColor: formatOklch(current.primary) }}
-          />
+            className="h-7 w-8 px-0"
+          >
+            <span
+              className="size-3.5 rounded-full border border-border"
+              style={{ backgroundColor: formatOklch(current.primary) }}
+              aria-hidden="true"
+            />
+          </Button>
         </PopoverTrigger>
         <PopoverContent
           align="start"
