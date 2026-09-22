@@ -181,7 +181,7 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
                                     <span className="text-xl font-bold tabular">{w.result}</span>
                                   ) : null}
                                   {w.pr ? (
-                                    <Badge variant="default" className="h-5 px-1.5 text-[10px]">
+                                    <Badge variant="default" className="h-5 px-1.5 text-[10px]/[1]">
                                       PR
                                     </Badge>
                                   ) : null}

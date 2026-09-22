@@ -36,7 +36,7 @@ function BenchmarkCard({ name, entries }: { name: string; entries: BenchmarkEntr
               <span className="text-muted-foreground">{formatDate(entry.date)}</span>
               <span className="flex items-center gap-2">
                 {entry.pr ? (
-                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]/[1]">
                     PR
                   </Badge>
                 ) : null}
