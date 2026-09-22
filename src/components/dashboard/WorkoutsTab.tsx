@@ -175,13 +175,32 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
                         {isOpen ? (
                           <tr className="border-t border-border bg-muted/30">
                             <td colSpan={3} className="px-3 py-3 pl-9">
+                              {w.result || w.rx || w.pr ? (
+                                <div className="mb-3 flex flex-wrap items-center gap-2.5">
+                                  {w.result ? (
+                                    <span className="text-lg font-semibold text-accent-link tabular">
+                                      {w.result}
+                                    </span>
+                                  ) : null}
+                                  {w.pr ? (
+                                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                                      PR
+                                    </Badge>
+                                  ) : null}
+                                  {w.rx ? (
+                                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                      {w.rx.toLowerCase()}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              ) : null}
                               {w.description ? (
-                                <div className="flex max-w-2xl flex-col gap-1.5 text-sm leading-relaxed">
+                                <div className="flex max-w-2xl flex-col gap-1.5 text-sm leading-relaxed text-muted-foreground">
                                   {formatWorkoutDescription(w.description).map((line, j) =>
                                     isLevelLabel(line) ? (
                                       <div
                                         key={j}
-                                        className="mt-1 text-xs font-semibold tracking-wide text-muted-foreground first:mt-0"
+                                        className="mt-1 text-xs font-semibold tracking-wide first:mt-0"
                                       >
                                         {line}
                                       </div>
@@ -193,23 +212,6 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
                               ) : (
                                 <p className="text-sm text-muted-foreground">No description logged.</p>
                               )}
-                              {w.result || w.rx || w.pr ? (
-                                <div className="mt-2 flex flex-wrap items-center gap-2.5 text-xs">
-                                  {w.pr ? (
-                                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                                      PR
-                                    </Badge>
-                                  ) : null}
-                                  {w.result ? (
-                                    <span className="font-medium tabular">{w.result}</span>
-                                  ) : null}
-                                  {w.rx ? (
-                                    <span className="uppercase tracking-wide text-muted-foreground">
-                                      {w.rx.toLowerCase()}
-                                    </span>
-                                  ) : null}
-                                </div>
-                              ) : null}
                             </td>
                           </tr>
                         ) : null}
