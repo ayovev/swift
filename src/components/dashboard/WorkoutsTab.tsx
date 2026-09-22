@@ -41,7 +41,8 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
     return data.all_workouts.filter(
       (w) =>
         w.title.toLowerCase().includes(q) ||
-        w.movements.some((m) => m.toLowerCase().includes(q))
+        w.movements.some((m) => m.toLowerCase().includes(q)) ||
+        w.notes.toLowerCase().includes(q)
     );
   }, [data.all_workouts, query]);
 
@@ -95,7 +96,7 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
                 setQuery(e.target.value);
                 setVisible(PAGE_SIZE);
               }}
-              placeholder="Filter by workout name or movement"
+              placeholder="Filter by workout name, movement, or notes"
               aria-label="Filter workouts"
               className={cn(
                 "h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm",
