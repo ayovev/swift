@@ -39,7 +39,7 @@ export function ThemeControls() {
             type="button"
             aria-label={`Accent colour: ${getSwatch(accent).name}`}
             className={cn(
-              "ml-0.5 size-3.5 shrink-0 rounded-full border border-border transition-transform",
+              "ml-1 size-3.5 shrink-0 rounded-full border border-border transition-transform",
               "hover:scale-105",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             )}
