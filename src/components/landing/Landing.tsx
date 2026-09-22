@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import { AlertCircle, Lock, PlayCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AccentPicker } from "@/components/theme/AccentPicker";
-import { ModeToggle } from "@/components/theme/ModeToggle";
+import { ThemeControls } from "@/components/theme/ThemeControls";
 import { ExportGuide } from "./ExportGuide";
 import { HowItWorks } from "./HowItWorks";
 import { UploadDropzone } from "./UploadDropzone";
@@ -47,10 +46,7 @@ export function Landing({ loading, reveal, error, onFile, onSample, onDismissErr
     <div className="min-h-svh bg-background">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5">
         <SwiftMark />
-        <div className="flex items-center gap-2">
-          <AccentPicker />
-          <ModeToggle />
-        </div>
+        <ThemeControls />
       </header>
 
       <main className="mx-auto w-full max-w-5xl px-5 pb-24">

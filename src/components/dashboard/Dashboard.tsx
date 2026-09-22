@@ -2,8 +2,7 @@ import { useCallback, useState } from "react";
 import { FlaskConical, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { AccentPicker } from "@/components/theme/AccentPicker";
-import { ModeToggle } from "@/components/theme/ModeToggle";
+import { ThemeControls } from "@/components/theme/ThemeControls";
 import { SwiftMark } from "@/components/SwiftMark";
 import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
 import { DateRangePicker } from "./DateRangePicker";
@@ -99,8 +98,7 @@ export function Dashboard({
             {insights.dateBounds ? (
               <GranularityPicker value={granularity} onChange={onGranularityChange} />
             ) : null}
-            <AccentPicker />
-            <ModeToggle />
+            <ThemeControls />
             <Button variant="outline" size="sm" onClick={onReset} className="h-8 gap-2">
               <RotateCcw className="size-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">Start over</span>
