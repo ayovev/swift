@@ -54,60 +54,58 @@ export function Landing({ loading, reveal, error, onFile, onSample, onDismissErr
       </header>
 
       <main className="mx-auto w-full max-w-5xl px-5 pb-24">
-        <section className="pt-10 sm:pt-16">
-          <div className="relative isolate mx-auto max-w-2xl overflow-hidden rounded-2xl border border-border px-6 py-10 text-center sm:px-10 sm:py-14">
-            <WhiteboardTexture />
+        <section className="relative isolate mx-auto max-w-2xl pt-12 text-center sm:pt-20">
+          <WhiteboardTexture />
 
-            <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-              The workout ends. The work doesn't.
-            </h1>
-            <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
-              Upload your SugarWOD export and see what years of workouts add up to — how often you
-              showed up, what got heavier, and which of the ten physical skills your training has
-              actually been building.
-            </p>
+          <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
+            The workout ends. The work doesn't.
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
+            Upload your SugarWOD export and see what years of workouts add up to — how often you
+            showed up, what got heavier, and which of the ten physical skills your training has
+            actually been building.
+          </p>
 
-            <p className="mt-9 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-              Today's WOD
-            </p>
+          <p className="mt-10 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            Today's WOD
+          </p>
 
-            <div className="mt-3">
-              {reveal ? (
-                <UploadReveal workoutCount={reveal.workoutCount} prCount={reveal.prCount} />
-              ) : (
-                <UploadDropzone loading={loading} onFile={onFile} loadingVariant="bar" />
-              )}
-            </div>
-
-            {error ? (
-              <Alert variant="destructive" className="mt-5 text-left">
-                <AlertCircle className="size-4" aria-hidden="true" />
-                <AlertTitle>That file didn't work</AlertTitle>
-                <AlertDescription className="flex flex-col items-start gap-3">
-                  <span>{error}</span>
-                  <Button variant="outline" size="sm" onClick={onDismissError}>
-                    Try another file
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            ) : null}
-
-            <div className="mt-5 flex flex-col items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={onSample} disabled={busy} className="gap-2">
-                <PlayCircle className="size-4" aria-hidden="true" />
-                Or try it with sample data
-              </Button>
-              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Lock className="size-3" aria-hidden="true" />
-                Your file never leaves this browser. There's no account and no server.
-              </p>
-            </div>
-
-            <ExportGuide />
+          <div className="mt-4">
+            {reveal ? (
+              <UploadReveal workoutCount={reveal.workoutCount} prCount={reveal.prCount} />
+            ) : (
+              <UploadDropzone loading={loading} onFile={onFile} loadingVariant="bar" frame="soft" />
+            )}
           </div>
+
+          {error ? (
+            <Alert variant="destructive" className="mt-5 text-left">
+              <AlertCircle className="size-4" aria-hidden="true" />
+              <AlertTitle>That file didn't work</AlertTitle>
+              <AlertDescription className="flex flex-col items-start gap-3">
+                <span>{error}</span>
+                <Button variant="outline" size="sm" onClick={onDismissError}>
+                  Try another file
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          <div className="mt-6 flex flex-col items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={onSample} disabled={busy} className="gap-2">
+              <PlayCircle className="size-4" aria-hidden="true" />
+              Or try it with sample data
+            </Button>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Lock className="size-3" aria-hidden="true" />
+              Your file never leaves this browser. There's no account and no server.
+            </p>
+          </div>
+
+          <ExportGuide />
         </section>
 
-        <section className="mt-20 border-t border-border pt-12" aria-labelledby="how-it-works">
+        <section className="mt-28 sm:mt-32" aria-labelledby="how-it-works">
           <h2 id="how-it-works" className="mb-8 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             How it works
           </h2>

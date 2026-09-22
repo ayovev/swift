@@ -44,7 +44,7 @@ export function UploadReveal({ workoutCount, prCount }: UploadRevealProps) {
 
   return (
     <div
-      className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border px-6 py-12 text-center"
+      className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-transparent bg-muted/40 px-6 py-12 text-center"
       aria-live="polite"
     >
       <p className="tabular text-sm font-medium">
