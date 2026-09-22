@@ -32,7 +32,7 @@ export function ThemeControls() {
   const current = accentRoles(getSwatch(accent), resolvedMode);
 
   return (
-    <div className="flex items-center gap-1.5 rounded-md border border-border p-0.5">
+    <div className="flex items-center rounded-md border border-border p-0.5">
       <Popover open={accentOpen} onOpenChange={setAccentOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -93,7 +93,16 @@ export function ThemeControls() {
         </PopoverContent>
       </Popover>
 
-      <div className="h-4 w-px bg-border" aria-hidden="true" />
+      {/*
+        The button's own padding around the swatch is symmetric (9px), but
+        the flat gap-1.5 that used to sit on both sides of this divider made
+        the right side read as more padded — the eye compares distance to
+        the *next visual landmark*, and the divider was one extra gap away
+        on the right versus the pill's plain border on the left. ml-[3px]
+        brings that total back to 12px on both sides; mr-1.5 keeps the
+        divider-to-mode-buttons gap as it was.
+      */}
+      <div className="ml-[3px] mr-1.5 h-4 w-px bg-border" aria-hidden="true" />
 
       <div role="radiogroup" aria-label="Colour mode" className="flex items-center gap-0.5">
         {MODE_OPTIONS.map(({ value, label, Icon }) => {
