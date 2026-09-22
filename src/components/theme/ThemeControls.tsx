@@ -18,9 +18,10 @@ const MODE_OPTIONS: { value: ModePreference; label: string; Icon: typeof Sun }[]
 /**
  * Accent colour and light/dark/system mode, folded into one bordered pill.
  * They're always shown side by side (Landing's and Dashboard's headers), so
- * one shared container reads as "theme controls," not two adjacent widgets —
- * a thin divider is what separates the two pieces of functionality, not a
- * gap between two boxes.
+ * one shared container reads as "theme controls," not two adjacent widgets.
+ * The four buttons (accent swatch, then the three mode options) sit in a
+ * single segmented control with one consistent gap between every pair —
+ * no divider marking the accent button off from the rest.
  *
  * The accent swatch is deliberately not a free colour picker (see
  * palette.ts): every swatch is contrast-tested against both modes
@@ -32,7 +33,7 @@ export function ThemeControls() {
   const current = accentRoles(getSwatch(accent), resolvedMode);
 
   return (
-    <div className="flex items-center rounded-md border border-border p-0.5">
+    <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
       <Popover open={accentOpen} onOpenChange={setAccentOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -92,17 +93,6 @@ export function ThemeControls() {
           </div>
         </PopoverContent>
       </Popover>
-
-      {/*
-        The button's own padding around the swatch is symmetric (9px), but
-        the flat gap-1.5 that used to sit on both sides of this divider made
-        the right side read as more padded — the eye compares distance to
-        the *next visual landmark*, and the divider was one extra gap away
-        on the right versus the pill's plain border on the left. ml-[3px]
-        brings that total back to 12px on both sides; mr-1.5 keeps the
-        divider-to-mode-buttons gap as it was.
-      */}
-      <div className="ml-[3px] mr-1.5 h-4 w-px bg-border" aria-hidden="true" />
 
       <div role="radiogroup" aria-label="Colour mode" className="flex items-center gap-0.5">
         {MODE_OPTIONS.map(({ value, label, Icon }) => {
