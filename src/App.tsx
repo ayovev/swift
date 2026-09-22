@@ -15,13 +15,27 @@ import type { SugarWodRow } from "@/types/sugarwod";
 
 export type DataSource = "upload" | "sample";
 
+interface RevealSummary {
+  workoutCount: number;
+  prCount: number;
+}
+
 type AppState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "error"; message: string }
+  // A brief beat between a successful parse and the dashboard appearing, so
+  // Landing can chalk in "N workouts logged, N personal records" (see
+  // UploadReveal) instead of cutting straight from spinner to dashboard.
+  | { status: "reveal"; rows: SugarWodRow[]; source: DataSource; summary: RevealSummary }
   | { status: "ready"; rows: SugarWodRow[]; source: DataSource };
 
 const SAMPLE_CSV_URL = "/sample/sugarwod-sample-export.csv";
+
+// Long enough to read two short numbers, short enough not to feel like a
+// tax on top of the parse itself. Reduced-motion skips it almost entirely.
+const REVEAL_HOLD_MS = 500;
+const REVEAL_HOLD_MS_REDUCED = 80;
 
 export default function App() {
   const [state, setState] = useState<AppState>({ status: "loading" });
@@ -54,6 +68,22 @@ export default function App() {
     [state, range, granularity]
   );
 
+  // Hold on "reveal" just long enough for UploadReveal's numbers to chalk
+  // themselves in before handing off to the dashboard.
+  useEffect(() => {
+    if (state.status !== "reveal") return;
+    const { rows, source } = state;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      !!window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const timer = window.setTimeout(
+      () => setState({ status: "ready", rows, source }),
+      reduceMotion ? REVEAL_HOLD_MS_REDUCED : REVEAL_HOLD_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [state]);
+
   const run = useCallback(async (source: DataSource, load: () => Promise<File | string>) => {
     setState({ status: "loading" });
     capture(source === "sample" ? { name: "sample_data_used" } : { name: "upload_attempted" });
@@ -72,10 +102,18 @@ export default function App() {
       });
       setRange(null);
       setGranularity("monthly");
-      setState({ status: "ready", rows, source });
       // Sample data is a public demo file, already free to re-fetch from
       // public/sample/ — only a genuine upload is worth persisting.
       if (source === "upload") void saveWorkoutRows(rows);
+      setState({
+        status: "reveal",
+        rows,
+        source,
+        summary: {
+          workoutCount: rows.length,
+          prCount: rows.filter((r) => r.pr === "PR").length,
+        },
+      });
     } catch (err) {
       const message =
         err instanceof CsvValidationError
@@ -161,6 +199,7 @@ export default function App() {
   return (
     <Landing
       loading={state.status === "loading"}
+      reveal={state.status === "reveal" ? state.summary : null}
       error={state.status === "error" ? state.message : null}
       onFile={handleFile}
       onSample={handleSample}

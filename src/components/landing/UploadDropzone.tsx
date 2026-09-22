@@ -9,6 +9,8 @@ interface UploadDropzoneProps {
   loadingLabel?: string;
   loadingHint?: string;
   hint?: string;
+  /** "bar" is Landing's plate-loaded loading bar; every other caller keeps the spinner. */
+  loadingVariant?: "spinner" | "bar";
 }
 
 /** Drag-and-drop or click-to-browse CSV input. */
@@ -19,6 +21,7 @@ export function UploadDropzone({
   loadingLabel = "Reading your training history…",
   loadingHint = "Four years of workouts takes a second or two.",
   hint = "The .csv file SugarWOD gives you from Export Workouts",
+  loadingVariant = "spinner",
 }: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -68,7 +71,13 @@ export function UploadDropzone({
     >
       {loading ? (
         <>
-          <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
+          {loadingVariant === "bar" ? (
+            <div className="h-1.5 w-40 overflow-hidden rounded-full bg-muted" role="presentation">
+              <div className="h-full w-1/3 animate-[load-bar_1.1s_ease-in-out_infinite] rounded-full bg-primary" />
+            </div>
+          ) : (
+            <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
+          )}
           <p className="text-sm font-medium">{loadingLabel}</p>
           <p className="text-xs text-muted-foreground">{loadingHint}</p>
         </>

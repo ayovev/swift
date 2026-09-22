@@ -167,6 +167,16 @@
   }
 }
 
+/* The upload dropzone's "loading" bar (Landing.tsx) — a plate sliding along a bar. */
+@keyframes load-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
