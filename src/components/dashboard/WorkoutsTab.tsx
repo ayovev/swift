@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ModalityBar } from "./charts/ModalityBar";
 import { FIXED_MODALITY_COLORS, formatShortDate } from "./charts/chartUtils";
+import { formatWorkoutDescription, isLevelLabel } from "@/lib/format/workoutDescription";
 import { cn } from "@/lib/utils";
 import { MODALITY_LIST, MODALITY_SHORT_LABELS, type ModalityData } from "@/types/modality";
 
@@ -175,7 +176,20 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
                           <tr className="border-t border-border bg-muted/30">
                             <td colSpan={3} className="px-3 py-3 pl-9">
                               {w.description ? (
-                                <p className="max-w-2xl text-sm leading-relaxed">{w.description}</p>
+                                <div className="flex max-w-2xl flex-col gap-1.5 text-sm leading-relaxed">
+                                  {formatWorkoutDescription(w.description).map((line, j) =>
+                                    isLevelLabel(line) ? (
+                                      <div
+                                        key={j}
+                                        className="mt-1 text-xs font-semibold tracking-wide text-muted-foreground first:mt-0"
+                                      >
+                                        {line}
+                                      </div>
+                                    ) : (
+                                      <p key={j}>{line}</p>
+                                    )
+                                  )}
+                                </div>
                               ) : (
                                 <p className="text-sm text-muted-foreground">No description logged.</p>
                               )}
