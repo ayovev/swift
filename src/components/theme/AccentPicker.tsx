@@ -28,7 +28,7 @@ export function AccentPicker() {
           type="button"
           aria-label={`Accent colour: ${getSwatch(accent).name}`}
           className={cn(
-            "size-8 shrink-0 rounded-full border border-border transition-transform",
+            "size-6 shrink-0 rounded-full border border-border transition-transform",
             "hover:scale-105",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           )}
@@ -59,7 +59,7 @@ export function AccentPicker() {
                   setOpen(false);
                 }}
                 className={cn(
-                  "flex size-7 shrink-0 items-center justify-center rounded-full transition-transform",
+                  "flex size-6 shrink-0 items-center justify-center rounded-full transition-transform",
                   "hover:scale-110",
                   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                   active && "ring-2 ring-foreground ring-offset-2 ring-offset-popover"
@@ -68,7 +68,7 @@ export function AccentPicker() {
               >
                 {active ? (
                   <Check
-                    className="size-3"
+                    className="size-2.5"
                     style={{ color: formatOklch(primaryForeground) }}
                     aria-hidden="true"
                   />
