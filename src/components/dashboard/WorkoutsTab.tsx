@@ -178,12 +178,10 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
                               {w.result || w.rx || w.pr ? (
                                 <div className="mb-3 flex flex-wrap items-center gap-2.5">
                                   {w.result ? (
-                                    <span className="text-lg font-semibold text-accent-link tabular">
-                                      {w.result}
-                                    </span>
+                                    <span className="text-xl font-bold tabular">{w.result}</span>
                                   ) : null}
                                   {w.pr ? (
-                                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                                    <Badge variant="default" className="h-5 px-1.5 text-[10px]">
                                       PR
                                     </Badge>
                                   ) : null}
