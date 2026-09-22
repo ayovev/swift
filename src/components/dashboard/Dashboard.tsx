@@ -10,7 +10,8 @@ import { DomainTab } from "./DomainTab";
 import { GranularityPicker } from "./GranularityPicker";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
-import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, TabNav } from "./TabNav";
+import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, WORKOUTS_TAB, TabNav } from "./TabNav";
+import { WorkoutsTab } from "./WorkoutsTab";
 import { formatDate } from "./charts/chartUtils";
 import type { DateRange } from "@/lib/analytics/dateRange";
 import type { Granularity } from "@/lib/analytics/granularity";
@@ -129,6 +130,10 @@ export function Dashboard({
 
           <TabsContent value={OVERVIEW_TAB}>
             <OverviewTab insights={insights} granularity={granularity} />
+          </TabsContent>
+
+          <TabsContent value={WORKOUTS_TAB}>
+            <WorkoutsTab data={insights.modality} />
           </TabsContent>
 
           {DOMAIN_LIST.map((domain: Domain) => (
