@@ -9,7 +9,8 @@ interface GranularityPickerProps {
   dailyDisabled: boolean;
 }
 
-const DAILY_DISABLED_REASON = `Not available for a range over ${Math.round(MAX_DAILY_SPAN_DAYS / 365)} year — pick a narrower range to use it.`;
+const MAX_DAILY_SPAN_YEARS = Math.round(MAX_DAILY_SPAN_DAYS / 365);
+const DAILY_DISABLED_REASON = `Only available for ranges under ${MAX_DAILY_SPAN_YEARS} year${MAX_DAILY_SPAN_YEARS === 1 ? "" : "s"}.`;
 
 /**
  * How finely the trend charts bucket time. A segmented control rather than
