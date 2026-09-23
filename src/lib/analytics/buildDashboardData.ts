@@ -191,6 +191,10 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
             10
         ) / 10
       : 0;
+  const days_buckets: BucketCount[] = allBuckets.map((bucket) => ({
+    bucket,
+    count: daysByBucket.get(bucket)?.size ?? 0,
+  }));
 
   // --- PR timeline ---
   const pr_timeline: PrTimelineEntry[] = df
@@ -274,6 +278,7 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
     lifts,
     benchmarks,
     buckets,
+    days_buckets,
     pr_timeline,
     domain_trends,
     overall,

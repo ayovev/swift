@@ -154,6 +154,12 @@ export interface DashboardData {
   lifts: Record<string, LiftEntry[]>;
   benchmarks: Record<string, BenchmarkEntry[]>;
   buckets: BucketCount[];
+  /**
+   * ADDITIVE (not in the Python reference). Same buckets as `buckets`, but
+   * counting unique training days rather than workouts logged — see
+   * DashboardSummary.unique_days for why that's a distinct number.
+   */
+  days_buckets: BucketCount[];
   pr_timeline: PrTimelineEntry[];
   domain_trends: Record<Domain, DomainTrendPoint[]>;
   overall: Record<Domain, OverallDomainStat>;

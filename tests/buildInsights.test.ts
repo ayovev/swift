@@ -99,6 +99,7 @@ describe("buildInsights — unique training days", () => {
   it("averages unique days per bucket at monthly granularity", () => {
     const { dashboard } = buildInsights(SAME_DAY_ROWS, null, "monthly");
     expect(dashboard.buckets).toEqual([{ bucket: "2025-06", count: 4 }]);
+    expect(dashboard.days_buckets).toEqual([{ bucket: "2025-06", count: 3 }]);
     expect(dashboard.summary.avg_days_per_bucket).toBe(3);
   });
 
@@ -106,6 +107,10 @@ describe("buildInsights — unique training days", () => {
     const { dashboard } = buildInsights(SAME_DAY_ROWS, null, "weekly");
     // June 2 and June 3 fall in the week starting June 1; June 10 starts a new week.
     expect(dashboard.buckets.map((b) => b.bucket)).toEqual(["2025-06-01", "2025-06-08"]);
+    expect(dashboard.days_buckets).toEqual([
+      { bucket: "2025-06-01", count: 2 },
+      { bucket: "2025-06-08", count: 1 },
+    ]);
     expect(dashboard.summary.avg_days_per_bucket).toBe(1.5);
   });
 
@@ -118,6 +123,7 @@ describe("buildInsights — unique training days", () => {
     const { dashboard } = buildInsights([]);
     expect(dashboard.summary.unique_days).toBe(0);
     expect(dashboard.summary.avg_days_per_bucket).toBe(0);
+    expect(dashboard.days_buckets).toEqual([]);
   });
 });
 
