@@ -32,6 +32,12 @@ dayjs.extend(customParseFormat);
  * not off "now"), so reloading demo mode partway through a day never
  * reshuffles days already generated — only the newest day can change, and
  * only because it's freshly generated each time.
+ *
+ * Every day in the gap gets an independent, probabilistic attendance roll
+ * against the athlete's own historical rate — except `today`, which always
+ * gets at least one session. Leaving today to the same coin flip would mean
+ * the log's most recent date is regularly a few days behind today purely by
+ * chance, which is exactly the staleness this module exists to avoid.
  */
 
 // ---------------------------------------------------------------- RNG ----
@@ -477,7 +483,15 @@ export function extendSampleRows(
     const dateKey = cursor.format("YYYY-MM-DD");
     const dateForRow = cursor.format("MM/DD/YYYY");
 
-    if (rngFor(dateKey, "attendance")() < stats.attendanceProb) {
+    // Every other day's attendance is a real coin flip against the athlete's
+    // own historical rate, which is the point — but leaving *today* to that
+    // same flip means the demo regularly reads as stale by a few days
+    // anyway (whatever the tail's actual last logged date happens to be),
+    // defeating the reason this module exists. Forcing today guarantees the
+    // log's most recent date is always today, without smoothing over the
+    // rest days that make the trend in between look real.
+    const isToday = cursor.startOf("day").isSame(today.startOf("day"), "day");
+    if (isToday || rngFor(dateKey, "attendance")() < stats.attendanceProb) {
       const sessionCount = rngFor(dateKey, "sessions")() < stats.secondSessionProb ? 2 : 1;
       for (let i = 0; i < sessionCount; i++) {
         generated.push(generateSession(dateKey, i, dateForRow, stats));
