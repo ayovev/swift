@@ -74,7 +74,7 @@ export function SegmentedControl<T extends string>({
                   {button}
                 </span>
               </TooltipTrigger>
-              <TooltipContent>{option.title}</TooltipContent>
+              <TooltipContent side="bottom">{option.title}</TooltipContent>
             </Tooltip>
           );
         })}
