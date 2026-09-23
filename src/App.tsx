@@ -8,6 +8,7 @@ import type { Granularity } from "@/lib/analytics/granularity";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
+import { extendSampleRows } from "@/lib/sample/extendSample";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
@@ -104,52 +105,60 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [state]);
 
-  const run = useCallback(async (source: DataSource, load: () => Promise<File | string>) => {
-    setState({ status: "loading" });
-    capture(source === "sample" ? { name: "sample_data_used" } : { name: "upload_attempted" });
+  const run = useCallback(
+    async (
+      source: DataSource,
+      load: () => Promise<File | string>,
+      extend?: (rows: SugarWodRow[]) => SugarWodRow[]
+    ) => {
+      setState({ status: "loading" });
+      capture(source === "sample" ? { name: "sample_data_used" } : { name: "upload_attempted" });
 
-    const startedAt = performance.now();
-    try {
-      const input = await load();
-      const rows = await parseSugarWodCsv(input);
+      const startedAt = performance.now();
+      try {
+        const input = await load();
+        const parsed = await parseSugarWodCsv(input);
+        const rows = extend ? extend(parsed) : parsed;
 
-      capture({
-        name: "upload_succeeded",
-        props: {
-          rows: bucketRowCount(rows.length),
-          duration_bucket: bucketDuration(performance.now() - startedAt),
-        },
-      });
-      setRange(null);
-      setGranularity("monthly");
-      // Sample data is a public demo file, already free to re-fetch from
-      // public/sample/ — only a genuine upload is worth persisting.
-      if (source === "upload") void saveWorkoutRows(rows);
-      await waitOutMinimum(startedAt);
-      setState({
-        status: "reveal",
-        rows,
-        source,
-        summary: {
-          workoutCount: rows.length,
-          prCount: rows.filter((r) => r.pr === "PR").length,
-        },
-      });
-    } catch (err) {
-      const message =
-        err instanceof CsvValidationError
-          ? err.message
-          : err instanceof Error
-            ? `Something went wrong reading that file: ${err.message}`
-            : "Something went wrong reading that file.";
+        capture({
+          name: "upload_succeeded",
+          props: {
+            rows: bucketRowCount(rows.length),
+            duration_bucket: bucketDuration(performance.now() - startedAt),
+          },
+        });
+        setRange(null);
+        setGranularity("monthly");
+        // Sample data is a public demo file, already free to re-fetch from
+        // public/sample/ — only a genuine upload is worth persisting.
+        if (source === "upload") void saveWorkoutRows(rows);
+        await waitOutMinimum(startedAt);
+        setState({
+          status: "reveal",
+          rows,
+          source,
+          summary: {
+            workoutCount: rows.length,
+            prCount: rows.filter((r) => r.pr === "PR").length,
+          },
+        });
+      } catch (err) {
+        const message =
+          err instanceof CsvValidationError
+            ? err.message
+            : err instanceof Error
+              ? `Something went wrong reading that file: ${err.message}`
+              : "Something went wrong reading that file.";
 
-      capture({
-        name: "upload_failed",
-        props: { reason: err instanceof CsvValidationError ? err.category : "unreadable" },
-      });
-      setState({ status: "error", message });
-    }
-  }, []);
+        capture({
+          name: "upload_failed",
+          props: { reason: err instanceof CsvValidationError ? err.category : "unreadable" },
+        });
+        setState({ status: "error", message });
+      }
+    },
+    []
+  );
 
   const handleFile = useCallback(
     (file: File) => void run("upload", () => Promise.resolve(file)),
@@ -179,14 +188,23 @@ export default function App() {
 
   const handleSample = useCallback(
     () =>
-      void run("sample", async () => {
-        // Served as a static asset from Swift's own origin — this is the only
-        // network request the app makes with training data in it, and it is
-        // a download of the bundled demo file, not an upload of anyone's.
-        const response = await fetch(SAMPLE_CSV_URL);
-        if (!response.ok) throw new Error("the sample file could not be loaded");
-        return response.text();
-      }),
+      void run(
+        "sample",
+        async () => {
+          // Served as a static asset from Swift's own origin — this is the
+          // only network request the app makes with training data in it,
+          // and it is a download of the bundled demo file, not an upload of
+          // anyone's.
+          const response = await fetch(SAMPLE_CSV_URL);
+          if (!response.ok) throw new Error("the sample file could not be loaded");
+          return response.text();
+        },
+        // The bundled file is frozen (see extendSample.ts); this fills the
+        // gap between its last logged date and today entirely in memory so
+        // demo mode never looks stale, without ever touching the file the
+        // parity fixture is pinned to.
+        extendSampleRows
+      ),
     [run]
   );
 
