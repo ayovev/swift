@@ -37,6 +37,30 @@ const SAMPLE_CSV_URL = "/sample/sugarwod-sample-export.csv";
 const REVEAL_HOLD_MS = 500;
 const REVEAL_HOLD_MS_REDUCED = 80;
 
+// Parsing the sample export (or a small real one) finishes fast enough that
+// the loading bar in UploadDropzone would otherwise flash and vanish before
+// its animation ever completes a cycle. Floor the "loading" status to this
+// long so the athlete actually sees it. Reduced-motion still gets a short
+// floor rather than none, so "loading" never disappears in literally 0ms.
+const MIN_LOADING_MS = 700;
+const MIN_LOADING_MS_REDUCED = 150;
+
+function prefersReducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    !!window.matchMedia &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+async function waitOutMinimum(startedAt: number) {
+  const min = prefersReducedMotion() ? MIN_LOADING_MS_REDUCED : MIN_LOADING_MS;
+  const remaining = min - (performance.now() - startedAt);
+  if (remaining > 0) {
+    await new Promise((resolve) => window.setTimeout(resolve, remaining));
+  }
+}
+
 export default function App() {
   const [state, setState] = useState<AppState>({ status: "loading" });
   const [range, setRange] = useState<DateRange | null>(null);
@@ -73,13 +97,9 @@ export default function App() {
   useEffect(() => {
     if (state.status !== "reveal") return;
     const { rows, source } = state;
-    const reduceMotion =
-      typeof window !== "undefined" &&
-      !!window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const timer = window.setTimeout(
       () => setState({ status: "ready", rows, source }),
-      reduceMotion ? REVEAL_HOLD_MS_REDUCED : REVEAL_HOLD_MS
+      prefersReducedMotion() ? REVEAL_HOLD_MS_REDUCED : REVEAL_HOLD_MS
     );
     return () => window.clearTimeout(timer);
   }, [state]);
@@ -105,6 +125,7 @@ export default function App() {
       // Sample data is a public demo file, already free to re-fetch from
       // public/sample/ — only a genuine upload is worth persisting.
       if (source === "upload") void saveWorkoutRows(rows);
+      await waitOutMinimum(startedAt);
       setState({
         status: "reveal",
         rows,

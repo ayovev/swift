@@ -46,7 +46,10 @@ describe("App — local persistence", () => {
     const file = new File([loadSampleCsvText()], "export.csv", { type: "text/csv" });
     fireEvent.change(input, { target: { files: [file] } });
 
-    await screen.findByRole("button", { name: /start over/i });
+    // The loading state is floored to MIN_LOADING_MS (see App.tsx) so the
+    // loading bar is actually visible, which pushes this past the default
+    // findByRole timeout.
+    await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
     await waitFor(async () => {
       expect(await loadWorkoutRows()).toHaveLength(1209);
     });

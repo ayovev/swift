@@ -43,16 +43,16 @@ export function Landing({ loading, reveal, error, onFile, onSample, onDismissErr
   }, [busy, onFile]);
 
   return (
-    <div className="min-h-svh bg-background">
+    <div className="relative isolate min-h-svh bg-background">
+      <WhiteboardTexture />
+
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5">
         <SwiftMark />
         <ThemeControls />
       </header>
 
       <main className="mx-auto w-full max-w-5xl px-5 pb-24">
-        <section className="relative isolate mx-auto max-w-2xl pt-12 text-center sm:pt-20">
-          <WhiteboardTexture />
-
+        <section className="mx-auto max-w-2xl pt-12 text-center sm:pt-20">
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
             The workout ends. The work doesn't.
           </h1>
