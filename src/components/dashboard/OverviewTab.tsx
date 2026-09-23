@@ -138,7 +138,7 @@ export function OverviewTab({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardContent className="grid grid-cols-2 gap-6 pt-6 sm:grid-cols-3 lg:grid-cols-5">
+        <CardContent className="grid grid-cols-2 gap-6 pt-6 sm:grid-cols-4">
           <Stat
             value={summary.total_logged.toLocaleString()}
             label="workouts logged"
@@ -153,11 +153,6 @@ export function OverviewTab({
           />
           <Stat value={summary.total_prs.toLocaleString()} label="personal records" />
           <Stat value={`${rxShare.toFixed(0)}%`} label="as prescribed" sub={`${summary.scaled_count.toLocaleString()} scaled`} />
-          <Stat
-            value={String(dashboard.buckets.length)}
-            label={`${noun}s of training`}
-            sub="every one of them counted"
-          />
         </CardContent>
       </Card>
 
