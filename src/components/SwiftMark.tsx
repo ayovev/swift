@@ -1,12 +1,13 @@
+import wordmarkLight from "@/assets/wordmark-light.svg";
+import wordmarkDark from "@/assets/wordmark-dark.svg";
 import { cn } from "@/lib/utils";
 
-/** The Swift wordmark. Black-and-white by design; the accent is used sparingly. */
+/** The Swift wordmark. Two pre-rendered variants, swapped by the app's own light/dark class. */
 export function SwiftMark({ className }: { className?: string }) {
   return (
-    <div className={cn("flex items-baseline gap-2", className)}>
-      <span className="text-lg font-semibold tracking-tight">Swift</span>
-      <span aria-hidden="true" className="h-3 w-px bg-border" />
-      <span className="text-xs text-muted-foreground">SugarWOD insights</span>
+    <div className={cn("flex items-center", className)}>
+      <img src={wordmarkDark} alt="Swift" className="h-8 w-auto dark:hidden" />
+      <img src={wordmarkLight} alt="Swift" className="hidden h-8 w-auto dark:block" />
     </div>
   );
 }
