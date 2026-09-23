@@ -32,14 +32,6 @@ export const DOMAIN_CHART_CONFIG: ChartConfig = Object.fromEntries(
   ])
 );
 
-export const MODALITY_CHART_CONFIG: ChartConfig = Object.fromEntries(
-  MODALITY_LIST.map((modality, i) => [
-    modality,
-    // Spread across the ramp so the three bands are clearly distinct.
-    { label: MODALITY_SHORT_LABELS[modality], color: `var(--chart-${i * 4 + 1})` },
-  ])
-);
-
 export function domainColor(domain: Domain): string {
   return `var(--chart-${DOMAIN_LIST.indexOf(domain) + 1})`;
 }
@@ -299,6 +291,19 @@ export const FIXED_MODALITY_COLORS: Record<Modality, string> = {
   W: "var(--repmax-3)",
   G: "var(--repmax-5)",
 };
+
+/**
+ * Chart config built from FIXED_MODALITY_COLORS rather than modalityColor()
+ * — used by the Overview M/W/G stacked bar so its segment colors match the
+ * per-row ModalityBar on the Workouts tab instead of shifting with the
+ * athlete's accent.
+ */
+export const MODALITY_FIXED_CHART_CONFIG: ChartConfig = Object.fromEntries(
+  MODALITY_LIST.map((modality) => [
+    modality,
+    { label: MODALITY_SHORT_LABELS[modality], color: FIXED_MODALITY_COLORS[modality] },
+  ])
+);
 
 /**
  * The accent-derived alternative: 4 steps along the athlete's own accent hue

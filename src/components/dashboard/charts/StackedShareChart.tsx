@@ -1,4 +1,4 @@
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartLegend,
@@ -18,12 +18,21 @@ interface StackedShareChartProps {
   label: string;
   granularity: Granularity;
   className?: string;
+  /**
+   * "area" reads as a continuous trend (the 10-domain mix); "bar" reads as
+   * discrete per-bucket composition (the M/W/G mix) — same normalized-stack
+   * data and axes either way, just the mark. Defaults to "area" since that's
+   * the more common caller.
+   */
+  variant?: "area" | "bar";
 }
 
 /**
- * Normalized stacked area — each month sums to 100%, so the chart answers
- * "what share of my training was this?" rather than "how much did I do?".
- * Used for both the 10-domain mix and the M/W/G mix.
+ * Normalized stacked area/bar — each bucket sums to 100%, so the chart
+ * answers "what share of my training was this?" rather than "how much did I
+ * do?". Used for both the 10-domain mix (area) and the M/W/G mix (bar).
+ * ComposedChart lets both variants share one set of axes/tooltip/legend
+ * rather than duplicating that setup per geometry.
  */
 export function StackedShareChart({
   data,
@@ -32,14 +41,16 @@ export function StackedShareChart({
   label,
   granularity,
   className = "h-[300px] w-full min-w-0",
+  variant = "area",
 }: StackedShareChartProps) {
   const rows = data.map((d) => ({ ...d, label: formatBucketLabel(String(d.bucket), granularity) }));
   // stackOffset="expand" always normalizes each bucket to sum to exactly 1.
   const { domain: yDomain, ticks: yTicks } = niceAxisTicks(0, 1);
+  const lastKey = keys[keys.length - 1];
 
   return (
     <ChartContainer config={config} className={className} role="img" aria-label={label}>
-      <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} stackOffset="expand">
+      <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} stackOffset="expand">
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis dataKey="label" interval={bucketTickInterval(rows.length)} {...AXIS_PROPS} />
         <YAxis
@@ -58,20 +69,30 @@ export function StackedShareChart({
             </div>
           )} />}
         />
-        {keys.map((key) => (
-          <Area
-            key={key}
-            dataKey={key}
-            type="monotone"
-            stackId="share"
-            stroke={`var(--color-${key})`}
-            fill={`var(--color-${key})`}
-            fillOpacity={0.85}
-            strokeWidth={0}
-          />
-        ))}
+        {keys.map((key) =>
+          variant === "bar" ? (
+            <Bar
+              key={key}
+              dataKey={key}
+              stackId="share"
+              fill={`var(--color-${key})`}
+              {...(key === lastKey ? { radius: [3, 3, 0, 0] as [number, number, number, number] } : {})}
+            />
+          ) : (
+            <Area
+              key={key}
+              dataKey={key}
+              type="monotone"
+              stackId="share"
+              stroke={`var(--color-${key})`}
+              fill={`var(--color-${key})`}
+              fillOpacity={0.85}
+              strokeWidth={0}
+            />
+          )
+        )}
         <ChartLegend content={<ChartLegendContent className="flex-wrap" />} />
-      </AreaChart>
+      </ComposedChart>
     </ChartContainer>
   );
 }

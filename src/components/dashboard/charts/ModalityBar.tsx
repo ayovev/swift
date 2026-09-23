@@ -4,11 +4,12 @@ import { FIXED_MODALITY_COLORS } from "./chartUtils";
 /**
  * One workout's M/W/G split as a thin horizontal stacked bar — the per-row
  * visual on the Workouts tab. Segments use FIXED_MODALITY_COLORS, the fixed
- * red/green/blue-reading steps from the lift chart's own rep-max ramp,
- * rather than the accent-derived modalityColor() used elsewhere (the
- * stacked area chart on Overview, the modality tabs) — a bar this dense with
- * rows reads better against colors that don't shift with the athlete's
- * chosen accent.
+ * red/green/blue-reading steps from the lift chart's own rep-max ramp. The
+ * Overview stacked bar chart shares this same fixed palette (see
+ * MODALITY_FIXED_CHART_CONFIG) so the two readings of M/W/G match; the
+ * per-modality tabs still use the accent-derived modalityColor(), since each
+ * of those is a single series rather than a composition being compared
+ * across colors.
  *
  * Zero-share modalities render no segment at all (a 0-width div would still
  * need a rounded end), and the bar rounds whichever segments land first/last
