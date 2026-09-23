@@ -138,11 +138,18 @@ export function OverviewTab({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardContent className="grid grid-cols-2 gap-6 pt-6 sm:grid-cols-4">
+        <CardContent className="grid grid-cols-2 gap-6 pt-6 sm:grid-cols-3 lg:grid-cols-5">
           <Stat
             value={summary.total_logged.toLocaleString()}
             label="workouts logged"
             sub={`${summary.avg_per_bucket.toFixed(1)} a ${noun} on average`}
+          />
+          <Stat
+            value={summary.unique_days.toLocaleString()}
+            label="days trained"
+            {...(granularity !== "daily"
+              ? { sub: `${summary.avg_days_per_bucket.toFixed(1)} a ${noun} on average` }
+              : {})}
           />
           <Stat value={summary.total_prs.toLocaleString()} label="personal records" />
           <Stat value={`${rxShare.toFixed(0)}%`} label="as prescribed" sub={`${summary.scaled_count.toLocaleString()} scaled`} />

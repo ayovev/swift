@@ -133,6 +133,20 @@ export interface DashboardSummary {
   scaled_count: number;
   /** ADDITIVE (not in the Python reference). */
   avg_per_bucket: number;
+  /**
+   * ADDITIVE (not in the Python reference). Count of distinct calendar days
+   * with at least one logged workout — several workouts on the same day
+   * (e.g. a class plus accessory work) count once, unlike total_logged.
+   */
+  unique_days: number;
+  /**
+   * ADDITIVE (not in the Python reference). Average unique training days per
+   * bucket at the selected granularity, e.g. "days per week". Averaged only
+   * over buckets that have at least one logged workout — same denominator as
+   * avg_per_bucket — so a span with no activity at all doesn't exist as a
+   * bucket and can't drag the average down.
+   */
+  avg_days_per_bucket: number;
 }
 
 export interface DashboardData {

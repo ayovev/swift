@@ -80,6 +80,47 @@ describe("buildInsights — range filters both aggregators consistently", () => 
   });
 });
 
+describe("buildInsights — unique training days", () => {
+  // Two workouts logged on the same day (a class plus accessory work), so
+  // total_logged and unique_days must diverge.
+  const SAME_DAY_ROWS: SugarWodRow[] = [
+    row("06/02/2025", "WOD A"),
+    row("06/02/2025", "ACCESSORY A"),
+    row("06/03/2025", "WOD B"),
+    row("06/10/2025", "WOD C"),
+  ];
+
+  it("counts distinct calendar days, not rows", () => {
+    const { dashboard } = buildInsights(SAME_DAY_ROWS);
+    expect(dashboard.summary.total_logged).toBe(4);
+    expect(dashboard.summary.unique_days).toBe(3);
+  });
+
+  it("averages unique days per bucket at monthly granularity", () => {
+    const { dashboard } = buildInsights(SAME_DAY_ROWS, null, "monthly");
+    expect(dashboard.buckets).toEqual([{ bucket: "2025-06", count: 4 }]);
+    expect(dashboard.summary.avg_days_per_bucket).toBe(3);
+  });
+
+  it("averages unique days per bucket at weekly granularity", () => {
+    const { dashboard } = buildInsights(SAME_DAY_ROWS, null, "weekly");
+    // June 2 and June 3 fall in the week starting June 1; June 10 starts a new week.
+    expect(dashboard.buckets.map((b) => b.bucket)).toEqual(["2025-06-01", "2025-06-08"]);
+    expect(dashboard.summary.avg_days_per_bucket).toBe(1.5);
+  });
+
+  it("is trivially 1 day per bucket at daily granularity", () => {
+    const { dashboard } = buildInsights(SAME_DAY_ROWS, null, "daily");
+    expect(dashboard.summary.avg_days_per_bucket).toBe(1);
+  });
+
+  it("is 0 for both fields when nothing parses", () => {
+    const { dashboard } = buildInsights([]);
+    expect(dashboard.summary.unique_days).toBe(0);
+    expect(dashboard.summary.avg_days_per_bucket).toBe(0);
+  });
+});
+
 describe("buildInsights — granularity", () => {
   it("defaults to monthly buckets when no granularity is passed", () => {
     const { dashboard } = buildInsights(ROWS);

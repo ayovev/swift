@@ -125,6 +125,8 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
     rx_count: df.filter((r) => r.raw.rx_or_scaled === "RX").length,
     scaled_count: df.filter((r) => r.raw.rx_or_scaled === "SCALED").length,
     avg_per_bucket: 0, // filled in once buckets are known
+    unique_days: 0, // filled in once buckets are known
+    avg_days_per_bucket: 0, // filled in once buckets are known
   };
 
   // --- lifts: Load-scored barbell entries with enough history to plot ---
@@ -167,6 +169,28 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
   const allBuckets = [...bucketMap.keys()].sort();
   summary.avg_per_bucket =
     allBuckets.length > 0 ? Math.round((totalWorkouts / allBuckets.length) * 10) / 10 : 0;
+
+  // --- unique training days, overall and per bucket ---
+  // Several rows can share a date (a class plus logged accessory work), so
+  // this is a distinct count from total_logged rather than derived from it.
+  const daysByBucket = new Map<string, Set<string>>();
+  const allDays = new Set<string>();
+  for (const r of df) {
+    const day = r.dateParsed.format("YYYY-MM-DD");
+    allDays.add(day);
+    const set = daysByBucket.get(r.bucket);
+    if (set) set.add(day);
+    else daysByBucket.set(r.bucket, new Set([day]));
+  }
+  summary.unique_days = allDays.size;
+  summary.avg_days_per_bucket =
+    allBuckets.length > 0
+      ? Math.round(
+          (allBuckets.reduce((sum, b) => sum + (daysByBucket.get(b)?.size ?? 0), 0) /
+            allBuckets.length) *
+            10
+        ) / 10
+      : 0;
 
   // --- PR timeline ---
   const pr_timeline: PrTimelineEntry[] = df
