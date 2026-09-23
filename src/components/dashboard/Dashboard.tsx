@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FlaskConical, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -14,7 +14,7 @@ import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, WORKOUTS_TAB, TabNav } from "./T
 import { WorkoutsTab } from "./WorkoutsTab";
 import { formatDate } from "./charts/chartUtils";
 import type { DateRange } from "@/lib/analytics/dateRange";
-import type { Granularity } from "@/lib/analytics/granularity";
+import { dailyGranularityFits, type Granularity } from "@/lib/analytics/granularity";
 import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
@@ -59,6 +59,19 @@ export function Dashboard({
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   const { summary } = insights.dashboard;
 
+  // "All time" (range === null) has no explicit span of its own, so it falls
+  // back to the log's own full bounds — the same span DateRangePicker uses
+  // to size its calendar.
+  const effectiveRange = range ?? insights.dateBounds;
+  const dailyDisabled = effectiveRange ? !dailyGranularityFits(effectiveRange) : false;
+
+  // Widening the range out from under an active daily view (via the date
+  // picker, not this control) would otherwise leave a chart stuck rendering
+  // a granularity its own picker no longer offers.
+  useEffect(() => {
+    if (granularity === "daily" && dailyDisabled) onGranularityChange("weekly");
+  }, [granularity, dailyDisabled, onGranularityChange]);
+
   const onTabChange = useCallback(
     (value: string) => {
       setTab(value);
@@ -97,7 +110,11 @@ export function Dashboard({
               />
             ) : null}
             {insights.dateBounds ? (
-              <GranularityPicker value={granularity} onChange={onGranularityChange} />
+              <GranularityPicker
+                value={granularity}
+                onChange={onGranularityChange}
+                dailyDisabled={dailyDisabled}
+              />
             ) : null}
             <ThemeControls />
             <Button variant="outline" size="sm" onClick={onReset} className="h-8 gap-2">

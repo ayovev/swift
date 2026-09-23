@@ -5,8 +5,25 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
+import type { SugarWodRow } from "@/types/sugarwod";
 import { loadSampleInBodyRows } from "./fixtures/sampleInBodyRows";
 import { loadSampleCsvText, loadSampleRows } from "./fixtures/sampleRows";
+
+function workoutRow(date: string): SugarWodRow {
+  return {
+    date,
+    title: "GRACE",
+    description: "30 clean and jerks for time Rx (95/135 lb)",
+    best_result_raw: "180",
+    best_result_display: "3:00",
+    score_type: "",
+    barbell_lift: "",
+    set_details: "",
+    notes: "",
+    rx_or_scaled: "RX",
+    pr: "",
+  };
+}
 
 function renderApp() {
   return render(
@@ -92,6 +109,50 @@ describe("App — local persistence", () => {
     await waitFor(async () => {
       expect(await loadWorkoutRows()).toBeUndefined();
       expect(await loadBodyCompRows()).toBeUndefined();
+    });
+  });
+});
+
+describe("App — daily granularity gating", () => {
+  // Two entries, a bit over two years apart — enough to make "All time"
+  // outgrow MAX_DAILY_SPAN_DAYS without needing the real (and expensive to
+  // parse) sample export.
+  const rows = [workoutRow("01/01/2022"), workoutRow("06/01/2024")];
+
+  it("disables Daily at a multi-year all-time range, and enables it once the range narrows", async () => {
+    await saveWorkoutRows(rows);
+    renderApp();
+    await screen.findByRole("button", { name: /start over/i });
+
+    expect(await screen.findByRole("button", { name: "Daily" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /all time/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /last month/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Daily" })).not.toBeDisabled();
+    });
+  });
+
+  it("falls back to Weekly when the range widens back out from under an active Daily view", async () => {
+    await saveWorkoutRows(rows);
+    renderApp();
+    await screen.findByRole("button", { name: /start over/i });
+
+    // Narrow first so Daily is selectable, then select it.
+    fireEvent.click(screen.getByRole("button", { name: /all time/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /last month/i }));
+    fireEvent.click(await screen.findByRole("button", { name: "Daily" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Daily" })).toHaveAttribute("aria-pressed", "true");
+    });
+
+    // Widen back out to all time.
+    fireEvent.click(screen.getByRole("button", { name: /last month/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /all time/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Weekly" })).toHaveAttribute("aria-pressed", "true");
     });
   });
 });
