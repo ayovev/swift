@@ -6,7 +6,12 @@ import type { SugarWodRow } from "@/types/sugarwod";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
 /** Minimal row builder — only the fields the modality pipeline reads. */
-function row(date: string, title: string, description = ""): SugarWodRow {
+function row(
+  date: string,
+  title: string,
+  description = "",
+  overrides: Partial<SugarWodRow> = {}
+): SugarWodRow {
   return {
     date,
     title,
@@ -19,6 +24,7 @@ function row(date: string, title: string, description = ""): SugarWodRow {
     notes: "",
     rx_or_scaled: "RX",
     pr: "",
+    ...overrides,
   };
 }
 
@@ -96,6 +102,73 @@ describe("buildModalityData — drill-down lists", () => {
     expect(entry?.share).toBe(50);
     expect(entry?.split).toEqual({ M: 0, W: 50, G: 50 });
     expect(entry?.movements).toEqual(["Pull-ups"]);
+  });
+});
+
+describe("buildModalityData — all_workouts", () => {
+  it("lists every row exactly once, most recent first, classified or not", () => {
+    const data = build([
+      row("01/05/2025", "ROW", "2000m row"),
+      row("01/06/2025", "DAILY LAZY MACROS POINTS", "week 1 points"),
+      row("02/05/2025", "FRAN", "21-15-9 thrusters and pull-ups"),
+    ]);
+    expect(data.all_workouts.map((w) => w.title)).toEqual([
+      "FRAN",
+      "DAILY LAZY MACROS POINTS",
+      "ROW",
+    ]);
+  });
+
+  it("gives an unclassified row a zeroed split and classified: false", () => {
+    const data = build([row("01/06/2025", "DAILY LAZY MACROS POINTS", "week 1 points")]);
+    const [entry] = data.all_workouts;
+    expect(entry?.classified).toBe(false);
+    expect(entry?.split).toEqual({ M: 0, W: 0, G: 0 });
+    expect(entry?.movements).toEqual([]);
+  });
+
+  it("carries the full split and driving movements for a classified row", () => {
+    const data = build([row("01/05/2025", "FRAN", "21-15-9 thrusters and pull-ups")]);
+    const [entry] = data.all_workouts;
+    expect(entry?.classified).toBe(true);
+    expect(entry?.split).toEqual({ M: 0, W: 50, G: 50 });
+    expect(entry?.movements).toEqual(["Thruster", "Pull-ups"]);
+  });
+
+  it("carries the raw description, score, RX/scaled and PR flag through untouched", () => {
+    const data = build([
+      row("01/05/2025", "FRAN", "21-15-9 thrusters and pull-ups", {
+        best_result_display: "3:45",
+        rx_or_scaled: "SCALED",
+        pr: "PR",
+      }),
+    ]);
+    const [entry] = data.all_workouts;
+    expect(entry?.description).toBe("21-15-9 thrusters and pull-ups");
+    expect(entry?.result).toBe("3:45");
+    expect(entry?.rx).toBe("SCALED");
+    expect(entry?.pr).toBe(true);
+  });
+
+  it("reports pr: false when the row isn't flagged as a PR", () => {
+    const data = build([row("01/05/2025", "ROW", "2000m row")]);
+    expect(data.all_workouts[0]?.pr).toBe(false);
+  });
+
+  it("carries the raw notes through untouched", () => {
+    const data = build([
+      row("01/05/2025", "FRAN", "21-15-9 thrusters and pull-ups", { notes: "65# thrusters, felt heavy" }),
+    ]);
+    expect(data.all_workouts[0]?.notes).toBe("65# thrusters, felt heavy");
+  });
+
+  it("defaults notes to \"\" when the column is absent from the row", () => {
+    const bare = row("01/05/2025", "ROW", "2000m row");
+    // A slim export can omit `notes` entirely (it's not a required column —
+    // see sugarwod.ts) rather than sending an empty string for it.
+    delete (bare as Partial<SugarWodRow>).notes;
+    const data = build([bare]);
+    expect(data.all_workouts[0]?.notes).toBe("");
   });
 });
 

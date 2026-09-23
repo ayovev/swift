@@ -11,21 +11,24 @@ import { MODALITY_LIST, MODALITY_SHORT_LABELS } from "@/types/modality";
 import { cn } from "@/lib/utils";
 
 export const OVERVIEW_TAB = "overview";
+export const WORKOUTS_TAB = "workouts";
 export const BODY_COMP_TAB = "body-comp";
 
 export interface TabDescriptor {
   value: string;
   label: string;
-  group: "Overview" | "Domains" | "Modalities" | "Body composition";
+  group: "Overview" | "Workouts" | "Domains" | "Modalities" | "Body composition";
 }
 
 /**
- * All 15 tabs: Overview, ten GPP domains, three modalities, and Body Comp —
- * the last one built from a wholly separate InBody upload, always present
- * in the nav even before any InBody data is loaded (see BodyCompTab).
+ * All 16 tabs: Overview, the running Workouts list, ten GPP domains, three
+ * modalities, and Body Comp — the last one built from a wholly separate
+ * InBody upload, always present in the nav even before any InBody data is
+ * loaded (see BodyCompTab).
  */
 export const ALL_TABS: TabDescriptor[] = [
   { value: OVERVIEW_TAB, label: "Overview", group: "Overview" },
+  { value: WORKOUTS_TAB, label: "Workouts", group: "Workouts" },
   ...DOMAIN_LIST.map((d) => ({
     value: `domain:${d}`,
     label: DOMAIN_SHORT_LABELS[d],
@@ -39,19 +42,21 @@ export const ALL_TABS: TabDescriptor[] = [
   { value: BODY_COMP_TAB, label: "Body Comp", group: "Body composition" },
 ];
 
-const GROUPS = ["Overview", "Domains", "Modalities", "Body composition"] as const;
+const GROUPS = ["Overview", "Workouts", "Domains", "Modalities", "Body composition"] as const;
 type Group = (typeof GROUPS)[number];
 
 const GROUP_LABELS: Record<Group, string> = {
   Overview: "Overview",
+  Workouts: "Workouts",
   Domains: "Domains",
   Modalities: "Modalities",
   "Body composition": "Body Comp",
 };
 
-/** Overview and Body Comp are single tabs and select directly; the other two open a menu. */
+/** Overview, Workouts and Body Comp are single tabs and select directly; the other two open a menu. */
 const DIRECT_VALUES: Partial<Record<Group, string>> = {
   Overview: OVERVIEW_TAB,
+  Workouts: WORKOUTS_TAB,
   "Body composition": BODY_COMP_TAB,
 };
 
@@ -60,10 +65,10 @@ function groupOf(value: string): Group {
 }
 
 /**
- * Fourteen tabs is too many for one undifferentiated strip, and far too many
- * for a phone. On wide viewports the nav is a single row of four pills —
- * Overview and Body Comp select directly since each is one tab, while
- * Domains and Modalities open a dropdown of their own tabs instead of
+ * Fifteen tabs is too many for one undifferentiated strip, and far too many
+ * for a phone. On wide viewports the nav is a single row of five pills —
+ * Overview, Workouts and Body Comp select directly since each is one tab,
+ * while Domains and Modalities open a dropdown of their own tabs instead of
  * expanding a second row underneath. That keeps the nav's height constant
  * (no row that appears/disappears and shifts the page) without reserving
  * blank space for it either — the menu overlays instead of taking up

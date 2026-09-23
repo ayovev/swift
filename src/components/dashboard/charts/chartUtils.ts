@@ -288,6 +288,19 @@ export const FIXED_REPMAX_COLORS: Record<RepMaxCategory, string> = {
 };
 
 /**
+ * Fixed, non-accent-derived colors for the M/W/G modality bar (see
+ * ModalityBar.tsx) — the same red/green/blue steps from the rep-max ramp
+ * above (1RM's red, 3RM's green, 5RM's blue), skipping 2RM's orange since
+ * there are only three modalities to color. Deliberately NOT modalityColor()
+ * below, which derives from the athlete's accent hue — this bar stays fixed.
+ */
+export const FIXED_MODALITY_COLORS: Record<Modality, string> = {
+  M: "var(--repmax-1)",
+  W: "var(--repmax-3)",
+  G: "var(--repmax-5)",
+};
+
+/**
  * The accent-derived alternative: 4 steps along the athlete's own accent hue
  * (see chartSeries() in lib/theme/palette.ts), one per tracked rep-max scheme.
  * Kept alongside FIXED_REPMAX_COLORS purely so the two can be compared
