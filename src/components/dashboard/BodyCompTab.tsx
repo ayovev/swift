@@ -5,9 +5,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadDropzone } from "@/components/landing/UploadDropzone";
 import { BodyCompLineChart } from "./charts/BodyCompLineChart";
+import { ConsistencyChart } from "./charts/ConsistencyChart";
 import { buildBodyCompData } from "@/lib/analytics/buildBodyCompData";
 import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
 import type { BodyCompPoint } from "@/types/bodyComp";
+import type { BucketCount, DashboardData } from "@/types/dashboard";
 import type { InBodyRow } from "@/types/inbody";
 
 export type BodyCompState =
@@ -20,6 +22,15 @@ interface BodyCompTabProps {
   state: BodyCompState;
   granularity: Granularity;
   onFile: (file: File) => void;
+  /**
+   * The SugarWOD dashboard data, used only to look up how many days were
+   * trained in each bucket a scan also falls in — see the "Days trained"
+   * chart below. Nothing from InBodyRow and nothing from SugarWodRow is ever
+   * combined row-for-row; this is the same bucket-key alignment
+   * buildBodyCompData's own header comment describes, just read from the
+   * other side.
+   */
+  dashboard: DashboardData;
 }
 
 const METRICS: { key: Exclude<keyof BodyCompPoint, "bucket">; label: string; unit: string }[] = [
@@ -48,9 +59,12 @@ function InBodySourceMark() {
  * optional and never joined to the SugarWOD data row-for-row — the two
  * datasets only share a bucketing scheme (bucketKey/Granularity), so a
  * body-comp trend line can sit on the same kind of timeline as the training
- * charts without Swift ever matching a scan to a workout.
+ * charts without Swift ever matching a scan to a workout. The "Days trained"
+ * chart below applies the same bucket-key alignment in the other direction:
+ * it reads `dashboard.days_buckets` for the same bucket keys the scan data
+ * already uses, never a specific InBody row against a specific workout row.
  */
-export function BodyCompTab({ state, granularity, onFile }: BodyCompTabProps) {
+export function BodyCompTab({ state, granularity, onFile, dashboard }: BodyCompTabProps) {
   const data = useMemo(
     () => (state.status === "ready" ? buildBodyCompData(state.rows, granularity) : null),
     [state, granularity]
@@ -95,6 +109,16 @@ export function BodyCompTab({ state, granularity, onFile }: BodyCompTabProps) {
   const latest = data.points[data.points.length - 1];
   const hasEnoughHistory = data.points.length >= 2;
 
+  // Days trained in the same buckets the scan history covers — aligned by
+  // bucket key only (see the component doc comment above), falling back to 0
+  // for a scan bucket with no matching training bucket at all.
+  const dayCountByBucket = new Map(dashboard.days_buckets.map((b) => [b.bucket, b.count]));
+  const trainingDayBuckets: BucketCount[] = data.points.map((p) => ({
+    bucket: p.bucket,
+    count: dayCountByBucket.get(p.bucket) ?? 0,
+  }));
+  const totalTrainingDays = trainingDayBuckets.reduce((sum, b) => sum + b.count, 0);
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
@@ -122,6 +146,20 @@ export function BodyCompTab({ state, granularity, onFile }: BodyCompTabProps) {
         <CardContent>
           {hasEnoughHistory ? (
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+              <div>
+                <div className="mb-1 flex items-baseline justify-between gap-2">
+                  <h3 className="text-sm font-medium">Days trained</h3>
+                  <span className="text-xs text-muted-foreground tabular">
+                    {totalTrainingDays.toLocaleString()} total
+                  </span>
+                </div>
+                <ConsistencyChart
+                  buckets={trainingDayBuckets}
+                  granularity={granularity}
+                  seriesLabel="Days trained"
+                  className="h-[200px] w-full min-w-0"
+                />
+              </div>
               {METRICS.map((m) => (
                 <BodyCompLineChart
                   key={m.key}

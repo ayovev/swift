@@ -10,7 +10,7 @@ import { StackedShareChart } from "./charts/StackedShareChart";
 import {
   DOMAIN_CHART_CONFIG,
   FIXED_REPMAX_COLORS,
-  MODALITY_CHART_CONFIG,
+  MODALITY_FIXED_CHART_CONFIG,
   REP_MAX_CATEGORY_ORDER,
   accentRepMaxColors,
 } from "./charts/chartUtils";
@@ -144,13 +144,15 @@ export function OverviewTab({
             label="workouts logged"
             sub={`${summary.avg_per_bucket.toFixed(1)} a ${noun} on average`}
           />
+          <Stat
+            value={summary.unique_days.toLocaleString()}
+            label="days trained"
+            {...(granularity !== "daily"
+              ? { sub: `${summary.avg_days_per_bucket.toFixed(1)} a ${noun} on average` }
+              : {})}
+          />
           <Stat value={summary.total_prs.toLocaleString()} label="personal records" />
           <Stat value={`${rxShare.toFixed(0)}%`} label="as prescribed" sub={`${summary.scaled_count.toLocaleString()} scaled`} />
-          <Stat
-            value={String(dashboard.buckets.length)}
-            label={`${noun}s of training`}
-            sub="every one of them counted"
-          />
         </CardContent>
       </Card>
 
@@ -193,9 +195,10 @@ export function OverviewTab({
             <StackedShareChart
               data={modality.modality_stacked.bucket_shares as unknown as Record<string, string | number>[]}
               keys={MODALITY_LIST}
-              config={MODALITY_CHART_CONFIG}
-              label="Normalized stacked area chart of metabolic, weightlifting and gymnastics work over time"
+              config={MODALITY_FIXED_CHART_CONFIG}
+              label="Normalized stacked bar chart of metabolic, weightlifting and gymnastics work over time"
               granularity={granularity}
+              variant="bar"
             />
           </CardContent>
         </Card>

@@ -149,7 +149,12 @@ export function Dashboard({
           ))}
 
           <TabsContent value={BODY_COMP_TAB}>
-            <BodyCompTab state={bodyComp} granularity={granularity} onFile={onBodyCompFile} />
+            <BodyCompTab
+              state={bodyComp}
+              granularity={granularity}
+              onFile={onBodyCompFile}
+              dashboard={insights.dashboard}
+            />
           </TabsContent>
         </Tabs>
 
