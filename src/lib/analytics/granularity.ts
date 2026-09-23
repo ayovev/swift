@@ -1,4 +1,5 @@
 import type { Dayjs } from "dayjs";
+import type { DateRange } from "./dateRange";
 
 export type Granularity = "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
 
@@ -27,6 +28,19 @@ export const GRANULARITY_NOUN: Record<Granularity, string> = {
 
 export function granularityLabel(granularity: Granularity): string {
   return GRANULARITY_OPTIONS.find((o) => o.id === granularity)?.label ?? granularity;
+}
+
+/**
+ * Daily bars stop being legible well before a multi-year span — a year of
+ * them is already ~365 bars in the same chart width a monthly view fits in
+ * ~12. Starting point picked to revisit once it's been tried against real
+ * ranges (see GranularityPicker.tsx); not a measured perceptual limit.
+ */
+export const MAX_DAILY_SPAN_DAYS = 365;
+
+/** Whether daily granularity stays readable over the given span. */
+export function dailyGranularityFits(range: DateRange): boolean {
+  return range.end.diff(range.start, "day") <= MAX_DAILY_SPAN_DAYS;
 }
 
 /**

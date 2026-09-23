@@ -4,6 +4,9 @@ import { cn } from "@/lib/utils";
 export interface SegmentedControlOption<T extends string> {
   id: T;
   label: string;
+  disabled?: boolean;
+  /** Shown as a native tooltip — used to explain *why* a disabled option is unavailable. */
+  title?: string;
 }
 
 /**
@@ -47,6 +50,8 @@ export function SegmentedControl<T extends string>({
           type="button"
           variant="ghost"
           size="sm"
+          disabled={option.disabled}
+          title={option.title}
           onClick={() => onChange(option.id)}
           aria-pressed={value === option.id}
           className={cn("h-7 px-2.5 text-xs", value === option.id && ACTIVE_SEGMENT_CLASSES)}

@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { DOMAIN_LIST, DOMAIN_SHORT_LABELS, type Domain } from "@/types/dashboard";
+import { DOMAIN_LIST, DOMAIN_SHORT_LABELS, type BucketCount, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, MODALITY_SHORT_LABELS, type Modality } from "@/types/modality";
 import type { ChartConfig } from "@/components/ui/chart";
 import { chartSeries, type AccentSwatch, type ThemeMode } from "@/lib/theme/palette";
@@ -19,6 +19,33 @@ export function formatShortDate(yyMmDd: string): string {
   const [yy, mm, dd] = yyMmDd.split("-");
   if (!yy || !mm || !dd) return yyMmDd;
   return formatDate(`20${yy}-${mm}-${dd}`);
+}
+
+export interface MergedBucketCount {
+  bucket: string;
+  count: number;
+  secondaryCount: number;
+}
+
+/**
+ * Merges a primary bucket series with a secondary one sharing the same
+ * bucket keys (e.g. workouts logged and unique days trained) into one row
+ * per bucket, in the primary series' order — used to feed a grouped bar
+ * chart from two independently-built BucketCount[] arrays. A secondary
+ * bucket with no primary counterpart is dropped (the primary series' bucket
+ * set is authoritative); a primary bucket missing from the secondary series
+ * falls back to 0 rather than being dropped.
+ */
+export function mergeBucketCounts(
+  primary: readonly BucketCount[],
+  secondary: readonly BucketCount[]
+): MergedBucketCount[] {
+  const secondaryByBucket = new Map(secondary.map((b) => [b.bucket, b.count]));
+  return primary.map((b) => ({
+    bucket: b.bucket,
+    count: b.count,
+    secondaryCount: secondaryByBucket.get(b.bucket) ?? 0,
+  }));
 }
 
 /**

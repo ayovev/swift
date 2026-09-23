@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
-import { niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
+import { mergeBucketCounts, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
 
 function stepSizes(ticks: number[]): number[] {
   return ticks.slice(1).map((t, i) => Number((t - ticks[i]!).toFixed(6)));
@@ -140,5 +140,44 @@ describe("niceTimeTicks", () => {
   it("handles a zero-width range without dividing by zero", () => {
     const t = ms("2024-01-01");
     expect(niceTimeTicks(t, t)).toEqual([t]);
+  });
+});
+
+describe("mergeBucketCounts", () => {
+  it("pairs matching buckets by key, in the primary series' order", () => {
+    const primary = [
+      { bucket: "2024-01", count: 10 },
+      { bucket: "2024-02", count: 5 },
+    ];
+    const secondary = [
+      { bucket: "2024-02", count: 3 },
+      { bucket: "2024-01", count: 7 },
+    ];
+    expect(mergeBucketCounts(primary, secondary)).toEqual([
+      { bucket: "2024-01", count: 10, secondaryCount: 7 },
+      { bucket: "2024-02", count: 5, secondaryCount: 3 },
+    ]);
+  });
+
+  it("falls back to 0 for a primary bucket missing from the secondary series", () => {
+    const primary = [{ bucket: "2024-01", count: 10 }];
+    expect(mergeBucketCounts(primary, [])).toEqual([
+      { bucket: "2024-01", count: 10, secondaryCount: 0 },
+    ]);
+  });
+
+  it("drops a secondary bucket with no primary counterpart", () => {
+    const primary = [{ bucket: "2024-01", count: 10 }];
+    const secondary = [
+      { bucket: "2024-01", count: 7 },
+      { bucket: "2024-02", count: 99 },
+    ];
+    expect(mergeBucketCounts(primary, secondary)).toEqual([
+      { bucket: "2024-01", count: 10, secondaryCount: 7 },
+    ]);
+  });
+
+  it("returns an empty array for an empty primary series", () => {
+    expect(mergeBucketCounts([], [{ bucket: "2024-01", count: 5 }])).toEqual([]);
   });
 });

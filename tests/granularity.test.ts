@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   bucketKey,
   bucketTickInterval,
+  dailyGranularityFits,
   formatBucketLabel,
   GRANULARITY_OPTIONS,
+  MAX_DAILY_SPAN_DAYS,
 } from "@/lib/analytics/granularity";
 
 describe("bucketKey", () => {
@@ -76,6 +78,28 @@ describe("bucketTickInterval", () => {
   it("thins ticks down to roughly ten at higher point counts", () => {
     expect(bucketTickInterval(47)).toBeGreaterThan(0);
     expect(bucketTickInterval(900)).toBeGreaterThan(bucketTickInterval(47));
+  });
+});
+
+describe("dailyGranularityFits", () => {
+  const start = dayjs("2025-01-01", "YYYY-MM-DD");
+
+  it("fits a span well under the limit", () => {
+    expect(dailyGranularityFits({ start, end: start.add(30, "day") })).toBe(true);
+  });
+
+  it("fits a span exactly at the limit", () => {
+    expect(dailyGranularityFits({ start, end: start.add(MAX_DAILY_SPAN_DAYS, "day") })).toBe(true);
+  });
+
+  it("does not fit a span one day past the limit", () => {
+    expect(dailyGranularityFits({ start, end: start.add(MAX_DAILY_SPAN_DAYS + 1, "day") })).toBe(
+      false
+    );
+  });
+
+  it("does not fit a multi-year span", () => {
+    expect(dailyGranularityFits({ start, end: start.add(3, "year") })).toBe(false);
   });
 });
 

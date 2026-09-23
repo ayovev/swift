@@ -161,7 +161,11 @@ export function OverviewTab({
           <CardTitle className="text-sm font-medium">Showing up</CardTitle>
         </CardHeader>
         <CardContent>
-          <ConsistencyChart buckets={dashboard.buckets} granularity={granularity} />
+          <ConsistencyChart
+            buckets={dashboard.buckets}
+            granularity={granularity}
+            {...(granularity !== "daily" ? { secondaryBuckets: dashboard.days_buckets } : {})}
+          />
         </CardContent>
       </Card>
 
