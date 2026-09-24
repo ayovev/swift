@@ -59,7 +59,14 @@ export function StackedShareChart({
     <ChartContainer config={config} className={className} role="img" aria-label={label}>
       <ComposedChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} stackOffset="expand">
         <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey="label" interval={bucketTickInterval(rows.length)} {...AXIS_PROPS} />
+        <XAxis
+          dataKey="label"
+          interval={bucketTickInterval(rows.length)}
+          angle={-35}
+          textAnchor="end"
+          height={50}
+          {...AXIS_PROPS}
+        />
         <YAxis
           width={PCT_AXIS_WIDTH}
           domain={yDomain}
