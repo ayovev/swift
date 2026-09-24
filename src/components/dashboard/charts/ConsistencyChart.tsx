@@ -82,7 +82,14 @@ export function ConsistencyChart({
     <ChartContainer config={config} className={className} role="img" aria-label={ariaLabel}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey="label" interval={bucketTickInterval(data.length)} {...AXIS_PROPS} />
+        <XAxis
+          dataKey="label"
+          interval={bucketTickInterval(data.length)}
+          angle={-35}
+          textAnchor="end"
+          height={50}
+          {...AXIS_PROPS}
+        />
         <YAxis
           width={NUM_AXIS_WIDTH}
           domain={yDomain}

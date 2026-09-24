@@ -62,6 +62,9 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
             dataKey="label"
             interval={bucketTickInterval(rows.length)}
             padding={{ left: 12, right: 12 }}
+            angle={-35}
+            textAnchor="end"
+            height={50}
             {...AXIS_PROPS}
           />
           <YAxis
