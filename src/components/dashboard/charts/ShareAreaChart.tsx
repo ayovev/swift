@@ -36,7 +36,14 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity }:
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey="label" interval={bucketTickInterval(rows.length)} {...AXIS_PROPS} />
+        <XAxis
+          dataKey="label"
+          interval={bucketTickInterval(rows.length)}
+          angle={-35}
+          textAnchor="end"
+          height={50}
+          {...AXIS_PROPS}
+        />
         <YAxis
           width={PCT_AXIS_WIDTH}
           domain={yDomain}
