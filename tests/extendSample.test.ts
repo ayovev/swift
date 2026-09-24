@@ -56,6 +56,20 @@ describe("extendSampleRows", () => {
     }
   });
 
+  it("always logs a session on today, even though every earlier gap day is a probabilistic attendance roll", () => {
+    const rows = [row({ date: "01/01/2024" })];
+    // Several different `today`s, so this isn't just one lucky seed —
+    // today's attendance must hold regardless of what the date hashes to.
+    const todays = ["2024-01-05", "2024-01-06", "2024-01-09", "2024-02-14", "2024-03-01"];
+    for (const iso of todays) {
+      const today = dayjs(iso);
+      const result = extendSampleRows(rows, today);
+      const todayKey = today.format("MM/DD/YYYY");
+      const loggedToday = result.some((r) => r.date === todayKey);
+      expect(loggedToday).toBe(true);
+    }
+  });
+
   it("never mutates the input array", () => {
     const rows = [row({ date: "01/01/2024" })];
     const snapshot = JSON.parse(JSON.stringify(rows));

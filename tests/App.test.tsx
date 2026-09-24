@@ -54,30 +54,42 @@ describe("App — local persistence", () => {
     await screen.findByRole("button", { name: /start over/i });
   });
 
-  it("persists an uploaded file so a fresh mount restores it without re-uploading", async () => {
-    const { container, unmount } = renderApp();
-    await screen.findByRole("button", { name: /upload your sugarwod csv export/i });
+  // Parses and renders the real 1,209-row sample export twice over (once on
+  // upload, once again from storage after remount), on top of the two
+  // MIN_LOADING_MS/REVEAL_HOLD_MS floors — comfortably over vitest's default
+  // 5000ms test timeout on a loaded CI runner even though nothing is hung,
+  // hence the explicit budget below rather than the suite default.
+  it(
+    "persists an uploaded file so a fresh mount restores it without re-uploading",
+    async () => {
+      const { container, unmount } = renderApp();
+      await screen.findByRole("button", { name: /upload your sugarwod csv export/i });
 
-    const input = container.querySelector('input[type="file"]');
-    if (!input) throw new Error("expected the upload dropzone to render a file input");
-    const file = new File([loadSampleCsvText()], "export.csv", { type: "text/csv" });
-    fireEvent.change(input, { target: { files: [file] } });
+      const input = container.querySelector('input[type="file"]');
+      if (!input) throw new Error("expected the upload dropzone to render a file input");
+      const file = new File([loadSampleCsvText()], "export.csv", { type: "text/csv" });
+      fireEvent.change(input, { target: { files: [file] } });
 
-    // The loading state is floored to MIN_LOADING_MS (see App.tsx) so the
-    // loading bar is actually visible, which pushes this past the default
-    // findByRole timeout.
-    await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
-    await waitFor(async () => {
-      expect(await loadWorkoutRows()).toHaveLength(1209);
-    });
+      // The loading state is floored to MIN_LOADING_MS (see App.tsx) so the
+      // loading bar is actually visible, which pushes this past the default
+      // findByRole timeout.
+      await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+      await waitFor(
+        async () => {
+          expect(await loadWorkoutRows()).toHaveLength(1209);
+        },
+        { timeout: 3000 }
+      );
 
-    unmount();
-    renderApp();
+      unmount();
+      renderApp();
 
-    // The second mount restores from storage rather than showing the upload
-    // screen — no re-upload needed for data that's already there.
-    await screen.findByRole("button", { name: /start over/i });
-  });
+      // The second mount restores from storage rather than showing the upload
+      // screen — no re-upload needed for data that's already there.
+      await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+    },
+    15000
+  );
 
   it("chalks in a workout/PR summary right after upload, then hands off to the dashboard", async () => {
     const { container } = renderApp();
