@@ -176,7 +176,7 @@ export function niceAxisTicks(
   return { domain: [niceMin, niceMax], ticks };
 }
 
-type TimeUnit = "day" | "month" | "year";
+export type TimeUnit = "day" | "month" | "year";
 interface TimeStep {
   amount: number;
   unit: TimeUnit;
@@ -257,12 +257,19 @@ function timeTicksForStep(minMs: number, maxMs: number, step: TimeStep): number[
  *
  * Unlike niceAxisTicks, this doesn't widen the domain — the real first/last
  * logged date stays at the chart's edges; only which in-between dates get a
- * labeled tick is computed here. Pass the result to `<XAxis ticks={...}
+ * labeled tick is computed here. Pass `.ticks` to `<XAxis ticks={...}
  * interval={0} />` — same reason as niceAxisTicks: Recharts' own collision
- * thinning would otherwise second-guess an explicit ticks array.
+ * thinning would otherwise second-guess an explicit ticks array. `.unit` is
+ * the calendar step that was actually chosen (day/month/year) — pass it to
+ * formatTimeTick() so the tick labels read at the same grain as the ticks
+ * themselves, e.g. never a "Mar 2025" label sitting on a mid-month tick.
  */
-export function niceTimeTicks(minMs: number, maxMs: number, tickCount = AXIS_TICK_COUNT): number[] {
-  if (minMs === maxMs) return [minMs];
+export function niceTimeTicks(
+  minMs: number,
+  maxMs: number,
+  tickCount = AXIS_TICK_COUNT
+): { ticks: number[]; unit: TimeUnit } {
+  if (minMs === maxMs) return { ticks: [minMs], unit: "day" };
 
   let bestStep: TimeStep = TIME_STEP_CANDIDATES[0]!;
   let bestTicks: number[] = [];
@@ -280,7 +287,32 @@ export function niceTimeTicks(minMs: number, maxMs: number, tickCount = AXIS_TIC
       bestTicks = ticks;
     }
   }
-  return bestTicks.length > 0 ? bestTicks : [minMs, maxMs];
+  return bestTicks.length > 0
+    ? { ticks: bestTicks, unit: bestStep.unit }
+    : { ticks: [minMs, maxMs], unit: bestStep.unit };
+}
+
+/**
+ * Formats a niceTimeTicks() tick to match the calendar unit that was chosen
+ * for it — the same short, two-digit-year grammar formatBucketLabel() uses
+ * for the granularity-bucketed charts (ConsistencyChart, StackedShareChart,
+ * ShareAreaChart, BodyCompLineChart), so every chart's x-axis reads as one
+ * consistent date style instead of LiftChart's own full "Mar 14, 2025"
+ * (formatDate() stays that verbose form for prose contexts — tooltips, the
+ * date range picker, PR lists — where there's room and the fuller date reads
+ * better).
+ */
+export function formatTimeTick(t: number, unit: TimeUnit): string {
+  const date = new Date(t);
+  const yy = String(date.getFullYear()).slice(2);
+  switch (unit) {
+    case "day":
+      return `${date.toLocaleDateString("en-US", { day: "numeric", month: "short" })} '${yy}`;
+    case "month":
+      return `${date.toLocaleString("en-US", { month: "short" })} '${yy}`;
+    case "year":
+      return String(date.getFullYear());
+  }
 }
 
 /** The 4 tracked rep-max schemes, in the fixed left-to-right order every mode uses. */
