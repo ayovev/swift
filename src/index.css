@@ -35,11 +35,8 @@
   --input: oklch(0.922 0 0);
 
   /*
-   * Temporary comparison-mode tokens for lift rep-max coloring (see
-   * OverviewTab.tsx's fixed/accent toggle). Fixed, non-accent-derived colors
-   * are a second exception to the achromatic-base rule above, on trial
-   * alongside an accent-derived alternative until one is chosen — see
-   * CLAUDE.md before making this permanent.
+   * Fixed, non-accent-derived colors for lift rep-max coloring. A second
+   * exception to the achromatic-base rule above, alongside --destructive.
    */
   --repmax-1: oklch(0.577 0.245 27);
   --repmax-2: oklch(0.65 0.19 55);

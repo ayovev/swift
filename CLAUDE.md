@@ -208,8 +208,12 @@ This doesn't relax hard constraint #1 above — the cache is still local-only an
 
 Black-and-white base in both modes, plus **one** user-selected accent — the only chromatic
 element the athlete controls. Every token in `src/index.css` is achromatic (chroma exactly 0),
-with one fixed exception: `--destructive`, the error/delete-action red, which stays a constant
-semantic colour rather than deriving from the accent. The accent itself arrives as CSS custom
+with two fixed exceptions that never derive from the accent: `--destructive`, the error/delete-action
+red, and the `--repmax-1/2/3/5` tokens (red/orange/green/blue). The `--repmax-*` tokens colour the
+lift-chart dots and legend by rep scheme (`FIXED_REPMAX_COLORS` in `chartUtils.ts`), and the
+Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). They are fixed on
+purpose: an accent-derived alternative was tried side by side and dropped, so there is no colour-mode
+toggle and no `accentRepMaxColors()`; don't reintroduce one. The accent itself arrives as CSS custom
 properties written to `:root` by `src/lib/theme/useTheme.ts`, so shadcn primitives, focus rings
 and Recharts series pick it up with no per-component wiring.
 
@@ -232,6 +236,7 @@ and Recharts series pick it up with no per-component wiring.
   swatch's hue/chroma until it does; do not lower a threshold.
 - `chartSeries()` derives N steps along the accent's own hue rather than a rainbow, which is
   what keeps a ten-series stacked chart reading as black, white and the athlete's one colour.
+  (The rep-max dots and M/W/G bars above are the exception: they use fixed colours.)
 - The pre-hydration script in `index.html` duplicates the mode logic and the `swift.theme`
   localStorage key from `useTheme.ts` to avoid a flash of the wrong mode. **Change both together.**
   Theme reads/writes are wrapped in try/catch — private browsing must never break the app.

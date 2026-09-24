@@ -289,9 +289,15 @@ function ChartLegendContent({
   payload,
   verticalAlign = "bottom",
   nameKey,
+  onActiveKeyChange,
 }: React.ComponentProps<"div"> & {
   hideIcon?: boolean
   nameKey?: string
+  /**
+   * Called with an item's series key on hover/focus and with null on leave, so
+   * a chart can dim every other series. Omit it for a plain, inert legend.
+   */
+  onActiveKeyChange?: (key: string | null) => void
 } & RechartsPrimitive.DefaultLegendContentProps) {
   const { config } = useChart()
 
@@ -304,6 +310,8 @@ function ChartLegendContent({
       className={cn(
         "flex items-center justify-center gap-4",
         verticalAlign === "top" ? "pb-3" : "pt-3",
+        // Padded hover boxes supply their own spacing, so tighten the gap.
+        onActiveKeyChange && "gap-1",
         className
       )}
     >
@@ -317,8 +325,16 @@ function ChartLegendContent({
             <div
               key={index}
               className={cn(
-                "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground"
+                "flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground",
+                onActiveKeyChange &&
+                  "cursor-default rounded-md px-2 py-1 transition-colors duration-150 hover:bg-muted"
               )}
+              {...(onActiveKeyChange
+                ? {
+                    onMouseEnter: () => onActiveKeyChange(key),
+                    onMouseLeave: () => onActiveKeyChange(null),
+                  }
+                : {})}
             >
               {itemConfig?.icon && !hideIcon ? (
                 <itemConfig.icon />

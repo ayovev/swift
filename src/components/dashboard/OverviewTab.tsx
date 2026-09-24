@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BenchmarkCards } from "./charts/BenchmarkCards";
 import { ConsistencyChart } from "./charts/ConsistencyChart";
-import { LiftGrid, type RepMaxColorMode, type RepMaxFilter } from "./charts/LiftChart";
+import { LiftGrid, type RepMaxFilter } from "./charts/LiftChart";
 import { PrTimeline } from "./charts/PrTimeline";
 import { RepMaxPrTable } from "./charts/RepMaxPrTable";
 import { SegmentedControl, type SegmentedControlOption } from "./SegmentedControl";
@@ -12,11 +12,8 @@ import {
   FIXED_REPMAX_COLORS,
   MODALITY_FIXED_CHART_CONFIG,
   REP_MAX_CATEGORY_ORDER,
-  accentRepMaxColors,
 } from "./charts/chartUtils";
 import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
-import { getSwatch } from "@/lib/theme/palette";
-import { useTheme } from "@/lib/theme/useTheme";
 import { DOMAIN_LIST } from "@/types/dashboard";
 import { MODALITY_LIST } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
@@ -33,35 +30,13 @@ const REP_MAX_FILTER_OPTIONS: readonly SegmentedControlOption<RepMaxFilter>[] = 
   ...REP_MAX_CATEGORY_ORDER.map((category) => ({ id: category, label: category })),
 ];
 
-const REP_MAX_COLOR_MODE_OPTIONS: readonly SegmentedControlOption<RepMaxColorMode>[] = [
-  { id: "fixed", label: "Fixed colors" },
-  { id: "accent", label: "Accent-derived" },
-];
-
-/**
- * Temporary side-by-side comparison of two rep-max coloring approaches: fixed
- * literal colors vs. colors derived from the athlete's own accent hue. Not a
- * permanent setting — once one wins, this toggle and the losing color path
- * get deleted (see CLAUDE.md's theming section before making a choice final).
- */
 function RepMaxLegend({
-  colorMode,
-  onColorModeChange,
   repMaxFilter,
   onRepMaxFilterChange,
 }: {
-  colorMode: RepMaxColorMode;
-  onColorModeChange: (mode: RepMaxColorMode) => void;
   repMaxFilter: RepMaxFilter;
   onRepMaxFilterChange: (filter: RepMaxFilter) => void;
 }) {
-  const { accent, resolvedMode } = useTheme();
-  const colors = useMemo(
-    () =>
-      colorMode === "fixed" ? FIXED_REPMAX_COLORS : accentRepMaxColors(getSwatch(accent), resolvedMode),
-    [colorMode, accent, resolvedMode]
-  );
-
   return (
     <div className="mb-4 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
@@ -71,21 +46,13 @@ function RepMaxLegend({
           options={REP_MAX_FILTER_OPTIONS}
           ariaLabel="Filter by rep-max scheme"
         />
-        <div className="ml-auto">
-          <SegmentedControl
-            value={colorMode}
-            onChange={onColorModeChange}
-            options={REP_MAX_COLOR_MODE_OPTIONS}
-            ariaLabel="Rep-max color mode"
-          />
-        </div>
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         {REP_MAX_CATEGORY_ORDER.map((category) => (
           <span key={category} className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span
               className="h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: colors[category] }}
+              style={{ backgroundColor: FIXED_REPMAX_COLORS[category] }}
             />
             {REP_MAX_CATEGORY_LABELS[category]}
           </span>
@@ -93,7 +60,7 @@ function RepMaxLegend({
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span
             className="h-2 w-2 shrink-0 rounded-full"
-            style={{ backgroundColor: colors.other }}
+            style={{ backgroundColor: FIXED_REPMAX_COLORS.other }}
           />
           other
         </span>
@@ -127,7 +94,6 @@ export function OverviewTab({
   const { dashboard, modality } = insights;
   const { summary } = dashboard;
   const noun = GRANULARITY_NOUN[granularity];
-  const [repMaxColorMode, setRepMaxColorMode] = useState<RepMaxColorMode>("fixed");
   const [repMaxFilter, setRepMaxFilter] = useState<RepMaxFilter>("all");
 
   const rxShare =
@@ -219,12 +185,10 @@ export function OverviewTab({
           </p>
           <RepMaxPrTable lifts={dashboard.lifts} />
           <RepMaxLegend
-            colorMode={repMaxColorMode}
-            onColorModeChange={setRepMaxColorMode}
             repMaxFilter={repMaxFilter}
             onRepMaxFilterChange={setRepMaxFilter}
           />
-          <LiftGrid lifts={dashboard.lifts} colorMode={repMaxColorMode} repMaxFilter={repMaxFilter} />
+          <LiftGrid lifts={dashboard.lifts} repMaxFilter={repMaxFilter} />
         </CardContent>
       </Card>
 

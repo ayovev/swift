@@ -11,21 +11,15 @@ import {
   AXIS_PROPS,
   FIXED_REPMAX_COLORS,
   NUM_AXIS_WIDTH,
-  accentRepMaxColors,
   formatDate,
   niceAxisTicks,
   niceTimeTicks,
 } from "./chartUtils";
-import { getSwatch } from "@/lib/theme/palette";
-import { useTheme } from "@/lib/theme/useTheme";
 import type { LiftEntry } from "@/types/dashboard";
 
 const CONFIG = {
   value: { label: "Load", color: "var(--primary)" },
 } as const;
-
-/** Rep-max dot colors, so a record doesn't require hovering to spot. */
-export type RepMaxColorMode = "fixed" | "accent";
 
 /** Which rep-max scheme's points to show — "all" or exactly one tracked scheme. */
 export type RepMaxFilter = "all" | TrackedRepMaxCategory;
@@ -76,14 +70,12 @@ function LiftDot({
 export function LiftChart({
   liftName,
   entries,
-  colorMode,
   repMaxFilter,
   xDomain,
   xTicks,
 }: {
   liftName: string;
   entries: LiftEntry[];
-  colorMode: RepMaxColorMode;
   repMaxFilter: RepMaxFilter;
   // Shared across every chart in the grid (see LiftGrid) so the same
   // calendar date lands at the same horizontal position in every small
@@ -94,7 +86,6 @@ export function LiftChart({
   xDomain: [number, number];
   xTicks: number[];
 }) {
-  const { accent, resolvedMode } = useTheme();
   const allData = useMemo(
     () =>
       entries
@@ -114,12 +105,7 @@ export function LiftChart({
     [allData, repMaxFilter]
   );
 
-  const colors = useMemo(
-    () =>
-      colorMode === "fixed" ? FIXED_REPMAX_COLORS : accentRepMaxColors(getSwatch(accent), resolvedMode),
-    [colorMode, accent, resolvedMode]
-  );
-  const colorFor = (repMax: number | null) => colors[repMaxCategory(repMax)];
+  const colorFor = (repMax: number | null) => FIXED_REPMAX_COLORS[repMaxCategory(repMax)];
 
   if (data.length < 2) return null;
 
@@ -203,11 +189,9 @@ export function LiftChart({
 /** Small multiples of the lifts with enough history to say anything. */
 export function LiftGrid({
   lifts,
-  colorMode,
   repMaxFilter,
 }: {
   lifts: Record<string, LiftEntry[]>;
-  colorMode: RepMaxColorMode;
   repMaxFilter: RepMaxFilter;
 }) {
   const entries = useMemo(
@@ -262,7 +246,6 @@ export function LiftGrid({
           key={name}
           liftName={name}
           entries={series}
-          colorMode={colorMode}
           repMaxFilter={repMaxFilter}
           xDomain={xDomain}
           xTicks={xTicks}

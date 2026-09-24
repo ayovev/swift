@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -50,6 +51,10 @@ export function ConsistencyChart({
 }: ConsistencyChartProps) {
   const noun = GRANULARITY_NOUN[granularity];
   const dual = secondaryBuckets !== undefined;
+  // Series hovered in the legend; the other series dims while it's set.
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const barOpacity = (key: string) => (activeKey !== null && activeKey !== key ? 0.2 : 1);
+  const barStyle = { transition: "fill-opacity 150ms" } as const;
 
   const merged = dual ? mergeBucketCounts(buckets, secondaryBuckets) : null;
   const data = (merged ?? buckets).map((b) => ({
@@ -86,11 +91,23 @@ export function ConsistencyChart({
           {...AXIS_PROPS}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="count" fill="var(--primary)" radius={[3, 3, 0, 0]} />
+        <Bar
+          dataKey="count"
+          fill="var(--primary)"
+          fillOpacity={barOpacity("count")}
+          style={barStyle}
+          radius={[3, 3, 0, 0]}
+        />
         {dual ? (
-          <Bar dataKey="secondaryCount" fill="var(--muted-foreground)" radius={[3, 3, 0, 0]} />
+          <Bar
+            dataKey="secondaryCount"
+            fill="var(--muted-foreground)"
+            fillOpacity={barOpacity("secondaryCount")}
+            style={barStyle}
+            radius={[3, 3, 0, 0]}
+          />
         ) : null}
-        {dual ? <ChartLegend content={<ChartLegendContent />} /> : null}
+        {dual ? <ChartLegend content={<ChartLegendContent onActiveKeyChange={setActiveKey} />} /> : null}
       </BarChart>
     </ChartContainer>
   );

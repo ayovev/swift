@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Area, Bar, CartesianGrid, ComposedChart, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -9,6 +10,9 @@ import {
 } from "@/components/ui/chart";
 import { AXIS_PROPS, PCT_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
 import { bucketTickInterval, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
+
+const DIMMED_OPACITY = 0.2;
+const DIM_TRANSITION = { transition: "fill-opacity 150ms" } as const;
 
 interface StackedShareChartProps {
   data: Record<string, string | number>[];
@@ -47,6 +51,9 @@ export function StackedShareChart({
   // stackOffset="expand" always normalizes each bucket to sum to exactly 1.
   const { domain: yDomain, ticks: yTicks } = niceAxisTicks(0, 1);
   const lastKey = keys[keys.length - 1];
+  // Series hovered in the legend; every other series dims while it's set.
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const dimmed = (key: string) => activeKey !== null && activeKey !== key;
 
   return (
     <ChartContainer config={config} className={className} role="img" aria-label={label}>
@@ -76,6 +83,8 @@ export function StackedShareChart({
               dataKey={key}
               stackId="share"
               fill={`var(--color-${key})`}
+              fillOpacity={dimmed(key) ? DIMMED_OPACITY : 1}
+              style={DIM_TRANSITION}
               {...(key === lastKey ? { radius: [3, 3, 0, 0] as [number, number, number, number] } : {})}
             />
           ) : (
@@ -86,12 +95,13 @@ export function StackedShareChart({
               stackId="share"
               stroke={`var(--color-${key})`}
               fill={`var(--color-${key})`}
-              fillOpacity={0.85}
+              fillOpacity={dimmed(key) ? DIMMED_OPACITY : 0.85}
+              style={DIM_TRANSITION}
               strokeWidth={0}
             />
           )
         )}
-        <ChartLegend content={<ChartLegendContent className="flex-wrap" />} />
+        <ChartLegend content={<ChartLegendContent className="flex-wrap" onActiveKeyChange={setActiveKey} />} />
       </ComposedChart>
     </ChartContainer>
   );

@@ -2,8 +2,6 @@ import dayjs from "dayjs";
 import { DOMAIN_LIST, DOMAIN_SHORT_LABELS, type BucketCount, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, MODALITY_SHORT_LABELS, type Modality } from "@/types/modality";
 import type { ChartConfig } from "@/components/ui/chart";
-import { chartSeries, type AccentSwatch, type ThemeMode } from "@/lib/theme/palette";
-import { formatOklch } from "@/lib/theme/contrast";
 import type { RepMaxCategory, TrackedRepMaxCategory } from "@/lib/analytics/repMax";
 
 /** "2025-03-14" -> "14 Mar 2025" */
@@ -294,9 +292,9 @@ export const REP_MAX_CATEGORY_ORDER: readonly TrackedRepMaxCategory[] = [
 ];
 
 /**
- * Fixed, non-accent-derived colors for the 4 tracked rep-max schemes — one of
- * two comparison modes for the lift chart dots (see OverviewTab.tsx). Sourced
- * from the --repmax-* CSS custom properties in index.css.
+ * Fixed, non-accent-derived colors for the 4 tracked rep-max schemes, used for
+ * the lift chart dots and legend. Sourced from the --repmax-* CSS custom
+ * properties in index.css.
  */
 export const FIXED_REPMAX_COLORS: Record<RepMaxCategory, string> = {
   "1RM": "var(--repmax-1)",
@@ -331,21 +329,3 @@ export const MODALITY_FIXED_CHART_CONFIG: ChartConfig = Object.fromEntries(
     { label: MODALITY_SHORT_LABELS[modality], color: FIXED_MODALITY_COLORS[modality] },
   ])
 );
-
-/**
- * The accent-derived alternative: 4 steps along the athlete's own accent hue
- * (see chartSeries() in lib/theme/palette.ts), one per tracked rep-max scheme.
- * Kept alongside FIXED_REPMAX_COLORS purely so the two can be compared
- * side-by-side before picking one — see OverviewTab.tsx's toggle.
- */
-export function accentRepMaxColors(
-  swatch: AccentSwatch,
-  mode: ThemeMode
-): Record<RepMaxCategory, string> {
-  const series = chartSeries(swatch, mode, REP_MAX_CATEGORY_ORDER.length);
-  const colors = Object.fromEntries(
-    REP_MAX_CATEGORY_ORDER.map((category, i) => [category, formatOklch(series[i]!)])
-  ) as Record<RepMaxCategory, string>;
-  colors.other = "var(--muted-foreground)";
-  return colors;
-}
