@@ -138,6 +138,9 @@ export function LiftChart({
             ticks={xTicks}
             interval={0} // see niceAxisTicks() in chartUtils.ts for why
             tickFormatter={(t: number) => formatDate(new Date(t).toISOString().slice(0, 10))}
+            angle={-35}
+            textAnchor="end"
+            height={50}
             {...AXIS_PROPS}
           />
           <YAxis
