@@ -12,8 +12,10 @@ import {
   FIXED_REPMAX_COLORS,
   NUM_AXIS_WIDTH,
   formatDate,
+  formatTimeTick,
   niceAxisTicks,
   niceTimeTicks,
+  type TimeUnit,
 } from "./chartUtils";
 import type { LiftEntry } from "@/types/dashboard";
 
@@ -73,6 +75,7 @@ export function LiftChart({
   repMaxFilter,
   xDomain,
   xTicks,
+  xTickUnit,
 }: {
   liftName: string;
   entries: LiftEntry[];
@@ -85,6 +88,8 @@ export function LiftChart({
   // each individual axis was internally correct.
   xDomain: [number, number];
   xTicks: number[];
+  // The calendar unit niceTimeTicks() chose xTicks in — see formatTimeTick().
+  xTickUnit: TimeUnit;
 }) {
   const allData = useMemo(
     () =>
@@ -137,7 +142,10 @@ export function LiftChart({
             domain={xDomain}
             ticks={xTicks}
             interval={0} // see niceAxisTicks() in chartUtils.ts for why
-            tickFormatter={(t: number) => formatDate(new Date(t).toISOString().slice(0, 10))}
+            tickFormatter={(t: number) => formatTimeTick(t, xTickUnit)}
+            angle={-35}
+            textAnchor="end"
+            height={50}
             {...AXIS_PROPS}
           />
           <YAxis
@@ -237,7 +245,7 @@ export function LiftGrid({
       .map((e) => new Date(e.date).getTime())
   );
   const xDomain: [number, number] = [Math.min(...times), Math.max(...times)];
-  const xTicks = niceTimeTicks(xDomain[0], xDomain[1]);
+  const { ticks: xTicks, unit: xTickUnit } = niceTimeTicks(xDomain[0], xDomain[1]);
 
   return (
     <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
@@ -249,6 +257,7 @@ export function LiftGrid({
           repMaxFilter={repMaxFilter}
           xDomain={xDomain}
           xTicks={xTicks}
+          xTickUnit={xTickUnit}
         />
       ))}
     </div>

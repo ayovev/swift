@@ -1,9 +1,18 @@
 import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
-import { mergeBucketCounts, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
+import {
+  formatTimeTick,
+  mergeBucketCounts,
+  niceAxisTicks,
+  niceTimeTicks,
+} from "@/components/dashboard/charts/chartUtils";
 
 function stepSizes(ticks: number[]): number[] {
   return ticks.slice(1).map((t, i) => Number((t - ticks[i]!).toFixed(6)));
+}
+
+function ms(iso: string): number {
+  return dayjs(iso).valueOf();
 }
 
 describe("niceAxisTicks", () => {
@@ -97,14 +106,11 @@ describe("niceAxisTicks", () => {
 });
 
 describe("niceTimeTicks", () => {
-  function ms(iso: string): number {
-    return dayjs(iso).valueOf();
-  }
-
   it("produces evenly-spaced ticks in calendar-step units, not raw milliseconds", () => {
     // Regression case: a plain "divide the ms range into N" would land ticks
     // on arbitrary dates like "Nov 5" rather than a calendar boundary.
-    const ticks = niceTimeTicks(ms("2022-11-21"), ms("2026-09-11"));
+    const { ticks, unit } = niceTimeTicks(ms("2022-11-21"), ms("2026-09-11"));
+    expect(["month", "year"]).toContain(unit);
     for (const t of ticks) {
       const d = dayjs(t);
       expect(d.date()).toBe(1);
@@ -116,7 +122,7 @@ describe("niceTimeTicks", () => {
   it("leaves the domain untouched — ticks never fall outside [min, max]", () => {
     const min = ms("2023-03-07");
     const max = ms("2026-07-27");
-    const ticks = niceTimeTicks(min, max);
+    const { ticks } = niceTimeTicks(min, max);
     for (const t of ticks) {
       expect(t).toBeGreaterThanOrEqual(min);
       expect(t).toBeLessThanOrEqual(max);
@@ -131,15 +137,32 @@ describe("niceTimeTicks", () => {
       ["2024-05-01", "2024-05-20"],
     ];
     for (const [a, b] of spans) {
-      const ticks = niceTimeTicks(ms(a), ms(b));
+      const { ticks, unit } = niceTimeTicks(ms(a), ms(b));
       expect(ticks.length).toBeGreaterThanOrEqual(2);
       expect(Math.abs(ticks.length - 6)).toBeLessThanOrEqual(2);
+      expect(["day", "month", "year"]).toContain(unit);
     }
   });
 
   it("handles a zero-width range without dividing by zero", () => {
     const t = ms("2024-01-01");
-    expect(niceTimeTicks(t, t)).toEqual([t]);
+    expect(niceTimeTicks(t, t)).toEqual({ ticks: [t], unit: "day" });
+  });
+});
+
+describe("formatTimeTick", () => {
+  const t = ms("2025-03-14");
+
+  it("formats a day-unit tick with the abbreviated-month, two-digit-year style", () => {
+    expect(formatTimeTick(t, "day")).toBe("Mar 14 '25");
+  });
+
+  it("formats a month-unit tick without a day-of-month", () => {
+    expect(formatTimeTick(t, "month")).toBe("Mar '25");
+  });
+
+  it("formats a year-unit tick as the bare 4-digit year", () => {
+    expect(formatTimeTick(t, "year")).toBe("2025");
   });
 });
 
