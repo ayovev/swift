@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dayjs from "dayjs";
 import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Landing } from "@/components/landing/Landing";
 import { buildInsights } from "@/lib/analytics/buildInsights";
-import type { DateRange } from "@/lib/analytics/dateRange";
+import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
 import type { Granularity } from "@/lib/analytics/granularity";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
@@ -11,6 +12,7 @@ import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
 import { extendSampleRows } from "@/lib/sample/extendSample";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
+import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
 import type { SugarWodRow } from "@/types/sugarwod";
 
@@ -65,6 +67,7 @@ async function waitOutMinimum(startedAt: number) {
 export default function App() {
   const [state, setState] = useState<AppState>({ status: "loading" });
   const [range, setRange] = useState<DateRange | null>(null);
+  const [rangePreset, setRangePreset] = useState<DateRangePreset>("all_time");
   const [granularity, setGranularity] = useState<Granularity>("monthly");
   const [bodyComp, setBodyComp] = useState<BodyCompState>({ status: "idle" });
 
@@ -74,7 +77,11 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [rows, bodyRows] = await Promise.all([loadWorkoutRows(), loadBodyCompRows()]);
+      const [rows, bodyRows, viewPrefs] = await Promise.all([
+        loadWorkoutRows(),
+        loadBodyCompRows(),
+        loadViewPreferences(),
+      ]);
       if (cancelled) return;
       if (rows && rows.length > 0) {
         setState({ status: "ready", rows, source: "upload" });
@@ -82,11 +89,54 @@ export default function App() {
         setState({ status: "idle" });
       }
       if (bodyRows && bodyRows.length > 0) setBodyComp({ status: "ready", rows: bodyRows });
+      if (viewPrefs) {
+        setGranularity(viewPrefs.granularity);
+        setRangePreset(viewPrefs.rangePreset);
+        if (viewPrefs.rangePreset === "custom" && viewPrefs.customRange) {
+          setRange({
+            start: dayjs(viewPrefs.customRange.start),
+            end: dayjs(viewPrefs.customRange.end),
+          });
+        } else if (viewPrefs.rangePreset !== "custom") {
+          setRange(computePresetRange(viewPrefs.rangePreset, dayjs()));
+        }
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
+
+  // The two explicit write points for view preferences, mirroring the
+  // pattern for the uploaded datasets above: persist only where the athlete
+  // actually changed something, not as a blanket effect on every state
+  // change — a reactive mirror would race "Start over"'s idbClearAll (the
+  // reset's own setRange/setGranularity calls would re-save the very
+  // defaults the clear just removed).
+  const persistRangeSelection = useCallback((newRange: DateRange | null, preset: DateRangePreset) => {
+    setRange(newRange);
+    setRangePreset(preset);
+    void saveViewPreferences({
+      granularity,
+      rangePreset: preset,
+      customRange:
+        preset === "custom" && newRange
+          ? { start: newRange.start.toISOString(), end: newRange.end.toISOString() }
+          : null,
+    });
+  }, [granularity]);
+
+  const persistGranularity = useCallback((newGranularity: Granularity) => {
+    setGranularity(newGranularity);
+    void saveViewPreferences({
+      granularity: newGranularity,
+      rangePreset,
+      customRange:
+        rangePreset === "custom" && range
+          ? { start: range.start.toISOString(), end: range.end.toISOString() }
+          : null,
+    });
+  }, [rangePreset, range]);
 
   const insights = useMemo(
     () => (state.status === "ready" ? buildInsights(state.rows, range, granularity) : null),
@@ -128,10 +178,16 @@ export default function App() {
           },
         });
         setRange(null);
+        setRangePreset("all_time");
         setGranularity("monthly");
         // Sample data is a public demo file, already free to re-fetch from
-        // public/sample/ — only a genuine upload is worth persisting.
-        if (source === "upload") void saveWorkoutRows(rows);
+        // public/sample/ — only a genuine upload is worth persisting. A new
+        // upload's fresh defaults are worth persisting too, so a reload
+        // right after doesn't restore a previous file's leftover view prefs.
+        if (source === "upload") {
+          void saveWorkoutRows(rows);
+          void saveViewPreferences({ granularity: "monthly", rangePreset: "all_time", customRange: null });
+        }
         await waitOutMinimum(startedAt);
         setState({
           status: "reveal",
@@ -211,6 +267,7 @@ export default function App() {
   const reset = useCallback(() => {
     setState({ status: "idle" });
     setRange(null);
+    setRangePreset("all_time");
     setGranularity("monthly");
     setBodyComp({ status: "idle" });
     // "Start over" is also the one clear-my-data control: without wiping
@@ -225,9 +282,10 @@ export default function App() {
         insights={insights}
         source={state.source}
         range={range}
-        onRangeChange={setRange}
+        rangePreset={rangePreset}
+        onRangeSelect={persistRangeSelection}
         granularity={granularity}
-        onGranularityChange={setGranularity}
+        onGranularityChange={persistGranularity}
         onReset={reset}
         bodyComp={bodyComp}
         onBodyCompFile={handleBodyCompFile}
