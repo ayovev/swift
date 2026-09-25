@@ -8,6 +8,7 @@ import { AlignmentTab } from "./AlignmentTab";
 import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
 import { DateRangePicker } from "./DateRangePicker";
 import { DomainTab } from "./DomainTab";
+import { ExperimentsTab } from "./ExperimentsTab";
 import { GranularityPicker } from "./GranularityPicker";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
@@ -17,6 +18,7 @@ import {
   BODY_COMP_TAB,
   OVERVIEW_TAB,
   ALIGNMENT_TAB,
+  EXPERIMENTS_TAB,
   PLATEAU_TAB,
   WORKOUTS_TAB,
   TabNav,
@@ -30,6 +32,7 @@ import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
 import type { AlignmentResult } from "@/types/alignment";
+import type { Experiment, ExperimentInsight } from "@/types/experiment";
 import type { PlateauInsight } from "@/types/plateau";
 import type { DataSource } from "@/App";
 
@@ -46,6 +49,10 @@ interface DashboardProps {
   onBodyCompFile: (file: File) => void;
   plateauInsights: PlateauInsight[] | null;
   alignment: AlignmentResult | null;
+  experiments: Experiment[];
+  experimentInsights: Map<string, ExperimentInsight> | null;
+  onAddExperiment: (label: string, date: string) => void;
+  onDeleteExperiment: (id: string) => void;
 }
 
 /** Years between the first and last logged workout, to a sensible precision. */
@@ -73,6 +80,10 @@ export function Dashboard({
   onBodyCompFile,
   plateauInsights,
   alignment,
+  experiments,
+  experimentInsights,
+  onAddExperiment,
+  onDeleteExperiment,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   const { summary } = insights.dashboard;
@@ -206,6 +217,17 @@ export function Dashboard({
               alignment={alignment}
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
+            />
+          </TabsContent>
+
+          <TabsContent value={EXPERIMENTS_TAB}>
+            <ExperimentsTab
+              experiments={experiments}
+              experimentInsights={experimentInsights}
+              bodyComp={bodyComp}
+              onBodyCompFile={onBodyCompFile}
+              onAddExperiment={onAddExperiment}
+              onDeleteExperiment={onDeleteExperiment}
             />
           </TabsContent>
         </Tabs>

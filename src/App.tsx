@@ -6,6 +6,7 @@ import { Landing } from "@/components/landing/Landing";
 import { getAlignment } from "@/lib/analytics/alignment";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
+import { getExperimentInsight } from "@/lib/analytics/experimentInsight";
 import type { Granularity } from "@/lib/analytics/granularity";
 import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
@@ -13,9 +14,11 @@ import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
 import { extendSampleRows } from "@/lib/sample/extendSample";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
+import { loadExperiments, saveExperiments } from "@/lib/storage/experimentsStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
+import type { Experiment, ExperimentInsight } from "@/types/experiment";
 import type { SugarWodRow } from "@/types/sugarwod";
 
 export type DataSource = "upload" | "sample";
@@ -72,6 +75,7 @@ export default function App() {
   const [rangePreset, setRangePreset] = useState<DateRangePreset>("all_time");
   const [granularity, setGranularity] = useState<Granularity>("monthly");
   const [bodyComp, setBodyComp] = useState<BodyCompState>({ status: "idle" });
+  const [experiments, setExperiments] = useState<Experiment[]>([]);
 
   // Restore whatever was uploaded last time — persistence is local-only (see
   // CLAUDE.md) and lasts until "Start over" clears it. Sample data is never
@@ -79,10 +83,11 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [rows, bodyRows, viewPrefs] = await Promise.all([
+      const [rows, bodyRows, viewPrefs, storedExperiments] = await Promise.all([
         loadWorkoutRows(),
         loadBodyCompRows(),
         loadViewPreferences(),
+        loadExperiments(),
       ]);
       if (cancelled) return;
       if (rows && rows.length > 0) {
@@ -91,6 +96,7 @@ export default function App() {
         setState({ status: "idle" });
       }
       if (bodyRows && bodyRows.length > 0) setBodyComp({ status: "ready", rows: bodyRows });
+      if (storedExperiments) setExperiments(storedExperiments);
       if (viewPrefs) {
         setGranularity(viewPrefs.granularity);
         setRangePreset(viewPrefs.rangePreset);
@@ -165,6 +171,19 @@ export default function App() {
         ? getAlignment(plateauInsights, bodyComp.rows, new Date())
         : null,
     [plateauInsights, bodyComp]
+  );
+
+  // Same gate as plateauInsights: needs both datasets. Each experiment is
+  // analyzed independently (no cross-experiment view in v1), so this is a
+  // map keyed by experiment id rather than a single derived value.
+  const experimentInsights = useMemo(
+    () =>
+      state.status === "ready" && bodyComp.status === "ready"
+        ? new Map<string, ExperimentInsight>(
+            experiments.map((e) => [e.id, getExperimentInsight(e, state.rows, bodyComp.rows, new Date())])
+          )
+        : null,
+    [state, bodyComp, experiments]
   );
 
   // Hold on "reveal" just long enough for UploadReveal's numbers to chalk
@@ -266,6 +285,24 @@ export default function App() {
     })();
   }, []);
 
+  // User-authored state, not derived from an upload — its own IndexedDB key
+  // (see experimentsStorage.ts), persisted in full on every change.
+  const addExperiment = useCallback((label: string, date: string) => {
+    setExperiments((prev) => {
+      const next = [...prev, { id: crypto.randomUUID(), date, label }];
+      void saveExperiments(next);
+      return next;
+    });
+  }, []);
+
+  const deleteExperiment = useCallback((id: string) => {
+    setExperiments((prev) => {
+      const next = prev.filter((e) => e.id !== id);
+      void saveExperiments(next);
+      return next;
+    });
+  }, []);
+
   const handleSample = useCallback(
     () =>
       void run(
@@ -294,6 +331,7 @@ export default function App() {
     setRangePreset("all_time");
     setGranularity("monthly");
     setBodyComp({ status: "idle" });
+    setExperiments([]);
     // "Start over" is also the one clear-my-data control: without wiping
     // storage here, a reload would silently restore the data this button
     // just appeared to discard.
@@ -315,6 +353,10 @@ export default function App() {
         onBodyCompFile={handleBodyCompFile}
         plateauInsights={plateauInsights}
         alignment={alignment}
+        experiments={experiments}
+        experimentInsights={experimentInsights}
+        onAddExperiment={addExperiment}
+        onDeleteExperiment={deleteExperiment}
       />
     );
   }

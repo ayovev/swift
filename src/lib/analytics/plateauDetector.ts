@@ -48,23 +48,27 @@ const MIN_SCANS_IN_WINDOW = 2;
  * data: the Back Squat decline is -4.8% (clears it), Diane's real
  * improvement is +8.4% (clears it) — both comfortably past 3% without the
  * threshold being so loose it swallows real signal. Tune against the full
- * sample export if it proves too strict/loose in practice.
+ * sample export if it proves too strict/loose in practice. Exported so
+ * `experimentInsight.ts` applies the exact same threshold to its own
+ * before/after comparison rather than maintaining a second copy.
  */
-const TREND_THRESHOLD = 0.03;
+export const TREND_THRESHOLD = 0.03;
 
-interface DatedValue {
+/** Exported for reuse by `experimentInsight.ts`, which needs the same shape for its own before/after split. */
+export interface DatedValue {
   date: Dayjs;
   value: number;
 }
 
-interface SubjectCandidate {
+/** Exported for reuse by `experimentInsight.ts` — see `DatedValue`. */
+export interface SubjectCandidate {
   subject: PlateauSubject;
   entries: DatedValue[];
   scoreDirection: ScoreDirection;
   valueKind: "raw" | "estimated_1rm";
 }
 
-function parseWorkoutDate(dateStr: string): Dayjs {
+export function parseWorkoutDate(dateStr: string): Dayjs {
   return dayjs((dateStr ?? "").trim(), "MM/DD/YYYY", true);
 }
 
@@ -127,7 +131,8 @@ function normalizeTitle(s: string): string {
   return (s ?? "").trim().toUpperCase();
 }
 
-function mean(values: number[]): number {
+/** Exported for reuse by `experimentInsight.ts`'s own before/after averaging. */
+export function mean(values: number[]): number {
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
@@ -147,8 +152,12 @@ interface LiftGroup {
  * an already-known lift — never inventing a new lift subject from a title
  * match alone. Splits each lift by rx_or_scaled, since PlateauSubject.status
  * applies to lifts the same way it applies to benchmarks.
+ *
+ * Exported so `experimentInsight.ts` reuses this exact subject-building
+ * logic (its "don't reimplement the normalization/grouping rules" spec
+ * requirement) instead of maintaining a second copy that could drift.
  */
-function buildLiftSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): SubjectCandidate[] {
+export function buildLiftSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): SubjectCandidate[] {
   const groups = new Map<string, LiftGroup>();
 
   for (const w of workouts) {
@@ -196,8 +205,10 @@ function buildLiftSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): Subje
  * (`matcher.ts`), since the sample data has "HEAVY GRACE" and "JUMPING
  * NANCY" entries that are materially different, heavier/harder workouts a
  * substring match would wrongly conflate with Grace/Nancy.
+ *
+ * Exported for reuse by `experimentInsight.ts` — see `buildLiftSubjects`.
  */
-function buildBenchmarkSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): SubjectCandidate[] {
+export function buildBenchmarkSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): SubjectCandidate[] {
   const candidates: SubjectCandidate[] = [];
   for (const name of NAMED_BENCHMARKS) {
     for (const status of ["RX", "SCALED"] as const) {
@@ -262,6 +273,20 @@ export function isBodyCompDeclining(bodyComp: PlateauBodyCompTrend): boolean {
   const leanBad = bodyComp.leanMassDelta !== null && bodyComp.leanMassDelta < 0;
   const fatBad = bodyComp.fatMassDelta !== null && bodyComp.fatMassDelta > 0;
   return leanBad && fatBad;
+}
+
+/**
+ * Mirror image of `isBodyCompDeclining` — lean up AND fat down, the one
+ * clean "body comp is helping" story. Experiments needs a three-state read
+ * (declining/improving/stable), which `isBodyCompDeclining`'s boolean alone
+ * can't express, since "not declining" also covers a genuinely flat body
+ * comp. Lives here rather than in `experimentInsight.ts` so both directions
+ * of the same signal stay defined in one place, next to each other.
+ */
+export function isBodyCompImproving(bodyComp: PlateauBodyCompTrend): boolean {
+  const leanGood = bodyComp.leanMassDelta !== null && bodyComp.leanMassDelta > 0;
+  const fatGood = bodyComp.fatMassDelta !== null && bodyComp.fatMassDelta < 0;
+  return leanGood && fatGood;
 }
 
 /**
