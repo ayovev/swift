@@ -46,6 +46,12 @@ function formatDelta(delta: number | null, unit: string): string {
   return `${rounded > 0 ? "+" : ""}${rounded}${unit}`;
 }
 
+/** "~220" for an estimated 1RM (never displayed as if it were a logged value), "165" for a raw benchmark score. */
+function formatPointValue(value: number, valueKind: "raw" | "estimated_1rm"): string {
+  const rounded = Math.round(value);
+  return valueKind === "estimated_1rm" ? `~${rounded}` : `${rounded}`;
+}
+
 /** Sinks insufficient_data to the bottom; among the rest, the two plateau
  * states surface first since they're the ones worth a second look. */
 const CLASSIFICATION_ORDER: Record<PlateauClassification, number> = {
@@ -103,6 +109,7 @@ export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: Platea
     const order = CLASSIFICATION_ORDER[a.classification] - CLASSIFICATION_ORDER[b.classification];
     return order !== 0 ? order : a.subject.name.localeCompare(b.subject.name);
   });
+  const hasLiftSubject = sorted.some((i) => i.subject.type === "lift");
 
   return (
     <div className="flex flex-col gap-6">
@@ -110,11 +117,17 @@ export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: Platea
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Plateau detector</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-1">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Lifts and named benchmarks with enough history to compare, checked against your
             InBody scans over the same window.
           </p>
+          {hasLiftSubject ? (
+            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Lift trends compare an estimated one-rep max (averaging two standard formulas),
+              since a 1RM day and a 5RM day for the same lift aren't directly comparable weights.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -161,7 +174,8 @@ export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: Platea
                         </span>
                         {insight.performanceTrend.recentPoints.map((p) => (
                           <span key={p.date} className="tabular text-xs text-muted-foreground">
-                            {formatDate(p.date)}: {p.value}
+                            {formatDate(p.date)}:{" "}
+                            {formatPointValue(p.value, insight.performanceTrend.valueKind)}
                           </span>
                         ))}
                       </div>

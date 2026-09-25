@@ -31,6 +31,13 @@ export interface PlateauPerformanceTrend {
   direction: "up" | "down" | "flat";
   /** The entries in the "recent" comparison window, chronological. */
   recentPoints: PlateauPerformancePoint[];
+  /**
+   * "estimated_1rm" for every lift (a rep-max scheme's raw weight isn't
+   * comparable across schemes, so lift values are normalized before
+   * trending — see plateauDetector.ts), "raw" for every benchmark WOD
+   * (a benchmark's score is already one comparable unit).
+   */
+  valueKind: "raw" | "estimated_1rm";
 }
 
 export interface PlateauBodyCompTrend {

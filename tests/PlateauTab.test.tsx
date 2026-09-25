@@ -9,7 +9,11 @@ function insight(overrides: Partial<PlateauInsight> & { subject: PlateauInsight[
     classification: "improving",
     windowStart: "2024-01-01",
     windowEnd: "2024-03-01",
-    performanceTrend: { direction: "up", recentPoints: [{ date: "2024-03-01", value: 100 }] },
+    performanceTrend: {
+      direction: "up",
+      recentPoints: [{ date: "2024-03-01", value: 100 }],
+      valueKind: "raw",
+    },
     confidence: "medium",
     ...overrides,
   };
@@ -54,23 +58,40 @@ describe("PlateauTab — ready state", () => {
     insight({
       subject: { type: "lift", name: "Back Squat", status: "RX" },
       classification: "improving",
+      performanceTrend: {
+        direction: "up",
+        recentPoints: [{ date: "2024-03-01", value: 220 }],
+        valueKind: "estimated_1rm",
+      },
     }),
     insight({
       subject: { type: "lift", name: "Deadlift", status: "RX" },
       classification: "plateaued_body_comp",
-      performanceTrend: { direction: "down", recentPoints: [{ date: "2024-03-01", value: 90 }] },
+      performanceTrend: {
+        direction: "down",
+        recentPoints: [{ date: "2024-03-01", value: 90 }],
+        valueKind: "estimated_1rm",
+      },
       bodyCompTrend: { leanMassDelta: -2, fatMassDelta: 1.5, bodyFatPctDelta: 0.6 },
     }),
     insight({
       subject: { type: "benchmark_wod", name: "Nancy", status: "SCALED" },
       classification: "plateaued_other",
-      performanceTrend: { direction: "flat", recentPoints: [{ date: "2024-03-01", value: 900 }] },
+      performanceTrend: {
+        direction: "flat",
+        recentPoints: [{ date: "2024-03-01", value: 900 }],
+        valueKind: "raw",
+      },
       bodyCompTrend: { leanMassDelta: 1, fatMassDelta: -1, bodyFatPctDelta: -0.4 },
     }),
     insight({
       subject: { type: "benchmark_wod", name: "Grace", status: "RX" },
       classification: "insufficient_data",
-      performanceTrend: { direction: "flat", recentPoints: [{ date: "2024-03-01", value: 291 }] },
+      performanceTrend: {
+        direction: "flat",
+        recentPoints: [{ date: "2024-03-01", value: 291 }],
+        valueKind: "raw",
+      },
     }),
   ];
 

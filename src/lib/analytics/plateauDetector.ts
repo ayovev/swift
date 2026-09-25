@@ -1,6 +1,7 @@
 import dayjs, { type Dayjs } from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { NAMED_BENCHMARKS, toTitleCase } from "./buildDashboardData";
+import { parseRepMax, repMaxCategory } from "./repMax";
 import type { SugarWodRow } from "@/types/dashboard";
 import type { InBodyRow } from "@/types/inbody";
 import type {
@@ -60,6 +61,7 @@ interface SubjectCandidate {
   subject: PlateauSubject;
   entries: DatedValue[];
   scoreDirection: ScoreDirection;
+  valueKind: "raw" | "estimated_1rm";
 }
 
 function parseWorkoutDate(dateStr: string): Dayjs {
@@ -75,6 +77,33 @@ function parseNumericField(raw: string | undefined): number | null {
   if (raw === undefined || raw === "" || raw === "-") return null;
   const n = Number.parseFloat(raw);
   return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * Estimates a 1-rep max for a Load-scored lift entry, so entries logged
+ * under different rep schemes (a 1RM day vs. a 5RM day) become comparable —
+ * comparing raw weights directly would misread a rep-scheme change as a
+ * performance change. Only the four rep-max schemes SugarWOD athletes
+ * actually track (1/2/3/5RM, per `repMaxCategory`) are normalized; a
+ * schemeless entry or one with a known-but-untracked rep count (e.g. a 4RM)
+ * is excluded entirely rather than guessed. Averages the Epley and Brzycki
+ * formulas — neither is demonstrably more accurate in general, and they
+ * diverge enough at low rep counts (3-4 percentage points at 2/3/5 reps) to
+ * matter against the trend threshold below, so averaging hedges against
+ * either formula's specific bias rather than committing to one. A true
+ * 1-rep max (reps === 1) needs no estimating and is used as-is.
+ */
+function estimateLiftValue(raw: SugarWodRow): number | null {
+  const rawValue = parseNumericField(raw.best_result_raw);
+  if (rawValue === null) return null;
+
+  const reps = parseRepMax(`${raw.title ?? ""} ${raw.description ?? ""}`);
+  if (reps === null || repMaxCategory(reps) === "other") return null;
+  if (reps === 1) return rawValue;
+
+  const epley = rawValue * (1 + reps / 30);
+  const brzycki = (rawValue * 36) / (37 - reps);
+  return (epley + brzycki) / 2;
 }
 
 /** Strips exactly one trailing "s" so "Deadlift"/"Deadlifts" group together. */
@@ -135,7 +164,7 @@ function buildLiftSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): Subje
       const entries: DatedValue[] = [];
       for (const w of group.rows) {
         if (w.raw.rx_or_scaled !== status) continue;
-        const value = parseNumericField(w.raw.best_result_raw);
+        const value = estimateLiftValue(w.raw);
         if (value !== null) entries.push({ date: w.date, value });
       }
       if (entries.length === 0) continue;
@@ -143,6 +172,7 @@ function buildLiftSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): Subje
         subject: { type: "lift", name: group.displayName, status },
         entries,
         scoreDirection: "higher_better",
+        valueKind: "estimated_1rm",
       });
     }
   }
@@ -171,6 +201,7 @@ function buildBenchmarkSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): 
         subject: { type: "benchmark_wod", name: toTitleCase(name), status },
         entries,
         scoreDirection: BENCHMARK_SCORE_DIRECTION[name],
+        valueKind: "raw",
       });
     }
   }
@@ -242,6 +273,7 @@ function tierConfidence(entryCount: number, scanCount: number): ConfidenceTier {
 
 function insufficientInsight(
   subject: PlateauSubject,
+  valueKind: "raw" | "estimated_1rm",
   sorted: DatedValue[],
   windowStart: Dayjs | undefined,
   windowEnd: Dayjs | undefined
@@ -251,7 +283,7 @@ function insufficientInsight(
     classification: "insufficient_data",
     windowStart: windowStart?.format("YYYY-MM-DD") ?? "",
     windowEnd: windowEnd?.format("YYYY-MM-DD") ?? "",
-    performanceTrend: { direction: "flat", recentPoints: sorted.map(toPoint) },
+    performanceTrend: { direction: "flat", recentPoints: sorted.map(toPoint), valueKind },
     confidence: "low",
   };
 }
@@ -260,12 +292,12 @@ function computeInsight(
   candidate: SubjectCandidate,
   scans: { date: Dayjs; raw: InBodyRow }[]
 ): PlateauInsight {
-  const { subject, entries, scoreDirection } = candidate;
+  const { subject, entries, scoreDirection, valueKind } = candidate;
   const sorted = [...entries].sort((a, b) => a.date.valueOf() - b.date.valueOf());
   const n = sorted.length;
 
   if (n < MIN_ENTRIES) {
-    return insufficientInsight(subject, sorted, sorted[0]?.date, sorted[n - 1]?.date);
+    return insufficientInsight(subject, valueKind, sorted, sorted[0]?.date, sorted[n - 1]?.date);
   }
 
   // Session-count windows, not calendar-day lookback: real benchmark logging
@@ -284,7 +316,7 @@ function computeInsight(
 
   const windowStart = previousWindow[0]!.date;
   const windowEnd = recentWindow[recentWindow.length - 1]!.date;
-  const performanceTrend = { direction, recentPoints: recentWindow.map(toPoint) };
+  const performanceTrend = { direction, recentPoints: recentWindow.map(toPoint), valueKind };
 
   const scansInWindow = scans
     .filter((s) => !s.date.isBefore(windowStart, "day") && !s.date.isAfter(windowEnd, "day"))
