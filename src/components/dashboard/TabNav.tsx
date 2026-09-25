@@ -13,18 +13,20 @@ import { cn } from "@/lib/utils";
 export const OVERVIEW_TAB = "overview";
 export const WORKOUTS_TAB = "workouts";
 export const BODY_COMP_TAB = "body-comp";
+export const PLATEAU_TAB = "plateaus";
 
 export interface TabDescriptor {
   value: string;
   label: string;
-  group: "Overview" | "Workouts" | "Domains" | "Modalities" | "Body composition";
+  group: "Overview" | "Workouts" | "Domains" | "Modalities" | "Body composition" | "Plateaus";
 }
 
 /**
- * All 16 tabs: Overview, the running Workouts list, ten GPP domains, three
- * modalities, and Body Comp — the last one built from a wholly separate
- * InBody upload, always present in the nav even before any InBody data is
- * loaded (see BodyCompTab).
+ * All 17 tabs: Overview, the running Workouts list, ten GPP domains, three
+ * modalities, Body Comp — built from a wholly separate InBody upload,
+ * always present in the nav even before any InBody data is loaded (see
+ * BodyCompTab) — and Plateaus, which needs both datasets and is likewise
+ * always present (see PlateauTab).
  */
 export const ALL_TABS: TabDescriptor[] = [
   { value: OVERVIEW_TAB, label: "Overview", group: "Overview" },
@@ -40,9 +42,17 @@ export const ALL_TABS: TabDescriptor[] = [
     group: "Modalities" as const,
   })),
   { value: BODY_COMP_TAB, label: "Body Comp", group: "Body composition" },
+  { value: PLATEAU_TAB, label: "Plateaus", group: "Plateaus" },
 ];
 
-const GROUPS = ["Overview", "Workouts", "Domains", "Modalities", "Body composition"] as const;
+const GROUPS = [
+  "Overview",
+  "Workouts",
+  "Domains",
+  "Modalities",
+  "Body composition",
+  "Plateaus",
+] as const;
 type Group = (typeof GROUPS)[number];
 
 const GROUP_LABELS: Record<Group, string> = {
@@ -51,13 +61,15 @@ const GROUP_LABELS: Record<Group, string> = {
   Domains: "Domains",
   Modalities: "Modalities",
   "Body composition": "Body Comp",
+  Plateaus: "Plateaus",
 };
 
-/** Overview, Workouts and Body Comp are single tabs and select directly; the other two open a menu. */
+/** Overview, Workouts, Body Comp and Plateaus are single tabs and select directly; the other two open a menu. */
 const DIRECT_VALUES: Partial<Record<Group, string>> = {
   Overview: OVERVIEW_TAB,
   Workouts: WORKOUTS_TAB,
   "Body composition": BODY_COMP_TAB,
+  Plateaus: PLATEAU_TAB,
 };
 
 function groupOf(value: string): Group {

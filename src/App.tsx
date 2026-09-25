@@ -6,6 +6,7 @@ import { Landing } from "@/components/landing/Landing";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
 import type { Granularity } from "@/lib/analytics/granularity";
+import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
@@ -141,6 +142,18 @@ export default function App() {
   const insights = useMemo(
     () => (state.status === "ready" ? buildInsights(state.rows, range, granularity) : null),
     [state, range, granularity]
+  );
+
+  // Needs both datasets, so it stays null until an InBody export is loaded
+  // too — like BodyCompTab, it operates on the full unfiltered upload rather
+  // than the dashboard's selected date range (session-count windowing, not
+  // bucket-based, doesn't need one).
+  const plateauInsights = useMemo(
+    () =>
+      state.status === "ready" && bodyComp.status === "ready"
+        ? getPlateauInsights(state.rows, bodyComp.rows, new Date())
+        : null,
+    [state, bodyComp]
   );
 
   // Hold on "reveal" just long enough for UploadReveal's numbers to chalk
@@ -289,6 +302,7 @@ export default function App() {
         onReset={reset}
         bodyComp={bodyComp}
         onBodyCompFile={handleBodyCompFile}
+        plateauInsights={plateauInsights}
       />
     );
   }
