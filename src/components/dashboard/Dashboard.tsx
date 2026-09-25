@@ -121,7 +121,8 @@ export function Dashboard({
           <span>
             <strong className="font-medium">Sample data.</strong>{" "}
             <span className="text-muted-foreground">
-              This is someone else's training log, here so you can look around.
+              This is a sample training log and body-composition history, here so you can look
+              around.
             </span>
           </span>
         </div>
