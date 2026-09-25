@@ -22,8 +22,12 @@ import type {
 
 dayjs.extend(customParseFormat);
 
-/** "The girls" plus a couple of heroes. Matched on exact uppercased title. */
-const NAMED_BENCHMARKS = [
+/**
+ * "The girls" plus a couple of heroes. Matched on exact uppercased title.
+ * Exported so the plateau detector (`plateauDetector.ts`) reuses this one
+ * allowlist rather than declaring a second one that could drift.
+ */
+export const NAMED_BENCHMARKS = [
   "FRAN", "GRACE", "MURPH", "HELEN", "DIANE",
   "NANCY", "CINDY", "ANNIE", "JACKIE", "KAREN",
 ] as const;
@@ -31,7 +35,7 @@ const NAMED_BENCHMARKS = [
 /** A benchmark needs at least this many logs before a history is worth showing. */
 const MIN_ENTRIES_FOR_HISTORY = 2;
 
-function toTitleCase(s: string): string {
+export function toTitleCase(s: string): string {
   return s.charAt(0) + s.slice(1).toLowerCase();
 }
 

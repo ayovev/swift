@@ -10,7 +10,8 @@ import { DomainTab } from "./DomainTab";
 import { GranularityPicker } from "./GranularityPicker";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
-import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, WORKOUTS_TAB, TabNav } from "./TabNav";
+import { PlateauTab } from "./PlateauTab";
+import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, PLATEAU_TAB, WORKOUTS_TAB, TabNav } from "./TabNav";
 import { WorkoutsTab } from "./WorkoutsTab";
 import { formatDate } from "./charts/chartUtils";
 import type { DateRange, DateRangePreset } from "@/lib/analytics/dateRange";
@@ -19,6 +20,7 @@ import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
+import type { PlateauInsight } from "@/types/plateau";
 import type { DataSource } from "@/App";
 
 interface DashboardProps {
@@ -32,6 +34,7 @@ interface DashboardProps {
   onReset: () => void;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
+  plateauInsights: PlateauInsight[] | null;
 }
 
 /** Years between the first and last logged workout, to a sensible precision. */
@@ -57,6 +60,7 @@ export function Dashboard({
   onReset,
   bodyComp,
   onBodyCompFile,
+  plateauInsights,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   const { summary } = insights.dashboard;
@@ -174,6 +178,14 @@ export function Dashboard({
               granularity={granularity}
               onFile={onBodyCompFile}
               dashboard={insights.dashboard}
+            />
+          </TabsContent>
+
+          <TabsContent value={PLATEAU_TAB}>
+            <PlateauTab
+              plateauInsights={plateauInsights}
+              bodyComp={bodyComp}
+              onBodyCompFile={onBodyCompFile}
             />
           </TabsContent>
         </Tabs>

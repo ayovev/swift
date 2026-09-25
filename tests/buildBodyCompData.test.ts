@@ -7,6 +7,8 @@ function row(overrides: Partial<InBodyRow> & { date: string }): InBodyRow {
   return {
     "Weight(lb)": "-",
     "Skeletal Muscle Mass(lb)": "-",
+    "Soft Lean Mass(lb)": "-",
+    "Body Fat Mass(lb)": "-",
     "Percent Body Fat(%)": "-",
     "BMI(kg/m²)": "-",
     "InBody Score": "-",

@@ -18,6 +18,8 @@ export interface InBodyRow {
   /** Missing/not-applicable cells are the literal string "-", not "". */
   "Weight(lb)": string;
   "Skeletal Muscle Mass(lb)": string;
+  "Soft Lean Mass(lb)": string;
+  "Body Fat Mass(lb)": string;
   "Percent Body Fat(%)": string;
   "BMI(kg/m²)": string;
   "InBody Score": string;
