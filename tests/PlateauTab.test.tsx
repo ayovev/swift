@@ -92,6 +92,7 @@ describe("PlateauTab — ready state", () => {
         recentPoints: [{ date: "2024-03-01", value: 291 }],
         valueKind: "raw",
       },
+      reason: "needs 1 more logged entry (has 2, needs 3)",
     }),
   ];
 
@@ -112,6 +113,18 @@ describe("PlateauTab — ready state", () => {
     expect(screen.getByText("Plateaued — other")).toBeInTheDocument();
     expect(screen.getByText("Grace (RX)")).toBeInTheDocument();
     expect(screen.getByText("Not enough data yet")).toBeInTheDocument();
+  });
+
+  it("shows the specific reason for an insufficient_data row instead of a generic message", () => {
+    render(
+      <PlateauTab
+        plateauInsights={insights}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("needs 1 more logged entry (has 2, needs 3)")).toBeInTheDocument();
   });
 
   it("does not render fabricated body-comp numbers for an insufficient_data row", () => {

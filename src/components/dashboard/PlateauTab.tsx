@@ -161,10 +161,7 @@ export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: Platea
                     <TableCell className="whitespace-normal">
                       <ClassificationBadge classification={insight.classification} />
                       {insight.classification === "insufficient_data" ? (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Needs at least 3 logged entries and 2 InBody scans in the comparison
-                          window.
-                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">{insight.reason}</p>
                       ) : null}
                     </TableCell>
                     <TableCell>

@@ -14,19 +14,28 @@ export const OVERVIEW_TAB = "overview";
 export const WORKOUTS_TAB = "workouts";
 export const BODY_COMP_TAB = "body-comp";
 export const PLATEAU_TAB = "plateaus";
+export const ALIGNMENT_TAB = "alignment";
 
 export interface TabDescriptor {
   value: string;
   label: string;
-  group: "Overview" | "Workouts" | "Domains" | "Modalities" | "Body composition" | "Plateaus";
+  group:
+    | "Overview"
+    | "Workouts"
+    | "Domains"
+    | "Modalities"
+    | "Body composition"
+    | "Plateaus"
+    | "Alignment";
 }
 
 /**
- * All 17 tabs: Overview, the running Workouts list, ten GPP domains, three
+ * All 18 tabs: Overview, the running Workouts list, ten GPP domains, three
  * modalities, Body Comp — built from a wholly separate InBody upload,
  * always present in the nav even before any InBody data is loaded (see
- * BodyCompTab) — and Plateaus, which needs both datasets and is likewise
- * always present (see PlateauTab).
+ * BodyCompTab) — Plateaus, which needs both datasets and is likewise always
+ * present (see PlateauTab), and Alignment, the whole-athlete rollup of
+ * Plateaus + InBody (see AlignmentTab), same always-present treatment.
  */
 export const ALL_TABS: TabDescriptor[] = [
   { value: OVERVIEW_TAB, label: "Overview", group: "Overview" },
@@ -43,6 +52,7 @@ export const ALL_TABS: TabDescriptor[] = [
   })),
   { value: BODY_COMP_TAB, label: "Body Comp", group: "Body composition" },
   { value: PLATEAU_TAB, label: "Plateaus", group: "Plateaus" },
+  { value: ALIGNMENT_TAB, label: "Alignment", group: "Alignment" },
 ];
 
 const GROUPS = [
@@ -52,6 +62,7 @@ const GROUPS = [
   "Modalities",
   "Body composition",
   "Plateaus",
+  "Alignment",
 ] as const;
 type Group = (typeof GROUPS)[number];
 
@@ -62,14 +73,16 @@ const GROUP_LABELS: Record<Group, string> = {
   Modalities: "Modalities",
   "Body composition": "Body Comp",
   Plateaus: "Plateaus",
+  Alignment: "Alignment",
 };
 
-/** Overview, Workouts, Body Comp and Plateaus are single tabs and select directly; the other two open a menu. */
+/** Overview, Workouts, Body Comp, Plateaus and Alignment are single tabs and select directly; the other two open a menu. */
 const DIRECT_VALUES: Partial<Record<Group, string>> = {
   Overview: OVERVIEW_TAB,
   Workouts: WORKOUTS_TAB,
   "Body composition": BODY_COMP_TAB,
   Plateaus: PLATEAU_TAB,
+  Alignment: ALIGNMENT_TAB,
 };
 
 function groupOf(value: string): Group {
@@ -77,11 +90,11 @@ function groupOf(value: string): Group {
 }
 
 /**
- * Fifteen tabs is too many for one undifferentiated strip, and far too many
- * for a phone. On wide viewports the nav is a single row of five pills —
- * Overview, Workouts and Body Comp select directly since each is one tab,
- * while Domains and Modalities open a dropdown of their own tabs instead of
- * expanding a second row underneath. That keeps the nav's height constant
+ * Eighteen tabs is too many for one undifferentiated strip, and far too many
+ * for a phone. On wide viewports the nav is a single row of pills — Overview,
+ * Workouts, Body Comp, Plateaus and Alignment select directly since
+ * each is one tab, while Domains and Modalities open a dropdown of their own
+ * tabs instead of expanding a second row underneath. That keeps the nav's height constant
  * (no row that appears/disappears and shifts the page) without reserving
  * blank space for it either — the menu overlays instead of taking up
  * layout. The active pill shows the current tab's own name (e.g. "Strength")

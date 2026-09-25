@@ -1,6 +1,14 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, PLATEAU_TAB, WORKOUTS_TAB, TabNav } from "@/components/dashboard/TabNav";
+import {
+  ALL_TABS,
+  BODY_COMP_TAB,
+  OVERVIEW_TAB,
+  ALIGNMENT_TAB,
+  PLATEAU_TAB,
+  WORKOUTS_TAB,
+  TabNav,
+} from "@/components/dashboard/TabNav";
 import { DOMAIN_LIST } from "@/types/dashboard";
 import { MODALITY_LIST } from "@/types/modality";
 
@@ -16,19 +24,20 @@ const flexibilityTab = ALL_TABS.find((t) => t.group === "Domains" && t.label ===
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("TabNav — ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp and Plateaus", () => {
-    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1);
+  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Plateaus and Alignment", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1);
     expect(ALL_TABS.filter((t) => t.group === "Domains")).toHaveLength(DOMAIN_LIST.length);
     expect(ALL_TABS.filter((t) => t.group === "Modalities")).toHaveLength(MODALITY_LIST.length);
     expect(ALL_TABS.filter((t) => t.group === "Overview")).toHaveLength(1);
     expect(ALL_TABS.filter((t) => t.group === "Workouts")).toHaveLength(1);
     expect(ALL_TABS.filter((t) => t.group === "Body composition")).toHaveLength(1);
     expect(ALL_TABS.filter((t) => t.group === "Plateaus")).toHaveLength(1);
+    expect(ALL_TABS.filter((t) => t.group === "Alignment")).toHaveLength(1);
   });
 });
 
 describe("TabNav — desktop group pills", () => {
-  it("selects Overview, Workouts, Body Comp and Plateaus directly, with no menu", () => {
+  it("selects Overview, Workouts, Body Comp, Plateaus and Alignment directly, with no menu", () => {
     const onValueChange = vi.fn();
     render(<TabNav value={strengthTab.value} onValueChange={onValueChange} />);
 
@@ -43,6 +52,9 @@ describe("TabNav — desktop group pills", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Plateaus" }));
     expect(onValueChange).toHaveBeenCalledWith(PLATEAU_TAB);
+
+    fireEvent.click(screen.getByRole("button", { name: "Alignment" }));
+    expect(onValueChange).toHaveBeenCalledWith(ALIGNMENT_TAB);
   });
 
   it("shows the active domain's own name on the Domains pill", () => {
@@ -105,6 +117,7 @@ describe("TabNav — mobile select", () => {
     expect(within(select).getByRole("group", { name: "Modalities" })).toBeInTheDocument();
     expect(within(select).getByRole("group", { name: "Body composition" })).toBeInTheDocument();
     expect(within(select).getByRole("group", { name: "Plateaus" })).toBeInTheDocument();
+    expect(within(select).getByRole("group", { name: "Alignment" })).toBeInTheDocument();
   });
 
   it("changing the select calls onValueChange with the chosen tab's value", () => {
