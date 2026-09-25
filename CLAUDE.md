@@ -132,12 +132,14 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 15 tabs (`TabNav.tsx` → `ALL_TABS`): Overview, the
-  ten GPP domains, the three modalities, and Body Comp. A single `DomainTab` drives all ten
-  domain tabs and a single `ModalityTab` all three modality tabs — they differ in data, not
-  structure. Body Comp is its own component (`BodyCompTab.tsx`), always present in the nav even
-  before any InBody data is loaded. `buildModalityData`'s output shape deliberately mirrors
-  `buildDashboardData`'s so those two components stay near-identical; keep that symmetry.
+- **components**: `Dashboard.tsx` renders 18 tabs (`TabNav.tsx` → `ALL_TABS`): Overview,
+  Workouts, the ten GPP domains, the three modalities, Body Comp, Plateaus, and Alignment. A
+  single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
+  tabs — they differ in data, not structure. Body Comp is its own component (`BodyCompTab.tsx`),
+  always present in the nav even before any InBody data is loaded, and Plateaus/Alignment follow
+  the same always-present treatment (see "Architecture: Plateau Detector and Alignment" below).
+  `buildModalityData`'s output shape deliberately mirrors `buildDashboardData`'s so those two
+  components stay near-identical; keep that symmetry.
 
 Two things that look like the same idea but are not — don't unify them:
 
@@ -170,12 +172,43 @@ though it cannot change *whether* the domain matched.
 `repMax.ts` parses rep-max notation out of lift titles; it is additive to the Python
 reference, so the parity test strips it before comparing lift series.
 
+## Architecture: Plateau Detector and Alignment
+
+`src/lib/analytics/plateauDetector.ts` and `src/lib/analytics/alignment.ts` are a second
+insights pipeline, deliberately standalone from `buildInsights.ts` above — they need the
+InBody dataset, which the SugarWOD-only pipeline never touches. Read each file's own header
+comment before changing anything; this section is a map, not a restatement.
+
+- **`getPlateauInsights(workouts, inbodyScans, asOfDate)`** classifies each lift/named-benchmark
+  (split by RX/Scaled) as `improving`, `plateaued_body_comp`, `plateaued_other`, or
+  `insufficient_data`, by comparing a recent session-count window against the previous one (not
+  a calendar lookback — real benchmark logging is too sparse for that) and diffing the InBody
+  scans nearest that window's boundaries. `insufficient_data` always carries a `reason` string
+  naming which eligibility gate failed and by how much (`formatGateShortfall()`) — never a
+  silent "not enough data."
+- **`getAlignment(plateauInsights, inbodyScans, asOfDate)`** rolls that per-subject output up
+  into one whole-athlete read: `aligned` or `tension` (or `insufficient_data`, same `reason`
+  convention). It has its own eligibility gate on top of #1's (at least 3 classified subjects,
+  at least 2 InBody scans in range) and its own window — the union of every classified
+  subject's window, since #1 computes an independent window per subject rather than one shared
+  window. `tension` is reserved for when the two signals contradict each other; a performance
+  decline alongside a declining body comp reads as `aligned` (a consistent, if undesirable,
+  story), never as bad.
+- Both share `isBodyCompDeclining()` (lean mass down and fat mass up) so "declining body comp"
+  means exactly the same thing at the per-lift and whole-athlete level.
+- Both are wired into `App.tsx` behind the same gate: neither runs until both a SugarWOD upload
+  and an InBody upload are `"ready"`. Neither is part of `Insights`/`buildInsights.ts`'s return
+  shape — they're computed separately in `App.tsx` and passed to `Dashboard.tsx` as their own
+  props, rendered by `PlateauTab.tsx`/`AlignmentTab.tsx`.
+
 ## Architecture: app state and local persistence
 
 `src/App.tsx` owns two independent state machines — `AppState` (SugarWOD rows) and
-`BodyCompState` (InBody rows, from `BodyCompTab.tsx`) — that are deliberately never joined (see
-the comment above `handleBodyCompFile`). Both now sit on top of a browser-local persistence
-layer, `src/lib/storage/`, added after the app initially held everything in memory only.
+`BodyCompState` (InBody rows, from `BodyCompTab.tsx`) — that are deliberately never joined as
+one row shape (see the comment above `handleBodyCompFile`). The Plateau Detector and Alignment
+rollup above do read both together, but as two separate inputs to a pure function, never merged
+into one row. Both now sit on top of a browser-local persistence layer, `src/lib/storage/`,
+added after the app initially held everything in memory only.
 
 - **`idbStore.ts`** is the only file that touches `indexedDB` directly: one database
   (`"swift"`), one object store (`"csv-uploads"`), keyed by string. A single store rather than
