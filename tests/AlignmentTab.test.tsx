@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { PhaseAlignmentTab } from "@/components/dashboard/PhaseAlignmentTab";
+import { AlignmentTab } from "@/components/dashboard/AlignmentTab";
 import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
-import type { PhaseAlignmentResult } from "@/types/phaseAlignment";
+import type { AlignmentResult } from "@/types/alignment";
 
-function result(overrides: Partial<PhaseAlignmentResult> = {}): PhaseAlignmentResult {
+function result(overrides: Partial<AlignmentResult> = {}): AlignmentResult {
   return {
     classification: "aligned",
     performanceSummary: { improvingCount: 3, plateauedCount: 1, classifiedCount: 4 },
@@ -19,12 +19,12 @@ function result(overrides: Partial<PhaseAlignmentResult> = {}): PhaseAlignmentRe
   };
 }
 
-describe("PhaseAlignmentTab — empty state", () => {
+describe("AlignmentTab — empty state", () => {
   it("shows the upload dropzone and forwards a dropped file when no InBody data is loaded", () => {
     const onBodyCompFile = vi.fn();
     render(
-      <PhaseAlignmentTab
-        phaseAlignment={null}
+      <AlignmentTab
+        alignment={null}
         bodyComp={{ status: "idle" }}
         onBodyCompFile={onBodyCompFile}
       />
@@ -39,18 +39,18 @@ describe("PhaseAlignmentTab — empty state", () => {
 
   it("shows an error alert when the InBody upload failed", () => {
     const bodyComp: BodyCompState = { status: "error", message: "That file is missing a date column." };
-    render(<PhaseAlignmentTab phaseAlignment={null} bodyComp={bodyComp} onBodyCompFile={vi.fn()} />);
+    render(<AlignmentTab alignment={null} bodyComp={bodyComp} onBodyCompFile={vi.fn()} />);
 
     expect(screen.getByText("That file didn't work")).toBeInTheDocument();
     expect(screen.getByText("That file is missing a date column.")).toBeInTheDocument();
   });
 });
 
-describe("PhaseAlignmentTab — ready state", () => {
+describe("AlignmentTab — ready state", () => {
   it("shows the aligned copy and summary numbers, without good/bad framing", () => {
     render(
-      <PhaseAlignmentTab
-        phaseAlignment={result({ classification: "aligned" })}
+      <AlignmentTab
+        alignment={result({ classification: "aligned" })}
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
       />
@@ -65,8 +65,8 @@ describe("PhaseAlignmentTab — ready state", () => {
 
   it("shows the tension copy", () => {
     render(
-      <PhaseAlignmentTab
-        phaseAlignment={result({ classification: "tension" })}
+      <AlignmentTab
+        alignment={result({ classification: "tension" })}
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
       />
@@ -82,8 +82,8 @@ describe("PhaseAlignmentTab — ready state", () => {
 
   it("surfaces the reason directly for insufficient_data, not a generic message", () => {
     render(
-      <PhaseAlignmentTab
-        phaseAlignment={result({
+      <AlignmentTab
+        alignment={result({
           classification: "insufficient_data",
           reason: "needs 1 more classified lift/WOD (has 2, needs 3)",
           bodyCompSummary: {

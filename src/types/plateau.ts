@@ -10,7 +10,7 @@
  *
  * Revision: `PlateauInsight.reason` names which eligibility gate failed and
  * by how much whenever `classification === "insufficient_data"` — added so
- * the Phase Alignment rollup (`src/lib/analytics/phaseAlignment.ts`) and a
+ * the Alignment rollup (`src/lib/analytics/alignment.ts`) and a
  * future coach view can act on a concrete gap ("needs 2 more logged
  * deadlifts") instead of a silent "not enough data yet."
  */

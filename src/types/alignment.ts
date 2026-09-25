@@ -1,5 +1,5 @@
 /**
- * Types for the Phase Alignment rollup (`src/lib/analytics/phaseAlignment.ts`).
+ * Types for the Alignment rollup (`src/lib/analytics/alignment.ts`).
  *
  * Same two deviations from the feature spec as `plateau.ts`, for the same
  * reasons: `windowStart`/`windowEnd` are ISO date strings ("YYYY-MM-DD"), not
@@ -12,9 +12,9 @@
 
 import type { PlateauBodyCompTrend } from "./plateau";
 
-export type PhaseAlignmentClassification = "aligned" | "tension" | "insufficient_data";
+export type AlignmentClassification = "aligned" | "tension" | "insufficient_data";
 
-export interface PhaseAlignmentPerformanceSummary {
+export interface AlignmentPerformanceSummary {
   improvingCount: number;
   /** plateaued_body_comp + plateaued_other combined. */
   plateauedCount: number;
@@ -22,16 +22,16 @@ export interface PhaseAlignmentPerformanceSummary {
   classifiedCount: number;
 }
 
-export interface PhaseAlignmentBodyCompSummary extends PlateauBodyCompTrend {
+export interface AlignmentBodyCompSummary extends PlateauBodyCompTrend {
   /** "" when no window is computable (zero classified subjects). */
   windowStart: string;
   windowEnd: string;
 }
 
-export interface PhaseAlignmentResult {
-  classification: PhaseAlignmentClassification;
+export interface AlignmentResult {
+  classification: AlignmentClassification;
   /** Only set when classification === "insufficient_data". */
   reason?: string;
-  performanceSummary: PhaseAlignmentPerformanceSummary;
-  bodyCompSummary: PhaseAlignmentBodyCompSummary;
+  performanceSummary: AlignmentPerformanceSummary;
+  bodyCompSummary: AlignmentBodyCompSummary;
 }

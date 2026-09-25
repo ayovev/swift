@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getPhaseAlignment } from "@/lib/analytics/phaseAlignment";
+import { getAlignment } from "@/lib/analytics/alignment";
 import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
 import type { InBodyRow } from "@/types/inbody";
 import type { PlateauClassification, PlateauInsight } from "@/types/plateau";
@@ -40,14 +40,14 @@ function scan(
 
 const AS_OF = new Date("2027-01-01");
 
-describe("getPhaseAlignment — eligibility gate", () => {
+describe("getAlignment — eligibility gate", () => {
   it("returns insufficient_data with fewer than 3 classified subjects, naming the shortfall", () => {
     const plateauInsights = [
       insight("improving", "2024-01-01", "2024-01-15"),
       insight("plateaued_other", "2024-01-10", "2024-02-01"),
       insight("insufficient_data", "2024-01-05", "2024-01-05"),
     ];
-    const result = getPhaseAlignment(plateauInsights, [], AS_OF);
+    const result = getAlignment(plateauInsights, [], AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 1 more classified lift/WOD (has 2, needs 3)");
     expect(result.performanceSummary).toEqual({ improvingCount: 1, plateauedCount: 1, classifiedCount: 2 });
@@ -61,7 +61,7 @@ describe("getPhaseAlignment — eligibility gate", () => {
 
   it("reports an empty window when zero subjects are classified", () => {
     const plateauInsights = [insight("insufficient_data", "2024-01-01", "2024-01-05")];
-    const result = getPhaseAlignment(plateauInsights, [], AS_OF);
+    const result = getAlignment(plateauInsights, [], AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 3 more classified lifts/WODs (has 0, needs 3)");
     expect(result.bodyCompSummary.windowStart).toBe("");
@@ -75,7 +75,7 @@ describe("getPhaseAlignment — eligibility gate", () => {
       insight("plateaued_body_comp", "2024-01-05", "2024-01-20"),
     ];
     const inbodyScans = [scan("20240110000000")];
-    const result = getPhaseAlignment(plateauInsights, inbodyScans, AS_OF);
+    const result = getAlignment(plateauInsights, inbodyScans, AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 1 more InBody scan in this window (has 1, needs 2)");
     // The window is real (computed from the 3 classified subjects) even though the scan gate failed.
@@ -85,7 +85,7 @@ describe("getPhaseAlignment — eligibility gate", () => {
   });
 });
 
-describe("getPhaseAlignment — classification table", () => {
+describe("getAlignment — classification table", () => {
   const notDecliningScans = [
     scan("20240101000000", { "Soft Lean Mass(lb)": "150", "Body Fat Mass(lb)": "20" }),
     scan("20240201000000", { "Soft Lean Mass(lb)": "155", "Body Fat Mass(lb)": "18" }),
@@ -101,7 +101,7 @@ describe("getPhaseAlignment — classification table", () => {
       insight("improving", "2024-01-10", "2024-02-01"),
       insight("plateaued_other", "2024-01-05", "2024-01-20"),
     ];
-    const result = getPhaseAlignment(plateauInsights, notDecliningScans, AS_OF);
+    const result = getAlignment(plateauInsights, notDecliningScans, AS_OF);
     expect(result.classification).toBe("aligned");
   });
 
@@ -111,7 +111,7 @@ describe("getPhaseAlignment — classification table", () => {
       insight("plateaued_other", "2024-01-10", "2024-02-01"),
       insight("plateaued_body_comp", "2024-01-05", "2024-01-20"),
     ];
-    const result = getPhaseAlignment(plateauInsights, decliningScans, AS_OF);
+    const result = getAlignment(plateauInsights, decliningScans, AS_OF);
     expect(result.classification).toBe("aligned");
   });
 
@@ -121,7 +121,7 @@ describe("getPhaseAlignment — classification table", () => {
       insight("improving", "2024-01-10", "2024-02-01"),
       insight("plateaued_other", "2024-01-05", "2024-01-20"),
     ];
-    const result = getPhaseAlignment(plateauInsights, decliningScans, AS_OF);
+    const result = getAlignment(plateauInsights, decliningScans, AS_OF);
     expect(result.classification).toBe("tension");
   });
 
@@ -131,7 +131,7 @@ describe("getPhaseAlignment — classification table", () => {
       insight("plateaued_other", "2024-01-10", "2024-02-01"),
       insight("plateaued_body_comp", "2024-01-05", "2024-01-20"),
     ];
-    const result = getPhaseAlignment(plateauInsights, notDecliningScans, AS_OF);
+    const result = getAlignment(plateauInsights, notDecliningScans, AS_OF);
     expect(result.classification).toBe("tension");
   });
 
@@ -142,7 +142,7 @@ describe("getPhaseAlignment — classification table", () => {
       insight("plateaued_other", "2024-01-10", "2024-02-01"),
       insight("plateaued_body_comp", "2024-01-08", "2024-01-25"),
     ];
-    const result = getPhaseAlignment(plateauInsights, notDecliningScans, AS_OF);
+    const result = getAlignment(plateauInsights, notDecliningScans, AS_OF);
     expect(result.performanceSummary.improvingCount).toBe(2);
     expect(result.performanceSummary.plateauedCount).toBe(2);
     // Not-declining body comp + "not trending up" (tie) -> tension, exactly like a real decline would be.
@@ -159,19 +159,19 @@ describe("getPhaseAlignment — classification table", () => {
       scan("20240101000000", { "Body Fat Mass(lb)": "20" }), // Soft Lean Mass and SMM both "-"
       scan("20240201000000", { "Body Fat Mass(lb)": "18" }),
     ];
-    const result = getPhaseAlignment(plateauInsights, inbodyScans, AS_OF);
+    const result = getAlignment(plateauInsights, inbodyScans, AS_OF);
     expect(result.bodyCompSummary.leanMassDelta).toBeNull();
     expect(result.bodyCompSummary.fatMassDelta).toBe(-2);
     expect(result.classification).toBe("aligned"); // trending up + not declining (null lean is never "bad")
   });
 });
 
-describe("getPhaseAlignment — real sample data", () => {
+describe("getAlignment — real sample data", () => {
   it("doesn't throw and returns a valid classification against the real SugarWOD export + synthetic InBody fixture", async () => {
     const workouts = await loadSampleRows();
     const inbodyScans = await loadSampleInBodyRows();
     const plateauInsights = getPlateauInsights(workouts, inbodyScans, AS_OF);
-    const result = getPhaseAlignment(plateauInsights, inbodyScans, AS_OF);
+    const result = getAlignment(plateauInsights, inbodyScans, AS_OF);
     expect(["aligned", "tension", "insufficient_data"]).toContain(result.classification);
   });
 });

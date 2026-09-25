@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadDropzone } from "@/components/landing/UploadDropzone";
 import { formatDate } from "./charts/chartUtils";
 import type { BodyCompState } from "./BodyCompTab";
-import type { PhaseAlignmentClassification, PhaseAlignmentResult } from "@/types/phaseAlignment";
+import type { AlignmentClassification, AlignmentResult } from "@/types/alignment";
 
-interface PhaseAlignmentTabProps {
-  phaseAlignment: PhaseAlignmentResult | null;
+interface AlignmentTabProps {
+  alignment: AlignmentResult | null;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
 }
@@ -18,20 +18,20 @@ interface PhaseAlignmentTabProps {
  * states the two signals agree, "tension" states they don't — neither is a
  * value judgment on whether the athlete's trajectory is desirable.
  */
-const CLASSIFICATION_COPY: Record<PhaseAlignmentClassification, string> = {
+const CLASSIFICATION_COPY: Record<AlignmentClassification, string> = {
   aligned: "Your performance and body composition are telling a consistent story right now.",
   tension: "Your performance and body composition are moving in different directions — might be worth understanding why.",
   insufficient_data: "",
 };
 
-const CLASSIFICATION_LABEL: Record<PhaseAlignmentClassification, string> = {
+const CLASSIFICATION_LABEL: Record<AlignmentClassification, string> = {
   aligned: "Aligned",
   tension: "Tension",
   insufficient_data: "Not enough data yet",
 };
 
 /** Same convention as PlateauTab's ClassificationBadge: achromatic except for the one state that reads as a positive read on the accent. */
-function ClassificationBadge({ classification }: { classification: PhaseAlignmentClassification }) {
+function ClassificationBadge({ classification }: { classification: AlignmentClassification }) {
   return (
     <Badge variant={classification === "aligned" ? "default" : "secondary"}>
       {CLASSIFICATION_LABEL[classification]}
@@ -52,12 +52,12 @@ function formatDelta(delta: number | null, unit: string): string {
  * stays a static empty state (reusing BodyCompTab's own upload entry point)
  * until InBody data is loaded, same treatment as PlateauTab.
  */
-export function PhaseAlignmentTab({ phaseAlignment, bodyComp, onBodyCompFile }: PhaseAlignmentTabProps) {
-  if (!phaseAlignment) {
+export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentTabProps) {
+  if (!alignment) {
     return (
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Phase alignment</CardTitle>
+          <CardTitle className="text-base">Alignment</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
@@ -89,14 +89,14 @@ export function PhaseAlignmentTab({ phaseAlignment, bodyComp, onBodyCompFile }: 
     );
   }
 
-  const { classification, reason, performanceSummary, bodyCompSummary } = phaseAlignment;
+  const { classification, reason, performanceSummary, bodyCompSummary } = alignment;
   const hasWindow = bodyCompSummary.windowStart !== "" && bodyCompSummary.windowEnd !== "";
 
   return (
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Phase alignment</CardTitle>
+          <CardTitle className="text-base">Alignment</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <ClassificationBadge classification={classification} />

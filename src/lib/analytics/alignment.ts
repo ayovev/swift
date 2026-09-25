@@ -8,10 +8,10 @@ import {
 import type { InBodyRow } from "@/types/inbody";
 import type { PlateauInsight } from "@/types/plateau";
 import type {
-  PhaseAlignmentBodyCompSummary,
-  PhaseAlignmentPerformanceSummary,
-  PhaseAlignmentResult,
-} from "@/types/phaseAlignment";
+  AlignmentBodyCompSummary,
+  AlignmentPerformanceSummary,
+  AlignmentResult,
+} from "@/types/alignment";
 
 /** Eligibility gate minimums (spec Step 1). Named separately from #1's
  * MIN_ENTRIES/MIN_SCANS_IN_WINDOW even though the scan minimum currently
@@ -22,7 +22,7 @@ const MIN_SCANS_FOR_ROLLUP = 2;
 
 const NULL_BODY_COMP_TREND = { leanMassDelta: null, fatMassDelta: null, bodyFatPctDelta: null } as const;
 
-function computePerformanceSummary(classified: PlateauInsight[]): PhaseAlignmentPerformanceSummary {
+function computePerformanceSummary(classified: PlateauInsight[]): AlignmentPerformanceSummary {
   let improvingCount = 0;
   let plateauedCount = 0;
   for (const insight of classified) {
@@ -76,11 +76,11 @@ function scansInWindow(
  * #1's output directly rather than raw workout data, since this is a rollup,
  * not a re-derivation (see #1's own `getPlateauInsights`).
  */
-export function getPhaseAlignment(
+export function getAlignment(
   plateauInsights: PlateauInsight[],
   inbodyScans: InBodyRow[],
   asOfDate: Date
-): PhaseAlignmentResult {
+): AlignmentResult {
   const classified = plateauInsights.filter((i) => i.classification !== "insufficient_data");
   const performanceSummary = computePerformanceSummary(classified);
 
@@ -124,7 +124,7 @@ export function getPhaseAlignment(
     scansInRange[0]!.raw,
     scansInRange[scansInRange.length - 1]!.raw
   );
-  const bodyCompSummary: PhaseAlignmentBodyCompSummary = { ...bodyCompTrend, windowStart, windowEnd };
+  const bodyCompSummary: AlignmentBodyCompSummary = { ...bodyCompTrend, windowStart, windowEnd };
 
   // Majority direction across classified subjects. A tie (including 0
   // classified-and-comparable subjects, which gate (a) already rules out)
@@ -133,7 +133,7 @@ export function getPhaseAlignment(
   const performanceUp = performanceSummary.improvingCount > performanceSummary.plateauedCount;
   const bodyCompDeclining = isBodyCompDeclining(bodyCompSummary);
 
-  let classification: PhaseAlignmentResult["classification"];
+  let classification: AlignmentResult["classification"];
   if (performanceUp && !bodyCompDeclining) {
     classification = "aligned"; // trending up + lean stable/up, fat stable/down
   } else if (!performanceUp && bodyCompDeclining) {

@@ -4,19 +4,19 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ThemeControls } from "@/components/theme/ThemeControls";
 import { SwiftMark } from "@/components/SwiftMark";
+import { AlignmentTab } from "./AlignmentTab";
 import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
 import { DateRangePicker } from "./DateRangePicker";
 import { DomainTab } from "./DomainTab";
 import { GranularityPicker } from "./GranularityPicker";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
-import { PhaseAlignmentTab } from "./PhaseAlignmentTab";
 import { PlateauTab } from "./PlateauTab";
 import {
   ALL_TABS,
   BODY_COMP_TAB,
   OVERVIEW_TAB,
-  PHASE_ALIGNMENT_TAB,
+  ALIGNMENT_TAB,
   PLATEAU_TAB,
   WORKOUTS_TAB,
   TabNav,
@@ -29,7 +29,7 @@ import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
-import type { PhaseAlignmentResult } from "@/types/phaseAlignment";
+import type { AlignmentResult } from "@/types/alignment";
 import type { PlateauInsight } from "@/types/plateau";
 import type { DataSource } from "@/App";
 
@@ -45,7 +45,7 @@ interface DashboardProps {
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
   plateauInsights: PlateauInsight[] | null;
-  phaseAlignment: PhaseAlignmentResult | null;
+  alignment: AlignmentResult | null;
 }
 
 /** Years between the first and last logged workout, to a sensible precision. */
@@ -72,7 +72,7 @@ export function Dashboard({
   bodyComp,
   onBodyCompFile,
   plateauInsights,
-  phaseAlignment,
+  alignment,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   const { summary } = insights.dashboard;
@@ -201,9 +201,9 @@ export function Dashboard({
             />
           </TabsContent>
 
-          <TabsContent value={PHASE_ALIGNMENT_TAB}>
-            <PhaseAlignmentTab
-              phaseAlignment={phaseAlignment}
+          <TabsContent value={ALIGNMENT_TAB}>
+            <AlignmentTab
+              alignment={alignment}
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
             />

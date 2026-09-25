@@ -254,8 +254,8 @@ export function computeBodyCompTrend(startScan: InBodyRow, endScan: InBodyRow): 
  * Lean down AND fat up is the one clean "body comp is working against you"
  * story. Every other combination — including a mixed signal like lean down
  * AND fat also down, which the spec's own table doesn't cover — is *not*
- * this specific declining story. Shared with the Phase Alignment rollup
- * (`phaseAlignment.ts`), which needs the exact same "is body comp declining"
+ * this specific declining story. Shared with the Alignment rollup
+ * (`alignment.ts`), which needs the exact same "is body comp declining"
  * boolean at the whole-athlete level.
  */
 export function isBodyCompDeclining(bodyComp: PlateauBodyCompTrend): boolean {
