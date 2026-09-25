@@ -4,6 +4,7 @@ import App from "@/App";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
+import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { loadSampleInBodyRows } from "./fixtures/sampleInBodyRows";
@@ -113,6 +114,11 @@ describe("App — local persistence", () => {
     const bodyRows = await loadSampleInBodyRows();
     await saveWorkoutRows(rows);
     await saveBodyCompRows(bodyRows);
+    await saveViewPreferences({
+      granularity: "weekly",
+      rangePreset: "last_3_months",
+      customRange: null,
+    });
 
     renderApp();
     const startOver = await screen.findByRole("button", { name: /start over/i });
@@ -121,7 +127,48 @@ describe("App — local persistence", () => {
     await waitFor(async () => {
       expect(await loadWorkoutRows()).toBeUndefined();
       expect(await loadBodyCompRows()).toBeUndefined();
+      expect(await loadViewPreferences()).toBeUndefined();
     });
+  });
+
+  it("restores the selected granularity and date-range preset on a fresh mount", async () => {
+    const rows = (await loadSampleRows()).slice(0, 5);
+    await saveWorkoutRows(rows);
+    await saveViewPreferences({
+      granularity: "weekly",
+      rangePreset: "last_3_months",
+      customRange: null,
+    });
+
+    renderApp();
+    await screen.findByRole("button", { name: /start over/i });
+
+    expect(screen.getByRole("button", { name: "Weekly" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /last 3 months/i })).toBeInTheDocument();
+  });
+
+  it("persists granularity and date-range changes made in the UI across a remount", async () => {
+    // Two entries a couple of years apart, as in the daily-gating tests below —
+    // "Last month" narrows the effective range enough for Daily to be selectable.
+    const rows = [workoutRow("01/01/2022"), workoutRow("06/01/2024")];
+    await saveWorkoutRows(rows);
+
+    const { unmount } = renderApp();
+    await screen.findByRole("button", { name: /start over/i });
+
+    fireEvent.click(screen.getByRole("button", { name: /all time/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /last month/i }));
+    fireEvent.click(await screen.findByRole("button", { name: "Daily" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Daily" })).toHaveAttribute("aria-pressed", "true");
+    });
+
+    unmount();
+    renderApp();
+
+    await screen.findByRole("button", { name: /start over/i });
+    expect(await screen.findByRole("button", { name: /last month/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Daily" })).toHaveAttribute("aria-pressed", "true");
   });
 });
 

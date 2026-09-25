@@ -20,7 +20,15 @@ interface DateRangePickerProps {
   /** The uploaded log's own full span — bounds and disables the calendar. */
   dateBounds: DateRange;
   value: DateRange | null;
-  onChange: (range: DateRange | null) => void;
+  /** Which preset produced `value` — lifted to the caller so it survives a reload. */
+  preset: DateRangePreset;
+  /**
+   * Range and preset always change together here, so they're reported
+   * together in one call rather than as two separately-fired callbacks —
+   * the caller persists both in a single write (see `viewPreferencesStorage.ts`),
+   * and two calls would risk it observing one without the other.
+   */
+  onSelect: (range: DateRange | null, preset: DateRangePreset) => void;
 }
 
 function triggerLabel(preset: DateRangePreset, value: DateRange | null): string {
@@ -36,22 +44,24 @@ function triggerLabel(preset: DateRangePreset, value: DateRange | null): string 
  * anchored to today's real-world date (not the log's own last entry), so an
  * older export can legitimately show an empty "last 3 months" window — the
  * same way any dashboard reading from a stale data source would.
+ *
+ * `preset` is a controlled prop rather than local state: it's what App.tsx
+ * persists (see `viewPreferencesStorage.ts`), and a preset survives a reload
+ * as itself, not as a frozen date range — "Last 3 months" recomputes against
+ * the day the athlete reopens the app, it doesn't restore yesterday's window.
  */
-export function DateRangePicker({ dateBounds, value, onChange }: DateRangePickerProps) {
-  const [preset, setPreset] = useState<DateRangePreset>("all_time");
+export function DateRangePicker({ dateBounds, value, preset, onSelect }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
 
   const selectPreset = (id: Exclude<DateRangePreset, "custom">) => {
-    setPreset(id);
-    onChange(computePresetRange(id, dayjs()));
+    onSelect(computePresetRange(id, dayjs()), id);
     capture({ name: "date_range_changed", props: { preset: id } });
     setOpen(false);
   };
 
   const selectCustom = (selection: CalendarSelection | undefined) => {
     if (!selection?.from || !selection.to) return;
-    setPreset("custom");
-    onChange({ start: dayjs(selection.from).startOf("day"), end: dayjs(selection.to).endOf("day") });
+    onSelect({ start: dayjs(selection.from).startOf("day"), end: dayjs(selection.to).endOf("day") }, "custom");
     capture({ name: "date_range_changed", props: { preset: "custom" } });
   };
 

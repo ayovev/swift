@@ -13,7 +13,7 @@ import { OverviewTab } from "./OverviewTab";
 import { ALL_TABS, BODY_COMP_TAB, OVERVIEW_TAB, WORKOUTS_TAB, TabNav } from "./TabNav";
 import { WorkoutsTab } from "./WorkoutsTab";
 import { formatDate } from "./charts/chartUtils";
-import type { DateRange } from "@/lib/analytics/dateRange";
+import type { DateRange, DateRangePreset } from "@/lib/analytics/dateRange";
 import { dailyGranularityFits, type Granularity } from "@/lib/analytics/granularity";
 import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
@@ -25,7 +25,8 @@ interface DashboardProps {
   insights: Insights;
   source: DataSource;
   range: DateRange | null;
-  onRangeChange: (range: DateRange | null) => void;
+  rangePreset: DateRangePreset;
+  onRangeSelect: (range: DateRange | null, preset: DateRangePreset) => void;
   granularity: Granularity;
   onGranularityChange: (granularity: Granularity) => void;
   onReset: () => void;
@@ -49,7 +50,8 @@ export function Dashboard({
   insights,
   source,
   range,
-  onRangeChange,
+  rangePreset,
+  onRangeSelect,
   granularity,
   onGranularityChange,
   onReset,
@@ -106,7 +108,8 @@ export function Dashboard({
               <DateRangePicker
                 dateBounds={insights.dateBounds}
                 value={range}
-                onChange={onRangeChange}
+                preset={rangePreset}
+                onSelect={onRangeSelect}
               />
             ) : null}
             {insights.dateBounds ? (

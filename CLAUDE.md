@@ -184,22 +184,44 @@ layer, `src/lib/storage/`, added after the app initially held everything in memo
   `idbClearAll`) swallows its own failures and resolves to a safe default, mirroring
   `readStored`/`writeStored` in `src/lib/theme/useTheme.ts` — persistence is a convenience,
   never a requirement, so a blocked or disabled database must not break the app.
-- **`workoutStorage.ts`** / **`bodyCompStorage.ts`** are thin typed wrappers, one key each
-  (`"workout-rows"`, `"body-comp-rows"`). Nothing outside `src/lib/storage/` calls `idbGet`/
-  `idbSet`/`idbDelete` directly — a new dataset gets its own wrapper file, not a call site that
-  reaches past it.
+- **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** are thin
+  typed wrappers, one key each (`"workout-rows"`, `"body-comp-rows"`, `"view-preferences"`).
+  Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete` directly — a new
+  dataset gets its own wrapper file, not a call site that reaches past it.
 - **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
-  existing loading UI — no new component) and a mount-only effect loads both datasets from
-  storage in parallel before deciding whether to show the dashboard or the upload screen.
+  existing loading UI — no new component) and a mount-only effect loads all three from storage
+  in parallel before deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
   bundled sample file is deliberately never cached, so demo mode never leaves anything behind.
-  A successful InBody parse always persists (there's no sample-data concept for it).
+  A successful InBody parse always persists (there's no sample-data concept for it). `range` and
+  `granularity` persist from exactly two call sites in `App.tsx` — `persistRangeSelection`
+  (passed to `DateRangePicker` as `onSelect`) and `persistGranularity` (passed to
+  `GranularityPicker`/the daily-auto-downgrade effect as `onGranularityChange`) — rather than a
+  `useEffect` mirroring every state change into storage. That's deliberate, not an oversight: a
+  blanket mirror would also fire on `run()`'s and `reset()`'s own internal `setRange`/
+  `setGranularity` calls, racing "Start over"'s `idbClearAll()` and re-saving the very defaults
+  the clear just removed. A fresh upload (`source === "upload"` in `run()`) explicitly persists
+  its own reset to `monthly`/`all_time` for the same reason a fresh upload persists its rows —
+  otherwise a reload right after would restore the *previous* file's leftover view prefs over
+  the new file's fresh state.
+- **What's actually stored isn't the date range** — it's the *preset id* (`DateRangePreset`,
+  `dateRange.ts`) plus concrete dates only for the `"custom"` case. Presets are anchored to
+  today's real-world date (see `DateRangePicker.tsx`), so restoring "Last 3 months" recomputes
+  against the day the athlete reopens the app rather than replaying a frozen window from last
+  session. `DateRangePicker`'s `preset` is a controlled prop for this reason — it used to be the
+  component's own `useState`, but a persisted preset has to be set from outside on restore. Its
+  `onSelect` reports the new range and preset together in one call (not two separate callbacks)
+  so the one write in `viewPreferencesStorage.ts` never observes one without the other. A Dayjs
+  instance also doesn't survive IndexedDB's structured clone with its prototype methods intact,
+  so a custom range's dates are stored as ISO strings and rehydrated with `dayjs(...)` on load.
 - **Clear point**: `reset()` calls `idbClearAll()` alongside its existing state resets. This
   isn't just UX — without it, "Start over" would only reset in-memory state, and a reload would
-  silently restore the data the button just appeared to discard.
-- `range`, `granularity`, and the theme preference are deliberately **not** persisted through
-  this layer — only the two uploaded CSV datasets are. Theme keeps using its own `localStorage`
-  key (see Theming below); that's a separate mechanism for a separate concern.
+  silently restore the data the button just appeared to discard. This also clears `range` and
+  `granularity` back to their in-memory defaults (`null`/`monthly`) on the next restore, same as
+  the two uploaded datasets.
+- The theme preference remains on its own `localStorage` key (see Theming below), not this
+  layer — it needs to be read synchronously before first paint to avoid a flash of the wrong
+  mode, which IndexedDB's async API can't do.
 
 This doesn't relax hard constraint #1 above — the cache is still local-only and still wiped by
 "Start over"; see that section for the actual invariant.
