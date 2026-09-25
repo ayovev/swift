@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
+import { getPlateauInsights, isBodyCompImproving } from "@/lib/analytics/plateauDetector";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { PlateauInsight } from "@/types/plateau";
@@ -424,6 +424,25 @@ describe("getPlateauInsights — body composition signal combination", () => {
     // Soft Lean Mass went down (60 -> 55) even though SMM went up (90 -> 95);
     // the Soft Lean Mass delta must win.
     expect(insights[0]!.bodyCompTrend?.leanMassDelta).toBe(-5);
+  });
+});
+
+describe("isBodyCompImproving", () => {
+  it("is true only when lean is up AND fat is down — the mirror image of isBodyCompDeclining", () => {
+    expect(isBodyCompImproving({ leanMassDelta: 2, fatMassDelta: -1, bodyFatPctDelta: null })).toBe(true);
+  });
+
+  it("is false when lean is up but fat is also up (not a clean improving story)", () => {
+    expect(isBodyCompImproving({ leanMassDelta: 2, fatMassDelta: 1, bodyFatPctDelta: null })).toBe(false);
+  });
+
+  it("is false when fat is down but lean is also down", () => {
+    expect(isBodyCompImproving({ leanMassDelta: -2, fatMassDelta: -1, bodyFatPctDelta: null })).toBe(false);
+  });
+
+  it("treats a missing field as no data, never coercing it into a decision", () => {
+    expect(isBodyCompImproving({ leanMassDelta: null, fatMassDelta: -1, bodyFatPctDelta: null })).toBe(false);
+    expect(isBodyCompImproving({ leanMassDelta: 2, fatMassDelta: null, bodyFatPctDelta: null })).toBe(false);
   });
 });
 
