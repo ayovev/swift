@@ -259,6 +259,7 @@ describe("getPlateauInsights — eligibility gate", () => {
     ];
     const insights = getPlateauInsights(workouts, inbodyScans, AS_OF);
     expect(insights[0]!.classification).toBe("insufficient_data");
+    expect(insights[0]!.reason).toBe("needs 1 more logged entry (has 2, needs 3)");
   });
 
   it("returns insufficient_data with 3+ entries but fewer than 2 InBody scans in the comparison window", () => {
@@ -270,6 +271,7 @@ describe("getPlateauInsights — eligibility gate", () => {
     const inbodyScans = [inbodyRow({ date: "20240301000000" })];
     const insights = getPlateauInsights(workouts, inbodyScans, AS_OF);
     expect(insights[0]!.classification).toBe("insufficient_data");
+    expect(insights[0]!.reason).toBe("needs 1 more InBody scan in this window (has 1, needs 2)");
   });
 
   it("clears the gate with exactly 3 entries and exactly 2 InBody scans in the window", () => {

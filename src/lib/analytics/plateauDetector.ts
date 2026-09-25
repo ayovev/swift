@@ -68,15 +68,26 @@ function parseWorkoutDate(dateStr: string): Dayjs {
   return dayjs((dateStr ?? "").trim(), "MM/DD/YYYY", true);
 }
 
-function parseInBodyDate(dateStr: string): Dayjs {
+export function parseInBodyDate(dateStr: string): Dayjs {
   return dayjs((dateStr ?? "").trim(), "YYYYMMDDHHmmss", true);
 }
 
 /** Treats "", undefined and the literal "-" (InBody's "not measured") as no data — never 0. */
-function parseNumericField(raw: string | undefined): number | null {
+export function parseNumericField(raw: string | undefined): number | null {
   if (raw === undefined || raw === "" || raw === "-") return null;
   const n = Number.parseFloat(raw);
   return Number.isNaN(n) ? null : n;
+}
+
+/**
+ * "needs N more {noun} (has X, needs Y)" for an `insufficient_data` gate.
+ * Singular/plural are passed explicitly rather than derived from one form —
+ * English pluralization isn't regular enough ("entry" -> "entries") to do
+ * that safely for an arbitrary noun.
+ */
+export function formatGateShortfall(has: number, needs: number, singular: string, plural: string): string {
+  const shortBy = needs - has;
+  return `needs ${shortBy} more ${shortBy === 1 ? singular : plural} (has ${has}, needs ${needs})`;
 }
 
 /**
@@ -208,7 +219,7 @@ function buildBenchmarkSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): 
   return candidates;
 }
 
-function diffField(
+export function diffField(
   start: InBodyRow,
   end: InBodyRow,
   field: keyof InBodyRow
@@ -229,7 +240,7 @@ function diffField(
  * weight change than a percentage; bodyFatPctDelta is tracked separately for
  * display only.
  */
-function computeBodyCompTrend(startScan: InBodyRow, endScan: InBodyRow): PlateauBodyCompTrend {
+export function computeBodyCompTrend(startScan: InBodyRow, endScan: InBodyRow): PlateauBodyCompTrend {
   const softLeanDelta = diffField(startScan, endScan, "Soft Lean Mass(lb)");
   const smmDelta = diffField(startScan, endScan, "Skeletal Muscle Mass(lb)");
   return {
@@ -240,21 +251,31 @@ function computeBodyCompTrend(startScan: InBodyRow, endScan: InBodyRow): Plateau
 }
 
 /**
- * `flat`/`down` + lean down AND fat up is the one clean "body comp is
- * working against you" story. Every other flat/down combination — including
- * a mixed signal like lean down AND fat also down, which the spec's own
- * table doesn't cover — defaults to plateaued_other: it isn't a body-comp
- * story, which is exactly what that classification means. Never over-claim
- * a cause the data can't support.
+ * Lean down AND fat up is the one clean "body comp is working against you"
+ * story. Every other combination — including a mixed signal like lean down
+ * AND fat also down, which the spec's own table doesn't cover — is *not*
+ * this specific declining story. Shared with the Phase Alignment rollup
+ * (`phaseAlignment.ts`), which needs the exact same "is body comp declining"
+ * boolean at the whole-athlete level.
+ */
+export function isBodyCompDeclining(bodyComp: PlateauBodyCompTrend): boolean {
+  const leanBad = bodyComp.leanMassDelta !== null && bodyComp.leanMassDelta < 0;
+  const fatBad = bodyComp.fatMassDelta !== null && bodyComp.fatMassDelta > 0;
+  return leanBad && fatBad;
+}
+
+/**
+ * `flat`/`down` + a declining body comp is the one clean "body comp is
+ * working against you" story; everything else defaults to plateaued_other —
+ * it isn't a body-comp story, which is exactly what that classification
+ * means. Never over-claim a cause the data can't support.
  */
 function classify(
   direction: "up" | "down" | "flat",
   bodyComp: PlateauBodyCompTrend
 ): PlateauClassification {
   if (direction === "up") return "improving";
-  const leanBad = bodyComp.leanMassDelta !== null && bodyComp.leanMassDelta < 0;
-  const fatBad = bodyComp.fatMassDelta !== null && bodyComp.fatMassDelta > 0;
-  return leanBad && fatBad ? "plateaued_body_comp" : "plateaued_other";
+  return isBodyCompDeclining(bodyComp) ? "plateaued_body_comp" : "plateaued_other";
 }
 
 type ConfidenceTier = "low" | "medium" | "high";
@@ -285,6 +306,7 @@ function insufficientInsight(
     windowEnd: windowEnd?.format("YYYY-MM-DD") ?? "",
     performanceTrend: { direction: "flat", recentPoints: sorted.map(toPoint), valueKind },
     confidence: "low",
+    reason: formatGateShortfall(sorted.length, MIN_ENTRIES, "logged entry", "logged entries"),
   };
 }
 
@@ -330,6 +352,12 @@ function computeInsight(
       windowEnd: windowEnd.format("YYYY-MM-DD"),
       performanceTrend,
       confidence: "low",
+      reason: formatGateShortfall(
+        scansInWindow.length,
+        MIN_SCANS_IN_WINDOW,
+        "InBody scan in this window",
+        "InBody scans in this window"
+      ),
     };
   }
 

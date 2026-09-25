@@ -7,6 +7,12 @@
  * strings — Dayjs/Date only ever appear as internal working values — so this
  * follows that convention instead of the spec's literal typing. Same
  * semantics, codebase-consistent representation.
+ *
+ * Revision: `PlateauInsight.reason` names which eligibility gate failed and
+ * by how much whenever `classification === "insufficient_data"` — added so
+ * the Phase Alignment rollup (`src/lib/analytics/phaseAlignment.ts`) and a
+ * future coach view can act on a concrete gap ("needs 2 more logged
+ * deadlifts") instead of a silent "not enough data yet."
  */
 
 export type PlateauClassification =
@@ -55,4 +61,6 @@ export interface PlateauInsight {
   performanceTrend: PlateauPerformanceTrend;
   bodyCompTrend?: PlateauBodyCompTrend;
   confidence: "low" | "medium" | "high";
+  /** Only set when classification === "insufficient_data"; names which gate failed and by how much. */
+  reason?: string;
 }

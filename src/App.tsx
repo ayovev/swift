@@ -6,6 +6,7 @@ import { Landing } from "@/components/landing/Landing";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
 import type { Granularity } from "@/lib/analytics/granularity";
+import { getPhaseAlignment } from "@/lib/analytics/phaseAlignment";
 import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
@@ -156,6 +157,16 @@ export default function App() {
     [state, bodyComp]
   );
 
+  // A rollup of plateauInsights, not a re-derivation — recomputed whenever
+  // plateauInsights or the InBody rows it's rolled up against change.
+  const phaseAlignment = useMemo(
+    () =>
+      plateauInsights && bodyComp.status === "ready"
+        ? getPhaseAlignment(plateauInsights, bodyComp.rows, new Date())
+        : null,
+    [plateauInsights, bodyComp]
+  );
+
   // Hold on "reveal" just long enough for UploadReveal's numbers to chalk
   // themselves in before handing off to the dashboard.
   useEffect(() => {
@@ -303,6 +314,7 @@ export default function App() {
         bodyComp={bodyComp}
         onBodyCompFile={handleBodyCompFile}
         plateauInsights={plateauInsights}
+        phaseAlignment={phaseAlignment}
       />
     );
   }
