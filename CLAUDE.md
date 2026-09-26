@@ -41,9 +41,14 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
    uploaded rows (SugarWOD and, separately, InBody) are cached in the browser's own IndexedDB
    (`src/lib/storage/`) purely so a reload doesn't force a re-upload. It doesn't relax the rule
    above — the data still never leaves the browser, and there is still no backend or account
-   behind it. `App.tsx`'s "Start over" control wipes it via `idbClearAll()`, and the bundled
-   sample file is deliberately never written to this store, so demo mode never leaves anything
-   behind. This does not extend to analytics — constraint 2 below is unaffected.
+   behind it. `App.tsx`'s "Start over" control wipes it via `idbClearAll()` — gated behind a
+   confirmation dialog whenever real data is loaded, since it's the one control that clears
+   everything at once (see "Architecture: app state and local persistence" below) — and the
+   bundled sample file is deliberately never written to this store, so demo mode never leaves
+   anything behind. Two narrower controls, "Update workout data" (dashboard header) and
+   "Replace file" (Body Comp tab), let an athlete bring in a fresh CSV without wiping anything
+   else — they call the exact same upload handlers a first upload uses, so only the one dataset
+   being replaced changes. This does not extend to analytics — constraint 2 below is unaffected.
 2. **Analytics may only send closed-vocabulary usage events.** See `src/lib/posthog.ts`: the
    `SwiftEvent` union *is* the entire analytics surface, and it is deliberately narrow rather
    than `Record<string, unknown>`. Never add workout content, movement names, athlete notes,
@@ -201,6 +206,40 @@ comment before changing anything; this section is a map, not a restatement.
   shape — they're computed separately in `App.tsx` and passed to `Dashboard.tsx` as their own
   props, rendered by `PlateauTab.tsx`/`AlignmentTab.tsx`.
 
+## Architecture: Experiments
+
+`src/lib/analytics/experimentInsight.ts` is a third pipeline in the same family as Plateau
+Detector and Alignment above — same before/after performance-vs-body-comp comparison, same two
+datasets required — but anchored to an athlete-logged date instead of a rolling recent/prior
+window.
+
+- **`Experiment`** (`src/types/experiment.ts`) is user-authored, not derived from either upload:
+  just a `date` ("when I tried this") and a free-text `label` ("what I tried"). It's its own
+  IndexedDB-backed dataset (`src/lib/storage/experimentsStorage.ts`, key `"experiments"`, same
+  thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added and deleted from the
+  Experiments tab (`ExperimentsTab.tsx`), persisted only when `state.source === "upload"` in
+  `App.tsx`, same sample-mode exclusion as everything else logged while browsing demo data.
+- **`getExperimentInsight(experiment, workouts, inbodyScans, asOfDate)`** reuses #1's subject
+  identification and body-comp-trend helpers unchanged (`buildLiftSubjects`/
+  `buildBenchmarkSubjects`, `parseWorkoutDate`/`parseInBodyDate`, `computeBodyCompTrend`,
+  `isBodyCompDeclining`/`isBodyCompImproving`) — the normalization rules must not drift between
+  the three pipelines — but computes its own before/after split around the experiment's own
+  `date`, since #1's session-count windowing has no reason to land on either side of a date an
+  athlete picked. Its eligibility gate (≥3 subjects with data on both sides, ≥2 InBody scans on
+  each side) is checked independently per side, so `insufficient_data`'s `reason` names exactly
+  which side is thin — same `formatGateShortfall()` convention as #1/#2.
+- Classification is `improved`/`declined`/`no_change`/`mixed`/`insufficient_data` — `mixed` is a
+  strict-majority miss (no more than half of classified subjects agree), the same "informative,
+  not an error state" treatment Plateau Detector/Alignment give their own ambiguous cases.
+- Sample mode seeds a couple of plausible experiments (`src/lib/sample/generateSampleExperiments.ts`)
+  at fixed month-offsets from the athlete's first logged workout (never hardcoded calendar dates),
+  chosen only when they leave enough history on both sides to pass the eligibility gate above —
+  the classification itself is never biased toward a rosy outcome; it falls out of whatever the
+  real sample data shows.
+- Wired into `App.tsx` behind the same gate as Plateau Detector/Alignment — neither runs until
+  both uploads are `"ready"` — and rendered by its own tab, not part of
+  `Insights`/`buildInsights.ts`'s return shape.
+
 ## Architecture: app state and local persistence
 
 `src/App.tsx` owns two independent state machines — `AppState` (SugarWOD rows) and
@@ -217,13 +256,15 @@ added after the app initially held everything in memory only.
   `idbClearAll`) swallows its own failures and resolves to a safe default, mirroring
   `readStored`/`writeStored` in `src/lib/theme/useTheme.ts` — persistence is a convenience,
   never a requirement, so a blocked or disabled database must not break the app.
-- **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** are thin
-  typed wrappers, one key each (`"workout-rows"`, `"body-comp-rows"`, `"view-preferences"`).
-  Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete` directly — a new
-  dataset gets its own wrapper file, not a call site that reaches past it.
+- **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** /
+  **`experimentsStorage.ts`** are thin typed wrappers, one key each (`"workout-rows"`,
+  `"body-comp-rows"`, `"view-preferences"`, `"experiments"` — see "Architecture: Experiments"
+  above for that last one). Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
+  directly — a new dataset gets its own wrapper file, not a call site that reaches past it.
 - **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
-  existing loading UI — no new component) and a mount-only effect loads all three from storage
-  in parallel before deciding whether to show the dashboard or the upload screen.
+  existing loading UI — no new component) and a mount-only effect loads all four datasets
+  (workout rows, body-comp rows, view preferences, experiments) from storage in parallel before
+  deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
   bundled sample file is deliberately never cached, so demo mode never leaves anything behind.
   A successful InBody parse always persists (there's no sample-data concept for it). `range` and
@@ -237,6 +278,17 @@ added after the app initially held everything in memory only.
   its own reset to `monthly`/`all_time` for the same reason a fresh upload persists its rows —
   otherwise a reload right after would restore the *previous* file's leftover view prefs over
   the new file's fresh state.
+- **Updating in place**: two controls let an athlete bring in a fresh CSV without touching
+  anything else. "Update workout data" (`Dashboard.tsx`'s header) and "Replace file"
+  (`BodyCompTab.tsx`'s ready state) are both `FilePickerButton`
+  (`src/components/dashboard/FilePickerButton.tsx`) — a plain click-to-browse trigger using the
+  same hidden-`<input>` mechanics as `UploadDropzone` (including resetting the input's value so
+  picking the same file twice still fires a change event), but without `UploadDropzone`'s
+  drag-and-drop box, since this is a small utility action rather than the first-upload call to
+  action. Both call the exact same `handleFile`/`handleBodyCompFile` handlers a first upload
+  uses, so a re-upload fully replaces only its own dataset — `experiments` and the other dataset
+  are untouched, exactly as they already were before these controls existed; no new
+  data-merging logic needed.
 - **What's actually stored isn't the date range** — it's the *preset id* (`DateRangePreset`,
   `dateRange.ts`) plus concrete dates only for the `"custom"` case. Presets are anchored to
   today's real-world date (see `DateRangePicker.tsx`), so restoring "Last 3 months" recomputes
@@ -251,7 +303,11 @@ added after the app initially held everything in memory only.
   isn't just UX — without it, "Start over" would only reset in-memory state, and a reload would
   silently restore the data the button just appeared to discard. This also clears `range` and
   `granularity` back to their in-memory defaults (`null`/`monthly`) on the next restore, same as
-  the two uploaded datasets.
+  the two uploaded datasets. `reset()` itself is unchanged, but the "Start over" button that
+  calls it is now gated behind a confirmation `AlertDialog` (`src/components/ui/alert-dialog.tsx`)
+  whenever `source === "upload"` — sample mode still resets in one click, since nothing
+  persisted is at risk there. The dialog's copy names exactly what gets deleted (workout log,
+  body composition history, experiments) so this is the one place all three are named together.
 - The theme preference remains on its own `localStorage` key (see Theming below), not this
   layer — it needs to be read synchronously before first paint to avoid a flash of the wrong
   mode, which IndexedDB's async API can't do.

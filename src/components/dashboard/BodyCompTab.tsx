@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadDropzone } from "@/components/landing/UploadDropzone";
 import { BodyCompLineChart } from "./charts/BodyCompLineChart";
 import { ConsistencyChart } from "./charts/ConsistencyChart";
+import { FilePickerButton } from "./FilePickerButton";
 import { buildBodyCompData } from "@/lib/analytics/buildBodyCompData";
 import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
 import type { BodyCompPoint } from "@/types/bodyComp";
@@ -122,9 +123,12 @@ export function BodyCompTab({ state, granularity, onFile, dashboard }: BodyCompT
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="flex flex-row items-center gap-3 pb-2">
-          <InBodySourceMark />
-          <CardTitle className="text-base">Body composition</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
+          <div className="flex flex-row items-center gap-3">
+            <InBodySourceMark />
+            <CardTitle className="text-base">Body composition</CardTitle>
+          </div>
+          <FilePickerButton onFile={onFile}>Replace file</FilePickerButton>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
