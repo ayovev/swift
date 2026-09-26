@@ -13,7 +13,7 @@ afterEach(async () => {
 
 const sample: Experiment[] = [
   { id: "1", date: "2024-05-01", label: "Started 5/3/1 cycle" },
-  { id: "2", date: "2024-08-15", label: "Switched to own programming" },
+  { id: "2", date: "2024-08-15", endDate: "2024-11-01", label: "Switched to own programming" },
 ];
 
 describe("experimentsStorage", () => {

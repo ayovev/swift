@@ -66,6 +66,14 @@ function insufficient(experiment: Experiment, reason: string): ExperimentInsight
  * three pipelines — but computes its own before/after windowing and
  * classification, since #1's session-count recent/prior windowing has no
  * reason to land on either side of an arbitrary date.
+ *
+ * When `experiment.endDate` is set, the "after" side is bounded to
+ * [start, end] instead of running open-ended to `asOfDate` — a finished
+ * experiment is compared against the period it actually ran, not against
+ * whatever the athlete did afterward. An unset `endDate`, or one that's
+ * before the start date (which the UI shouldn't produce, but this stays
+ * defensive about it rather than throwing), falls back to the open-ended
+ * behavior unchanged.
  */
 export function getExperimentInsight(
   experiment: Experiment,
@@ -75,6 +83,8 @@ export function getExperimentInsight(
 ): ExperimentInsight {
   const asOf = dayjs(asOfDate);
   const start = dayjs(experiment.date);
+  const rawEnd = experiment.endDate ? dayjs(experiment.endDate) : null;
+  const end = rawEnd && rawEnd.isValid() && !rawEnd.isBefore(start, "day") ? rawEnd : null;
 
   const parsedWorkouts = workouts
     .map((raw) => ({ raw, date: parseWorkoutDate(raw.date) }))
@@ -88,11 +98,12 @@ export function getExperimentInsight(
 
   // A subject only logged before, or only after, the start date can't show a
   // before/after change — split first, then only "classified" subjects (data
-  // on both sides) enter the per-subject comparison below.
+  // on both sides) enter the per-subject comparison below. "After" is also
+  // capped at `end` when the experiment has one.
   const splits: SplitCandidate[] = candidates.map((candidate) => ({
     candidate,
     before: candidate.entries.filter((e) => e.date.isBefore(start, "day")),
-    after: candidate.entries.filter((e) => !e.date.isBefore(start, "day")),
+    after: candidate.entries.filter((e) => !e.date.isBefore(start, "day") && (!end || !e.date.isAfter(end, "day"))),
   }));
 
   const subjectsWithBefore = splits.filter((s) => s.before.length > 0).length;
@@ -124,7 +135,7 @@ export function getExperimentInsight(
   }
 
   const scansBefore = parsedScans.filter((s) => s.date.isBefore(start, "day"));
-  const scansAfter = parsedScans.filter((s) => !s.date.isBefore(start, "day"));
+  const scansAfter = parsedScans.filter((s) => !s.date.isBefore(start, "day") && (!end || !s.date.isAfter(end, "day")));
 
   // Gate 2: enough InBody scans on each side, checked independently so the
   // reason names exactly which side is short.
@@ -172,9 +183,10 @@ export function getExperimentInsight(
     classifiedCount: classified.length,
   };
 
-  // Nearest scan strictly before the start date vs. nearest on/after it —
-  // the tightest read of the transition itself, not the earliest/latest scan
-  // in the athlete's whole history.
+  // Nearest scan strictly before the start date vs. nearest on/after it (and,
+  // when the experiment has ended, on/before it too, per `scansAfter` above)
+  // — the tightest read of the transition itself, not the earliest/latest
+  // scan in the athlete's whole history.
   const nearestBefore = scansBefore.reduce((a, b) => (b.date.isAfter(a.date) ? b : a));
   const nearestAfter = scansAfter.reduce((a, b) => (b.date.isBefore(a.date) ? b : a));
   const bodyCompSummary: ExperimentBodyCompSummary = computeBodyCompTrend(nearestBefore.raw, nearestAfter.raw);

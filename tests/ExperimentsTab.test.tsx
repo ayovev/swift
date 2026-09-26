@@ -205,4 +205,97 @@ describe("ExperimentsTab — ready state", () => {
     });
     expect(submit).toBeDisabled();
   });
+
+  it("shows both dates on a card whose experiment has an end date", () => {
+    const withEnd: Experiment = { id: "c", date: "2024-05-01", endDate: "2024-09-15", label: "Ran a cut" };
+    render(
+      <ExperimentsTab
+        experiments={[withEnd]}
+        experimentInsights={new Map([["c", insight({ experiment: withEnd })]])}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={vi.fn()}
+        onAddExperiment={vi.fn()}
+        onDeleteExperiment={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Started May 1, 2024 · Ended Sep 15, 2024")).toBeInTheDocument();
+  });
+
+  it("submits with the picked start date and no end date when 'Ended' is left as 'Still ongoing'", () => {
+    const onAddExperiment = vi.fn();
+    render(
+      <ExperimentsTab
+        experiments={[]}
+        experimentInsights={new Map()}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={vi.fn()}
+        onAddExperiment={onAddExperiment}
+        onDeleteExperiment={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Ended (optional)" })).toHaveTextContent("Still ongoing");
+
+    fireEvent.click(screen.getByRole("button", { name: "Started" }));
+    fireEvent.click(screen.getByRole("button", { name: /September 5th, 2026/ }));
+    fireEvent.change(screen.getByPlaceholderText("Started 5/3/1 cycle"), {
+      target: { value: "Started 5/3/1 cycle" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add experiment" }));
+
+    expect(onAddExperiment).toHaveBeenCalledWith("Started 5/3/1 cycle", "2026-09-05", undefined);
+  });
+
+  it("submits with both dates once an end date is also picked, and resets both fields after", () => {
+    const onAddExperiment = vi.fn();
+    render(
+      <ExperimentsTab
+        experiments={[]}
+        experimentInsights={new Map()}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={vi.fn()}
+        onAddExperiment={onAddExperiment}
+        onDeleteExperiment={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Started" }));
+    fireEvent.click(screen.getByRole("button", { name: /September 5th, 2026/ }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Ended (optional)" }));
+    fireEvent.click(screen.getByRole("button", { name: /September 10th, 2026/ }));
+    expect(screen.getByRole("button", { name: /Ended \(optional\)/ })).toHaveTextContent("Sep 10, 2026");
+
+    fireEvent.change(screen.getByPlaceholderText("Started 5/3/1 cycle"), {
+      target: { value: "Tried a cut" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add experiment" }));
+
+    expect(onAddExperiment).toHaveBeenCalledWith("Tried a cut", "2026-09-05", "2026-09-10");
+
+    // Fields reset for the next entry, same as the label already did before this feature.
+    expect(screen.getByRole("button", { name: "Ended (optional)" })).toHaveTextContent("Still ongoing");
+  });
+
+  it("clears a picked end date via the 'Clear' button without touching the start date", () => {
+    render(
+      <ExperimentsTab
+        experiments={[]}
+        experimentInsights={new Map()}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={vi.fn()}
+        onAddExperiment={vi.fn()}
+        onDeleteExperiment={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Ended (optional)" }));
+    fireEvent.click(screen.getByRole("button", { name: /September 10th, 2026/ }));
+    expect(screen.getByRole("button", { name: /Ended \(optional\)/ })).toHaveTextContent("Sep 10, 2026");
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(screen.getByRole("button", { name: /Ended \(optional\)/ })).toHaveTextContent("Still ongoing");
+    expect(screen.getByRole("button", { name: "Started" })).toHaveTextContent("Pick a date");
+  });
 });

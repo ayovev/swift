@@ -20,7 +20,7 @@ interface ExperimentsTabProps {
   experimentInsights: Map<string, ExperimentInsight> | null;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
-  onAddExperiment: (label: string, date: string) => void;
+  onAddExperiment: (label: string, date: string, endDate?: string) => void;
   onDeleteExperiment: (id: string) => void;
 }
 
@@ -61,19 +61,22 @@ function formatDelta(delta: number | null, unit: string): string {
   return `${rounded > 0 ? "+" : ""}${rounded}${unit}`;
 }
 
-function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string) => void }) {
+function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, endDate?: string) => void }) {
   const [label, setLabel] = useState("");
   const [date, setDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [open, setOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
 
   const canSubmit = label.trim() !== "" && date !== undefined;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit || !date) return;
-    onAdd(label.trim(), dayjs(date).format("YYYY-MM-DD"));
+    onAdd(label.trim(), dayjs(date).format("YYYY-MM-DD"), endDate ? dayjs(endDate).format("YYYY-MM-DD") : undefined);
     setLabel("");
     setDate(undefined);
+    setEndDate(undefined);
   }
 
   return (
@@ -100,12 +103,59 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string) => 
               onSelect={(d) => {
                 setDate(d);
                 setOpen(false);
+                // A start date moved past the current end date would leave an
+                // inverted range; clearing it is simpler than clamping, and
+                // this is a rare edit (both fields default unset).
+                if (d && endDate && dayjs(endDate).isBefore(dayjs(d), "day")) setEndDate(undefined);
               }}
               disabled={{ after: new Date() }}
               defaultMonth={date ?? new Date()}
             />
           </PopoverContent>
         </Popover>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="experiment-end-date">Ended (optional)</Label>
+        <div className="flex items-center gap-1">
+          <Popover open={endOpen} onOpenChange={setEndOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                id="experiment-end-date"
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 w-48 justify-start gap-2 font-normal"
+              >
+                <CalendarIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                {endDate ? formatDate(dayjs(endDate).format("YYYY-MM-DD")) : "Still ongoing"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={endDate}
+                onSelect={(d) => {
+                  setEndDate(d);
+                  setEndOpen(false);
+                }}
+                disabled={{ before: date ?? new Date(0), after: new Date() }}
+                defaultMonth={endDate ?? date ?? new Date()}
+              />
+            </PopoverContent>
+          </Popover>
+          {endDate ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 px-2 font-normal"
+              onClick={() => setEndDate(undefined)}
+            >
+              Clear
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5">
@@ -140,7 +190,10 @@ function ExperimentCard({
       <CardHeader className="flex-row items-start justify-between pb-2">
         <div>
           <CardTitle className="text-base">{experiment.label}</CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">Started {formatDate(experiment.date)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Started {formatDate(experiment.date)}
+            {experiment.endDate ? ` · Ended ${formatDate(experiment.endDate)}` : ""}
+          </p>
         </div>
         <Button
           variant="ghost"
