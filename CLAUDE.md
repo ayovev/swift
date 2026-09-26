@@ -275,8 +275,9 @@ back to one.
 - **The wire protocol**, once connected: the host sends one small manifest naming which
   datasets it's about to send (`["workout"]` or `["workout","bodyComp"]` — never assumed, since
   a device might not have InBody data), then for each dataset in order, `chunkPayload()`'s
-  header followed by its chunks. The joiner feeds every message after the manifest into a fresh
-  `Reassembler` per dataset until each reports done, then closes.
+  header followed by its chunks; once every dataset is sent, the host closes the channel. The
+  joiner feeds every message after the manifest into a fresh `Reassembler` per dataset until each
+  reports done.
 - **`SyncDialog.tsx`** (`src/components/sync/`) is the pairing wizard shell — the one place that
   owns a `SyncSession` (via the `useSyncSession` hook, always backed by the real
   `webrtcConnectionFactory`) for the dialog's lifetime, and the one place that decides whether a
