@@ -13,6 +13,8 @@ import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
 import { extendSampleRows } from "@/lib/sample/extendSample";
+import { generateSampleBodyComp } from "@/lib/sample/generateSampleBodyComp";
+import { generateSampleExperiments } from "@/lib/sample/generateSampleExperiments";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { loadExperiments, saveExperiments } from "@/lib/storage/experimentsStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
@@ -230,6 +232,18 @@ export default function App() {
         if (source === "upload") {
           void saveWorkoutRows(rows);
           void saveViewPreferences({ granularity: "monthly", rangePreset: "all_time", customRange: null });
+        } else {
+          // Fill in the two datasets the Plateau Detector, Alignment and
+          // Experiments tabs need, so sample mode has something for them to
+          // show instead of their empty states — entirely in memory, never
+          // persisted (see the two generators' own header comments). The
+          // functional setState form means a previously-restored *real*
+          // InBody upload or real logged experiments are never clobbered:
+          // sample data only fills in what's genuinely still empty.
+          const generatedBodyComp = generateSampleBodyComp(rows);
+          const generatedExperiments = generateSampleExperiments(rows);
+          setBodyComp((prev) => (prev.status === "ready" ? prev : { status: "ready", rows: generatedBodyComp }));
+          setExperiments((prev) => (prev.length > 0 ? prev : generatedExperiments));
         }
         await waitOutMinimum(startedAt);
         setState({
@@ -272,7 +286,14 @@ export default function App() {
       try {
         const rows = await parseInBodyCsv(file);
         setBodyComp({ status: "ready", rows });
-        void saveBodyCompRows(rows);
+        // Sample workout mode leaves nothing behind (see CLAUDE.md's hard
+        // constraint #1 and App.tsx's own `source === "upload"` gate on
+        // saveWorkoutRows above) — a real InBody upload made while browsing
+        // sample data is a genuine upload of the athlete's own file, but it
+        // still shouldn't persist until the SugarWOD side of the session is
+        // real too, or a reload would resurrect it alongside sample rows
+        // that were never saved in the first place.
+        if (state.status === "ready" && state.source === "upload") void saveBodyCompRows(rows);
       } catch (err) {
         const message =
           err instanceof CsvValidationError
@@ -283,22 +304,26 @@ export default function App() {
         setBodyComp({ status: "error", message });
       }
     })();
-  }, []);
+  }, [state]);
 
   // User-authored state, not derived from an upload — its own IndexedDB key
-  // (see experimentsStorage.ts), persisted in full on every change.
+  // (see experimentsStorage.ts), persisted in full on every change, except
+  // in sample mode (see handleBodyCompFile's comment above — same reasoning
+  // applies here: an experiment added or deleted while sample data is
+  // loaded must not leave anything in IndexedDB for a later real session to
+  // stumble on).
   const addExperiment = useCallback((label: string, date: string) => {
     setExperiments((prev) => {
       const next = [...prev, { id: crypto.randomUUID(), date, label }];
-      void saveExperiments(next);
+      if (state.status === "ready" && state.source === "upload") void saveExperiments(next);
       return next;
     });
-  }, []);
+  }, [state]);
 
   const deleteExperiment = useCallback((id: string) => {
     setExperiments((prev) => {
       const next = prev.filter((e) => e.id !== id);
-      void saveExperiments(next);
+      if (state.status === "ready" && state.source === "upload") void saveExperiments(next);
       return next;
     });
   }, []);
