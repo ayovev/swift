@@ -240,6 +240,68 @@ window.
   both uploads are `"ready"` — and rendered by its own tab, not part of
   `Insights`/`buildInsights.ts`'s return shape.
 
+## Architecture: cross-device sync
+
+`src/lib/sync/` moves a dataset from one device to another (issue #15) without ever relaxing
+hard constraint #1: no backend, and training data never leaves the browser. Two browsers
+negotiate a WebRTC `RTCDataChannel` directly; the SDP offer/answer is exchanged by
+displaying/scanning QR codes instead of over a signaling server, so the *only* things that ever
+cross a QR code or a public STUN server are connection metadata (ICE candidates, DTLS
+fingerprints) — never a row of workout data. No TURN server is configured, on purpose: a TURN
+relay would see the (encrypted) bytes in transit, and this feature has no relay-of-last-resort —
+if STUN can't punch through, the UI says "get on the same Wi-Fi" rather than silently falling
+back to one.
+
+- **The engine is entirely WebRTC- and framework-agnostic**, mirroring the classify → analytics
+  → components split elsewhere in this codebase: `chunking.ts` (wire framing — a small JSON
+  header naming the dataset and byte count, then fixed-size binary chunks, since
+  `RTCDataChannel` messages cap around 16KB cross-browser), `pairingCode.ts` (SDP ↔ QR-payload
+  encoding, with its own size budget and candidate-trimming for QR scannability), `syncTransport.ts`
+  (the `SyncTransport` send/receive interface), `peerConnection.ts` (the `PeerConnection`/
+  `PeerConnectionFactory` interface, plus the `IceGatheringTimeoutError`/`WebrtcUnsupportedError`
+  types), and `syncSession.ts` (the pairing/transfer state machine, `idle → generating-offer →
+  awaiting-answer → connecting → connected → transferring → done | failed`). None of these five
+  files import `RTCPeerConnection` or a QR library — `webrtcTransport.ts` is the *only* file that
+  touches real WebRTC APIs (the same "one seam" discipline `idbStore.ts` uses for `indexedDB`),
+  and `src/components/sync/QrDisplay.tsx`/`QrScanner.tsx` are the only files that import
+  `qrcode`/`jsqr` or call `getUserMedia`. This is what makes the pairing/transfer logic fully
+  unit-testable (`tests/chunking.test.ts`, `tests/pairingCode.test.ts`, `tests/syncSession.test.ts`)
+  with a fake in-memory transport (`tests/fixtures/fakeSyncTransport.ts`,
+  `tests/fixtures/fakePeerConnection.ts`) even though jsdom has no WebRTC or camera stack at all.
+- **What's deliberately *not* automated**: real two-device `RTCPeerConnection`/ICE/STUN
+  negotiation and real camera-based QR scanning. This repo has no Playwright/e2e infrastructure,
+  and adding one was scoped out of this feature — see `webrtcTransport.ts`'s header comment.
+  Those two paths are verified manually, across two real devices, before any change here ships.
+- **The wire protocol**, once connected: the host sends one small manifest naming which
+  datasets it's about to send (`["workout"]` or `["workout","bodyComp"]` — never assumed, since
+  a device might not have InBody data), then for each dataset in order, `chunkPayload()`'s
+  header followed by its chunks. The joiner feeds every message after the manifest into a fresh
+  `Reassembler` per dataset until each reports done, then closes.
+- **`SyncDialog.tsx`** (`src/components/sync/`) is the pairing wizard shell — the one place that
+  owns a `SyncSession` (via the `useSyncSession` hook, always backed by the real
+  `webrtcConnectionFactory`) for the dialog's lifetime, and the one place that decides whether a
+  received dataset needs confirmation before it's applied. If the joining device already has a
+  dataset of that kind, an `AlertDialog` (same register as "Start over") names exactly what
+  would be replaced and by how many entries, independently per dataset — accepting one doesn't
+  silently accept the other. Only after that confirmation (or immediately, if there's nothing to
+  conflict with) does it call `onSyncedWorkoutData`/`onSyncedBodyCompData`.
+- **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` — both are
+  unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
+  `SyncDialog` is what gates the call, not the handler. Synced data always carries
+  `source: "upload"` (sync's entry points in `Dashboard.tsx`'s header only render when
+  `source === "upload"` in the first place — sample data was never meant to sync anywhere), so
+  it persists and participates in "Start over" identically to a direct upload.
+  `handleSyncedWorkoutData` reuses `run()`'s shared post-parse tail
+  (`finishSuccessfulLoad`, extracted from `run()` for exactly this reason) rather than
+  duplicating the reset-range/persist/reveal sequence, since sync hands over already-parsed rows
+  (read from the host's own storage) rather than raw CSV text.
+- **Analytics**: `sync_attempted`/`sync_succeeded`/`sync_failed` in `src/lib/posthog.ts`, same
+  closed-vocabulary discipline as every other `SwiftEvent` — `role` (`"host" | "joiner"`) and,
+  for failures, a fixed `SyncFailureReason` (`ice_timeout`, `camera_denied`, `invalid_qr`,
+  `connection_dropped`, `declined_overwrite`, `unsupported_browser`). No device identifiers, no
+  session/pairing tokens, no SDP fragments — the payload types make that structurally
+  impossible, not just a convention (`tests/syncAnalytics.test.ts`).
+
 ## Architecture: app state and local persistence
 
 `src/App.tsx` owns two independent state machines — `AppState` (SugarWOD rows) and

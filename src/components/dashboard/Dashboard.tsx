@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { FlaskConical, RotateCcw, Upload } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { FlaskConical, RotateCcw, Smartphone, Upload } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +25,8 @@ import { GranularityPicker } from "./GranularityPicker";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlateauTab } from "./PlateauTab";
+import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
+import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import {
   ALL_TABS,
   BODY_COMP_TAB,
@@ -46,6 +48,8 @@ import type { Insights } from "@/lib/analytics/buildInsights";
 import type { AlignmentResult } from "@/types/alignment";
 import type { Experiment, ExperimentInsight } from "@/types/experiment";
 import type { PlateauInsight } from "@/types/plateau";
+import type { InBodyRow } from "@/types/inbody";
+import type { SugarWodRow } from "@/types/sugarwod";
 import type { DataSource } from "@/App";
 
 interface DashboardProps {
@@ -57,9 +61,12 @@ interface DashboardProps {
   granularity: Granularity;
   onGranularityChange: (granularity: Granularity) => void;
   onReset: () => void;
+  workoutRows: SugarWodRow[];
   onWorkoutFile: (file: File) => void;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
+  onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
+  onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   plateauInsights: PlateauInsight[] | null;
   alignment: AlignmentResult | null;
   experiments: Experiment[];
@@ -89,9 +96,12 @@ export function Dashboard({
   granularity,
   onGranularityChange,
   onReset,
+  workoutRows,
   onWorkoutFile,
   bodyComp,
   onBodyCompFile,
+  onSyncedWorkoutData,
+  onSyncedBodyCompData,
   plateauInsights,
   alignment,
   experiments,
@@ -107,6 +117,18 @@ export function Dashboard({
   // to size its calendar.
   const effectiveRange = range ?? insights.dateBounds;
   const dailyDisabled = effectiveRange ? !dailyGranularityFits(effectiveRange) : false;
+
+  // Built once per data change, not on every render — JSON.stringify-ing the
+  // full unfiltered workout log (and body comp, if present) is real work at
+  // ~1,200 rows. Only used if "Sync to another device" actually starts a
+  // host session (see SyncDialog).
+  const syncOutgoing = useMemo<OutgoingDataset[]>(() => {
+    const outgoing: OutgoingDataset[] = [{ dataset: "workout", json: JSON.stringify(workoutRows) }];
+    if (bodyComp.status === "ready") {
+      outgoing.push({ dataset: "bodyComp", json: JSON.stringify(bodyComp.rows) });
+    }
+    return outgoing;
+  }, [workoutRows, bodyComp]);
 
   // Widening the range out from under an active daily view (via the date
   // picker, not this control) would otherwise leave a chart stuck rendering
@@ -166,6 +188,33 @@ export function Dashboard({
               <Upload className="size-3.5" aria-hidden="true" />
               <span className="hidden sm:inline">Update workout data</span>
             </FilePickerButton>
+            {source === "upload" ? (
+              <>
+                <SyncEntryPoint
+                  role="host"
+                  outgoing={syncOutgoing}
+                  existingWorkoutCount={null}
+                  existingBodyCompCount={null}
+                  onSyncedWorkoutData={onSyncedWorkoutData}
+                  onSyncedBodyCompData={onSyncedBodyCompData}
+                  className="h-8 gap-2"
+                >
+                  <Smartphone className="size-3.5" aria-hidden="true" />
+                  <span className="hidden sm:inline">Sync to another device</span>
+                </SyncEntryPoint>
+                <SyncEntryPoint
+                  role="joiner"
+                  existingWorkoutCount={workoutRows.length}
+                  existingBodyCompCount={bodyComp.status === "ready" ? bodyComp.rows.length : null}
+                  onSyncedWorkoutData={onSyncedWorkoutData}
+                  onSyncedBodyCompData={onSyncedBodyCompData}
+                  className="h-8 gap-2"
+                >
+                  <Smartphone className="size-3.5" aria-hidden="true" />
+                  <span className="hidden sm:inline">Sync from another device</span>
+                </SyncEntryPoint>
+              </>
+            ) : null}
             {source === "sample" ? (
               <Button variant="outline" size="sm" onClick={onReset} className="h-8 gap-2">
                 <RotateCcw className="size-3.5" aria-hidden="true" />
