@@ -244,6 +244,115 @@ describe("getExperimentInsight — classification table", () => {
   });
 });
 
+describe("getExperimentInsight — endDate bounds the 'after' window", () => {
+  it("excludes entries logged after the end date from the per-subject averages", () => {
+    const workouts = [
+      liftRow("01/01/2024", "Snatch", 100),
+      liftRow("07/01/2024", "Snatch", 115), // within [start, end] — a genuine +15% improvement
+      liftRow("12/01/2024", "Snatch", 50), // after end — a late crash that must not count once capped
+      liftRow("01/05/2024", "Clean", 150),
+      liftRow("07/05/2024", "Clean", 170),
+      liftRow("01/10/2024", "Jerk", 120),
+      liftRow("07/10/2024", "Jerk", 135),
+    ];
+    // Both scans on the "after" side fall within [start, end] here, so the
+    // scan-count gate passes either way and only the lift math is exercised.
+    const stableScans = [
+      inbodyRow({ date: "20240201000000" }),
+      inbodyRow({ date: "20240501000000" }),
+      inbodyRow({ date: "20240615000000" }),
+      inbodyRow({ date: "20240715000000" }),
+    ];
+    const withEnd = getExperimentInsight(experiment({ endDate: "2024-08-01" }), workouts, stableScans, AS_OF);
+    const openEnded = getExperimentInsight(experiment(), workouts, stableScans, AS_OF);
+
+    // Capped at the end date, Snatch's after-average is just the 115 entry
+    // (+15%, improving). Left open-ended, the 12/01 crash drags the average
+    // down to 82.5 (-17.5%, declining) — same three subjects, same raw rows,
+    // different result, purely from where the "after" window closes.
+    expect(withEnd.performanceSummary).toEqual({
+      improvingCount: 3,
+      decliningCount: 0,
+      flatCount: 0,
+      classifiedCount: 3,
+    });
+    expect(openEnded.performanceSummary).toEqual({
+      improvingCount: 2,
+      decliningCount: 1,
+      flatCount: 0,
+      classifiedCount: 3,
+    });
+  });
+
+  it("drops a subject from 'classified' entirely when its only after-side entry falls after the end date", () => {
+    const workouts = [
+      liftRow("01/01/2024", "Snatch", 100),
+      liftRow("12/01/2024", "Snatch", 115), // only entry after start is past the end date
+      liftRow("01/05/2024", "Clean", 150),
+      liftRow("07/05/2024", "Clean", 170),
+      liftRow("01/10/2024", "Jerk", 120),
+      liftRow("07/10/2024", "Jerk", 135),
+    ];
+    const result = getExperimentInsight(experiment({ endDate: "2024-08-01" }), workouts, [], AS_OF);
+    expect(result.classification).toBe("insufficient_data");
+    expect(result.reason).toBe("needs 1 more lift/WOD with logged data after this date (has 2, needs 3)");
+  });
+
+  it("shrinks the after-side InBody scan count when the cap excludes scans, which can newly fail the eligibility gate", () => {
+    // Subject entries (Jan/July) stay within [start, end] here, so gate 1
+    // passes either way — only the scan-count gate (#2) is exercised.
+    const inbodyScans = [
+      inbodyRow({ date: "20240101000000" }),
+      inbodyRow({ date: "20240301000000" }),
+      inbodyRow({ date: "20240705000000" }), // within [start, end]
+      inbodyRow({ date: "20240901000000" }), // after end — excluded once endDate caps it
+      inbodyRow({ date: "20241001000000" }), // after end — excluded once endDate caps it
+    ];
+    const withEnd = getExperimentInsight(
+      experiment({ endDate: "2024-08-01" }),
+      threeSubjectsBothSides,
+      inbodyScans,
+      AS_OF
+    );
+    expect(withEnd.classification).toBe("insufficient_data");
+    expect(withEnd.reason).toBe("needs 1 more InBody scan after this date (has 1, needs 2)");
+
+    const openEnded = getExperimentInsight(experiment(), threeSubjectsBothSides, inbodyScans, AS_OF);
+    expect(openEnded.classification).not.toBe("insufficient_data");
+  });
+
+  it("falls back to the open-ended window when endDate is before the start date", () => {
+    const workouts = [
+      liftRow("01/01/2024", "Snatch", 100),
+      liftRow("07/01/2024", "Snatch", 115),
+      liftRow("01/05/2024", "Clean", 150),
+      liftRow("07/05/2024", "Clean", 170),
+      liftRow("01/10/2024", "Jerk", 120),
+      liftRow("07/10/2024", "Jerk", 135),
+    ];
+    const stableScans = [
+      inbodyRow({ date: "20240201000000" }),
+      inbodyRow({ date: "20240501000000" }),
+      inbodyRow({ date: "20240701000000" }),
+      inbodyRow({ date: "20240901000000" }),
+    ];
+    const invalidEnd = getExperimentInsight(
+      experiment({ endDate: "2023-01-01" }),
+      workouts,
+      stableScans,
+      AS_OF
+    );
+    const openEnded = getExperimentInsight(experiment(), workouts, stableScans, AS_OF);
+
+    // Compare everything but `experiment` itself, which legitimately differs
+    // (one carries the stale endDate, the other has none) even though the
+    // computed result must not.
+    expect(invalidEnd.classification).toBe(openEnded.classification);
+    expect(invalidEnd.performanceSummary).toEqual(openEnded.performanceSummary);
+    expect(invalidEnd.bodyCompSummary).toEqual(openEnded.bodyCompSummary);
+  });
+});
+
 describe("getExperimentInsight — real sample data", () => {
   it("doesn't throw and returns a valid classification against the real SugarWOD export + synthetic InBody fixture", async () => {
     const workouts = await loadSampleRows();

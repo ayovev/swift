@@ -312,9 +312,9 @@ export default function App() {
   // applies here: an experiment added or deleted while sample data is
   // loaded must not leave anything in IndexedDB for a later real session to
   // stumble on).
-  const addExperiment = useCallback((label: string, date: string) => {
+  const addExperiment = useCallback((label: string, date: string, endDate?: string) => {
     setExperiments((prev) => {
-      const next = [...prev, { id: crypto.randomUUID(), date, label }];
+      const next = [...prev, { id: crypto.randomUUID(), date, label, ...(endDate ? { endDate } : {}) }];
       if (state.status === "ready" && state.source === "upload") void saveExperiments(next);
       return next;
     });
