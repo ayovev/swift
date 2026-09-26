@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
-import { FlaskConical, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FlaskConical, RotateCcw, Upload } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { ThemeControls } from "@/components/theme/ThemeControls";
 import { SwiftMark } from "@/components/SwiftMark";
@@ -9,6 +20,7 @@ import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
 import { DateRangePicker } from "./DateRangePicker";
 import { DomainTab } from "./DomainTab";
 import { ExperimentsTab } from "./ExperimentsTab";
+import { FilePickerButton } from "./FilePickerButton";
 import { GranularityPicker } from "./GranularityPicker";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
@@ -45,6 +57,7 @@ interface DashboardProps {
   granularity: Granularity;
   onGranularityChange: (granularity: Granularity) => void;
   onReset: () => void;
+  onWorkoutFile: (file: File) => void;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
   plateauInsights: PlateauInsight[] | null;
@@ -76,6 +89,7 @@ export function Dashboard({
   granularity,
   onGranularityChange,
   onReset,
+  onWorkoutFile,
   bodyComp,
   onBodyCompFile,
   plateauInsights,
@@ -148,10 +162,40 @@ export function Dashboard({
               />
             ) : null}
             <ThemeControls />
-            <Button variant="outline" size="sm" onClick={onReset} className="h-8 gap-2">
-              <RotateCcw className="size-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Start over</span>
-            </Button>
+            <FilePickerButton onFile={onWorkoutFile} className="h-8 gap-2">
+              <Upload className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Update workout data</span>
+            </FilePickerButton>
+            {source === "sample" ? (
+              <Button variant="outline" size="sm" onClick={onReset} className="h-8 gap-2">
+                <RotateCcw className="size-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Start over</span>
+              </Button>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-2">
+                    <RotateCcw className="size-3.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">Start over</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Start over?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This deletes your uploaded workout log, body composition history, and any
+                      experiments you've logged. This can't be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onReset} className={buttonVariants({ variant: "destructive" })}>
+                      Reset
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
       </header>

@@ -374,6 +374,7 @@ export default function App() {
         granularity={granularity}
         onGranularityChange={persistGranularity}
         onReset={reset}
+        onWorkoutFile={handleFile}
         bodyComp={bodyComp}
         onBodyCompFile={handleBodyCompFile}
         plateauInsights={plateauInsights}

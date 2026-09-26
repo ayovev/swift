@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "@/App";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
@@ -123,12 +123,78 @@ describe("App — local persistence", () => {
     renderApp();
     const startOver = await screen.findByRole("button", { name: /start over/i });
     fireEvent.click(startOver);
+    const confirmReset = await screen.findByRole("button", { name: /^reset$/i });
+    fireEvent.click(confirmReset);
 
     await waitFor(async () => {
       expect(await loadWorkoutRows()).toBeUndefined();
       expect(await loadBodyCompRows()).toBeUndefined();
       expect(await loadViewPreferences()).toBeUndefined();
     });
+  });
+
+  it("'Start over' on real uploaded data requires confirming a destructive dialog first", async () => {
+    const rows = (await loadSampleRows()).slice(0, 5);
+    await saveWorkoutRows(rows);
+
+    renderApp();
+    const startOver = await screen.findByRole("button", { name: /start over/i });
+    fireEvent.click(startOver);
+
+    await screen.findByText(/this can't be undone/i);
+    expect(await loadWorkoutRows()).toEqual(rows);
+
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/this can't be undone/i)).not.toBeInTheDocument();
+    });
+    expect(await loadWorkoutRows()).toEqual(rows);
+  });
+
+  it("'Start over' on sample data resets immediately, with no confirmation dialog", async () => {
+    const csvText = loadSampleCsvText();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({ ok: true, text: async () => csvText }))
+    );
+
+    try {
+      renderApp();
+      const sampleButton = await screen.findByRole("button", { name: /sample data/i });
+      fireEvent.click(sampleButton);
+      await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+
+      const startOver = screen.getByRole("button", { name: /start over/i });
+      fireEvent.click(startOver);
+
+      expect(screen.queryByText(/this can't be undone/i)).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /sample data/i })).toBeInTheDocument();
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("'Update workout data' replaces the workout log without touching persisted preferences", async () => {
+    const rows = (await loadSampleRows()).slice(0, 5);
+    await saveWorkoutRows(rows);
+
+    const { container } = renderApp();
+    await screen.findByRole("button", { name: /update workout data/i });
+    const input = container.querySelector('input[type="file"]');
+    if (!input) throw new Error("expected the update-data control to render a file input");
+
+    const file = new File([loadSampleCsvText()], "export.csv", { type: "text/csv" });
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await screen.findByText(/[\d,]+ workouts logged · [\d,]+ personal records/i, undefined, {
+      timeout: 3000,
+    });
+    await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+
+    const stored = await loadWorkoutRows();
+    expect(stored?.length).toBeGreaterThan(rows.length);
   });
 
   it("restores the selected granularity and date-range preset on a fresh mount", async () => {
