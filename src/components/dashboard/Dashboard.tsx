@@ -189,7 +189,10 @@ export function Dashboard({
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={onReset} className={buttonVariants({ variant: "destructive" })}>
+                    <AlertDialogAction
+                      onClick={onReset}
+                      className={buttonVariants({ variant: "destructive", size: "sm" })}
+                    >
                       Reset
                     </AlertDialogAction>
                   </AlertDialogFooter>

@@ -161,6 +161,11 @@ describe("App — local persistence", () => {
     try {
       renderApp();
       const sampleButton = await screen.findByRole("button", { name: /sample data/i });
+      // The button is disabled while App's own mount-restore effect is still
+      // resolving (loading={state.status === "loading"}) — wait for it to be
+      // enabled, not just present, or a click here silently no-ops on the
+      // still-disabled native button.
+      await waitFor(() => expect(sampleButton).toBeEnabled());
       fireEvent.click(sampleButton);
       await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
 
