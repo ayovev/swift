@@ -14,9 +14,11 @@ import type { SyncTransport } from "./syncTransport";
  */
 export interface PeerConnection {
   /**
-   * Resolves once this side's SDP is ready to encode as a QR code — after
-   * ICE gathering completes, since there is no channel to trickle
-   * candidates over before the QR is shown.
+   * Resolves once this side's SDP is ready to encode as a QR code — once ICE
+   * gathering completes, or (see webrtcTransport.ts's header comment) once a
+   * candidate is already in hand and it's not worth waiting on the rest —
+   * since there is no channel to trickle candidates over before the QR is
+   * shown.
    */
   localDescriptionReady: Promise<RTCSessionDescriptionInit>;
   /** Applies the other side's scanned SDP (host: an answer; joiner: an offer). */

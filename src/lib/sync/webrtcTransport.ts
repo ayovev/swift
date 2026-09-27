@@ -7,21 +7,39 @@
  * Trickle ICE is deliberately not used: there is no side channel to trickle
  * candidates over before the offer/answer is shown as a QR code, so each
  * side waits for `iceGatheringState === "complete"` — or, failing that, for
- * `ICE_GATHERING_TIMEOUT_MS` to elapse with at least one candidate already
- * gathered — before its `localDescriptionReady` resolves.
+ * a candidate to already be in hand once `ICE_GATHERING_FAST_PATH_MS`
+ * elapses, or, failing even that, for a candidate to show up by
+ * `ICE_GATHERING_TIMEOUT_MS` — before its `localDescriptionReady` resolves.
  *
- * That timeout fallback matters because gathering can stall on a device that
- * never touches the joiner at all: a VPN client, Docker, or Hyper-V/WSL adds
- * a virtual network adapter, and if a firewall or the VPN itself blocks
- * outbound UDP to the STUN server, `iceGatheringState` simply never reaches
- * `"complete"` — this is the local device failing to finish talking to
- * itself, before any pairing has even begun. Host candidates (this device's
- * own local addresses) are gathered almost immediately and cost nothing to
- * wait for, so once the timeout elapses, proceeding with whatever's already
- * gathered only gives up the STUN-discovered address — which the QR-pairing
- * flow's own documented fallback ("get on the same Wi-Fi") never needed
- * anyway. `IceGatheringTimeoutError` is now reserved for the genuine
- * failure: gathering produced nothing at all within the timeout.
+ * That two-tier fallback exists because "complete" and "stalled forever" are
+ * not the only two outcomes — a device with several virtual network
+ * adapters (a VPN client, Docker, Hyper-V/WSL) can take a genuinely long
+ * time to reach `"complete"` even though it isn't stuck: the browser still
+ * has to individually time out a STUN request on every dead adapter before
+ * it calls gathering done, and each of those internal timeouts is a real
+ * multi-second wait for nothing useful. Host candidates (this device's own
+ * local addresses) don't need any of that — they're pure local interface
+ * enumeration, no network round trip, so they're all gathered almost
+ * immediately regardless of how many adapters exist. `ICE_GATHERING_FAST_PATH_MS`
+ * (measured generously above that "almost immediate" figure, but well below
+ * a multi-adapter machine's typical full-completion time) lets the app
+ * proceed as soon as it has *something* to offer, rather than sitting
+ * through STUN timeouts on interfaces the joiner will never touch anyway —
+ * this is exactly the fast case on a phone (one real interface, "complete"
+ * fires almost immediately, so this fast path never even engages) versus the
+ * slow case on a laptop (several dead interfaces, "complete" is what's slow,
+ * not candidate-gathering itself). `ICE_GATHERING_TIMEOUT_MS` remains the
+ * true last resort for the case the fast path can't help with — gathering
+ * genuinely produced nothing at all — and is unchanged from before: this
+ * change can only make `localDescriptionReady` resolve *sooner* than it did,
+ * never later, so it doesn't reduce patience for a slow-but-eventually-fine
+ * connection.
+ *
+ * `ICE_GATHERING_FAST_PATH_MS`'s value is a reasoned estimate, not something
+ * measured on real hardware — this file's own next paragraph explains why it
+ * can't be unit-tested, so validate it (ideally on a laptop with an active
+ * VPN or Docker running, to reproduce the slow case directly) before relying
+ * on it.
  *
  * A public STUN server is used for NAT traversal — it sees only each
  * device's public IP address during connection setup, never the workout
@@ -42,6 +60,8 @@ import type { SyncTransport } from "./syncTransport";
 
 const ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 const ICE_GATHERING_TIMEOUT_MS = 10_000;
+// See this file's header comment for what this trades off and why 1.5s.
+const ICE_GATHERING_FAST_PATH_MS = 1_500;
 const DATA_CHANNEL_LABEL = "swift-sync";
 
 function assertSupported(): void {
@@ -60,8 +80,8 @@ function waitForIceGatheringComplete(pc: RTCPeerConnection): Promise<void> {
     return Promise.resolve();
   }
   return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(() => {
-      pc.removeEventListener("icegatheringstatechange", onChange);
+    const hardTimer = window.setTimeout(() => {
+      cleanup();
       if (hasGatheredCandidate(pc)) {
         resolve();
       } else {
@@ -69,10 +89,26 @@ function waitForIceGatheringComplete(pc: RTCPeerConnection): Promise<void> {
       }
     }, ICE_GATHERING_TIMEOUT_MS);
 
+    // Fires once, well before the hard timeout — only resolves early if a
+    // candidate is already in hand; otherwise it's a no-op and hardTimer
+    // stays the last resort, so this can only ever resolve sooner, never
+    // fail sooner.
+    const fastTimer = window.setTimeout(() => {
+      if (hasGatheredCandidate(pc)) {
+        cleanup();
+        resolve();
+      }
+    }, ICE_GATHERING_FAST_PATH_MS);
+
+    function cleanup() {
+      window.clearTimeout(hardTimer);
+      window.clearTimeout(fastTimer);
+      pc.removeEventListener("icegatheringstatechange", onChange);
+    }
+
     function onChange() {
       if (pc.iceGatheringState === "complete") {
-        window.clearTimeout(timer);
-        pc.removeEventListener("icegatheringstatechange", onChange);
+        cleanup();
         resolve();
       }
     }
