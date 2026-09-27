@@ -3,7 +3,11 @@ import type { SyncSessionState } from "@/lib/sync/syncSession";
 import { QrDisplay } from "./QrDisplay";
 import { QrScanner } from "./QrScanner";
 
-const DATASET_LABEL: Record<string, string> = { workout: "workout log", bodyComp: "body composition history" };
+const DATASET_LABEL: Record<string, string> = {
+  workout: "workout log",
+  bodyComp: "body composition history",
+  experiments: "list of experiments",
+};
 
 interface JoinerScanViewProps {
   state: SyncSessionState;

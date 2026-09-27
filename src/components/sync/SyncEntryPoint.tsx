@@ -3,6 +3,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import type { VariantProps } from "class-variance-authority";
 import type { SyncRole } from "@/lib/posthog";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
+import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { SyncDialog } from "./SyncDialog";
@@ -13,8 +14,10 @@ interface SyncEntryPointProps extends VariantProps<typeof buttonVariants> {
   outgoing?: OutgoingDataset[];
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
+  existingExperimentsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
+  onSyncedExperiments: (experiments: Experiment[]) => void;
   disabled?: boolean;
   className?: string;
   children: ReactNode;
@@ -30,8 +33,10 @@ export function SyncEntryPoint({
   outgoing,
   existingWorkoutCount,
   existingBodyCompCount,
+  existingExperimentsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
+  onSyncedExperiments,
   disabled,
   variant = "outline",
   size = "sm",
@@ -52,8 +57,10 @@ export function SyncEntryPoint({
         {...(outgoing ? { outgoing } : {})}
         existingWorkoutCount={existingWorkoutCount}
         existingBodyCompCount={existingBodyCompCount}
+        existingExperimentsCount={existingExperimentsCount}
         onSyncedWorkoutData={onSyncedWorkoutData}
         onSyncedBodyCompData={onSyncedBodyCompData}
+        onSyncedExperiments={onSyncedExperiments}
       />
     </>
   );

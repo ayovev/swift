@@ -55,7 +55,10 @@ export function QrScanner({ onDecode, onError, className }: QrScannerProps) {
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const frame = context.getImageData(0, 0, canvas.width, canvas.height);
-        const result = jsQR(frame.data, frame.width, frame.height);
+        // QrDisplay always renders dark modules on a light background, never
+        // inverted, so the default "attemptBoth" would waste a whole second
+        // decode pass on every single frame for a case that never occurs.
+        const result = jsQR(frame.data, frame.width, frame.height, { inversionAttempts: "dontInvert" });
         if (result?.data) {
           onDecodeRef.current(result.data);
           return;
@@ -66,7 +69,16 @@ export function QrScanner({ onDecode, onError, className }: QrScannerProps) {
 
     async function start() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        // A QR code is a big, high-contrast target read at arm's length, not
+        // something that needs a full-resolution stream — capping it keeps
+        // every tick's drawImage/getImageData/jsQR pass cheap (a phone's
+        // default camera stream can otherwise be well past 1080p) without
+        // costing any real decode reliability. "ideal", not "exact": browsers
+        // that can't hit it fall back to their closest supported resolution
+        // rather than failing to open the camera at all.
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } },
+        });
       } catch {
         if (!cancelled) {
           setErrorMessage(CAMERA_DENIED_MESSAGE);

@@ -10,6 +10,7 @@ import { UploadDropzone } from "./UploadDropzone";
 import { UploadReveal } from "./UploadReveal";
 import { WhiteboardTexture } from "./WhiteboardTexture";
 import { SwiftMark } from "@/components/SwiftMark";
+import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 
@@ -27,6 +28,7 @@ interface LandingProps {
   onDismissError: () => void;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
+  onSyncedExperiments: (experiments: Experiment[]) => void;
 }
 
 export function Landing({
@@ -38,6 +40,7 @@ export function Landing({
   onDismissError,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
+  onSyncedExperiments,
 }: LandingProps) {
   const busy = loading || reveal !== null;
 
@@ -106,8 +109,10 @@ export function Landing({
               role="joiner"
               existingWorkoutCount={null}
               existingBodyCompCount={null}
+              existingExperimentsCount={null}
               onSyncedWorkoutData={onSyncedWorkoutData}
               onSyncedBodyCompData={onSyncedBodyCompData}
+              onSyncedExperiments={onSyncedExperiments}
               disabled={busy}
               variant="ghost"
               className="gap-2"

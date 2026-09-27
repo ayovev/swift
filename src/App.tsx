@@ -301,6 +301,18 @@ export default function App() {
     [run]
   );
 
+  // Sync's third dataset, alongside handleSyncedWorkoutData/
+  // handleSyncedBodyCompData above: SyncDialog's own conflict-confirmation
+  // prompt (mirroring the other two) is what gates this call, so this is an
+  // unconditional writer exactly like they are.
+  const handleSyncedExperiments = useCallback(
+    (incoming: Experiment[]) => {
+      setExperiments(incoming);
+      if (state.status === "ready" && state.source === "upload") void saveExperiments(incoming);
+    },
+    [state]
+  );
+
   // A wholly separate upload, independent of the SugarWOD flow above: its own
   // state, its own parser, never joined to `state.rows`. See BodyCompTab.
   const handleBodyCompFile = useCallback((file: File) => {
@@ -414,6 +426,7 @@ export default function App() {
         onBodyCompFile={handleBodyCompFile}
         onSyncedWorkoutData={handleSyncedWorkoutData}
         onSyncedBodyCompData={handleSyncedBodyCompData}
+        onSyncedExperiments={handleSyncedExperiments}
         plateauInsights={plateauInsights}
         alignment={alignment}
         experiments={experiments}
@@ -434,6 +447,7 @@ export default function App() {
       onDismissError={reset}
       onSyncedWorkoutData={handleSyncedWorkoutData}
       onSyncedBodyCompData={handleSyncedBodyCompData}
+      onSyncedExperiments={handleSyncedExperiments}
     />
   );
 }

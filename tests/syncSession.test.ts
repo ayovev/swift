@@ -43,7 +43,7 @@ describe("SyncSession", () => {
     expect(received).toEqual([{ dataset: "workout", json: workoutJson }]);
   });
 
-  it("transfers workout then body comp, in order, when the host offers both", async () => {
+  it("transfers workout, body comp, and experiments, in order, when the host offers all three", async () => {
     const { hostFactory, joinerFactory } = createFakeConnectionFactoryPair();
     const received: Array<{ dataset: string; json: string }> = [];
 
@@ -54,9 +54,11 @@ describe("SyncSession", () => {
 
     const workoutJson = JSON.stringify([{ id: 1 }]);
     const bodyCompJson = JSON.stringify([{ scanDate: "2024-01-01" }]);
+    const experimentsJson = JSON.stringify([{ id: "1", date: "2024-01-01", label: "Started 5/3/1" }]);
     await host.startHost([
       { dataset: "workout", json: workoutJson },
       { dataset: "bodyComp", json: bodyCompJson },
+      { dataset: "experiments", json: experimentsJson },
     ]);
 
     const offerState = host.getState();
@@ -75,6 +77,7 @@ describe("SyncSession", () => {
     expect(received).toEqual([
       { dataset: "workout", json: workoutJson },
       { dataset: "bodyComp", json: bodyCompJson },
+      { dataset: "experiments", json: experimentsJson },
     ]);
   });
 
