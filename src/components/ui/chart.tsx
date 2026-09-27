@@ -8,6 +8,19 @@ import type { TooltipValueType } from "recharts"
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
 
+/**
+ * A ChartConfig key becomes a CSS custom-property name (below, and wherever
+ * a chart reads one back via `var(...)` — see StackedShareChart.tsx). Some
+ * keys are domain names like "Cardiovascular/Respiratory Endurance", which
+ * contain characters a CSS identifier can't hold unescaped; CSS.escape()
+ * is the standard way to turn an arbitrary string into a valid one. Both
+ * the generator and every reader must escape the same way, or they silently
+ * stop agreeing on the property's name.
+ */
+export function chartColorVar(key: string): string {
+  return `--color-${CSS.escape(key)}`
+}
+
 const INITIAL_DIMENSION = { width: 320, height: 200 } as const
 type TooltipNameType = number | string
 
@@ -101,7 +114,7 @@ ${colorConfig
     const color =
       itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ??
       itemConfig.color
-    return color ? `  --color-${key}: ${color};` : null
+    return color ? `  ${chartColorVar(key)}: ${color};` : null
   })
   .join("\n")}
 }

@@ -6,6 +6,7 @@ import {
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
+  chartColorVar,
   type ChartConfig,
 } from "@/components/ui/chart";
 import { AXIS_PROPS, PCT_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
@@ -89,7 +90,7 @@ export function StackedShareChart({
               key={key}
               dataKey={key}
               stackId="share"
-              fill={`var(--color-${key})`}
+              fill={`var(${chartColorVar(key)})`}
               fillOpacity={dimmed(key) ? DIMMED_OPACITY : 1}
               style={DIM_TRANSITION}
               {...(key === lastKey ? { radius: [3, 3, 0, 0] as [number, number, number, number] } : {})}
@@ -100,8 +101,8 @@ export function StackedShareChart({
               dataKey={key}
               type="monotone"
               stackId="share"
-              stroke={`var(--color-${key})`}
-              fill={`var(--color-${key})`}
+              stroke={`var(${chartColorVar(key)})`}
+              fill={`var(${chartColorVar(key)})`}
               fillOpacity={dimmed(key) ? DIMMED_OPACITY : 0.85}
               style={DIM_TRANSITION}
               strokeWidth={0}
