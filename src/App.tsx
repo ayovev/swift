@@ -21,6 +21,7 @@ import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
 import type { Experiment, ExperimentInsight } from "@/types/experiment";
+import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 
 export type DataSource = "upload" | "sample";
@@ -200,6 +201,46 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [state]);
 
+  // The shared tail of a successful load, regardless of where the rows came
+  // from (a parsed CSV upload, the sample generator, or a synced dataset
+  // from another device — see handleSyncedWorkoutData below). Kept separate
+  // from run()'s try/catch around parsing so a sync entry point can reuse
+  // it without ever calling parseSugarWodCsv on data that's already parsed.
+  const finishSuccessfulLoad = useCallback((source: DataSource, rows: SugarWodRow[]) => {
+    setRange(null);
+    setRangePreset("all_time");
+    setGranularity("monthly");
+    // Sample data is a public demo file, already free to re-fetch from
+    // public/sample/ — only a genuine upload is worth persisting. A new
+    // upload's fresh defaults are worth persisting too, so a reload
+    // right after doesn't restore a previous file's leftover view prefs.
+    if (source === "upload") {
+      void saveWorkoutRows(rows);
+      void saveViewPreferences({ granularity: "monthly", rangePreset: "all_time", customRange: null });
+    } else {
+      // Fill in the two datasets the Plateau Detector, Alignment and
+      // Experiments tabs need, so sample mode has something for them to
+      // show instead of their empty states — entirely in memory, never
+      // persisted (see the two generators' own header comments). The
+      // functional setState form means a previously-restored *real*
+      // InBody upload or real logged experiments are never clobbered:
+      // sample data only fills in what's genuinely still empty.
+      const generatedBodyComp = generateSampleBodyComp(rows);
+      const generatedExperiments = generateSampleExperiments(rows);
+      setBodyComp((prev) => (prev.status === "ready" ? prev : { status: "ready", rows: generatedBodyComp }));
+      setExperiments((prev) => (prev.length > 0 ? prev : generatedExperiments));
+    }
+    setState({
+      status: "reveal",
+      rows,
+      source,
+      summary: {
+        workoutCount: rows.length,
+        prCount: rows.filter((r) => r.pr === "PR").length,
+      },
+    });
+  }, []);
+
   const run = useCallback(
     async (
       source: DataSource,
@@ -222,39 +263,8 @@ export default function App() {
             duration_bucket: bucketDuration(performance.now() - startedAt),
           },
         });
-        setRange(null);
-        setRangePreset("all_time");
-        setGranularity("monthly");
-        // Sample data is a public demo file, already free to re-fetch from
-        // public/sample/ — only a genuine upload is worth persisting. A new
-        // upload's fresh defaults are worth persisting too, so a reload
-        // right after doesn't restore a previous file's leftover view prefs.
-        if (source === "upload") {
-          void saveWorkoutRows(rows);
-          void saveViewPreferences({ granularity: "monthly", rangePreset: "all_time", customRange: null });
-        } else {
-          // Fill in the two datasets the Plateau Detector, Alignment and
-          // Experiments tabs need, so sample mode has something for them to
-          // show instead of their empty states — entirely in memory, never
-          // persisted (see the two generators' own header comments). The
-          // functional setState form means a previously-restored *real*
-          // InBody upload or real logged experiments are never clobbered:
-          // sample data only fills in what's genuinely still empty.
-          const generatedBodyComp = generateSampleBodyComp(rows);
-          const generatedExperiments = generateSampleExperiments(rows);
-          setBodyComp((prev) => (prev.status === "ready" ? prev : { status: "ready", rows: generatedBodyComp }));
-          setExperiments((prev) => (prev.length > 0 ? prev : generatedExperiments));
-        }
         await waitOutMinimum(startedAt);
-        setState({
-          status: "reveal",
-          rows,
-          source,
-          summary: {
-            workoutCount: rows.length,
-            prCount: rows.filter((r) => r.pr === "PR").length,
-          },
-        });
+        finishSuccessfulLoad(source, rows);
       } catch (err) {
         const message =
           err instanceof CsvValidationError
@@ -270,7 +280,20 @@ export default function App() {
         setState({ status: "error", message });
       }
     },
-    []
+    [finishSuccessfulLoad]
+  );
+
+  // Cross-device sync (see src/lib/sync/) hands over already-parsed rows —
+  // read from the host's own IndexedDB, not a raw CSV — so this reuses
+  // run()'s shared tail directly rather than routing through
+  // parseSugarWodCsv. Synced data is always a genuine upload: SyncDialog
+  // gates the call behind its own conflict-confirmation prompt, so by the
+  // time this runs, it's an unconditional writer exactly like handleFile.
+  const handleSyncedWorkoutData = useCallback(
+    (rows: SugarWodRow[]) => {
+      finishSuccessfulLoad("upload", rows);
+    },
+    [finishSuccessfulLoad]
   );
 
   const handleFile = useCallback(
@@ -305,6 +328,17 @@ export default function App() {
       }
     })();
   }, [state]);
+
+  // Sync's counterpart to handleSyncedWorkoutData above: already-parsed rows
+  // from the host's device, applied unconditionally (SyncDialog's own
+  // conflict prompt is what gates the call). Unlike handleBodyCompFile,
+  // this always persists — synced data is, by construction, never sample
+  // data, so the source==="upload" gate that protects sample mode from
+  // leaving IndexedDB residue doesn't apply here.
+  const handleSyncedBodyCompData = useCallback((rows: InBodyRow[]) => {
+    setBodyComp({ status: "ready", rows });
+    void saveBodyCompRows(rows);
+  }, []);
 
   // User-authored state, not derived from an upload — its own IndexedDB key
   // (see experimentsStorage.ts), persisted in full on every change, except
@@ -374,9 +408,12 @@ export default function App() {
         granularity={granularity}
         onGranularityChange={persistGranularity}
         onReset={reset}
+        workoutRows={state.rows}
         onWorkoutFile={handleFile}
         bodyComp={bodyComp}
         onBodyCompFile={handleBodyCompFile}
+        onSyncedWorkoutData={handleSyncedWorkoutData}
+        onSyncedBodyCompData={handleSyncedBodyCompData}
         plateauInsights={plateauInsights}
         alignment={alignment}
         experiments={experiments}
@@ -395,6 +432,8 @@ export default function App() {
       onFile={handleFile}
       onSample={handleSample}
       onDismissError={reset}
+      onSyncedWorkoutData={handleSyncedWorkoutData}
+      onSyncedBodyCompData={handleSyncedBodyCompData}
     />
   );
 }

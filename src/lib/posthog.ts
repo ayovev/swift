@@ -1,5 +1,6 @@
 import posthog from "posthog-js";
 import type { CsvErrorCategory } from "./csv/parseCsv";
+import type { SyncFailureReason } from "./sync/syncSession";
 
 /**
  * Anonymous product analytics.
@@ -27,12 +28,18 @@ export function bucketRowCount(rows: number): SizeBucket {
   return "over_1500";
 }
 
+/** Which side of a sync pairing this device was — never anything more identifying. */
+export type SyncRole = "host" | "joiner";
+
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }
   | { name: "upload_attempted"; props?: undefined }
   | { name: "upload_succeeded"; props: { rows: SizeBucket; duration_bucket: string } }
   | { name: "upload_failed"; props: { reason: CsvErrorCategory } }
   | { name: "sample_data_used"; props?: undefined }
+  | { name: "sync_attempted"; props: { role: SyncRole } }
+  | { name: "sync_succeeded"; props: { role: SyncRole; rows: SizeBucket } }
+  | { name: "sync_failed"; props: { role: SyncRole; reason: SyncFailureReason } }
   | { name: "tab_viewed"; props: { tab: string; source: DataSource } }
   | { name: "theme_changed"; props: { mode?: string; accent?: string } }
   | {

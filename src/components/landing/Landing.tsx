@@ -1,14 +1,17 @@
 import { useEffect } from "react";
-import { AlertCircle, Lock, PlayCircle } from "lucide-react";
+import { AlertCircle, Lock, PlayCircle, Smartphone } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ThemeControls } from "@/components/theme/ThemeControls";
+import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
 import { ExportGuide } from "./ExportGuide";
 import { HowItWorks } from "./HowItWorks";
 import { UploadDropzone } from "./UploadDropzone";
 import { UploadReveal } from "./UploadReveal";
 import { WhiteboardTexture } from "./WhiteboardTexture";
 import { SwiftMark } from "@/components/SwiftMark";
+import type { InBodyRow } from "@/types/inbody";
+import type { SugarWodRow } from "@/types/sugarwod";
 
 interface RevealSummary {
   workoutCount: number;
@@ -22,9 +25,20 @@ interface LandingProps {
   onFile: (file: File) => void;
   onSample: () => void;
   onDismissError: () => void;
+  onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
+  onSyncedBodyCompData: (rows: InBodyRow[]) => void;
 }
 
-export function Landing({ loading, reveal, error, onFile, onSample, onDismissError }: LandingProps) {
+export function Landing({
+  loading,
+  reveal,
+  error,
+  onFile,
+  onSample,
+  onDismissError,
+  onSyncedWorkoutData,
+  onSyncedBodyCompData,
+}: LandingProps) {
   const busy = loading || reveal !== null;
 
   // A copied file works anywhere on the page, not just when the dropzone is
@@ -88,6 +102,19 @@ export function Landing({ loading, reveal, error, onFile, onSample, onDismissErr
               <PlayCircle className="size-4" aria-hidden="true" />
               Or try it with sample data
             </Button>
+            <SyncEntryPoint
+              role="joiner"
+              existingWorkoutCount={null}
+              existingBodyCompCount={null}
+              onSyncedWorkoutData={onSyncedWorkoutData}
+              onSyncedBodyCompData={onSyncedBodyCompData}
+              disabled={busy}
+              variant="ghost"
+              className="gap-2"
+            >
+              <Smartphone className="size-4" aria-hidden="true" />
+              Sync from another device
+            </SyncEntryPoint>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Lock className="size-3" aria-hidden="true" />
               Your file never leaves this browser. There's no account and no server.
