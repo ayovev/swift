@@ -7,12 +7,12 @@ interface QrDisplayProps {
   className?: string;
 }
 
-// "L" (the lowest error-correction level) buys the smallest possible module
-// count for a given payload. That trade only makes sense because this code
-// is read live off a screen, never printed or exposed to physical damage —
-// the usual reason to want higher error correction doesn't apply here, and
-// fewer modules is exactly what a camera needs to resolve it reliably.
-const ERROR_CORRECTION_LEVEL = "L";
+// "M" trades a somewhat larger module count for headroom to paint the Swift
+// icon over the center of the code (see below) without risking a scan
+// failure — "L" (the lowest level) was the right call when the code was
+// plain, since this is read live off a screen and never printed, but it has
+// no redundancy to spare once something is drawn on top of it.
+const ERROR_CORRECTION_LEVEL = "M";
 const MARGIN_MODULES = 2;
 // Module size in physical pixels: aim for TARGET, but shrink toward MIN
 // rather than let the canvas outgrow the dialog when the payload is dense
@@ -21,6 +21,41 @@ const MARGIN_MODULES = 2;
 const TARGET_MODULE_PX = 6;
 const MIN_MODULE_PX = 3;
 const MAX_CANVAS_PX = 320;
+
+const LOGO_SRC = "/icon-192.png";
+// Small enough that its occlusion — plus the white pad around it — stays
+// comfortably under what "M"-level error correction can recover, even
+// though modules aren't corrupted perfectly uniformly.
+const LOGO_SIZE_RATIO = 0.22; // fraction of the canvas's pixel width
+const LOGO_PAD_RATIO = 1.15; // white backing square, relative to the logo
+
+/**
+ * Paints the Swift icon over the center of an already-rendered QR code, on a
+ * small white pad for contrast against the surrounding dark modules. Silent
+ * on failure (a slow/blocked image load, or a missing 2d context) — the
+ * pairing code underneath is already fully valid and scannable without the
+ * badge, so this is purely cosmetic and never worth surfacing as an error.
+ * `isCancelled` guards against the image finishing its load after the
+ * effect that requested it has already re-run for a new `value` or unmounted
+ * — without it, a slow-loading badge could land on a canvas that's since
+ * moved on to a different pairing code.
+ */
+function drawCenterLogo(canvas: HTMLCanvasElement, isCancelled: () => boolean) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const logo = new Image();
+  logo.onload = () => {
+    if (isCancelled()) return;
+    const logoSize = canvas.width * LOGO_SIZE_RATIO;
+    const padSize = logoSize * LOGO_PAD_RATIO;
+    const center = canvas.width / 2;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(center - padSize / 2, center - padSize / 2, padSize, padSize);
+    ctx.drawImage(logo, center - logoSize / 2, center - logoSize / 2, logoSize, logoSize);
+  };
+  logo.src = LOGO_SRC;
+}
 
 /**
  * Renders `value` as a QR code. The only file that imports the `qrcode`
@@ -35,6 +70,7 @@ export function QrDisplay({ value, className }: QrDisplayProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     setError(false);
+    let cancelled = false;
 
     let scale: number;
     try {
@@ -50,9 +86,15 @@ export function QrDisplay({ value, className }: QrDisplayProps) {
       return;
     }
 
-    QRCode.toCanvas(canvas, value, { errorCorrectionLevel: ERROR_CORRECTION_LEVEL, margin: MARGIN_MODULES, scale }).catch(() => {
-      setError(true);
-    });
+    QRCode.toCanvas(canvas, value, { errorCorrectionLevel: ERROR_CORRECTION_LEVEL, margin: MARGIN_MODULES, scale })
+      .then(() => drawCenterLogo(canvas, () => cancelled))
+      .catch(() => {
+        setError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [value]);
 
   if (error) {
