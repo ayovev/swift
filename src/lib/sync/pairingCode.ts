@@ -9,20 +9,39 @@
  * loudly — a stale QR scanned by a newer build, or vice versa — instead of
  * silently misparsing.
  *
- * QR codes have a practical size ceiling: past a few KB, a code stops
- * scanning reliably at arm's length. A full ICE candidate list (every host
- * and server-reflexive/relay candidate a browser gathers) can push an SDP
- * well past that, so once the encoded payload exceeds `MAX_QR_PAYLOAD_BYTES`
- * it's re-encoded with `trimCandidates`, which keeps every "host" candidate
- * (same device/network — cheapest to connect over) plus the first "srflx"
+ * QR codes have a practical size ceiling: past roughly a kilobyte, the
+ * symbol needs enough modules that a phone or laptop camera stops resolving
+ * it reliably at arm's length — a real complaint, not a theoretical one
+ * (a laptop with a few virtual adapters from a VPN client, Docker, or
+ * Hyper-V/WSL gathers a host candidate per interface, and `MAX_QR_PAYLOAD_BYTES`
+ * used to be generous enough to let all of them through, producing a QR that
+ * was correct but unscannable). A full ICE candidate list (every host and
+ * server-reflexive/relay candidate a browser gathers) can push an SDP well
+ * past the ceiling, so once the encoded payload exceeds
+ * `MAX_QR_PAYLOAD_BYTES` it's re-encoded with `trimCandidates`, which keeps
+ * only the `MAX_HOST_CANDIDATES` most useful "host" candidates (same
+ * device/network — cheapest to connect over) plus the first "srflx"
  * (STUN-discovered public address) candidate, and drops the rest — including
  * any "relay" (TURN) candidates, which this feature never uses (see
- * webrtcTransport.ts: no TURN fallback is offered, on purpose).
+ * webrtcTransport.ts: no TURN fallback is offered, on purpose). Only one
+ * candidate ever needs to succeed, so keeping every host candidate a
+ * multi-adapter laptop happens to gather bought nothing but QR density —
+ * `candidatePriority()` ranks a private IPv4 address (an actual LAN address,
+ * the case this feature is built for) above an mDNS-obfuscated `.local`
+ * hostname (which needs local mDNS resolution to work at all) above anything
+ * else, and the cap keeps the top-ranked ones.
  */
 
 export const PAIRING_PAYLOAD_VERSION = 1;
 
-export const MAX_QR_PAYLOAD_BYTES = 2000;
+export const MAX_QR_PAYLOAD_BYTES = 1100;
+
+/**
+ * How many "host" candidates survive trimming. Two gives a fallback if the
+ * top-ranked one turns out to be on the wrong interface, without letting a
+ * laptop with many virtual adapters drag the payload back up.
+ */
+export const MAX_HOST_CANDIDATES = 2;
 
 export class PairingCodeError extends Error {
   constructor(message: string) {
@@ -90,15 +109,19 @@ export function decodePairingPayload(text: string): RTCSessionDescriptionInit {
 }
 
 function trimCandidates(sdp: string): string {
+  const lines = sdp.split("\r\n");
+
+  const hostLines = lines.filter((line) => line.startsWith("a=candidate:") && line.includes(" typ host "));
+  const keptHostLines = new Set(rankByPriority(hostLines).slice(0, MAX_HOST_CANDIDATES));
+
   let keptReflexive = false;
-  return sdp
-    .split("\r\n")
+  return lines
     .filter((line) => {
       if (!line.startsWith("a=candidate:")) {
         return true;
       }
       if (line.includes(" typ host ")) {
-        return true;
+        return keptHostLines.has(line);
       }
       if (line.includes(" typ srflx ") && !keptReflexive) {
         keptReflexive = true;
@@ -107,6 +130,26 @@ function trimCandidates(sdp: string): string {
       return false;
     })
     .join("\r\n");
+}
+
+/** Highest first: a private IPv4 LAN address, then an mDNS-obfuscated `.local` host, then anything else. */
+function candidatePriority(candidateLine: string): number {
+  const address = candidateLine.split(" ")[4] ?? "";
+  if (isPrivateIPv4(address)) return 0;
+  if (address.endsWith(".local")) return 1;
+  return 2;
+}
+
+function isPrivateIPv4(address: string): boolean {
+  return /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)\d+\.\d+$/.test(address);
+}
+
+/** Stable sort by `candidatePriority`, keeping original order within a tier. */
+function rankByPriority(candidateLines: string[]): string[] {
+  return candidateLines
+    .map((line, index) => ({ line, index }))
+    .sort((a, b) => candidatePriority(a.line) - candidatePriority(b.line) || a.index - b.index)
+    .map((entry) => entry.line);
 }
 
 function toBase64(text: string): string {
