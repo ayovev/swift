@@ -5,6 +5,7 @@ import {
   PairingCodeError,
   decodePairingPayload,
   encodePairingPayload,
+  toBase45,
 } from "@/lib/sync/pairingCode";
 
 function candidateLine(typ: string, index: number, address = `192.0.2.${index % 250}`): string {
@@ -33,8 +34,8 @@ describe("encodePairingPayload / decodePairingPayload", () => {
     const srflxLines = Array.from({ length: 6 }, (_, i) => candidateLine("srflx", 10 + i));
     const relayLines = Array.from({ length: 20 }, (_, i) => candidateLine("relay", 100 + i));
     const sdp = [...SDP_PREAMBLE, ...hostLines, ...srflxLines, ...relayLines].join("\r\n");
-    const rawEncoded = Buffer.from(JSON.stringify({ v: 1, type: "offer", sdp })).length;
-    expect(rawEncoded).toBeGreaterThan(MAX_QR_PAYLOAD_BYTES);
+    const untrimmedEncoded = toBase45(JSON.stringify({ v: 2, type: "offer", sdp }));
+    expect(untrimmedEncoded.length).toBeGreaterThan(MAX_QR_PAYLOAD_BYTES);
 
     const encoded = encodePairingPayload({ type: "offer", sdp });
     const decoded = decodePairingPayload(encoded);
@@ -62,8 +63,8 @@ describe("encodePairingPayload / decodePairingPayload", () => {
       mdnsHostLine,
       ...srflxLines,
     ].join("\r\n");
-    const rawEncoded = Buffer.from(JSON.stringify({ v: 1, type: "offer", sdp })).length;
-    expect(rawEncoded).toBeGreaterThan(MAX_QR_PAYLOAD_BYTES);
+    const untrimmedEncoded = toBase45(JSON.stringify({ v: 2, type: "offer", sdp }));
+    expect(untrimmedEncoded.length).toBeGreaterThan(MAX_QR_PAYLOAD_BYTES);
 
     const decoded = decodePairingPayload(encodePairingPayload({ type: "offer", sdp }));
     const keptHostLines = (decoded.sdp ?? "")
@@ -79,27 +80,27 @@ describe("encodePairingPayload / decodePairingPayload", () => {
     expect(decoded.sdp).toContain(srflxLines[0]);
   });
 
-  it("throws PairingCodeError for text that isn't base64", () => {
-    expect(() => decodePairingPayload("not-base64!!!")).toThrow(PairingCodeError);
+  it("throws PairingCodeError for text that isn't Base45", () => {
+    expect(() => decodePairingPayload("not-base45!!!")).toThrow(PairingCodeError);
   });
 
-  it("throws PairingCodeError for base64 that isn't JSON", () => {
-    const encoded = btoa("this is not json");
+  it("throws PairingCodeError for Base45 that isn't JSON", () => {
+    const encoded = toBase45("this is not json");
     expect(() => decodePairingPayload(encoded)).toThrow(PairingCodeError);
   });
 
   it("throws PairingCodeError for a payload from a different version", () => {
-    const encoded = btoa(JSON.stringify({ v: 999, type: "offer", sdp: "v=0" }));
+    const encoded = toBase45(JSON.stringify({ v: 999, type: "offer", sdp: "v=0" }));
     expect(() => decodePairingPayload(encoded)).toThrow(PairingCodeError);
   });
 
   it("throws PairingCodeError for a payload with an invalid type", () => {
-    const encoded = btoa(JSON.stringify({ v: 1, type: "rollback", sdp: "v=0" }));
+    const encoded = toBase45(JSON.stringify({ v: 2, type: "rollback", sdp: "v=0" }));
     expect(() => decodePairingPayload(encoded)).toThrow(PairingCodeError);
   });
 
   it("throws PairingCodeError for a payload with a missing sdp", () => {
-    const encoded = btoa(JSON.stringify({ v: 1, type: "offer" }));
+    const encoded = toBase45(JSON.stringify({ v: 2, type: "offer" }));
     expect(() => decodePairingPayload(encoded)).toThrow(PairingCodeError);
   });
 
