@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FlaskConical, RotateCcw, Smartphone, Upload } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, FlaskConical, RotateCcw, Upload } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -199,7 +199,7 @@ export function Dashboard({
                   onSyncedBodyCompData={onSyncedBodyCompData}
                   className="h-8 gap-2"
                 >
-                  <Smartphone className="size-3.5" aria-hidden="true" />
+                  <ArrowUpFromLine className="size-3.5" aria-hidden="true" />
                   <span className="hidden sm:inline">Sync to another device</span>
                 </SyncEntryPoint>
                 <SyncEntryPoint
@@ -210,7 +210,7 @@ export function Dashboard({
                   onSyncedBodyCompData={onSyncedBodyCompData}
                   className="h-8 gap-2"
                 >
-                  <Smartphone className="size-3.5" aria-hidden="true" />
+                  <ArrowDownToLine className="size-3.5" aria-hidden="true" />
                   <span className="hidden sm:inline">Sync from another device</span>
                 </SyncEntryPoint>
               </>
