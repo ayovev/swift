@@ -67,6 +67,7 @@ interface DashboardProps {
   onBodyCompFile: (file: File) => void;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
+  onSyncedExperiments: (experiments: Experiment[]) => void;
   plateauInsights: PlateauInsight[] | null;
   alignment: AlignmentResult | null;
   experiments: Experiment[];
@@ -102,6 +103,7 @@ export function Dashboard({
   onBodyCompFile,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
+  onSyncedExperiments,
   plateauInsights,
   alignment,
   experiments,
@@ -127,8 +129,11 @@ export function Dashboard({
     if (bodyComp.status === "ready") {
       outgoing.push({ dataset: "bodyComp", json: JSON.stringify(bodyComp.rows) });
     }
+    if (experiments.length > 0) {
+      outgoing.push({ dataset: "experiments", json: JSON.stringify(experiments) });
+    }
     return outgoing;
-  }, [workoutRows, bodyComp]);
+  }, [workoutRows, bodyComp, experiments]);
 
   // Widening the range out from under an active daily view (via the date
   // picker, not this control) would otherwise leave a chart stuck rendering
@@ -195,8 +200,10 @@ export function Dashboard({
                   outgoing={syncOutgoing}
                   existingWorkoutCount={null}
                   existingBodyCompCount={null}
+                  existingExperimentsCount={null}
                   onSyncedWorkoutData={onSyncedWorkoutData}
                   onSyncedBodyCompData={onSyncedBodyCompData}
+                  onSyncedExperiments={onSyncedExperiments}
                   className="h-8 gap-2"
                 >
                   <ArrowUpFromLine className="size-3.5" aria-hidden="true" />
@@ -206,8 +213,10 @@ export function Dashboard({
                   role="joiner"
                   existingWorkoutCount={workoutRows.length}
                   existingBodyCompCount={bodyComp.status === "ready" ? bodyComp.rows.length : null}
+                  existingExperimentsCount={experiments.length > 0 ? experiments.length : null}
                   onSyncedWorkoutData={onSyncedWorkoutData}
                   onSyncedBodyCompData={onSyncedBodyCompData}
+                  onSyncedExperiments={onSyncedExperiments}
                   className="h-8 gap-2"
                 >
                   <ArrowDownToLine className="size-3.5" aria-hidden="true" />

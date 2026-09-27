@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { bucketRowCount, capture, type SyncRole } from "@/lib/posthog";
 import type { SyncDataset } from "@/lib/sync/chunking";
 import type { OutgoingDataset, SyncFailureReason } from "@/lib/sync/syncSession";
+import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { HostQrView } from "./HostQrView";
@@ -22,6 +23,7 @@ import { useSyncSession } from "./useSyncSession";
 const DATASET_LABEL: Record<SyncDataset, string> = {
   workout: "workout log",
   bodyComp: "body composition history",
+  experiments: "list of experiments",
 };
 
 interface ConflictItem {
@@ -40,8 +42,10 @@ export interface SyncDialogProps {
   /** Joiner role only: existing local counts, so a conflicting dataset can be confirmed before overwriting. `null` means nothing local to conflict with. */
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
+  existingExperimentsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
+  onSyncedExperiments: (experiments: Experiment[]) => void;
 }
 
 function failureMessage(reason: SyncFailureReason): string {
@@ -66,9 +70,10 @@ function failureMessage(reason: SyncFailureReason): string {
  * the dialog's lifetime, renders the host or joiner half of the handshake,
  * and — once a joiner's transfer finishes — checks each received dataset
  * against what's already stored locally, confirming an overwrite per
- * dataset before ever calling onSyncedWorkoutData/onSyncedBodyCompData. See
- * CLAUDE.md's "Architecture: app state and local persistence" for why those
- * two handlers are unconditional writers: this dialog is what gates them.
+ * dataset before ever calling onSyncedWorkoutData/onSyncedBodyCompData/
+ * onSyncedExperiments. See CLAUDE.md's "Architecture: app state and local
+ * persistence" for why those handlers are unconditional writers: this
+ * dialog is what gates them.
  */
 export function SyncDialog({
   open,
@@ -77,8 +82,10 @@ export function SyncDialog({
   outgoing,
   existingWorkoutCount,
   existingBodyCompCount,
+  existingExperimentsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
+  onSyncedExperiments,
 }: SyncDialogProps) {
   const [received, setReceived] = useState<Partial<Record<SyncDataset, unknown>>>({});
   const [conflicts, setConflicts] = useState<ConflictItem[] | null>(null);
@@ -140,9 +147,13 @@ export function SyncDialog({
 
     const workoutRows = received.workout as SugarWodRow[] | undefined;
     const bodyCompRows = received.bodyComp as InBodyRow[] | undefined;
+    const experimentsRows = received.experiments as Experiment[] | undefined;
     capture({
       name: "sync_succeeded",
-      props: { role: "joiner", rows: bucketRowCount(workoutRows?.length ?? bodyCompRows?.length ?? 0) },
+      props: {
+        role: "joiner",
+        rows: bucketRowCount(workoutRows?.length ?? bodyCompRows?.length ?? experimentsRows?.length ?? 0),
+      },
     });
 
     const items: ConflictItem[] = [];
@@ -170,6 +181,18 @@ export function SyncDialog({
         onSyncedBodyCompData(bodyCompRows);
       }
     }
+    if (experimentsRows) {
+      if (existingExperimentsCount !== null) {
+        items.push({
+          dataset: "experiments",
+          existingCount: existingExperimentsCount,
+          incomingCount: experimentsRows.length,
+          apply: () => onSyncedExperiments(experimentsRows),
+        });
+      } else {
+        onSyncedExperiments(experimentsRows);
+      }
+    }
 
     if (items.length > 0) {
       setConflicts(items);
@@ -183,8 +206,10 @@ export function SyncDialog({
     received,
     existingWorkoutCount,
     existingBodyCompCount,
+    existingExperimentsCount,
     onSyncedWorkoutData,
     onSyncedBodyCompData,
+    onSyncedExperiments,
     onOpenChange,
   ]);
 

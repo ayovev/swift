@@ -48,6 +48,14 @@ describe("chunkPayload", () => {
     expect(reassembler.feed(payload.headerBytes)).toEqual({ done: true, dataset: "bodyComp", json: "" });
   });
 
+  it("round-trips an experiments payload", () => {
+    const json = JSON.stringify([{ id: "1", date: "2024-01-01", label: "Started 5/3/1" }]);
+    const payload = chunkPayload("experiments", json, 1024);
+
+    const results = feedAll(payload);
+    expect(results.at(-1)).toEqual({ done: true, dataset: "experiments", json });
+  });
+
   it("rejects a non-positive maxChunkBytes", () => {
     expect(() => chunkPayload("workout", "{}", 0)).toThrow(RangeError);
   });
