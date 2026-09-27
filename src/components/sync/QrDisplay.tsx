@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { cn } from "@/lib/utils";
 
 interface QrDisplayProps {
   /** The pairing-code text to encode (see pairingCode.ts) — never workout data. */
@@ -101,5 +102,9 @@ export function QrDisplay({ value, className }: QrDisplayProps) {
     return <p className="text-sm text-muted-foreground">Couldn't generate a QR code for this pairing code.</p>;
   }
 
-  return <canvas ref={canvasRef} className={className} role="img" aria-label="Pairing QR code" />;
+  // max-w-full/h-auto keep the canvas within its container's actual width
+  // regardless of the native pixel size the sizing math above picks — a
+  // dense payload (or, on a small phone, the dialog's own padded width) can
+  // otherwise render wider than the viewport has room for.
+  return <canvas ref={canvasRef} className={cn("max-w-full h-auto", className)} role="img" aria-label="Pairing QR code" />;
 }
