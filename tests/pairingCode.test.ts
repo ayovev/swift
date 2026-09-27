@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  MAX_HOST_CANDIDATES,
   MAX_QR_PAYLOAD_BYTES,
   PairingCodeError,
   decodePairingPayload,
   encodePairingPayload,
 } from "@/lib/sync/pairingCode";
 
-function candidateLine(typ: string, index: number): string {
-  return `a=candidate:${index} 1 udp 2122260223 192.0.2.${index % 250} ${50000 + index} typ ${typ} generation 0`;
+function candidateLine(typ: string, index: number, address = `192.0.2.${index % 250}`): string {
+  return `a=candidate:${index} 1 udp 2122260223 ${address} ${50000 + index} typ ${typ} generation 0`;
 }
 
 const SDP_PREAMBLE = ["v=0", "o=- 1 1 IN IP4 127.0.0.1", "s=-", "t=0 0"];
@@ -47,6 +48,35 @@ describe("encodePairingPayload / decodePairingPayload", () => {
     for (const line of relayLines) {
       expect(decoded.sdp).not.toContain(line);
     }
+  });
+
+  it("caps host candidates and prefers a private IPv4 address over other host candidates", () => {
+    const publicHostLines = Array.from({ length: 10 }, (_, i) => candidateLine("host", i, `198.51.100.${i}`));
+    const privateHostLine = candidateLine("host", 100, "192.168.1.42");
+    const mdnsHostLine = candidateLine("host", 101, "9f8c9c9e-1234-4a5b-8c9d-abcdef012345.local");
+    const srflxLines = Array.from({ length: 3 }, (_, i) => candidateLine("srflx", 10 + i));
+    const sdp = [
+      ...SDP_PREAMBLE,
+      ...publicHostLines,
+      privateHostLine,
+      mdnsHostLine,
+      ...srflxLines,
+    ].join("\r\n");
+    const rawEncoded = Buffer.from(JSON.stringify({ v: 1, type: "offer", sdp })).length;
+    expect(rawEncoded).toBeGreaterThan(MAX_QR_PAYLOAD_BYTES);
+
+    const decoded = decodePairingPayload(encodePairingPayload({ type: "offer", sdp }));
+    const keptHostLines = (decoded.sdp ?? "")
+      .split("\r\n")
+      .filter((line) => line.includes(" typ host "));
+
+    expect(keptHostLines).toHaveLength(MAX_HOST_CANDIDATES);
+    // The private LAN address outranks every public-looking host candidate,
+    // and the mDNS-obfuscated one outranks those too, so it fills the
+    // second slot even though it was listed last in the source SDP.
+    expect(keptHostLines[0]).toBe(privateHostLine);
+    expect(keptHostLines[1]).toBe(mdnsHostLine);
+    expect(decoded.sdp).toContain(srflxLines[0]);
   });
 
   it("throws PairingCodeError for text that isn't base64", () => {

@@ -6,12 +6,22 @@
  *
  * Trickle ICE is deliberately not used: there is no side channel to trickle
  * candidates over before the offer/answer is shown as a QR code, so each
- * side waits for `iceGatheringState === "complete"` before its
- * `localDescriptionReady` resolves. If gathering doesn't finish within
- * `ICE_GATHERING_TIMEOUT_MS`, the honest answer is "get on the same Wi-Fi" —
- * this file surfaces that as an `IceGatheringTimeoutError` rejection rather
- * than hanging indefinitely; the UI layer turns it into that plain-language
- * message.
+ * side waits for `iceGatheringState === "complete"` — or, failing that, for
+ * `ICE_GATHERING_TIMEOUT_MS` to elapse with at least one candidate already
+ * gathered — before its `localDescriptionReady` resolves.
+ *
+ * That timeout fallback matters because gathering can stall on a device that
+ * never touches the joiner at all: a VPN client, Docker, or Hyper-V/WSL adds
+ * a virtual network adapter, and if a firewall or the VPN itself blocks
+ * outbound UDP to the STUN server, `iceGatheringState` simply never reaches
+ * `"complete"` — this is the local device failing to finish talking to
+ * itself, before any pairing has even begun. Host candidates (this device's
+ * own local addresses) are gathered almost immediately and cost nothing to
+ * wait for, so once the timeout elapses, proceeding with whatever's already
+ * gathered only gives up the STUN-discovered address — which the QR-pairing
+ * flow's own documented fallback ("get on the same Wi-Fi") never needed
+ * anyway. `IceGatheringTimeoutError` is now reserved for the genuine
+ * failure: gathering produced nothing at all within the timeout.
  *
  * A public STUN server is used for NAT traversal — it sees only each
  * device's public IP address during connection setup, never the workout
@@ -40,6 +50,11 @@ function assertSupported(): void {
   }
 }
 
+/** Whether the browser has attached at least one ICE candidate to the local description yet. */
+function hasGatheredCandidate(pc: RTCPeerConnection): boolean {
+  return pc.localDescription?.sdp.includes("a=candidate:") ?? false;
+}
+
 function waitForIceGatheringComplete(pc: RTCPeerConnection): Promise<void> {
   if (pc.iceGatheringState === "complete") {
     return Promise.resolve();
@@ -47,7 +62,11 @@ function waitForIceGatheringComplete(pc: RTCPeerConnection): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = window.setTimeout(() => {
       pc.removeEventListener("icegatheringstatechange", onChange);
-      reject(new IceGatheringTimeoutError());
+      if (hasGatheredCandidate(pc)) {
+        resolve();
+      } else {
+        reject(new IceGatheringTimeoutError());
+      }
     }, ICE_GATHERING_TIMEOUT_MS);
 
     function onChange() {
