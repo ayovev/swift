@@ -164,42 +164,44 @@ export function Dashboard({
 
       <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
         <div className="mb-8 flex flex-col gap-6">
-          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
-            <div className="flex flex-col gap-2.5">
-              <div className="font-mono text-xs tracking-[0.08em] text-muted-foreground uppercase">
-                Training log <span className="text-muted-foreground/50">/</span> {sectionOf(tab)}
-                {summary.total_logged > 0 ? (
-                  <span className="hidden normal-case tracking-normal sm:inline">
-                    {"  ·  "}
-                    {formatDate(summary.date_start)} – {formatDate(summary.date_end)}
-                  </span>
-                ) : null}
-              </div>
-              <h1 className="text-3xl font-semibold tracking-tight sm:text-[40px] sm:leading-[1.1]">
-                {pageTitleOf(tab)}
-              </h1>
-              {pageSubtitleOf(tab) ? (
-                <p className="-mt-1 max-w-2xl text-sm text-muted-foreground">{pageSubtitleOf(tab)}</p>
+          <div className="flex flex-col gap-2.5">
+            <div className="font-mono text-xs tracking-[0.08em] text-muted-foreground uppercase">
+              Training log <span className="text-muted-foreground/50">/</span> {sectionOf(tab)}
+              {summary.total_logged > 0 ? (
+                <span className="hidden normal-case tracking-normal sm:inline">
+                  {"  ·  "}
+                  {formatDate(summary.date_start)} – {formatDate(summary.date_end)}
+                </span>
               ) : null}
-              {usesRange && insights.dateBounds ? (
-                <ScopeLine
-                  dateBounds={insights.dateBounds}
-                  range={range}
-                  rangePreset={rangePreset}
-                  onRangeSelect={onRangeSelect}
-                  granularity={granularity}
-                  onGranularityChange={onGranularityChange}
-                  dailyDisabled={dailyDisabled}
-                />
-              ) : (
-                // Plateaus, Alignment and Experiments are computed in App.tsx
-                // from the full, unfiltered history as of today — saying so
-                // beats showing a date control that silently does nothing here.
-                <p className="text-base text-muted-foreground">
-                  Uses your full history, as of today — the date range doesn't apply here.
-                </p>
-              )}
             </div>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-[40px] sm:leading-[1.1]">
+              {pageTitleOf(tab)}
+            </h1>
+            {pageSubtitleOf(tab) ? (
+              <p className="-mt-1 max-w-2xl text-sm text-muted-foreground">{pageSubtitleOf(tab)}</p>
+            ) : null}
+          </div>
+          {/* A ruled row of its own: what the page is (heading, definition)
+              ends above the line; how you're viewing it starts below. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border-t border-border pt-4">
+            {usesRange && insights.dateBounds ? (
+              <ScopeLine
+                dateBounds={insights.dateBounds}
+                range={range}
+                rangePreset={rangePreset}
+                onRangeSelect={onRangeSelect}
+                granularity={granularity}
+                onGranularityChange={onGranularityChange}
+                dailyDisabled={dailyDisabled}
+              />
+            ) : (
+              // Plateaus, Alignment and Experiments are computed in App.tsx
+              // from the full, unfiltered history as of today — saying so
+              // beats showing a date control that silently does nothing here.
+              <p className="text-base text-muted-foreground">
+                Uses your full history, as of today — the date range doesn't apply here.
+              </p>
+            )}
             <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
               <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
               {source === "upload" ? "Stored in this browser only" : "Sample data isn't stored"}

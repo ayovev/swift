@@ -86,6 +86,18 @@ describe("SubNav", () => {
     expect(onValueChange).toHaveBeenCalledWith(gymnasticsTab.value);
   });
 
+  it("puts each group's label above its tabs, not in line with them", () => {
+    render(<SubNav value={strengthTab.value} onValueChange={vi.fn()} />);
+    for (const name of ["Domains", "Modalities"]) {
+      const group = screen.getByRole("group", { name });
+      const [label, tabs] = Array.from(group.children);
+      expect(label).toHaveTextContent(name);
+      expect(label!.tagName).toBe("SPAN");
+      // The label is a header, never one of the clickable tabs.
+      expect(within(tabs as HTMLElement).getAllByRole("button").every((b) => b.textContent !== name)).toBe(true);
+    }
+  });
+
   it("lists the three Insights views", () => {
     render(<SubNav value={PLATEAU_TAB} onValueChange={vi.fn()} />);
     const nav = screen.getByRole("navigation", { name: "Insights views" });

@@ -110,37 +110,38 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
   return (
     <nav
       aria-label={`${section.id} views`}
-      className="flex items-stretch gap-8 overflow-x-auto border-b border-border"
+      className="flex items-end gap-10 overflow-x-auto border-b border-border"
     >
       {section.groups.map((g, i) => (
-        <div key={g.label ?? i} role="group" aria-label={g.label} className="flex shrink-0 items-stretch gap-5">
+        // A labelled group puts its label *above* its tabs, as a header —
+        // inline with them it read as one more (dead) tab.
+        <div key={g.label ?? i} role="group" aria-label={g.label} className="flex shrink-0 flex-col gap-0.5">
           {g.label ? (
-            <span
-              aria-hidden="true"
-              className="flex items-center font-mono text-[11px] tracking-[0.08em] text-muted-foreground uppercase"
-            >
+            <span aria-hidden="true" className="text-[11px] font-semibold tracking-[0.08em] text-foreground uppercase">
               {g.label}
             </span>
           ) : null}
-          {g.values.map((v) => {
-            const isActive = v === value;
-            return (
-              <button
-                key={v}
-                type="button"
-                aria-current={isActive ? "page" : undefined}
-                onClick={() => onValueChange(v)}
-                className={cn(
-                  "-mb-px shrink-0 border-b-2 py-3 text-sm whitespace-nowrap transition-colors",
-                  isActive
-                    ? "border-primary font-medium text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {labelOf(v)}
-              </button>
-            );
-          })}
+          <div className="flex items-stretch gap-5">
+            {g.values.map((v) => {
+              const isActive = v === value;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => onValueChange(v)}
+                  className={cn(
+                    "-mb-px shrink-0 border-b-2 py-3 text-sm whitespace-nowrap transition-colors",
+                    isActive
+                      ? "border-primary font-medium text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {labelOf(v)}
+                </button>
+              );
+            })}
+          </div>
         </div>
       ))}
     </nav>

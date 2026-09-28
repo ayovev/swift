@@ -315,12 +315,16 @@ home. Read the header comments of the files named here before moving anything be
   the same workouts, not separate data), Body (Body Comp) and Insights (Plateaus, Alignment,
   Experiments — the pipelines that need both uploads). The views inside a section are a plain row
   of tabs under the page title, never a dropdown, so every sibling is visible; a one-view section
-  shows no second row. `tabs.ts` stays the flat identity list (`ALL_TABS`) that analytics and the
+  shows no second row. Where a section mixes two kinds of view (Breakdown's Domains and
+  Modalities), each group's label sits *above* its tabs as a header — in line with them it read
+  as one more tab. `tabs.ts` stays the flat identity list (`ALL_TABS`) that analytics and the
   tab content key off; `SECTIONS` only groups it, and `tests/sectionNav.test.tsx` asserts every
   tab lands in exactly one section.
 - **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
   under the page title ("Showing all time, grouped by month"), next to the charts they change
-  rather than in the global header. Insights views show a plain "uses your full history" sentence
+  rather than in the global header. It sits in its own row under a thin rule, with the storage
+  note on the right, so the heading block (title and, on domain pages, CrossFit's definition)
+  ends visibly before the view controls begin. Insights views show a plain "uses your full history" sentence
   instead, because `App.tsx` computes them from the whole unfiltered log as of today — a date
   control there would silently do nothing.
 - **Manage** and **Preferences** (monthly at most / once) — `SettingsSheet.tsx`, behind the
