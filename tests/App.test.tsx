@@ -199,6 +199,14 @@ describe("App — local persistence", () => {
         await waitFor(() => expect(sampleButton).toBeEnabled());
         fireEvent.click(sampleButton);
         await findDashboard(3000);
+
+        // Sample mode is announced once, by the full-width strip above the
+        // header — not by a chip in the header or notes elsewhere on the page.
+        const strips = screen.getAllByRole("status").filter((el) => /^Sample data\./.test(el.textContent ?? ""));
+        expect(strips).toHaveLength(1);
+        expect(screen.queryByText(/sample data isn't stored/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/stored in this browser only/i)).not.toBeInTheDocument();
+
         await openSettings();
 
         const startOver = screen.getByRole("button", { name: /start over/i });

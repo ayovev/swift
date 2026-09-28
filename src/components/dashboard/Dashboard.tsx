@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FlaskConical } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SwiftMark } from "@/components/SwiftMark";
 import { ScopeLine } from "./ScopeLine";
@@ -127,9 +128,27 @@ export function Dashboard({
 
   return (
     <div className="min-h-svh bg-background">
-      {/* Three things only: where you are (the wordmark and the four sections),
-          whether this is sample data, and one door to everything else
-          (SettingsSheet). View scope lives with the content below; see ScopeLine. */}
+      {/* The one sample-mode indicator: a full-width strip above the header,
+          rather than a chip in it or notes scattered through the page. */}
+      {source === "sample" ? (
+        <div
+          role="status"
+          className="flex items-center justify-center gap-2 border-b border-accent-border bg-accent-subtle px-5 py-2 text-center text-sm"
+        >
+          <FlaskConical className="size-3.5 shrink-0 text-accent-link" aria-hidden="true" />
+          <span>
+            <strong className="font-medium">Sample data.</strong>{" "}
+            <span className="text-muted-foreground">
+              This is a sample training log and body-composition history, here so you can look
+              around.
+            </span>
+          </span>
+        </div>
+      ) : null}
+
+      {/* Two things only: where you are (the wordmark and the four sections)
+          and one door to everything else (SettingsSheet). View scope lives
+          with the content below; see ScopeLine. */}
       <header className="border-b border-border">
         {/* From lg up, a three-column grid with equal outer tracks, so the
             sections sit at the true centre of the page whatever the wordmark
@@ -138,11 +157,6 @@ export function Dashboard({
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-10 px-5 sm:px-8 lg:grid lg:grid-cols-[1fr_auto_1fr]">
           <div className="flex h-16 shrink-0 items-center gap-3">
             <SwiftMark className="[&_img]:h-7" />
-            {source === "sample" ? (
-              <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[11px] tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase">
-                Sample data
-              </span>
-            ) : null}
           </div>
           <div className="order-last -mx-5 w-[calc(100%+2.5rem)] border-t border-border px-5 sm:-mx-8 sm:w-[calc(100%+4rem)] sm:px-8 lg:order-none lg:mx-0 lg:w-auto lg:border-t-0 lg:px-0">
             <SectionLinks value={tab} onValueChange={onTabChange} />
@@ -205,10 +219,13 @@ export function Dashboard({
                 Uses your full history, as of today — the date range doesn't apply here.
               </p>
             )}
-            <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-              <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
-              {source === "upload" ? "Stored in this browser only" : "Sample data isn't stored"}
-            </div>
+            {/* Sample mode already says so in the strip above the header. */}
+            {source === "upload" ? (
+              <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
+                Stored in this browser only
+              </div>
+            ) : null}
           </div>
           <SubNav value={tab} onValueChange={onTabChange} />
         </div>
