@@ -34,20 +34,15 @@ export const DOMAIN_SHORT_LABELS: Record<Domain, string> = {
   Accuracy: "Accuracy",
 };
 
-/** Where CROSSFIT_DEFINITIONS come from; linked from every domain page. */
-export const CROSSFIT_DEFINITIONS_SOURCE = {
-  title: "What Is Fitness? — 10 Physical Skills",
-  url: "https://www.crossfit.com/essentials/what-is-fitness-lecture-10-physical-skills",
-} as const;
-
 /**
- * CrossFit's own definition of each skill, quoted exactly — shown in quotation
- * marks and attributed on each domain page, so never edit the wording here for
- * style or house voice. The app's own words about a domain live in
- * DOMAIN_BLURBS below; keep the two separate.
+ * CrossFit's own definition of each skill, word for word — shown as the
+ * subtitle under a domain page's heading (see pageSubtitleOf in
+ * SectionNav.tsx). Never edit the wording for style or house voice; the
+ * app's own words about a domain live in DOMAIN_BLURBS below.
  *
  * Transcribed from Greg Glassman's "What Is Fitness?" (CrossFit Journal,
- * October 2002), the article the linked lecture presents.
+ * October 2002), which CrossFit's "What Is Fitness? — 10 Physical Skills"
+ * lecture presents: https://www.crossfit.com/essentials/what-is-fitness-lecture-10-physical-skills
  */
 export const CROSSFIT_DEFINITIONS: Record<Domain, string> = {
   "Cardiovascular/Respiratory Endurance":

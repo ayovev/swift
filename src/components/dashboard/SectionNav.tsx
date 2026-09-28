@@ -7,7 +7,7 @@ import {
   PLATEAU_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
-import { DOMAIN_LIST } from "@/types/dashboard";
+import { CROSSFIT_DEFINITIONS, DOMAIN_LIST } from "@/types/dashboard";
 import { MODALITY_LIST, MODALITY_NAMES } from "@/types/modality";
 import { cn } from "@/lib/utils";
 
@@ -66,6 +66,12 @@ export function pageTitleOf(value: string): string {
   if (modality) return MODALITY_NAMES[modality];
   if (value === BODY_COMP_TAB) return "Body composition";
   return labelOf(value);
+}
+
+/** A line of subtext under the page heading: CrossFit's definition, on a domain page only. */
+export function pageSubtitleOf(value: string): string | null {
+  const domain = DOMAIN_LIST.find((d) => value === `domain:${d}`);
+  return domain ? CROSSFIT_DEFINITIONS[domain] : null;
 }
 
 /** Top-level sections, rendered in the page header. Selecting one opens its first view. */

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SwiftMark } from "@/components/SwiftMark";
 import { ScopeLine } from "./ScopeLine";
-import { SectionLinks, SubNav, pageTitleOf, sectionOf } from "./SectionNav";
+import { SectionLinks, SubNav, pageSubtitleOf, pageTitleOf, sectionOf } from "./SectionNav";
 import { SettingsSheet } from "./SettingsSheet";
 import { AlignmentTab } from "./AlignmentTab";
 import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
@@ -178,6 +178,9 @@ export function Dashboard({
               <h1 className="text-3xl font-semibold tracking-tight sm:text-[40px] sm:leading-[1.1]">
                 {pageTitleOf(tab)}
               </h1>
+              {pageSubtitleOf(tab) ? (
+                <p className="-mt-1 max-w-2xl text-sm text-muted-foreground">{pageSubtitleOf(tab)}</p>
+              ) : null}
               {usesRange && insights.dateBounds ? (
                 <ScopeLine
                   dateBounds={insights.dateBounds}

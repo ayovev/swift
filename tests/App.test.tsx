@@ -296,6 +296,13 @@ describe("App — view scope", () => {
     expect(screen.getByRole("button", { name: /^all time/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Grouped by month" })).toBeInTheDocument();
 
+    // A domain page carries CrossFit's definition of the skill under its heading.
+    fireEvent.click(screen.getByRole("button", { name: "Breakdown" }));
+    const heading = await screen.findByRole("heading", { level: 1, name: "Cardiovascular/Respiratory Endurance" });
+    expect(heading.nextElementSibling).toHaveTextContent(
+      "The ability of body systems to gather, process, and deliver oxygen."
+    );
+
     // Plateaus, Alignment and Experiments are computed from the full
     // history as of today (App.tsx), never the selected range.
     fireEvent.click(screen.getByRole("button", { name: "Insights" }));
