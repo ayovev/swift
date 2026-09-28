@@ -176,36 +176,44 @@ describe("App — local persistence", () => {
     expect(await loadWorkoutRows()).toEqual(rows);
   });
 
-  it("'Start over' on sample data resets immediately, with no confirmation dialog", async () => {
-    const csvText = loadSampleCsvText();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => ({ ok: true, text: async () => csvText }))
-    );
+  // Loads and parses the full sample export, then waits out the reveal's
+  // MIN_LOADING_MS/REVEAL_HOLD_MS floors before Settings is reachable — the
+  // same work as the upload tests above, so the same explicit budget rather
+  // than vitest's 5000ms default (CI measured it at 5.8s).
+  it(
+    "'Start over' on sample data resets immediately, with no confirmation dialog",
+    async () => {
+      const csvText = loadSampleCsvText();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => ({ ok: true, text: async () => csvText }))
+      );
 
-    try {
-      renderApp();
-      const sampleButton = await screen.findByRole("button", { name: /sample data/i });
-      // The button is disabled while App's own mount-restore effect is still
-      // resolving (loading={state.status === "loading"}) — wait for it to be
-      // enabled, not just present, or a click here silently no-ops on the
-      // still-disabled native button.
-      await waitFor(() => expect(sampleButton).toBeEnabled());
-      fireEvent.click(sampleButton);
-      await findDashboard(3000);
-      await openSettings();
+      try {
+        renderApp();
+        const sampleButton = await screen.findByRole("button", { name: /sample data/i });
+        // The button is disabled while App's own mount-restore effect is still
+        // resolving (loading={state.status === "loading"}) — wait for it to be
+        // enabled, not just present, or a click here silently no-ops on the
+        // still-disabled native button.
+        await waitFor(() => expect(sampleButton).toBeEnabled());
+        fireEvent.click(sampleButton);
+        await findDashboard(3000);
+        await openSettings();
 
-      const startOver = screen.getByRole("button", { name: /start over/i });
-      fireEvent.click(startOver);
+        const startOver = screen.getByRole("button", { name: /start over/i });
+        fireEvent.click(startOver);
 
-      expect(screen.queryByText(/this can't be undone/i)).not.toBeInTheDocument();
-      await waitFor(() => {
-        expect(screen.getByRole("button", { name: /sample data/i })).toBeInTheDocument();
-      });
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
+        expect(screen.queryByText(/this can't be undone/i)).not.toBeInTheDocument();
+        await waitFor(() => {
+          expect(screen.getByRole("button", { name: /sample data/i })).toBeInTheDocument();
+        });
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+    15000
+  );
 
   // Parses the real 1,209-row export and waits out the upload's
   // MIN_LOADING_MS/REVEAL_HOLD_MS floors — about 4s alone, so it gets the
