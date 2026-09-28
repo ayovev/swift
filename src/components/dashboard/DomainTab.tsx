@@ -4,7 +4,13 @@ import { domainColor } from "./charts/chartUtils";
 import { TrendStat } from "./TrendStat";
 import { WorkoutList } from "./WorkoutList";
 import { GRANULARITY_NOUN, granularityLabel, type Granularity } from "@/lib/analytics/granularity";
-import { DOMAIN_BLURBS, type DashboardData, type Domain } from "@/types/dashboard";
+import {
+  CROSSFIT_DEFINITIONS,
+  CROSSFIT_DEFINITIONS_SOURCE,
+  DOMAIN_BLURBS,
+  type DashboardData,
+  type Domain,
+} from "@/types/dashboard";
 
 /**
  * One GPP domain's tab. A single component drives all ten —
@@ -28,6 +34,22 @@ export function DomainTab({
     <div className="flex flex-col gap-6">
       <Card>
         <CardContent className="flex flex-col gap-4">
+          <figure className="flex max-w-3xl flex-col gap-2">
+            <blockquote className="text-lg leading-snug font-medium text-foreground">
+              “{CROSSFIT_DEFINITIONS[domain]}”
+            </blockquote>
+            <figcaption className="text-xs text-muted-foreground">
+              CrossFit,{" "}
+              <a
+                href={CROSSFIT_DEFINITIONS_SOURCE.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent-link underline underline-offset-2"
+              >
+                {CROSSFIT_DEFINITIONS_SOURCE.title}
+              </a>
+            </figcaption>
+          </figure>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {DOMAIN_BLURBS[domain]}
           </p>

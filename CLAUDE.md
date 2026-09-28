@@ -458,7 +458,10 @@ thesis in one line: "The workout ends. The work doesn't."
 - **Use the sport's own vocabulary, verbatim.** RX, Scaled, PR, the ten GPP domain names,
   M/W/G — these come from CrossFit/SugarWOD and are never softened or renamed for
   friendliness. See `DOMAIN_BLURBS`/`MODALITY_BLURBS` (`types/dashboard.ts`,
-  `types/modality.ts`) and the tab labels in `tabs.ts`.
+  `types/modality.ts`) and the tab labels in `tabs.ts`. Each domain page also quotes
+  CrossFit's own definition of that skill (`CROSSFIT_DEFINITIONS`, `types/dashboard.ts`),
+  attributed and linked — that text is a quotation, so it's never reworded for house voice;
+  the app's own words stay in `DOMAIN_BLURBS`.
 - **Plain language over clever language.** `plainParseMessage()` (`src/lib/csv/parseCsv.ts`)
   set this precedent for errors; it applies everywhere else too — empty states, hints, button
   labels. If a sentence needs a second read, rewrite it.

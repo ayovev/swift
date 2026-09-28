@@ -34,27 +34,54 @@ export const DOMAIN_SHORT_LABELS: Record<Domain, string> = {
   Accuracy: "Accuracy",
 };
 
-export const DOMAIN_BLURBS: Record<Domain, string> = {
+/** Where CROSSFIT_DEFINITIONS come from; linked from every domain page. */
+export const CROSSFIT_DEFINITIONS_SOURCE = {
+  title: "What Is Fitness? — 10 Physical Skills",
+  url: "https://www.crossfit.com/essentials/what-is-fitness-lecture-10-physical-skills",
+} as const;
+
+/**
+ * CrossFit's own definition of each skill, quoted exactly — shown in quotation
+ * marks and attributed on each domain page, so never edit the wording here for
+ * style or house voice. The app's own words about a domain live in
+ * DOMAIN_BLURBS below; keep the two separate.
+ *
+ * Transcribed from Greg Glassman's "What Is Fitness?" (CrossFit Journal,
+ * October 2002), the article the linked lecture presents.
+ */
+export const CROSSFIT_DEFINITIONS: Record<Domain, string> = {
   "Cardiovascular/Respiratory Endurance":
-    "The ability of body systems to gather, process, and deliver oxygen. Driven by running, rowing, biking, and other engine work.",
-  Stamina:
-    "The ability of body systems to process, deliver, store, and use energy across sustained efforts — the classic long metcon or chipper.",
-  Strength:
-    "The productive application of force — squats, deadlifts, presses, and heavy pulls under load.",
-  Flexibility:
-    "The ability to maximize range of motion at a given joint. Rarely programmed directly — usually shows up as warmup or accessory work.",
+    "The ability of body systems to gather, process, and deliver oxygen.",
+  Stamina: "The ability of body systems to process, deliver, store, and utilize energy.",
+  Strength: "The ability of a muscular unit, or combination of muscular units, to apply force.",
+  Flexibility: "The ability to maximize the range of motion at a given joint.",
   Power:
-    "The ability to apply maximum force in minimum time — Olympic lifts, box jumps, and explosive movements.",
-  Speed:
-    "The ability to minimize the time cycle of a repeated movement — sprints, fast runs, and time-trial efforts.",
+    "The ability of a muscular unit, or combination of muscular units, to apply maximum force in minimum time.",
+  Speed: "The ability to minimize the time cycle of a repeated movement.",
   Coordination:
-    "The ability to combine several distinct movement patterns into a single distinct movement — muscle-ups, snatches, double-unders.",
-  Agility:
-    "The ability to minimize transition time from one movement pattern to another — burpees, box jumps, shuttle-style work.",
+    "The ability to combine several distinct movement patterns into a singular distinct movement.",
+  Agility: "The ability to minimize transition time from one movement pattern to another.",
   Balance:
-    "The ability to control the placement of the body's center of gravity relative to its base of support — handstands, pistols, carries.",
-  Accuracy:
-    "The ability to control movement in a given direction or at a given intensity — wall-balls, double-unders, anything with a target.",
+    "The ability to control the placement of the body's center of gravity in relation to its support base.",
+  Accuracy: "The ability to control movement in a given direction or at a given intensity.",
+};
+
+/**
+ * The app's own note on how each domain tends to show up in a logged
+ * workout. CrossFit's definition is quoted separately (CROSSFIT_DEFINITIONS),
+ * so these don't restate it.
+ */
+export const DOMAIN_BLURBS: Record<Domain, string> = {
+  "Cardiovascular/Respiratory Endurance": "Driven by running, rowing, biking, and other engine work.",
+  Stamina: "Sustained efforts — the classic long metcon or chipper.",
+  Strength: "Squats, deadlifts, presses, and heavy pulls under load.",
+  Flexibility: "Rarely programmed directly — usually shows up as warmup or accessory work.",
+  Power: "Olympic lifts, box jumps, and explosive movements.",
+  Speed: "Sprints, fast runs, and time-trial efforts.",
+  Coordination: "Muscle-ups, snatches, double-unders.",
+  Agility: "Burpees, box jumps, shuttle-style work.",
+  Balance: "Handstands, pistols, carries.",
+  Accuracy: "Wall-balls, double-unders, anything with a target.",
 };
 
 export interface LiftEntry {
