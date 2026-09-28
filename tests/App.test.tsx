@@ -308,7 +308,7 @@ describe("App — view scope", () => {
     fireEvent.click(screen.getByRole("button", { name: "Breakdown" }));
     const heading = await screen.findByRole("heading", { level: 1, name: "Cardiovascular/Respiratory Endurance" });
     expect(heading.nextElementSibling).toHaveTextContent(
-      "The ability of body systems to gather, process, and deliver oxygen."
+      "The ability of the body’s systems to gather, process, and deliver oxygen."
     );
 
     // Plateaus, Alignment and Experiments are computed from the full

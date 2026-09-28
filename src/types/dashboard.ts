@@ -40,24 +40,29 @@ export const DOMAIN_SHORT_LABELS: Record<Domain, string> = {
  * SectionNav.tsx). Never edit the wording for style or house voice; the
  * app's own words about a domain live in DOMAIN_BLURBS below.
  *
- * Transcribed from Greg Glassman's "What Is Fitness?" (CrossFit Journal,
- * October 2002), which CrossFit's "What Is Fitness? — 10 Physical Skills"
- * lecture presents: https://www.crossfit.com/essentials/what-is-fitness-lecture-10-physical-skills
+ * Checked word for word against CrossFit's "What Is Fitness? — 10 Physical
+ * Skills" page, which quotes Greg Glassman's "What Is Fitness?" (CrossFit
+ * Journal, October 2002):
+ * https://www.crossfit.com/essentials/what-is-fitness-lecture-10-physical-skills
+ * Two deliberate differences from that page's list: each definition ends with
+ * a full stop, since it's shown as a sentence, and Flexibility's opening "the"
+ * is capitalised like the other nine. tests/domainDefinitions.test.tsx pins
+ * every definition verbatim.
  */
 export const CROSSFIT_DEFINITIONS: Record<Domain, string> = {
   "Cardiovascular/Respiratory Endurance":
-    "The ability of body systems to gather, process, and deliver oxygen.",
+    "The ability of the body’s systems to gather, process, and deliver oxygen.",
   Stamina: "The ability of body systems to process, deliver, store, and utilize energy.",
   Strength: "The ability of a muscular unit, or combination of muscular units, to apply force.",
   Flexibility: "The ability to maximize the range of motion at a given joint.",
   Power:
     "The ability of a muscular unit, or combination of muscular units, to apply maximum force in minimum time.",
-  Speed: "The ability to minimize the time cycle of a repeated movement.",
+  Speed: "The ability to minimize the cycle time of a repeated movement.",
   Coordination:
     "The ability to combine several distinct movement patterns into a singular distinct movement.",
   Agility: "The ability to minimize transition time from one movement pattern to another.",
   Balance:
-    "The ability to control the placement of the body's center of gravity in relation to its support base.",
+    "The ability to control the placement of the body’s center of gravity in relation to its support base.",
   Accuracy: "The ability to control movement in a given direction or at a given intensity.",
 };
 

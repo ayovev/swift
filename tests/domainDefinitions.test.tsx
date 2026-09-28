@@ -10,6 +10,25 @@ describe("CROSSFIT_DEFINITIONS", () => {
     }
   });
 
+  it("matches CrossFit's own wording, word for word", () => {
+    expect(CROSSFIT_DEFINITIONS).toEqual({
+      "Cardiovascular/Respiratory Endurance":
+        "The ability of the body’s systems to gather, process, and deliver oxygen.",
+      Stamina: "The ability of body systems to process, deliver, store, and utilize energy.",
+      Strength: "The ability of a muscular unit, or combination of muscular units, to apply force.",
+      Flexibility: "The ability to maximize the range of motion at a given joint.",
+      Power:
+        "The ability of a muscular unit, or combination of muscular units, to apply maximum force in minimum time.",
+      Speed: "The ability to minimize the cycle time of a repeated movement.",
+      Coordination:
+        "The ability to combine several distinct movement patterns into a singular distinct movement.",
+      Agility: "The ability to minimize transition time from one movement pattern to another.",
+      Balance:
+        "The ability to control the placement of the body’s center of gravity in relation to its support base.",
+      Accuracy: "The ability to control movement in a given direction or at a given intensity.",
+    });
+  });
+
   it("keeps the app's own blurbs from restating the definition", () => {
     for (const domain of DOMAIN_LIST) {
       expect(DOMAIN_BLURBS[domain]).not.toMatch(/^The ability/);
