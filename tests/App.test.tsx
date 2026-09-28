@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "@/App";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -38,6 +38,29 @@ afterEach(async () => {
   await idbClearAll();
 });
 
+/** The dashboard's header always has exactly one Settings button once it's rendered. */
+function findDashboard(timeout?: number) {
+  return screen.findByRole("button", { name: "Settings" }, timeout ? { timeout } : undefined);
+}
+
+/** Start over, the file pickers and sync live in the Settings sheet (SettingsSheet.tsx). */
+async function openSettings() {
+  fireEvent.click(await findDashboard());
+  return screen.findByRole("dialog", { name: "Settings" });
+}
+
+/** The grouping control is a Radix dropdown in ScopeLine, which opens on pointerdown, not click. */
+async function chooseGrouping(name: RegExp) {
+  fireEvent.pointerDown(screen.getByRole("button", { name: /^Grouped by/ }), { button: 0 });
+  const item = await screen.findByRole("menuitemradio", { name });
+  fireEvent.click(item);
+}
+
+async function openGroupingMenu() {
+  fireEvent.pointerDown(screen.getByRole("button", { name: /^Grouped by/ }), { button: 0 });
+  return screen.findByRole("menu");
+}
+
 describe("App — local persistence", () => {
   it("shows the upload screen when nothing is stored", async () => {
     renderApp();
@@ -52,7 +75,7 @@ describe("App — local persistence", () => {
 
     renderApp();
 
-    await screen.findByRole("button", { name: /start over/i });
+    await findDashboard();
   });
 
   // Parses and renders the real 1,209-row sample export twice over (once on
@@ -74,7 +97,7 @@ describe("App — local persistence", () => {
       // The loading state is floored to MIN_LOADING_MS (see App.tsx) so the
       // loading bar is actually visible, which pushes this past the default
       // findByRole timeout.
-      await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+      await findDashboard(3000);
       await waitFor(
         async () => {
           expect(await loadWorkoutRows()).toHaveLength(1209);
@@ -87,7 +110,7 @@ describe("App — local persistence", () => {
 
       // The second mount restores from storage rather than showing the upload
       // screen — no re-upload needed for data that's already there.
-      await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+      await findDashboard(3000);
     },
     15000
   );
@@ -106,7 +129,7 @@ describe("App — local persistence", () => {
     await screen.findByText(/[\d,]+ workouts logged · [\d,]+ personal records/i, undefined, {
       timeout: 3000,
     });
-    await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+    await findDashboard(3000);
   });
 
   it("'Start over' clears persisted data, not just the in-memory view", async () => {
@@ -121,6 +144,7 @@ describe("App — local persistence", () => {
     });
 
     renderApp();
+    await openSettings();
     const startOver = await screen.findByRole("button", { name: /start over/i });
     fireEvent.click(startOver);
     const confirmReset = await screen.findByRole("button", { name: /^reset$/i });
@@ -138,6 +162,7 @@ describe("App — local persistence", () => {
     await saveWorkoutRows(rows);
 
     renderApp();
+    await openSettings();
     const startOver = await screen.findByRole("button", { name: /start over/i });
     fireEvent.click(startOver);
 
@@ -167,7 +192,8 @@ describe("App — local persistence", () => {
       // still-disabled native button.
       await waitFor(() => expect(sampleButton).toBeEnabled());
       fireEvent.click(sampleButton);
-      await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+      await findDashboard(3000);
+      await openSettings();
 
       const startOver = screen.getByRole("button", { name: /start over/i });
       fireEvent.click(startOver);
@@ -181,26 +207,36 @@ describe("App — local persistence", () => {
     }
   });
 
-  it("'Update workout data' replaces the workout log without touching persisted preferences", async () => {
-    const rows = (await loadSampleRows()).slice(0, 5);
-    await saveWorkoutRows(rows);
+  // Parses the real 1,209-row export and waits out the upload's
+  // MIN_LOADING_MS/REVEAL_HOLD_MS floors — about 4s alone, so it gets the
+  // same explicit budget as the persistence test above rather than the
+  // suite's 5000ms default, which a loaded runner can tip it over.
+  it(
+    "Settings' 'Replace file' for the workout log replaces it without touching persisted preferences",
+    async () => {
+      const rows = (await loadSampleRows()).slice(0, 5);
+      await saveWorkoutRows(rows);
 
-    const { container } = renderApp();
-    await screen.findByRole("button", { name: /update workout data/i });
-    const input = container.querySelector('input[type="file"]');
-    if (!input) throw new Error("expected the update-data control to render a file input");
+      renderApp();
+      await openSettings();
+      const replace = screen.getByRole("button", { name: "Replace workout log" });
+      // FilePickerButton renders its hidden input as the button's next sibling.
+      const input = replace.nextElementSibling;
+      if (!(input instanceof HTMLInputElement)) throw new Error("expected the replace control to render a file input");
 
-    const file = new File([loadSampleCsvText()], "export.csv", { type: "text/csv" });
-    fireEvent.change(input, { target: { files: [file] } });
+      const file = new File([loadSampleCsvText()], "export.csv", { type: "text/csv" });
+      fireEvent.change(input, { target: { files: [file] } });
 
-    await screen.findByText(/[\d,]+ workouts logged · [\d,]+ personal records/i, undefined, {
-      timeout: 3000,
-    });
-    await screen.findByRole("button", { name: /start over/i }, { timeout: 3000 });
+      await screen.findByText(/[\d,]+ workouts logged · [\d,]+ personal records/i, undefined, {
+        timeout: 3000,
+      });
+      await findDashboard(3000);
 
-    const stored = await loadWorkoutRows();
-    expect(stored?.length).toBeGreaterThan(rows.length);
-  });
+      const stored = await loadWorkoutRows();
+      expect(stored?.length).toBeGreaterThan(rows.length);
+    },
+    15000
+  );
 
   it("restores the selected granularity and date-range preset on a fresh mount", async () => {
     const rows = (await loadSampleRows()).slice(0, 5);
@@ -212,9 +248,9 @@ describe("App — local persistence", () => {
     });
 
     renderApp();
-    await screen.findByRole("button", { name: /start over/i });
+    await findDashboard();
 
-    expect(screen.getByRole("button", { name: "Weekly" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Grouped by week" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /last 3 months/i })).toBeInTheDocument();
   });
 
@@ -225,21 +261,39 @@ describe("App — local persistence", () => {
     await saveWorkoutRows(rows);
 
     const { unmount } = renderApp();
-    await screen.findByRole("button", { name: /start over/i });
+    await findDashboard();
 
     fireEvent.click(screen.getByRole("button", { name: /all time/i }));
     fireEvent.click(await screen.findByRole("button", { name: /last month/i }));
-    fireEvent.click(await screen.findByRole("button", { name: "Daily" }));
+    await chooseGrouping(/^Daily/);
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Daily" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: "Grouped by day" })).toBeInTheDocument();
     });
 
     unmount();
     renderApp();
 
-    await screen.findByRole("button", { name: /start over/i });
+    await findDashboard();
     expect(await screen.findByRole("button", { name: /last month/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Daily" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Grouped by day" })).toBeInTheDocument();
+  });
+});
+
+describe("App — view scope", () => {
+  it("shows the date range and grouping on range-driven views, and says so where they don't apply", async () => {
+    await saveWorkoutRows((await loadSampleRows()).slice(0, 5));
+    renderApp();
+    await findDashboard();
+
+    expect(screen.getByRole("button", { name: /^all time/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Grouped by month" })).toBeInTheDocument();
+
+    // Plateaus, Alignment and Experiments are computed from the full
+    // history as of today (App.tsx), never the selected range.
+    fireEvent.click(screen.getByRole("button", { name: "Insights" }));
+    expect(await screen.findByText(/uses your full history, as of today/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Grouped by/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^all time/i })).not.toBeInTheDocument();
   });
 });
 
@@ -252,29 +306,34 @@ describe("App — daily granularity gating", () => {
   it("disables Daily at a multi-year all-time range, and enables it once the range narrows", async () => {
     await saveWorkoutRows(rows);
     renderApp();
-    await screen.findByRole("button", { name: /start over/i });
+    await findDashboard();
 
-    expect(await screen.findByRole("button", { name: "Daily" })).toBeDisabled();
+    const menu = await openGroupingMenu();
+    expect(within(menu).getByRole("menuitemradio", { name: /^Daily/ })).toHaveAttribute("aria-disabled", "true");
+    // The reason is shown in the menu itself, not left for a hover tooltip.
+    expect(within(menu).getByRole("menuitemradio", { name: /^Daily/ })).toHaveTextContent(/ranges under 1 year/i);
+    fireEvent.keyDown(menu, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("menu")).not.toBeInTheDocument());
 
     fireEvent.click(screen.getByRole("button", { name: /all time/i }));
     fireEvent.click(await screen.findByRole("button", { name: /last month/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Daily" })).not.toBeDisabled();
-    });
+    await waitFor(() => expect(screen.getByRole("button", { name: /last month/i })).toBeInTheDocument());
+    const narrowed = await openGroupingMenu();
+    expect(within(narrowed).getByRole("menuitemradio", { name: /^Daily/ })).not.toHaveAttribute("aria-disabled");
   });
 
   it("falls back to Weekly when the range widens back out from under an active Daily view", async () => {
     await saveWorkoutRows(rows);
     renderApp();
-    await screen.findByRole("button", { name: /start over/i });
+    await findDashboard();
 
     // Narrow first so Daily is selectable, then select it.
     fireEvent.click(screen.getByRole("button", { name: /all time/i }));
     fireEvent.click(await screen.findByRole("button", { name: /last month/i }));
-    fireEvent.click(await screen.findByRole("button", { name: "Daily" }));
+    await chooseGrouping(/^Daily/);
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Daily" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: "Grouped by day" })).toBeInTheDocument();
     });
 
     // Widen back out to all time.
@@ -282,7 +341,7 @@ describe("App — daily granularity gating", () => {
     fireEvent.click(await screen.findByRole("button", { name: /all time/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Weekly" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: "Grouped by week" })).toBeInTheDocument();
     });
   });
 });

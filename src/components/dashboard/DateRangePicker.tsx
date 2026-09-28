@@ -1,6 +1,7 @@
 import { useState } from "react";
 import dayjs from "dayjs";
-import { CalendarRange } from "lucide-react";
+import { CalendarRange, ChevronDown } from "lucide-react";
+import { INLINE_TRIGGER } from "./ScopeLine";
 import type { DateRange as CalendarSelection } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,6 +30,7 @@ interface DateRangePickerProps {
    * and two calls would risk it observing one without the other.
    */
   onSelect: (range: DateRange | null, preset: DateRangePreset) => void;
+  inline?: boolean;
 }
 
 function triggerLabel(preset: DateRangePreset, value: DateRange | null): string {
@@ -50,7 +52,7 @@ function triggerLabel(preset: DateRangePreset, value: DateRange | null): string 
  * as itself, not as a frozen date range — "Last 3 months" recomputes against
  * the day the athlete reopens the app, it doesn't restore yesterday's window.
  */
-export function DateRangePicker({ dateBounds, value, preset, onSelect }: DateRangePickerProps) {
+export function DateRangePicker({ dateBounds, value, preset, onSelect, inline }: DateRangePickerProps) {
   const [open, setOpen] = useState(false);
 
   const selectPreset = (id: Exclude<DateRangePreset, "custom">) => {
@@ -68,12 +70,19 @@ export function DateRangePicker({ dateBounds, value, preset, onSelect }: DateRan
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 gap-2">
-          <CalendarRange className="size-3.5" aria-hidden="true" />
-          <span>{triggerLabel(preset, value)}</span>
-        </Button>
+        {inline ? (
+          <button type="button" className={INLINE_TRIGGER}>
+            {triggerLabel(preset, value).replace(/^[A-Z]/, (c) => c.toLowerCase())}
+            <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
+          </button>
+        ) : (
+          <Button variant="outline" size="sm" className="h-8 gap-2">
+            <CalendarRange className="size-3.5" aria-hidden="true" />
+            <span>{triggerLabel(preset, value)}</span>
+          </Button>
+        )}
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto p-0">
+      <PopoverContent align="start" className="w-auto p-0">
         <div className="flex flex-col sm:flex-row">
           <div className="flex flex-col gap-1 border-b border-border p-2 sm:w-40 sm:border-r sm:border-b-0">
             {PRESET_OPTIONS.map((option) => {

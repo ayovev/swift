@@ -56,9 +56,6 @@ export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentT
   if (!alignment) {
     return (
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Alignment</CardTitle>
-        </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Rolls up the plateau detector's per-lift and per-benchmark reads into one
@@ -95,9 +92,6 @@ export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentT
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Alignment</CardTitle>
-        </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <ClassificationBadge classification={classification} />
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">

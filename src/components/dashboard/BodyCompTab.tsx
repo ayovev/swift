@@ -76,7 +76,6 @@ export function BodyCompTab({ state, granularity, onFile, dashboard }: BodyCompT
       <Card>
         <CardHeader className="flex flex-row items-center gap-3 pb-2">
           <InBodySourceMark />
-          <CardTitle className="text-base">Body composition</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
@@ -124,10 +123,7 @@ export function BodyCompTab({ state, granularity, onFile, dashboard }: BodyCompT
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
-          <div className="flex flex-row items-center gap-3">
-            <InBodySourceMark />
-            <CardTitle className="text-base">Body composition</CardTitle>
-          </div>
+          <InBodySourceMark />
           <FilePickerButton onFile={onFile}>Replace file</FilePickerButton>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">

@@ -45,9 +45,9 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
    confirmation dialog whenever real data is loaded, since it's the one control that clears
    everything at once (see "Architecture: app state and local persistence" below) — and the
    bundled sample file is deliberately never written to this store, so demo mode never leaves
-   anything behind. Two narrower controls, "Update workout data" (dashboard header) and
-   "Replace file" (Body Comp tab), let an athlete bring in a fresh CSV without wiping anything
-   else — they call the exact same upload handlers a first upload uses, so only the one dataset
+   anything behind. Two narrower controls — "Replace file" for the workout log and for InBody,
+   both in the dashboard's Settings sheet (the InBody one also on the Body Comp view) — let an
+   athlete bring in a fresh CSV without wiping anything else — they call the exact same upload handlers a first upload uses, so only the one dataset
    being replaced changes. This does not extend to analytics — constraint 2 below is unaffected.
 2. **Analytics may only send closed-vocabulary usage events.** See `src/lib/posthog.ts`: the
    `SwiftEvent` union *is* the entire analytics surface, and it is deliberately narrow rather
@@ -137,8 +137,10 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 18 tabs (`TabNav.tsx` → `ALL_TABS`): Overview,
-  Workouts, the ten GPP domains, the three modalities, Body Comp, Plateaus, and Alignment. A
+- **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
+  Workouts, the ten GPP domains, the three modalities, Body Comp, Plateaus, Alignment, and
+  Experiments, grouped for navigation into four sections (see "Architecture: dashboard layout"
+  below). A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
   tabs — they differ in data, not structure. Body Comp is its own component (`BodyCompTab.tsx`),
   always present in the nav even before any InBody data is loaded, and Plateaus/Alignment follow
@@ -289,8 +291,8 @@ back to one.
 - **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` — both are
   unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
   `SyncDialog` is what gates the call, not the handler. Synced data always carries
-  `source: "upload"` (sync's entry points in `Dashboard.tsx`'s header only render when
-  `source === "upload"` in the first place — sample data was never meant to sync anywhere), so
+  `source: "upload"` (sync's entry points in the dashboard's Settings sheet, `SettingsSheet.tsx`,
+  are disabled unless `source === "upload"` — sample data was never meant to sync anywhere), so
   it persists and participates in "Start over" identically to a direct upload.
   `handleSyncedWorkoutData` reuses `run()`'s shared post-parse tail
   (`finishSuccessfulLoad`, extracted from `run()` for exactly this reason) rather than
@@ -302,6 +304,33 @@ back to one.
   `connection_dropped`, `declined_overwrite`, `unsupported_browser`). No device identifiers, no
   session/pairing tokens, no SDP fragments — the payload types make that structurally
   impossible, not just a convention (`tests/syncAnalytics.test.ts`).
+
+## Architecture: dashboard layout
+
+The dashboard's controls are sorted by how often an athlete touches them, and each tier has one
+home. Read the header comments of the files named here before moving anything between tiers.
+
+- **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header: Training
+  (Overview, Workouts), Breakdown (the ten GPP domains and three modalities — a classification of
+  the same workouts, not separate data), Body (Body Comp) and Insights (Plateaus, Alignment,
+  Experiments — the pipelines that need both uploads). The views inside a section are a plain row
+  of tabs under the page title, never a dropdown, so every sibling is visible; a one-view section
+  shows no second row. `tabs.ts` stays the flat identity list (`ALL_TABS`) that analytics and the
+  tab content key off; `SECTIONS` only groups it, and `tests/sectionNav.test.tsx` asserts every
+  tab lands in exactly one section.
+- **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
+  under the page title ("Showing all time, grouped by month"), next to the charts they change
+  rather than in the global header. Insights views show a plain "uses your full history" sentence
+  instead, because `App.tsx` computes them from the whole unfiltered log as of today — a date
+  control there would silently do nothing.
+- **Manage** and **Preferences** (monthly at most / once) — `SettingsSheet.tsx`, behind the
+  header's single Settings button: replace either file, send/receive to another device, accent and
+  mode, Start over. Every control there calls the same handler it did when it lived in the
+  header; moving them changed where they live, not what they do. The accent/mode UI there is a
+  second rendering of the same `useTheme()` state `ThemeControls.tsx` renders on the landing page.
+
+The totals on Overview are a ruled row rather than a card (they're the page's headline, not one
+panel among several), and a view's first card doesn't repeat the page title above it.
 
 ## Architecture: app state and local persistence
 
@@ -333,7 +362,7 @@ added after the app initially held everything in memory only.
   A successful InBody parse always persists (there's no sample-data concept for it). `range` and
   `granularity` persist from exactly two call sites in `App.tsx` — `persistRangeSelection`
   (passed to `DateRangePicker` as `onSelect`) and `persistGranularity` (passed to
-  `GranularityPicker`/the daily-auto-downgrade effect as `onGranularityChange`) — rather than a
+  `ScopeLine`'s grouping menu/the daily-auto-downgrade effect as `onGranularityChange`) — rather than a
   `useEffect` mirroring every state change into storage. That's deliberate, not an oversight: a
   blanket mirror would also fire on `run()`'s and `reset()`'s own internal `setRange`/
   `setGranularity` calls, racing "Start over"'s `idbClearAll()` and re-saving the very defaults
@@ -342,8 +371,8 @@ added after the app initially held everything in memory only.
   otherwise a reload right after would restore the *previous* file's leftover view prefs over
   the new file's fresh state.
 - **Updating in place**: two controls let an athlete bring in a fresh CSV without touching
-  anything else. "Update workout data" (`Dashboard.tsx`'s header) and "Replace file"
-  (`BodyCompTab.tsx`'s ready state) are both `FilePickerButton`
+  anything else. "Replace file" for each dataset in the Settings sheet (`SettingsSheet.tsx`),
+  plus the InBody one repeated on `BodyCompTab.tsx`'s ready state, are all `FilePickerButton`
   (`src/components/dashboard/FilePickerButton.tsx`) — a plain click-to-browse trigger using the
   same hidden-`<input>` mechanics as `UploadDropzone` (including resetting the input's value so
   picking the same file twice still fires a change event), but without `UploadDropzone`'s
@@ -367,7 +396,7 @@ added after the app initially held everything in memory only.
   silently restore the data the button just appeared to discard. This also clears `range` and
   `granularity` back to their in-memory defaults (`null`/`monthly`) on the next restore, same as
   the two uploaded datasets. `reset()` itself is unchanged, but the "Start over" button that
-  calls it is now gated behind a confirmation `AlertDialog` (`src/components/ui/alert-dialog.tsx`)
+  calls it (in the Settings sheet) is now gated behind a confirmation `AlertDialog` (`src/components/ui/alert-dialog.tsx`)
   whenever `source === "upload"` — sample mode still resets in one click, since nothing
   persisted is at risk there. The dialog's copy names exactly what gets deleted (workout log,
   body composition history, experiments) so this is the one place all three are named together.
@@ -429,7 +458,7 @@ thesis in one line: "The workout ends. The work doesn't."
 - **Use the sport's own vocabulary, verbatim.** RX, Scaled, PR, the ten GPP domain names,
   M/W/G — these come from CrossFit/SugarWOD and are never softened or renamed for
   friendliness. See `DOMAIN_BLURBS`/`MODALITY_BLURBS` (`types/dashboard.ts`,
-  `types/modality.ts`) and the tab labels in `TabNav.tsx`.
+  `types/modality.ts`) and the tab labels in `tabs.ts`.
 - **Plain language over clever language.** `plainParseMessage()` (`src/lib/csv/parseCsv.ts`)
   set this precedent for errors; it applies everywhere else too — empty states, hints, button
   labels. If a sentence needs a second read, rewrite it.

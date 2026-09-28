@@ -1,7 +1,7 @@
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UploadDropzone } from "@/components/landing/UploadDropzone";
 import { formatDate } from "./charts/chartUtils";
@@ -73,9 +73,6 @@ export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: Platea
   if (!plateauInsights) {
     return (
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Plateau detector</CardTitle>
-        </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Checks your lifts and named benchmarks against your InBody history, so a stalled
@@ -114,9 +111,6 @@ export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: Platea
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Plateau detector</CardTitle>
-        </CardHeader>
         <CardContent className="flex flex-col gap-1">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Lifts and named benchmarks with enough history to compare, checked against your

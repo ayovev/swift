@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { ChevronRight, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ModalityBar } from "./charts/ModalityBar";
 import { FIXED_MODALITY_COLORS, formatShortDate } from "./charts/chartUtils";
@@ -52,9 +52,6 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Workouts</CardTitle>
-        </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Every workout in this export, most recent first, with its proportional split across

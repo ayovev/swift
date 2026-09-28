@@ -1,31 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, FlaskConical, RotateCcw, Upload } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { ThemeControls } from "@/components/theme/ThemeControls";
 import { SwiftMark } from "@/components/SwiftMark";
+import { ScopeLine } from "./ScopeLine";
+import { SectionLinks, SubNav, pageTitleOf, sectionOf } from "./SectionNav";
+import { SettingsSheet } from "./SettingsSheet";
 import { AlignmentTab } from "./AlignmentTab";
 import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
-import { DateRangePicker } from "./DateRangePicker";
 import { DomainTab } from "./DomainTab";
 import { ExperimentsTab } from "./ExperimentsTab";
-import { FilePickerButton } from "./FilePickerButton";
-import { GranularityPicker } from "./GranularityPicker";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlateauTab } from "./PlateauTab";
-import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import {
   ALL_TABS,
@@ -35,8 +20,7 @@ import {
   EXPERIMENTS_TAB,
   PLATEAU_TAB,
   WORKOUTS_TAB,
-  TabNav,
-} from "./TabNav";
+} from "./tabs";
 import { WorkoutsTab } from "./WorkoutsTab";
 import { formatDate } from "./charts/chartUtils";
 import type { DateRange, DateRangePreset } from "@/lib/analytics/dateRange";
@@ -76,18 +60,6 @@ interface DashboardProps {
   onDeleteExperiment: (id: string) => void;
 }
 
-/** Years between the first and last logged workout, to a sensible precision. */
-function spanLabel(startIso: string, endIso: string): string {
-  const start = new Date(startIso);
-  const end = new Date(endIso);
-  const years = (end.getTime() - start.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
-  if (years < 1) {
-    const months = Math.max(1, Math.round(years * 12));
-    return `${months} month${months === 1 ? "" : "s"} and counting`;
-  }
-  return `${years.toFixed(1)} years and counting`;
-}
-
 export function Dashboard({
   insights,
   source,
@@ -113,6 +85,8 @@ export function Dashboard({
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   const { summary } = insights.dashboard;
+  // Insights views read the whole history, never the selected range (see App.tsx).
+  const usesRange = sectionOf(tab) !== "Insights";
 
   // "All time" (range === null) has no explicit span of its own, so it falls
   // back to the log's own full bounds — the same span DateRangePicker uses
@@ -122,7 +96,7 @@ export function Dashboard({
 
   // Built once per data change, not on every render — JSON.stringify-ing the
   // full unfiltered workout log (and body comp, if present) is real work at
-  // ~1,200 rows. Only used if "Sync to another device" actually starts a
+  // ~1,200 rows. Only used if "Send to a device" (SettingsSheet) actually starts a
   // host session (see SyncDialog).
   const syncOutgoing = useMemo<OutgoingDataset[]>(() => {
     const outgoing: OutgoingDataset[] = [{ dataset: "workout", json: JSON.stringify(workoutRows) }];
@@ -153,134 +127,85 @@ export function Dashboard({
 
   return (
     <div className="min-h-svh bg-background">
-      {source === "sample" ? (
-        <div
-          role="status"
-          className="flex items-center justify-center gap-2 border-b border-accent-border bg-accent-subtle px-5 py-2 text-center text-sm"
-        >
-          <FlaskConical className="size-3.5 shrink-0 text-accent-link" aria-hidden="true" />
-          <span>
-            <strong className="font-medium">Sample data.</strong>{" "}
-            <span className="text-muted-foreground">
-              This is a sample training log and body-composition history, here so you can look
-              around.
-            </span>
-          </span>
-        </div>
-      ) : null}
-
+      {/* Three things only: where you are (the wordmark and the four sections),
+          whether this is sample data, and one door to everything else
+          (SettingsSheet). View scope lives with the content below; see ScopeLine. */}
       <header className="border-b border-border">
-        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <SwiftMark />
-          <div className="flex flex-wrap items-center gap-2">
-            {insights.dateBounds ? (
-              <DateRangePicker
-                dateBounds={insights.dateBounds}
-                value={range}
-                preset={rangePreset}
-                onSelect={onRangeSelect}
-              />
-            ) : null}
-            {insights.dateBounds ? (
-              <GranularityPicker
-                value={granularity}
-                onChange={onGranularityChange}
-                dailyDisabled={dailyDisabled}
-              />
-            ) : null}
-            <ThemeControls />
-            <FilePickerButton onFile={onWorkoutFile} className="h-8 gap-2">
-              <Upload className="size-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Update workout data</span>
-            </FilePickerButton>
-            {source === "upload" ? (
-              <>
-                <SyncEntryPoint
-                  role="host"
-                  outgoing={syncOutgoing}
-                  existingWorkoutCount={null}
-                  existingBodyCompCount={null}
-                  existingExperimentsCount={null}
-                  onSyncedWorkoutData={onSyncedWorkoutData}
-                  onSyncedBodyCompData={onSyncedBodyCompData}
-                  onSyncedExperiments={onSyncedExperiments}
-                  className="h-8 gap-2"
-                >
-                  <ArrowUpFromLine className="size-3.5" aria-hidden="true" />
-                  <span className="hidden sm:inline">Sync to another device</span>
-                </SyncEntryPoint>
-                <SyncEntryPoint
-                  role="joiner"
-                  existingWorkoutCount={workoutRows.length}
-                  existingBodyCompCount={bodyComp.status === "ready" ? bodyComp.rows.length : null}
-                  existingExperimentsCount={experiments.length > 0 ? experiments.length : null}
-                  onSyncedWorkoutData={onSyncedWorkoutData}
-                  onSyncedBodyCompData={onSyncedBodyCompData}
-                  onSyncedExperiments={onSyncedExperiments}
-                  className="h-8 gap-2"
-                >
-                  <ArrowDownToLine className="size-3.5" aria-hidden="true" />
-                  <span className="hidden sm:inline">Sync from another device</span>
-                </SyncEntryPoint>
-              </>
-            ) : null}
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-10 px-5 sm:flex-nowrap sm:px-8">
+          <div className="flex h-16 items-center gap-3">
+            <SwiftMark className="[&_img]:h-7" />
             {source === "sample" ? (
-              <Button variant="outline" size="sm" onClick={onReset} className="h-8 gap-2">
-                <RotateCcw className="size-3.5" aria-hidden="true" />
-                <span className="hidden sm:inline">Start over</span>
-              </Button>
-            ) : (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-2">
-                    <RotateCcw className="size-3.5" aria-hidden="true" />
-                    <span className="hidden sm:inline">Start over</span>
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Start over?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This deletes your uploaded workout log, body composition history, and any
-                      experiments you've logged. This can't be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={onReset}
-                      className={buttonVariants({ variant: "destructive", size: "sm" })}
-                    >
-                      Reset
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+              <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[11px] tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase">
+                Sample data
+              </span>
+            ) : null}
+          </div>
+          {/* On a phone the sections wrap onto their own row under the wordmark. */}
+          <div className="order-last -mx-5 w-[calc(100%+2.5rem)] border-t border-border px-5 sm:order-none sm:mx-0 sm:w-auto sm:grow sm:border-t-0 sm:px-0">
+            <SectionLinks value={tab} onValueChange={onTabChange} />
+          </div>
+          <div className="ml-auto sm:ml-0">
+            <SettingsSheet
+              source={source}
+              workoutRows={workoutRows}
+              onWorkoutFile={onWorkoutFile}
+              bodyComp={bodyComp}
+              onBodyCompFile={onBodyCompFile}
+              experiments={experiments}
+              syncOutgoing={syncOutgoing}
+              onSyncedWorkoutData={onSyncedWorkoutData}
+              onSyncedBodyCompData={onSyncedBodyCompData}
+              onSyncedExperiments={onSyncedExperiments}
+              onReset={onReset}
+            />
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-5 py-6 sm:py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Your training log
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {summary.total_logged > 0 ? (
-              <>
-                {formatDate(summary.date_start)} — {formatDate(summary.date_end)} ·{" "}
-                {spanLabel(summary.date_start, summary.date_end)}
-              </>
-            ) : (
-              "No workouts logged in this date range"
-            )}
-          </p>
+      <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
+        <div className="mb-8 flex flex-col gap-6">
+          <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+            <div className="flex flex-col gap-2.5">
+              <div className="font-mono text-xs tracking-[0.08em] text-muted-foreground uppercase">
+                Training log <span className="text-muted-foreground/50">/</span> {sectionOf(tab)}
+                {summary.total_logged > 0 ? (
+                  <span className="hidden normal-case tracking-normal sm:inline">
+                    {"  ·  "}
+                    {formatDate(summary.date_start)} – {formatDate(summary.date_end)}
+                  </span>
+                ) : null}
+              </div>
+              <h1 className="text-3xl font-semibold tracking-tight sm:text-[40px] sm:leading-[1.1]">
+                {pageTitleOf(tab)}
+              </h1>
+              {usesRange && insights.dateBounds ? (
+                <ScopeLine
+                  dateBounds={insights.dateBounds}
+                  range={range}
+                  rangePreset={rangePreset}
+                  onRangeSelect={onRangeSelect}
+                  granularity={granularity}
+                  onGranularityChange={onGranularityChange}
+                  dailyDisabled={dailyDisabled}
+                />
+              ) : (
+                // Plateaus, Alignment and Experiments are computed in App.tsx
+                // from the full, unfiltered history as of today — saying so
+                // beats showing a date control that silently does nothing here.
+                <p className="text-base text-muted-foreground">
+                  Uses your full history, as of today — the date range doesn't apply here.
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
+              <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
+              {source === "upload" ? "Stored in this browser only" : "Sample data isn't stored"}
+            </div>
+          </div>
+          <SubNav value={tab} onValueChange={onTabChange} />
         </div>
 
         <Tabs value={tab} onValueChange={onTabChange} className="gap-6">
-          <TabNav value={tab} onValueChange={onTabChange} />
-
           <TabsContent value={OVERVIEW_TAB}>
             <OverviewTab insights={insights} granularity={granularity} />
           </TabsContent>
