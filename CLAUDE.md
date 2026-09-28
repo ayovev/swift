@@ -37,18 +37,20 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
    (`public/sample/sugarwod-sample-export.csv`) in `src/App.tsx` — that's a download from our
    own origin, not an upload of anyone's log.
 
-   The one deliberate exception to "nothing persists" is still local-only: an athlete's
-   uploaded rows (SugarWOD and, separately, InBody) are cached in the browser's own IndexedDB
+   The one deliberate exception to "nothing persists" is still local-only: an athlete's uploaded
+   rows (SugarWOD and, separately, InBody) are cached in the browser's own IndexedDB
    (`src/lib/storage/`) purely so a reload doesn't force a re-upload. It doesn't relax the rule
    above — the data still never leaves the browser, and there is still no backend or account
-   behind it. `App.tsx`'s "Start over" control wipes it via `idbClearAll()` — gated behind a
-   confirmation dialog whenever real data is loaded, since it's the one control that clears
-   everything at once (see "Architecture: app state and local persistence" below) — and the
-   bundled sample file is deliberately never written to this store, so demo mode never leaves
-   anything behind. Two narrower controls — "Replace file" for the workout log and for InBody,
-   both in the dashboard's Settings sheet (the InBody one also on the Body Comp view) — let an
-   athlete bring in a fresh CSV without wiping anything else — they call the exact same upload handlers a first upload uses, so only the one dataset
-   being replaced changes. This does not extend to analytics — constraint 2 below is unaffected.
+   behind it. "Start over" (in the dashboard's Settings sheet, calling `App.tsx`'s `reset()`)
+   wipes it via `idbClearAll()` — gated behind a confirmation dialog whenever real data is
+   loaded, since it's the one control that clears everything at once (see "Architecture: app
+   state and local persistence" below) — and the bundled sample file is deliberately never
+   written to this store, so demo mode never leaves anything behind. Two narrower controls —
+   "Replace file" for the workout log and for InBody, both in the dashboard's Settings sheet
+   (the InBody one also on the Body Comp view) — let an athlete bring in a fresh CSV without
+   wiping anything else. They call the exact same upload handlers a first upload uses, so only
+   the one dataset being replaced changes. This does not extend to analytics — constraint 2
+   below is unaffected.
 2. **Analytics may only send closed-vocabulary usage events.** See `src/lib/posthog.ts`: the
    `SwiftEvent` union *is* the entire analytics surface, and it is deliberately narrow rather
    than `Record<string, unknown>`. Never add workout content, movement names, athlete notes,
@@ -310,31 +312,36 @@ back to one.
 The dashboard's controls are sorted by how often an athlete touches them, and each tier has one
 home. Read the header comments of the files named here before moving anything between tiers.
 
-- **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header: Training
-  (Overview, Workouts), Breakdown (the ten GPP domains and three modalities — a classification of
-  the same workouts, not separate data), Body (Body Comp) and Insights (Plateaus, Alignment,
-  Experiments — the pipelines that need both uploads). The views inside a section are a plain row
-  of tabs under the page title, never a dropdown, so every sibling is visible; a one-view section
-  shows no second row. Where a section mixes two kinds of view (Breakdown's Domains and
-  Modalities), each group's label sits *above* its tabs as a header — in line with them it read
-  as one more tab. `tabs.ts` stays the flat identity list (`ALL_TABS`) that analytics and the
-  tab content key off; `SECTIONS` only groups it, and `tests/sectionNav.test.tsx` asserts every
-  tab lands in exactly one section.
+- **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header, at its true
+  centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
+  onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains and three
+  modalities — a classification of the same workouts, not separate data), Body (Body Comp) and
+  Insights (Plateaus, Alignment, Experiments — the pipelines that need both uploads). The views
+  inside a section are a plain row of tabs under the page title, never a dropdown, so every
+  sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
+  view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
+  header — in line with them it read as one more tab. `tabs.ts` stays the flat identity list
+  (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
+  `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section.
 - **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
   under the page title ("Showing all time, grouped by month"), next to the charts they change
-  rather than in the global header. It sits in its own row under a thin rule, with the storage
-  note on the right, so the heading block (title and, on domain pages, CrossFit's definition)
-  ends visibly before the view controls begin. Insights views show a plain "uses your full history" sentence
-  instead, because `App.tsx` computes them from the whole unfiltered log as of today — a date
-  control there would silently do nothing.
+  rather than in the global header. It sits in its own row under a thin rule (with "Stored in
+  this browser only" on the right, for uploaded data), so the heading block (title and, on
+  domain pages, CrossFit's definition) ends visibly before the view controls begin. Insights
+  views show a plain "uses your full history" sentence instead, because `App.tsx` computes them
+  from the whole unfiltered log as of today — a date control there would silently do nothing.
 - **Manage** and **Preferences** (monthly at most / once) — `SettingsSheet.tsx`, behind the
-  header's single Settings button: replace either file, send/receive to another device, accent and
-  mode, Start over. Every control there calls the same handler it did when it lived in the
-  header; moving them changed where they live, not what they do. The accent/mode UI there is a
-  second rendering of the same `useTheme()` state `ThemeControls.tsx` renders on the landing page.
+  header's single Settings button (a ghost button in muted text, so it never out-weighs the
+  section links): replace either file, send/receive to another device, accent and mode, Start
+  over. Every control there calls the same handler it did when it lived in the header; moving
+  them changed where they live, not what they do. The accent/mode UI there is a second rendering
+  of the same `useTheme()` state `ThemeControls.tsx` renders on the landing page.
 
-The totals on Overview are a ruled row rather than a card (they're the page's headline, not one
-panel among several), and a view's first card doesn't repeat the page title above it.
+Sample mode is announced exactly once, by the full-width strip above the header (the same one
+production has always had) — never by a chip in the header or a second note on the page;
+`tests/App.test.tsx` checks there's one and only one. The totals on Overview are a ruled row
+rather than a card (they're the page's headline, not one panel among several), and a view's
+first card doesn't repeat the page title above it.
 
 ## Architecture: app state and local persistence
 
@@ -362,11 +369,11 @@ added after the app initially held everything in memory only.
   (workout rows, body-comp rows, view preferences, experiments) from storage in parallel before
   deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
-  bundled sample file is deliberately never cached, so demo mode never leaves anything behind.
-  A successful InBody parse always persists (there's no sample-data concept for it). `range` and
+  bundled sample file is deliberately never cached, so demo mode never leaves anything behind. A
+  successful InBody parse always persists (there's no sample-data concept for it). `range` and
   `granularity` persist from exactly two call sites in `App.tsx` — `persistRangeSelection`
-  (passed to `DateRangePicker` as `onSelect`) and `persistGranularity` (passed to
-  `ScopeLine`'s grouping menu/the daily-auto-downgrade effect as `onGranularityChange`) — rather than a
+  (passed to `DateRangePicker` as `onSelect`) and `persistGranularity` (passed to `ScopeLine`'s
+  grouping menu/the daily-auto-downgrade effect as `onGranularityChange`) — rather than a
   `useEffect` mirroring every state change into storage. That's deliberate, not an oversight: a
   blanket mirror would also fire on `run()`'s and `reset()`'s own internal `setRange`/
   `setGranularity` calls, racing "Start over"'s `idbClearAll()` and re-saving the very defaults
@@ -400,10 +407,11 @@ added after the app initially held everything in memory only.
   silently restore the data the button just appeared to discard. This also clears `range` and
   `granularity` back to their in-memory defaults (`null`/`monthly`) on the next restore, same as
   the two uploaded datasets. `reset()` itself is unchanged, but the "Start over" button that
-  calls it (in the Settings sheet) is now gated behind a confirmation `AlertDialog` (`src/components/ui/alert-dialog.tsx`)
-  whenever `source === "upload"` — sample mode still resets in one click, since nothing
-  persisted is at risk there. The dialog's copy names exactly what gets deleted (workout log,
-  body composition history, experiments) so this is the one place all three are named together.
+  calls it (in the Settings sheet) is now gated behind a confirmation `AlertDialog`
+  (`src/components/ui/alert-dialog.tsx`) whenever `source === "upload"` — sample mode still
+  resets in one click, since nothing persisted is at risk there. The dialog's copy names exactly
+  what gets deleted (workout log, body composition history, experiments) so this is the one
+  place all three are named together.
 - The theme preference remains on its own `localStorage` key (see Theming below), not this
   layer — it needs to be read synchronously before first paint to avoid a flash of the wrong
   mode, which IndexedDB's async API can't do.
