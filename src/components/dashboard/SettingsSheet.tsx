@@ -113,7 +113,14 @@ export function SettingsSheet(props: SettingsSheetProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-2" aria-label="Settings">
+        {/* Ghost, in muted text: it's a door to rarely-used controls, so it
+            shouldn't out-weigh the section links beside it. */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-9 gap-2 text-muted-foreground hover:text-foreground"
+          aria-label="Settings"
+        >
           <SlidersHorizontal className="size-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">Settings</span>
         </Button>

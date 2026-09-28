@@ -131,8 +131,12 @@ export function Dashboard({
           whether this is sample data, and one door to everything else
           (SettingsSheet). View scope lives with the content below; see ScopeLine. */}
       <header className="border-b border-border">
-        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-10 px-5 sm:flex-nowrap sm:px-8">
-          <div className="flex h-16 items-center gap-3">
+        {/* From lg up, a three-column grid with equal outer tracks, so the
+            sections sit at the true centre of the page whatever the wordmark
+            and Settings widths are. Narrower than that there isn't room for
+            all three on one line, so the sections wrap onto their own row. */}
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-10 px-5 sm:px-8 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+          <div className="flex h-16 shrink-0 items-center gap-3">
             <SwiftMark className="[&_img]:h-7" />
             {source === "sample" ? (
               <span className="rounded border border-border px-1.5 py-0.5 font-mono text-[11px] tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase">
@@ -140,11 +144,10 @@ export function Dashboard({
               </span>
             ) : null}
           </div>
-          {/* On a phone the sections wrap onto their own row under the wordmark. */}
-          <div className="order-last -mx-5 w-[calc(100%+2.5rem)] border-t border-border px-5 sm:order-none sm:mx-0 sm:w-auto sm:grow sm:border-t-0 sm:px-0">
+          <div className="order-last -mx-5 w-[calc(100%+2.5rem)] border-t border-border px-5 sm:-mx-8 sm:w-[calc(100%+4rem)] sm:px-8 lg:order-none lg:mx-0 lg:w-auto lg:border-t-0 lg:px-0">
             <SectionLinks value={tab} onValueChange={onTabChange} />
           </div>
-          <div className="ml-auto sm:ml-0">
+          <div className="ml-auto lg:ml-0 lg:justify-self-end">
             <SettingsSheet
               source={source}
               workoutRows={workoutRows}
