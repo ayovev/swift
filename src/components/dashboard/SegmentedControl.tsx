@@ -23,10 +23,9 @@ export const ACTIVE_SEGMENT_CLASSES =
   "bg-accent-subtle text-accent-link hover:bg-accent-subtle hover:text-accent-link dark:hover:bg-accent-subtle dark:hover:text-accent-link";
 
 /**
- * A bordered row of ghost buttons, active option in the accent — the same
- * shape as GranularityPicker, extracted so every segmented control in the
- * dashboard (granularity, rep-max filter, color mode) reads as one control
- * family instead of each picking its own look.
+ * A bordered row of ghost buttons, active option in the accent — extracted
+ * so every segmented control in the app (rep-max filter, colour mode) reads
+ * as one control family instead of each picking its own look.
  */
 export function SegmentedControl<T extends string>({
   value,

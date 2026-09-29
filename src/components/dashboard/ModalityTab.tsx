@@ -34,9 +34,6 @@ export function ModalityTab({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">{name}</CardTitle>
-        </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {MODALITY_BLURBS[modality]}

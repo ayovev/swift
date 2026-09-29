@@ -17,7 +17,7 @@ const MODE_OPTIONS: { value: ModePreference; label: string; Icon: typeof Sun }[]
 
 /**
  * Accent colour and light/dark/system mode, folded into one bordered pill.
- * They're always shown side by side (Landing's and Dashboard's headers), so
+ * They're always shown side by side (Landing's header), so
  * one shared container reads as "theme controls," not two adjacent widgets.
  * The four buttons (accent swatch, then the three mode options) sit in a
  * single segmented control with one consistent gap between every pair —

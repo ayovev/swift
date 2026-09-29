@@ -34,7 +34,7 @@ export function granularityLabel(granularity: Granularity): string {
  * Daily bars stop being legible well before a multi-year span — a year of
  * them is already ~365 bars in the same chart width a monthly view fits in
  * ~12. Starting point picked to revisit once it's been tried against real
- * ranges (see GranularityPicker.tsx); not a measured perceptual limit.
+ * ranges (see ScopeLine.tsx); not a measured perceptual limit.
  */
 export const MAX_DAILY_SPAN_DAYS = 365;
 

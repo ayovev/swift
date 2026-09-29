@@ -274,9 +274,6 @@ export function ExperimentsTab({
   if (!experimentInsights) {
     return (
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Experiments</CardTitle>
-        </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Mark when you tried something — a new program, a strength cycle, a diet change — and
@@ -311,9 +308,6 @@ export function ExperimentsTab({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Experiments</CardTitle>
-        </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Mark when you tried something, and see whether your lifts, named benchmarks and body
