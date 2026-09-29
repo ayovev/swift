@@ -127,7 +127,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
       </DialogTrigger>
       <DialogContent
         showCloseButton={false}
-        className="top-0 right-0 left-auto flex h-svh max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-r-0 p-0 sm:max-w-[480px]"
+        className="sheet-slide top-0 right-0 left-auto flex h-svh max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-y-0 border-r-0 p-0 sm:max-w-[480px]"
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5 sm:px-7">
           <DialogTitle className="text-lg font-semibold">Settings</DialogTitle>

@@ -74,6 +74,23 @@ export function pageSubtitleOf(value: string): string | null {
   return domain ? CROSSFIT_DEFINITIONS[domain] : null;
 }
 
+/**
+ * A label that reserves its bold width. The active link is `font-medium` and
+ * the rest are regular, so without this each link's width — and every sibling's
+ * position — shifts a pixel or two when the selection moves. A hidden bold copy
+ * of the text (via `::after`) sizes the box for both weights.
+ */
+function StableLabel({ children }: { children: string }) {
+  return (
+    <span
+      data-label={children}
+      className="flex flex-col items-center after:invisible after:block after:h-0 after:overflow-hidden after:font-medium after:content-[attr(data-label)]"
+    >
+      {children}
+    </span>
+  );
+}
+
 /** Top-level sections, rendered in the page header. Selecting one opens its first view. */
 export function SectionLinks({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
   const active = sectionOf(value);
@@ -94,7 +111,7 @@ export function SectionLinks({ value, onValueChange }: { value: string; onValueC
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
-            {s.id}
+            <StableLabel>{s.id}</StableLabel>
           </button>
         );
       })}
@@ -137,7 +154,7 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
                       : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {labelOf(v)}
+                  <StableLabel>{labelOf(v)}</StableLabel>
                 </button>
               );
             })}
