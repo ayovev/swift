@@ -12,6 +12,7 @@ import { ExperimentsTab } from "./ExperimentsTab";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlateauTab } from "./PlateauTab";
+import { RelativeStrengthTab } from "./RelativeStrengthTab";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import {
   ALL_TABS,
@@ -20,6 +21,7 @@ import {
   ALIGNMENT_TAB,
   EXPERIMENTS_TAB,
   PLATEAU_TAB,
+  STRENGTH_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
 import { WorkoutsTab } from "./WorkoutsTab";
@@ -30,6 +32,7 @@ import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
+import type { RelativeStrengthResult } from "@/lib/analytics/relativeStrength";
 import type { AlignmentResult } from "@/types/alignment";
 import type { Experiment, ExperimentInsight } from "@/types/experiment";
 import type { PlateauInsight } from "@/types/plateau";
@@ -55,6 +58,7 @@ interface DashboardProps {
   onSyncedExperiments: (experiments: Experiment[]) => void;
   plateauInsights: PlateauInsight[] | null;
   alignment: AlignmentResult | null;
+  relativeStrength: RelativeStrengthResult | null;
   experiments: Experiment[];
   experimentInsights: Map<string, ExperimentInsight> | null;
   onAddExperiment: (label: string, date: string) => void;
@@ -79,6 +83,7 @@ export function Dashboard({
   onSyncedExperiments,
   plateauInsights,
   alignment,
+  relativeStrength,
   experiments,
   experimentInsights,
   onAddExperiment,
@@ -221,7 +226,7 @@ export function Dashboard({
                 dailyDisabled={dailyDisabled}
               />
             ) : (
-              // Plateaus, Alignment and Experiments are computed in App.tsx
+              // Plateaus, Alignment, Strength and Experiments are computed in App.tsx
               // from the full, unfiltered history as of today — saying so
               // beats showing a date control that silently does nothing here.
               <p className="text-base text-muted-foreground">
@@ -280,6 +285,14 @@ export function Dashboard({
           <TabsContent value={ALIGNMENT_TAB}>
             <AlignmentTab
               alignment={alignment}
+              bodyComp={bodyComp}
+              onBodyCompFile={onBodyCompFile}
+            />
+          </TabsContent>
+
+          <TabsContent value={STRENGTH_TAB}>
+            <RelativeStrengthTab
+              relativeStrength={relativeStrength}
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
             />

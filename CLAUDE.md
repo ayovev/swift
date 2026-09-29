@@ -139,7 +139,7 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
+- **components**: `Dashboard.tsx` renders 20 views (`tabs.ts` → `ALL_TABS`): Overview,
   Workouts, the ten GPP domains, the three modalities, Body Comp, Plateaus, Alignment, and
   Experiments, grouped for navigation into four sections (see "Architecture: dashboard layout"
   below). A
@@ -235,6 +235,22 @@ reports the metric at all. `isMeaningfulChange(delta, band)` is the one comparis
 - Maintainer report: `SWIFT_SUGARWOD_CSV=… SWIFT_INBODY_CSV=… npx vitest run tests/insightFindings.test.ts`
   writes `insight-findings.txt` (bands per metric and method, and every existing insight output
   that changed).
+
+## Architecture: Relative strength
+
+`src/lib/analytics/relativeStrength.ts` (`getRelativeStrength(workouts, scans, { asOfDate })`)
+divides each load-scored lift's per-session estimated 1RM by body mass, to tell "got stronger"
+from "got bigger". It reuses the Plateau Detector's lift grouping (`buildLiftSubjects`, same
+name normalisation, same RX/Scaled split, Load-scored rows only) and `estimateOneRepMax`; the
+one difference is the rep cap (`RS_MAX_REPS`, any scheme up to it, versus Plateaus' 1/2/3/5RM).
+Body mass at a session is the scan that day, else a straight line between bracketing scans no
+further apart than `RS_MAX_INTERPOLATION_GAP_DAYS`, else the nearest scan within
+`RS_MAX_NEAREST_SCAN_DAYS`, else `unmatched` — never extrapolated. The mass change over the
+window is judged with the noise band, so a change inside normal scan variation is never blamed
+for a lift change. Attribution is `strength-driven | mass-driven | mixed | flat | declined`
+(`declined` is an addition to the original plan's four, which had nowhere to put a fall). Lifts
+failing a gate keep their series and carry a `reason` naming the gate and the shortfall.
+Wired in `App.tsx` behind the same both-uploads gate as Plateaus; rendered by `RelativeStrengthTab.tsx`.
 
 ## Architecture: Experiments
 
@@ -342,7 +358,7 @@ home. Read the header comments of the files named here before moving anything be
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains and three
   modalities — a classification of the same workouts, not separate data), Body (Body Comp) and
-  Insights (Plateaus, Alignment, Experiments — the pipelines that need both uploads). The views
+  Insights (Plateaus, Alignment, Strength, Experiments — the pipelines that need both uploads). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a

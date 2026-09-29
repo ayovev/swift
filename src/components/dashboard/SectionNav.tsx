@@ -5,6 +5,7 @@ import {
   EXPERIMENTS_TAB,
   OVERVIEW_TAB,
   PLATEAU_TAB,
+  STRENGTH_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
 import { CROSSFIT_DEFINITIONS, DOMAIN_LIST } from "@/types/dashboard";
@@ -20,12 +21,12 @@ interface SubGroup {
 }
 
 /**
- * Nineteen views, grouped the way an athlete actually moves between them:
+ * Twenty views, grouped the way an athlete actually moves between them:
  * what I did (Training), what it was made of (Breakdown — the ten GPP
  * domains and three modalities, which are a *classification* of the same
  * workouts rather than separate data), what my body did (Body), and what
- * the two datasets say together (Insights — Plateaus, Alignment and
- * Experiments, the three pipelines that need both uploads).
+ * the two datasets say together (Insights — Plateaus, Alignment,
+ * Strength and Experiments, the pipelines that need both uploads).
  *
  * Two levels, never a dropdown: the section row sits in the page header and
  * the views inside a section are a plain row of tabs under the page title,
@@ -42,7 +43,7 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
     ],
   },
   { id: "Body", groups: [{ values: [BODY_COMP_TAB] }] },
-  { id: "Insights", groups: [{ values: [PLATEAU_TAB, ALIGNMENT_TAB, EXPERIMENTS_TAB] }] },
+  { id: "Insights", groups: [{ values: [PLATEAU_TAB, ALIGNMENT_TAB, STRENGTH_TAB, EXPERIMENTS_TAB] }] },
 ];
 
 export function sectionOf(value: string): Section {

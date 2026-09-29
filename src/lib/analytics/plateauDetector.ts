@@ -106,16 +106,27 @@ export function formatGateShortfall(has: number, needs: number, singular: string
  * either formula's specific bias rather than committing to one. A true
  * 1-rep max (reps === 1) needs no estimating and is used as-is.
  */
-function estimateLiftValue(raw: SugarWodRow): number | null {
+function estimateLiftValue(raw: SugarWodRow, maxReps?: number): number | null {
   const rawValue = parseNumericField(raw.best_result_raw);
   if (rawValue === null) return null;
 
   const reps = parseRepMax(`${raw.title ?? ""} ${raw.description ?? ""}`);
-  if (reps === null || repMaxCategory(reps) === "other") return null;
-  if (reps === 1) return rawValue;
+  if (reps === null) return null;
+  // Default: only the four tracked schemes. `maxReps` (relative strength)
+  // widens that to any scheme up to a cap — high-rep estimates are unreliable.
+  if (maxReps === undefined ? repMaxCategory(reps) === "other" : reps < 1 || reps > maxReps) return null;
+  return estimateOneRepMax(rawValue, reps);
+}
 
-  const epley = rawValue * (1 + reps / 30);
-  const brzycki = (rawValue * 36) / (37 - reps);
+/**
+ * Average of Epley and Brzycki (see `estimateLiftValue`). Shared by the
+ * Plateau Detector and relative strength so both estimate a lift's 1RM the
+ * same way. A single (reps === 1) is used as-is.
+ */
+export function estimateOneRepMax(load: number, reps: number): number {
+  if (reps === 1) return load;
+  const epley = load * (1 + reps / 30);
+  const brzycki = (load * 36) / (37 - reps);
   return (epley + brzycki) / 2;
 }
 
@@ -155,7 +166,10 @@ interface LiftGroup {
  * logic (its "don't reimplement the normalization/grouping rules" spec
  * requirement) instead of maintaining a second copy that could drift.
  */
-export function buildLiftSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): SubjectCandidate[] {
+export function buildLiftSubjects(
+  workouts: { date: Dayjs; raw: SugarWodRow }[],
+  options: { maxReps?: number } = {}
+): SubjectCandidate[] {
   const groups = new Map<string, LiftGroup>();
 
   for (const w of workouts) {
@@ -182,7 +196,7 @@ export function buildLiftSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[])
       const entries: DatedValue[] = [];
       for (const w of group.rows) {
         if (w.raw.rx_or_scaled !== status) continue;
-        const value = estimateLiftValue(w.raw);
+        const value = estimateLiftValue(w.raw, options.maxReps);
         if (value !== null) entries.push({ date: w.date, value });
       }
       if (entries.length === 0) continue;

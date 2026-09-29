@@ -7,6 +7,7 @@ export const BODY_COMP_TAB = "body-comp";
 export const PLATEAU_TAB = "plateaus";
 export const ALIGNMENT_TAB = "alignment";
 export const EXPERIMENTS_TAB = "experiments";
+export const STRENGTH_TAB = "relative-strength";
 
 export interface TabDescriptor {
   value: string;
@@ -19,7 +20,8 @@ export interface TabDescriptor {
     | "Body composition"
     | "Plateaus"
     | "Alignment"
-    | "Experiments";
+    | "Experiments"
+    | "Relative strength";
 }
 
 /**
@@ -28,7 +30,7 @@ export interface TabDescriptor {
  * identity of each view (its value and short label), which analytics
  * (`tab_viewed`) and the tab content in Dashboard.tsx key off.
  *
- * All 19 tabs: Overview, the running Workouts list, ten GPP domains, three
+ * All 20 tabs: Overview, the running Workouts list, ten GPP domains, three
  * modalities, Body Comp — built from a wholly separate InBody upload,
  * always present in the nav even before any InBody data is loaded (see
  * BodyCompTab) — Plateaus, which needs both datasets and is likewise always
@@ -36,7 +38,8 @@ export interface TabDescriptor {
  * Plateaus + InBody (see AlignmentTab), same always-present treatment, and
  * Experiments, which re-anchors the same before/after comparison around a
  * user-logged intervention date and needs both datasets the same way (see
- * ExperimentsTab).
+ * ExperimentsTab), and Strength, which divides each lift's estimated 1RM by body
+ * mass to tell a stronger lift from a heavier athlete (see RelativeStrengthTab).
  */
 export const ALL_TABS: TabDescriptor[] = [
   { value: OVERVIEW_TAB, label: "Overview", group: "Overview" },
@@ -55,4 +58,5 @@ export const ALL_TABS: TabDescriptor[] = [
   { value: PLATEAU_TAB, label: "Plateaus", group: "Plateaus" },
   { value: ALIGNMENT_TAB, label: "Alignment", group: "Alignment" },
   { value: EXPERIMENTS_TAB, label: "Experiments", group: "Experiments" },
+  { value: STRENGTH_TAB, label: "Strength", group: "Relative strength" },
 ];

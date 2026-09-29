@@ -9,6 +9,7 @@ import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/
 import { getExperimentInsight } from "@/lib/analytics/experimentInsight";
 import type { Granularity } from "@/lib/analytics/granularity";
 import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
+import { getRelativeStrength } from "@/lib/analytics/relativeStrength";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
@@ -174,6 +175,16 @@ export default function App() {
         ? getAlignment(plateauInsights, bodyComp.rows, new Date())
         : null,
     [plateauInsights, bodyComp]
+  );
+
+  // Same gate as plateauInsights, same reasoning: the whole unfiltered log as
+  // of today, and both datasets.
+  const relativeStrength = useMemo(
+    () =>
+      state.status === "ready" && bodyComp.status === "ready"
+        ? getRelativeStrength(state.rows, bodyComp.rows, { asOfDate: new Date() })
+        : null,
+    [state, bodyComp]
   );
 
   // Same gate as plateauInsights: needs both datasets. Each experiment is
@@ -429,6 +440,7 @@ export default function App() {
         onSyncedExperiments={handleSyncedExperiments}
         plateauInsights={plateauInsights}
         alignment={alignment}
+        relativeStrength={relativeStrength}
         experiments={experiments}
         experimentInsights={experimentInsights}
         onAddExperiment={addExperiment}

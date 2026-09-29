@@ -22,8 +22,8 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Plateaus, Alignment and Experiments", () => {
-    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
+  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Plateaus, Alignment, Strength and Experiments", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1 + 1);
   });
 });
 
@@ -98,12 +98,13 @@ describe("SubNav", () => {
     }
   });
 
-  it("lists the three Insights views", () => {
+  it("lists the Insights views", () => {
     render(<SubNav value={PLATEAU_TAB} onValueChange={vi.fn()} />);
     const nav = screen.getByRole("navigation", { name: "Insights views" });
     expect(within(nav).getAllByRole("button").map((b) => b.textContent)).toEqual([
       "Plateaus",
       "Alignment",
+      "Strength",
       "Experiments",
     ]);
   });

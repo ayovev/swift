@@ -92,3 +92,39 @@ export const TIME_OF_DAY_SPLIT_HOUR = 12;
 
 /** Fewest scans on each side of the split before a morning/afternoon comparison is reported. Tunable. */
 export const TIME_OF_DAY_MIN_PER_SIDE = 5;
+
+// ── Relative strength (relativeStrength.ts) ─────────────────────────────
+
+/**
+ * Highest rep scheme an e1RM is estimated from. The export carries the top
+ * load of a session and only the rep scheme named in the title, so this is
+ * an estimate from one set; above ~8 reps the 1RM formulas diverge badly.
+ * Tunable.
+ */
+export const RS_MAX_REPS = 8;
+
+/** Look-back for one lift's attribution window, in days, ending at `asOfDate`. Tunable. */
+export const RS_WINDOW_DAYS = 365;
+
+/** Fewest sessions (dates with a usable e1RM) a lift needs inside the window. Tunable. */
+export const RS_MIN_SESSIONS = 4;
+
+/** Fewest of those sessions that must have a body-composition match. Tunable. */
+export const RS_MIN_MATCHED_SESSIONS = 3;
+
+/** Fewest InBody scans overlapping the window. Tunable. */
+export const RS_MIN_SCANS_IN_WINDOW = 2;
+
+/**
+ * Two scans bracketing a session are interpolated between only when they are
+ * no further apart than this (days). Beyond it the body may well have
+ * changed non-linearly between them, so the session falls back to the
+ * nearest scan or stays unmatched. Tunable.
+ */
+export const RS_MAX_INTERPOLATION_GAP_DAYS = 45;
+
+/** A session with no bracketing pair uses its nearest scan only if it is within this many days; else unmatched, never extrapolated. Tunable. */
+export const RS_MAX_NEAREST_SCAN_DAYS = 21;
+
+/** Sessions averaged at each end of the window when comparing start to end. Capped at half the sessions. Tunable. */
+export const RS_END_SEGMENT_SESSIONS = 3;

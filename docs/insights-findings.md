@@ -44,3 +44,36 @@ Choices worth a second look:
   an export that mixes the two would compare a delta in one field to a band from the other.
 - The floor (half the default) exists so a few agreeing scans can't produce a near-zero band.
 - Time of day is diagnostic only and has not been run on real data.
+
+## Phase 2: Relative strength
+
+**Not spot-checked against your raw CSVs yet.** The plan asks for three lifts checked by hand
+on your own data; that needs your exports. To check one: pick a lift, find its Load rows in
+the SugarWOD CSV, compute the e1RM from `best_result_raw` and the rep scheme in the title or
+description (average of Epley and Brzycki; a 1RM is used as logged), and compare against the
+chart's tooltip. `tests/relativeStrength.test.ts` pins the same arithmetic on fixtures.
+
+Choices and thresholds (all in `insightConfig.ts`, all tunable):
+
+- e1RM: the export has the top load per session and no reps per set, so this is the session's
+  best load with the rep scheme parsed from the text (`parseRepMax`). Unstated schemes are
+  skipped, same as Plateaus. Cap `RS_MAX_REPS = 8`. Plateaus still only accepts 1/2/3/5RM, so
+  a lift can have more sessions here than there.
+- Window one year, at least 4 sessions and 3 with a body reading, at least 2 scans in the window.
+- Interpolate between scans up to 45 days apart; otherwise nearest scan within 21 days; otherwise
+  the session is left out of the normalised views.
+- Start and end are the means of up to 3 sessions at each end of the window, on sessions that
+  have a body reading. Gain/loss uses the Plateau Detector's 3% (`TREND_THRESHOLD`).
+- Lean mass is preferred; bodyweight is used if too few sessions have a lean match.
+
+Things that looked off or worth deciding:
+
+- The plan's four attribution values have no place for a fall in raw strength, so I added
+  `declined`.
+- RX and Scaled are split per lift, as on the Plateaus tab. For a barbell lift that halves the
+  sessions for anyone who switches; say if you'd rather merge load lifts.
+- Sessions logged with `best_result_raw` as a load but a title that names a *different* scheme
+  than the athlete actually did will be mis-estimated; that's inherent to the export.
+- On the bundled sample (synthetic scans), 4 of 32 lift/status series qualify. Back Squat has 29
+  sessions overall but only 2 in the last year, so it is listed as insufficient. If the
+  365-day window (`RS_WINDOW_DAYS`) feels too strict for lifts you test rarely, widen it.
