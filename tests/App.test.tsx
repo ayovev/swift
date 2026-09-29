@@ -202,8 +202,9 @@ describe("App — local persistence", () => {
 
         // Sample mode is announced once, by the full-width strip above the
         // header — not by a chip in the header or notes elsewhere on the page.
-        const strips = screen.getAllByRole("status").filter((el) => /^Sample data\./.test(el.textContent ?? ""));
+        const strips = screen.getAllByRole("status").filter((el) => /^Sample data/.test(el.textContent ?? ""));
         expect(strips).toHaveLength(1);
+        expect(strips[0]).toHaveTextContent("Sample data · Use your own");
         expect(screen.queryByText(/sample data isn't stored/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/stored in this browser only/i)).not.toBeInTheDocument();
 
@@ -216,6 +217,34 @@ describe("App — local persistence", () => {
         await waitFor(() => {
           expect(screen.getByRole("button", { name: /sample data/i })).toBeInTheDocument();
         });
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+    15000
+  );
+
+  // Same sample-load cost as the test above, so the same explicit budget.
+  it(
+    "the sample strip's 'Use your own' goes straight back to the upload screen",
+    async () => {
+      const csvText = loadSampleCsvText();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () => ({ ok: true, text: async () => csvText }))
+      );
+
+      try {
+        renderApp();
+        const sampleButton = await screen.findByRole("button", { name: /sample data/i });
+        await waitFor(() => expect(sampleButton).toBeEnabled());
+        fireEvent.click(sampleButton);
+        await findDashboard(3000);
+
+        fireEvent.click(screen.getByRole("button", { name: "Use your own" }));
+
+        expect(await screen.findByRole("button", { name: /upload your sugarwod csv export/i })).toBeInTheDocument();
+        expect(screen.queryByText(/this can't be undone/i)).not.toBeInTheDocument();
       } finally {
         vi.unstubAllGlobals();
       }

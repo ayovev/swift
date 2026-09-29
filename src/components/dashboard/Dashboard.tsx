@@ -136,12 +136,21 @@ export function Dashboard({
           className="flex items-center justify-center gap-2 border-b border-accent-border bg-accent-subtle px-5 py-2 text-center text-sm"
         >
           <FlaskConical className="size-3.5 shrink-0 text-accent-link" aria-hidden="true" />
-          <span>
-            <strong className="font-medium">Sample data.</strong>{" "}
-            <span className="text-muted-foreground">
-              This is a sample training log and body-composition history, here so you can look
-              around.
+          {/* One line at phone width: what this is, and the way out. "Use your
+              own" is the same reset as Settings' Start over, which sample mode
+              runs without a confirmation since nothing here is stored. */}
+          <span className="whitespace-nowrap">
+            <strong className="font-medium">Sample data</strong>
+            <span className="text-muted-foreground" aria-hidden="true">
+              {" · "}
             </span>
+            <button
+              type="button"
+              onClick={onReset}
+              className="text-accent-link underline underline-offset-2 hover:no-underline"
+            >
+              Use your own
+            </button>
           </span>
         </div>
       ) : null}

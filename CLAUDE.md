@@ -337,9 +337,11 @@ home. Read the header comments of the files named here before moving anything be
   them changed where they live, not what they do. The accent/mode UI there is a second rendering
   of the same `useTheme()` state `ThemeControls.tsx` renders on the landing page.
 
-Sample mode is announced exactly once, by the full-width strip above the header (the same one
-production has always had) — never by a chip in the header or a second note on the page;
-`tests/App.test.tsx` checks there's one and only one. The totals on Overview are a ruled row
+Sample mode is announced exactly once, by the full-width strip above the header — never by a
+chip in the header or a second note on the page; `tests/App.test.tsx` checks there's one and
+only one. Its copy is deliberately one line at phone width ("Sample data · Use your own"), and
+"Use your own" is the same `reset()` as Settings' Start over, which sample mode runs without a
+confirmation since nothing from the sample is stored. The totals on Overview are a ruled row
 rather than a card (they're the page's headline, not one panel among several), and a view's
 first card doesn't repeat the page title above it.
 
