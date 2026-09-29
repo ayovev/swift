@@ -139,7 +139,7 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 22 views (`tabs.ts` → `ALL_TABS`): Overview,
+- **components**: `Dashboard.tsx` renders 23 views (`tabs.ts` → `ALL_TABS`): Overview,
   Workouts, the ten GPP domains, the three modalities, Body Comp, Plateaus, Alignment, and
   Experiments, grouped for navigation into four sections (see "Architecture: dashboard layout"
   below). A
@@ -282,6 +282,21 @@ the equal-length window immediately before B.
 - Analytics: `interaction_used` with a closed `InteractionName` union in `posthog.ts` — a name
   from that list, never a value.
 
+## Architecture: cycle reports
+
+`cycleReport.ts` gives a retrospective per training block. **Cycles are user-defined only**:
+`getCycles()` turns tags of type bulk/cut/maintain/other into cycles (injury and travel are
+context, not blocks) and `customCycle()` takes typed dates. Automatic segmentation by lift-exposure
+share is *not* built — the plan requires prototyping it on a multi-year history and reviewing it by
+eye first, and none is in the repo. `Cycle.source` keeps `"detected"` so adding it changes no type.
+
+`getCycleReport()` does not recompute earlier phases: lift changes and their attribution come from
+`getRelativeStrength` (window = the cycle), and whether a body-comp change beats scan noise comes
+from `getBodyCompNoiseBands`/`isMeaningfulChange`. Volume is logged workouts per week. A cycle
+under `CYCLE_MIN_DAYS`, empty, or inverted is `insufficient` with a reason. The summary states
+volume, lift changes, then body composition; it never grades them (a test rejects judgement words).
+Injury/travel tags inside the cycle add a sentence naming them. Rendered by `CyclesTab.tsx`.
+
 ## Architecture: Experiments
 
 `src/lib/analytics/experimentInsight.ts` is a third pipeline in the same family as Plateau
@@ -388,7 +403,7 @@ home. Read the header comments of the files named here before moving anything be
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains and three
   modalities — a classification of the same workouts, not separate data), Body (Body Comp) and
-  Insights (Plateaus, Alignment, Strength, Compare, Experiments, Tags). The views
+  Insights (Plateaus, Alignment, Strength, Compare, Cycles, Experiments, Tags). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a

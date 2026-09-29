@@ -98,3 +98,27 @@ Questions the plan asked to raise:
 - Verified by hand in headless Chromium against the sample: a drag on the Body Comp weight chart
   produced the selection bar, and Compare opened with window B filled in. Touch dragging isn't
   handled; the date inputs are the fallback.
+
+## Phase 4: Cycle reports
+
+**Automatic cycle detection is not built.** The plan says to prototype it on your multi-year
+history, review the segmentation by eye, and ship user-defined cycles if it isn't reliable. There
+is no multi-year history in this repo to review against, so I shipped the fallback: cycles are
+tags of type bulk / cut / maintain / other (Tags view) or a typed date range. `Cycle.source` still
+allows `"detected"`. If you want detection, the obvious first prototype is a rolling share of
+lift sessions per lift (e.g. 8-week window) with a boundary where the leading lifts change; run it
+on your history and look at where it cuts before we commit to it.
+
+Thresholds (`insightConfig.ts`, tunable): at least 14 days; 3 sessions per lift to report a
+change; a lift is a "focus" lift at 15% or more of the cycle's lift sessions, at most 3 named; 2
+scans inside the cycle for a body-comp change (first scan to last scan in the cycle).
+
+Notes:
+
+- Lift changes are first-to-last session in the cycle (raw, from the relative-strength series),
+  with the attribution from Phase 2, which has its own gates. A lift can therefore show a change
+  with no attribution when there aren't enough scans inside its window.
+- The report is not the same as "before vs after the cycle": it only looks inside the cycle.
+  Use Compare for a before/after.
+- Summary wording is mine ("not explained by body mass", "partly body mass"); check it against
+  the voice you want.

@@ -14,6 +14,7 @@ import { OverviewTab } from "./OverviewTab";
 import { PlateauTab } from "./PlateauTab";
 import { RelativeStrengthTab } from "./RelativeStrengthTab";
 import { CompareTab } from "./CompareTab";
+import { CyclesTab } from "./CyclesTab";
 import { TagsTab } from "./TagsTab";
 import { ChartInteractionProvider } from "./charts/chartInteraction";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
@@ -26,6 +27,7 @@ import {
   PLATEAU_TAB,
   STRENGTH_TAB,
   COMPARE_TAB,
+  CYCLES_TAB,
   TAGS_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
@@ -348,6 +350,10 @@ export function Dashboard({
               initialWindowB={pendingWindow?.window ?? null}
               onSaveAsExperiment={onAddExperiment}
             />
+          </TabsContent>
+
+          <TabsContent value={CYCLES_TAB}>
+            <CyclesTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} tags={tags} />
           </TabsContent>
 
           <TabsContent value={TAGS_TAB}>

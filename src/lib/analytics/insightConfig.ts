@@ -139,3 +139,20 @@ export const CMP_MIN_SCANS_PER_WINDOW = 1;
 
 /** The two windows are called out as different lengths when they differ by more than this fraction of the longer one. Tunable. */
 export const CMP_LENGTH_MISMATCH_RATIO = 0.25;
+
+// ── Cycle reports (cycleReport.ts) ──────────────────────────────────────
+
+/** A cycle shorter than this many days is too short to say anything about. Tunable. */
+export const CYCLE_MIN_DAYS = 14;
+
+/** Sessions a lift needs inside the cycle before its estimated-1RM change is reported. Tunable. */
+export const CYCLE_MIN_SESSIONS_PER_LIFT = 3;
+
+/** A lift is a "focus" lift when it is at least this share of the cycle's logged lift sessions. Tunable. */
+export const CYCLE_FOCUS_MIN_SHARE = 0.15;
+
+/** At most this many focus lifts are named per cycle. Tunable. */
+export const CYCLE_MAX_FOCUS_LIFTS = 3;
+
+/** InBody scans inside the cycle needed before its body-composition change is reported. Tunable. */
+export const CYCLE_MIN_SCANS = 2;

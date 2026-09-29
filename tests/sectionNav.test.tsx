@@ -22,8 +22,8 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Plateaus, Alignment, Strength, Compare, Experiments and Tags", () => {
-    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1 + 1 + 1 + 1);
+  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Plateaus, Alignment, Strength, Compare, Cycles, Experiments and Tags", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1);
   });
 });
 
@@ -106,6 +106,7 @@ describe("SubNav", () => {
       "Alignment",
       "Strength",
       "Compare",
+      "Cycles",
       "Experiments",
       "Tags",
     ]);

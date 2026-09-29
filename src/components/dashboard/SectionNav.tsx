@@ -3,6 +3,7 @@ import {
   ALL_TABS,
   BODY_COMP_TAB,
   COMPARE_TAB,
+  CYCLES_TAB,
   EXPERIMENTS_TAB,
   OVERVIEW_TAB,
   PLATEAU_TAB,
@@ -23,7 +24,7 @@ interface SubGroup {
 }
 
 /**
- * Twenty-two views, grouped the way an athlete actually moves between them:
+ * Twenty-three views, grouped the way an athlete actually moves between them:
  * what I did (Training), what it was made of (Breakdown — the ten GPP
  * domains and three modalities, which are a *classification* of the same
  * workouts rather than separate data), what my body did (Body), and what
@@ -45,7 +46,7 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
     ],
   },
   { id: "Body", groups: [{ values: [BODY_COMP_TAB] }] },
-  { id: "Insights", groups: [{ values: [PLATEAU_TAB, ALIGNMENT_TAB, STRENGTH_TAB, COMPARE_TAB, EXPERIMENTS_TAB, TAGS_TAB] }] },
+  { id: "Insights", groups: [{ values: [PLATEAU_TAB, ALIGNMENT_TAB, STRENGTH_TAB, COMPARE_TAB, CYCLES_TAB, EXPERIMENTS_TAB, TAGS_TAB] }] },
 ];
 
 export function sectionOf(value: string): Section {
