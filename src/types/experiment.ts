@@ -25,7 +25,17 @@ export interface Experiment {
   /** When the experiment ended, "YYYY-MM-DD". Unset means still ongoing. */
   endDate?: string;
   label: string;
+  /**
+   * Where the "before" side starts, "YYYY-MM-DD". Set, the experiment is
+   * compared against [baselineStart, date) — the same earlier range Compare
+   * showed when it was saved. Unset (every experiment made before this field
+   * existed), the "before" side is all history before `date`.
+   */
+  baselineStart?: string;
 }
+
+/** Everything about an experiment except its id: what the add/edit form produces. */
+export type ExperimentFields = Omit<Experiment, "id">;
 
 export type ExperimentClassification = "improved" | "declined" | "no_change" | "mixed" | "insufficient_data";
 

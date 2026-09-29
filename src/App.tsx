@@ -22,7 +22,7 @@ import { loadTags, saveTags } from "@/lib/storage/tagsStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
-import type { Experiment, ExperimentInsight } from "@/types/experiment";
+import type { Experiment, ExperimentFields, ExperimentInsight } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { ContextTag } from "@/types/tag";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -374,20 +374,21 @@ export default function App() {
   // applies here: an experiment added or deleted while sample data is
   // loaded must not leave anything in IndexedDB for a later real session to
   // stumble on).
-  const addExperiment = useCallback((label: string, date: string, endDate?: string) => {
+  const addExperiment = useCallback((fields: ExperimentFields) => {
     setExperiments((prev) => {
-      const next = [...prev, { id: crypto.randomUUID(), date, label, ...(endDate ? { endDate } : {}) }];
+      const next = [...prev, { id: crypto.randomUUID(), ...fields }];
       if (state.status === "ready" && state.source === "upload") void saveExperiments(next);
       return next;
     });
   }, [state]);
 
-  // Editing replaces label and dates in place and keeps the id, so anything
-  // keyed by it (its insight, a saved comparison) follows the edit. An unset
-  // endDate clears a previous one: the experiment is ongoing again.
-  const updateExperiment = useCallback((id: string, label: string, date: string, endDate?: string) => {
+  // Editing replaces everything but the id, so anything keyed by it (its
+  // insight) follows the edit. Fields left out of `fields` are cleared, not
+  // kept: no endDate means ongoing again, no baselineStart means all earlier
+  // history — the form always sends the full set.
+  const updateExperiment = useCallback((id: string, fields: ExperimentFields) => {
     setExperiments((prev) => {
-      const next = prev.map((e) => (e.id === id ? { id, date, label, ...(endDate ? { endDate } : {}) } : e));
+      const next = prev.map((e) => (e.id === id ? { id, ...fields } : e));
       if (state.status === "ready" && state.source === "upload") void saveExperiments(next);
       return next;
     });

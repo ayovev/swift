@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareWindows, defaultWindowA, windowToExperimentDates } from "@/lib/analytics/compareWindows";
+import { compareWindows, defaultWindowA, windowAIsContiguous, windowsToExperimentFields } from "@/lib/analytics/compareWindows";
 import { NO_NOISE_BANDS } from "@/lib/analytics/bodyCompNoise";
 import type { ContextTag } from "@/types/tag";
 import { liftRow, scanRow, workoutRow } from "./fixtures/rows";
@@ -143,8 +143,17 @@ describe("compareWindows — eligibility and caveats", () => {
   });
 });
 
-describe("windowToExperimentDates", () => {
-  it("maps window B onto an Experiment's date and endDate", () => {
-    expect(windowToExperimentDates(B)).toEqual({ date: "2026-02-01", endDate: "2026-02-28" });
+describe("windowsToExperimentFields", () => {
+  it("maps window B onto date and endDate, and window A's start onto baselineStart", () => {
+    expect(windowsToExperimentFields(defaultWindowA(B), B)).toEqual({
+      date: "2026-02-01",
+      endDate: "2026-02-28",
+      baselineStart: "2026-01-04",
+    });
+  });
+
+  it("knows whether the saved experiment reproduces window A exactly", () => {
+    expect(windowAIsContiguous(defaultWindowA(B), B)).toBe(true);
+    expect(windowAIsContiguous({ start: "2026-01-01", end: "2026-01-20" }, B)).toBe(false);
   });
 });

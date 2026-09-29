@@ -42,7 +42,7 @@ import type { Insights } from "@/lib/analytics/buildInsights";
 import type { RelativeStrengthResult } from "@/lib/analytics/relativeStrength";
 import type { AlignmentResult } from "@/types/alignment";
 import type { DateWindow } from "@/types/compare";
-import type { Experiment, ExperimentInsight } from "@/types/experiment";
+import type { Experiment, ExperimentFields, ExperimentInsight } from "@/types/experiment";
 import type { ContextTag } from "@/types/tag";
 import type { PlateauInsight } from "@/types/plateau";
 import type { InBodyRow } from "@/types/inbody";
@@ -75,8 +75,8 @@ interface DashboardProps {
   onReplaceTags: (tags: ContextTag[]) => void;
   experiments: Experiment[];
   experimentInsights: Map<string, ExperimentInsight> | null;
-  onAddExperiment: (label: string, date: string, endDate?: string) => void;
-  onUpdateExperiment: (id: string, label: string, date: string, endDate?: string) => void;
+  onAddExperiment: (fields: ExperimentFields) => void;
+  onUpdateExperiment: (id: string, fields: ExperimentFields) => void;
   onDeleteExperiment: (id: string) => void;
 }
 

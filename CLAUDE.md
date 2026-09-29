@@ -262,10 +262,15 @@ partial comparison); overlapping or inverted windows are `insufficient`. `defaul
 the equal-length window immediately before B.
 
 - **One data model.** "Save as experiment" writes window B to an `Experiment`'s `date`/`endDate`
-  (`windowToExperimentDates`). Window A is *not* stored: `getExperimentInsight` compares against
-  all history before the start date, so a saved experiment's numbers can differ from the table it
-  came from. `CompareTab` says so beside the button. Making it lossless would need an optional
-  `baselineStart` on `Experiment` (additive) — not done, it's the maintainer's call.
+  and window A's start to its optional `baselineStart` (`windowsToExperimentFields`).
+  `getExperimentInsight` then compares `[baselineStart, date)` against the experiment's own range,
+  so the saved verdict is built on the earlier range the Compare table showed. An experiment with
+  no `baselineStart` (everything made before the field existed, and anything added directly)
+  compares against all history before its start date, exactly as before. `baselineStart` must be
+  strictly before `date`; otherwise it is ignored, the same defensiveness as an inverted `endDate`.
+  An experiment's "before" side always runs up to its start date, so a custom window A that ends
+  earlier than the day before window B gains the gap when saved; `CompareTab` says so
+  (`windowAIsContiguous`).
 - **Dragging is a convenience, never the only way.** `charts/chartInteraction.tsx` gives a chart a
   drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`)
   and shaded tag bands. A selection offers "Compare with the N days before" and "Tag this range";
@@ -323,10 +328,8 @@ exports before trusting a number. Specifically:
   per lift, as on Plateaus, which halves sessions for anyone who switches; merging load lifts is
   an open question. A title naming a different scheme than the athlete did will be mis-estimated;
   that is inherent to the export.
-- **Compare and Experiments.** A saved comparison maps window B onto an `Experiment` but not
-  window A, so the saved numbers can differ from the table (see above). An optional
-  `baselineStart` would make it exact. Tags are not synced between devices or seeded in sample
-  mode, and there is no touch dragging on charts (date inputs are the fallback).
+- **Compare and Experiments.** Tags are not synced between devices or seeded in sample mode, and
+  there is no touch dragging on charts (date inputs are the fallback).
 - **Cycles.** Automatic detection is deferred. First prototype worth trying: a rolling share of
   lift sessions per lift (about an 8-week window) with a boundary where the leading lifts change,
   reviewed by eye on a multi-year history before committing to it. A lift can show a change with
@@ -343,7 +346,8 @@ datasets required — but anchored to an athlete-logged date instead of a rollin
 window.
 
 - **`Experiment`** (`src/types/experiment.ts`) is user-authored, not derived from either upload:
-  just a `date` ("when I tried this") and a free-text `label` ("what I tried"). It's its own
+  a `date` ("when I tried this"), a free-text `label` ("what I tried"), an optional `endDate` and
+  an optional `baselineStart` (where the "before" side starts; unset means all earlier history). It's its own
   IndexedDB-backed dataset (`src/lib/storage/experimentsStorage.ts`, key `"experiments"`, same
   thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added, edited and deleted from the
   Experiments tab (`ExperimentsTab.tsx`; the same `ExperimentForm` adds and edits — an edit keeps

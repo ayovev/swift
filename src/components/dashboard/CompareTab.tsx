@@ -9,9 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getBodyCompNoiseBands } from "@/lib/analytics/bodyCompNoise";
-import { compareWindows, defaultWindowA, windowToExperimentDates } from "@/lib/analytics/compareWindows";
+import {
+  compareWindows,
+  defaultWindowA,
+  windowAIsContiguous,
+  windowsToExperimentFields,
+} from "@/lib/analytics/compareWindows";
 import { capture } from "@/lib/posthog";
 import type { BodyCompComparison, DateWindow, PerformanceComparison } from "@/types/compare";
+import type { ExperimentFields } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
@@ -24,7 +30,7 @@ interface CompareTabProps {
   tags: ContextTag[];
   /** Window B from a drag on a chart, if that's how the athlete got here. */
   initialWindowB: DateWindow | null;
-  onSaveAsExperiment: (label: string, date: string, endDate: string) => void;
+  onSaveAsExperiment: (fields: ExperimentFields) => void;
 }
 
 const today = () => dayjs().format("YYYY-MM-DD");
@@ -125,8 +131,10 @@ export function CompareTab({ workouts, scans, tags, initialWindowB, onSaveAsExpe
   const suggested = windowsValid ? `${formatDate(b.start)} – ${formatDate(b.end)}` : "";
 
   const save = () => {
-    const { date, endDate } = windowToExperimentDates(b);
-    onSaveAsExperiment((label.trim() || `Comparison, ${suggested}`).slice(0, 200), date, endDate);
+    onSaveAsExperiment({
+      label: (label.trim() || `Comparison, ${suggested}`).slice(0, 200),
+      ...windowsToExperimentFields(a, b),
+    });
     capture({ name: "interaction_used", props: { interaction: "compare_saved_as_experiment" } });
     setSaved(true);
   };
@@ -275,9 +283,11 @@ export function CompareTab({ workouts, scans, tags, initialWindowB, onSaveAsExpe
         <Card>
           <CardContent className="flex flex-col gap-3">
             <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Save this range as an experiment to keep it on the Experiments view. A saved experiment
-              compares its days against everything logged before its start date, not only the
-              earlier range chosen here, so its numbers can differ from this table.
+              Save this range as an experiment to keep it on the Experiments view, compared with the
+              earlier range shown above.{" "}
+              {windowAIsContiguous(a, b)
+                ? ""
+                : "An experiment's earlier range always runs up to its start date, so it will also include the days between the two ranges here."}
             </p>
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex flex-1 flex-col gap-1.5">

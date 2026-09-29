@@ -255,7 +255,7 @@ describe("ExperimentsTab — ready state", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Add experiment" }));
 
-    expect(onAddExperiment).toHaveBeenCalledWith("Started 5/3/1 cycle", "2026-09-05", undefined);
+    expect(onAddExperiment).toHaveBeenCalledWith({ label: "Started 5/3/1 cycle", date: "2026-09-05" });
   });
 
   it("submits with both dates once an end date is also picked, and resets both fields after", () => {
@@ -284,7 +284,7 @@ describe("ExperimentsTab — ready state", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Add experiment" }));
 
-    expect(onAddExperiment).toHaveBeenCalledWith("Tried a cut", "2026-09-05", "2026-09-10");
+    expect(onAddExperiment).toHaveBeenCalledWith({ label: "Tried a cut", date: "2026-09-05", endDate: "2026-09-10" });
 
     // Fields reset for the next entry, same as the label already did before this feature.
     expect(screen.getByRole("button", { name: "Ended (optional)" })).toHaveTextContent("Still ongoing");
@@ -351,7 +351,7 @@ describe("ExperimentsTab — editing", () => {
     fireEvent.click(screen.getByRole("button", { name: 'Edit "Switched to own programming"' }));
     fireEvent.change(screen.getByDisplayValue("Switched to own programming"), { target: { value: "Own programming, 4 days a week" } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(onUpdate).toHaveBeenCalledWith("b", "Own programming, 4 days a week", "2024-08-15", undefined);
+    expect(onUpdate).toHaveBeenCalledWith("b", { label: "Own programming, 4 days a week", date: "2024-08-15" });
     expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument();
   });
 
@@ -360,7 +360,53 @@ describe("ExperimentsTab — editing", () => {
     fireEvent.click(screen.getByRole("button", { name: 'Edit "Started 5/3/1 cycle"' }));
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(onUpdate).toHaveBeenCalledWith("a", "Started 5/3/1 cycle", "2024-05-01", undefined);
+    expect(onUpdate).toHaveBeenCalledWith("a", { label: "Started 5/3/1 cycle", date: "2024-05-01" });
+  });
+
+  it("shows a saved comparison's earlier range on the card and keeps it through an edit", () => {
+    const onUpdate = vi.fn();
+    const withBaseline: Experiment[] = [{ id: "c", date: "2024-05-01", endDate: "2024-06-01", baselineStart: "2024-04-01", label: "Comparison" }];
+    render(
+      <ExperimentsTab
+        experiments={withBaseline}
+        experimentInsights={new Map()}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={vi.fn()}
+        onAddExperiment={vi.fn()}
+        onUpdateExperiment={onUpdate}
+        onDeleteExperiment={vi.fn()}
+      />
+    );
+    expect(screen.getByText(/Compared with Apr 1, 2024 – Apr 30, 2024/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: 'Edit "Comparison"' }));
+    fireEvent.change(screen.getByDisplayValue("Comparison"), { target: { value: "Renamed" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(onUpdate).toHaveBeenCalledWith("c", {
+      label: "Renamed",
+      date: "2024-05-01",
+      endDate: "2024-06-01",
+      baselineStart: "2024-04-01",
+    });
+  });
+
+  it("goes back to all earlier history when the earlier range is cleared", () => {
+    const onUpdate = vi.fn();
+    const withBaseline: Experiment[] = [{ id: "c", date: "2024-05-01", baselineStart: "2024-04-01", label: "Comparison" }];
+    render(
+      <ExperimentsTab
+        experiments={withBaseline}
+        experimentInsights={new Map()}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={vi.fn()}
+        onAddExperiment={vi.fn()}
+        onUpdateExperiment={onUpdate}
+        onDeleteExperiment={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: 'Edit "Comparison"' }));
+    fireEvent.click(screen.getByRole("button", { name: "All history" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(onUpdate).toHaveBeenCalledWith("c", { label: "Comparison", date: "2024-05-01" });
   });
 
   it("will not save an empty label", () => {

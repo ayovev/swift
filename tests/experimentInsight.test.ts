@@ -353,6 +353,67 @@ describe("getExperimentInsight — endDate bounds the 'after' window", () => {
   });
 });
 
+describe("getExperimentInsight — baselineStart bounds the 'before' window", () => {
+  // Three lifts, each logged far before (100), just before (150) and after (152) a 2024-06-01 start.
+  const lifts = ["Snatch", "Clean", "Jerk"];
+  const workouts = lifts.flatMap((l) => [
+    liftRow("01/01/2023", l, 100),
+    liftRow("04/01/2024", l, 150),
+    liftRow("07/01/2024", l, 152),
+  ]);
+  const scans = ["20230110", "20230601", "20240410", "20240501", "20240710", "20240801"].map((d) =>
+    inbodyRow({ date: `${d}090000`, "Body Fat Mass(lb)": "25", "Soft Lean Mass(lb)": "140" })
+  );
+
+  it("with no baselineStart, compares against all earlier history (unchanged behaviour)", () => {
+    const r = getExperimentInsight(experiment(), workouts, scans, AS_OF);
+    expect(r.performanceSummary).toMatchObject({ improvingCount: 3, flatCount: 0, classifiedCount: 3 });
+  });
+
+  it("with baselineStart, the before side is only [baselineStart, start): the far-earlier entries drop out", () => {
+    const r = getExperimentInsight(experiment({ baselineStart: "2024-03-01" }), workouts, scans, AS_OF);
+    // Before is 150 alone, after 152: +1.3%, under the 3% threshold.
+    expect(r.performanceSummary).toMatchObject({ improvingCount: 0, flatCount: 3, classifiedCount: 3 });
+  });
+
+  it("applies the baseline to InBody scans too, and names the earlier range in the reason when it leaves a side thin", () => {
+    // Only the 2024-05-01 scan is on or after 2024-04-20 and before the start.
+    const scansThin = getExperimentInsight(
+      experiment({ baselineStart: "2024-04-20" }),
+      [...workouts, ...lifts.map((l) => liftRow("05/01/2024", l, 151))],
+      scans,
+      AS_OF
+    );
+    expect(scansThin.classification).toBe("insufficient_data");
+    expect(scansThin.reason).toBe("needs 1 more InBody scan in the earlier range (has 1, needs 2)");
+  });
+
+  it("names the earlier range in the subject-gate reason too", () => {
+    const r = getExperimentInsight(experiment({ baselineStart: "2024-05-15" }), workouts, scans, AS_OF);
+    expect(r.classification).toBe("insufficient_data");
+    expect(r.reason).toMatch(/lifts\/WODs with logged data in the earlier range/);
+  });
+
+  it("ignores a baselineStart that is not before the start date, as it does an inverted endDate", () => {
+    const all = getExperimentInsight(experiment(), workouts, scans, AS_OF);
+    expect(getExperimentInsight(experiment({ baselineStart: "2024-06-01" }), workouts, scans, AS_OF)).toEqual({
+      ...all,
+      experiment: experiment({ baselineStart: "2024-06-01" }),
+    });
+    expect(getExperimentInsight(experiment({ baselineStart: "2024-09-01" }), workouts, scans, AS_OF).performanceSummary).toEqual(
+      all.performanceSummary
+    );
+    expect(getExperimentInsight(experiment({ baselineStart: "nope" }), workouts, scans, AS_OF).performanceSummary).toEqual(
+      all.performanceSummary
+    );
+  });
+
+  it("works together with endDate", () => {
+    const r = getExperimentInsight(experiment({ baselineStart: "2024-03-01", endDate: "2024-08-01" }), workouts, scans, AS_OF);
+    expect(r.performanceSummary.classifiedCount).toBe(3);
+  });
+});
+
 describe("getExperimentInsight — real sample data", () => {
   it("doesn't throw and returns a valid classification against the real SugarWOD export + synthetic InBody fixture", async () => {
     const workouts = await loadSampleRows();

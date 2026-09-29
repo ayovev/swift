@@ -13,7 +13,7 @@ import { UploadDropzone } from "@/components/landing/UploadDropzone";
 import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
 import { formatDate } from "./charts/chartUtils";
 import type { BodyCompState } from "./BodyCompTab";
-import type { Experiment, ExperimentClassification, ExperimentInsight } from "@/types/experiment";
+import type { Experiment, ExperimentClassification, ExperimentFields, ExperimentInsight } from "@/types/experiment";
 
 interface ExperimentsTabProps {
   experiments: Experiment[];
@@ -21,9 +21,9 @@ interface ExperimentsTabProps {
   experimentInsights: Map<string, ExperimentInsight> | null;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
-  onAddExperiment: (label: string, date: string, endDate?: string) => void;
-  /** Replaces the label and dates of an existing experiment; `endDate` undefined means still ongoing. */
-  onUpdateExperiment: (id: string, label: string, date: string, endDate?: string) => void;
+  onAddExperiment: (fields: ExperimentFields) => void;
+  /** Replaces everything but the id. An unset `endDate` means ongoing, an unset `baselineStart` means all earlier history. */
+  onUpdateExperiment: (id: string, fields: ExperimentFields) => void;
   onDeleteExperiment: (id: string) => void;
 }
 
@@ -82,7 +82,7 @@ function ExperimentForm({
 }: {
   initial?: Experiment;
   submitLabel: string;
-  onSubmit: (label: string, date: string, endDate?: string) => void;
+  onSubmit: (fields: ExperimentFields) => void;
   onCancel?: () => void;
 }) {
   const editing = initial !== undefined;
@@ -90,19 +90,28 @@ function ExperimentForm({
   const [label, setLabel] = useState(initial?.label ?? "");
   const [date, setDate] = useState<Date | undefined>(isoToDate(initial?.date));
   const [endDate, setEndDate] = useState<Date | undefined>(isoToDate(initial?.endDate));
+  const [baselineStart, setBaselineStart] = useState<Date | undefined>(isoToDate(initial?.baselineStart));
   const [open, setOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
+  const [baselineOpen, setBaselineOpen] = useState(false);
 
   const canSubmit = label.trim() !== "" && date !== undefined;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit || !date) return;
-    onSubmit(label.trim(), dayjs(date).format("YYYY-MM-DD"), endDate ? dayjs(endDate).format("YYYY-MM-DD") : undefined);
+    const iso = (d: Date) => dayjs(d).format("YYYY-MM-DD");
+    onSubmit({
+      label: label.trim(),
+      date: iso(date),
+      ...(endDate ? { endDate: iso(endDate) } : {}),
+      ...(baselineStart ? { baselineStart: iso(baselineStart) } : {}),
+    });
     if (!editing) {
       setLabel("");
       setDate(undefined);
       setEndDate(undefined);
+      setBaselineStart(undefined);
     }
   }
 
@@ -134,6 +143,8 @@ function ExperimentForm({
                 // inverted range; clearing it is simpler than clamping, and
                 // this is a rare edit (both fields default unset).
                 if (d && endDate && dayjs(endDate).isBefore(dayjs(d), "day")) setEndDate(undefined);
+                // Same for the earlier range: it has to start before the experiment does.
+                if (d && baselineStart && !dayjs(baselineStart).isBefore(dayjs(d), "day")) setBaselineStart(undefined);
               }}
               disabled={{ after: new Date() }}
               defaultMonth={date ?? new Date()}
@@ -185,6 +196,49 @@ function ExperimentForm({
         </div>
       </div>
 
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`${uid}-baseline`}>Compare against (optional)</Label>
+        <div className="flex items-center gap-1">
+          <Popover open={baselineOpen} onOpenChange={setBaselineOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                id={`${uid}-baseline`}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 w-48 justify-start gap-2 font-normal"
+              >
+                <CalendarIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                {baselineStart ? `From ${formatDate(dayjs(baselineStart).format("YYYY-MM-DD"))}` : "All earlier history"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={baselineStart}
+                onSelect={(d) => {
+                  setBaselineStart(d);
+                  setBaselineOpen(false);
+                }}
+                disabled={{ after: date ? dayjs(date).subtract(1, "day").toDate() : new Date() }}
+                defaultMonth={baselineStart ?? date ?? new Date()}
+              />
+            </PopoverContent>
+          </Popover>
+          {baselineStart ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 px-2 font-normal"
+              onClick={() => setBaselineStart(undefined)}
+            >
+              All history
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
       <div className="flex flex-1 flex-col gap-1.5">
         <Label htmlFor={`${uid}-label`}>What did you try?</Label>
         <Input
@@ -216,7 +270,7 @@ function ExperimentCard({
 }: {
   experiment: Experiment;
   insight: ExperimentInsight | undefined;
-  onUpdate: (label: string, date: string, endDate?: string) => void;
+  onUpdate: (fields: ExperimentFields) => void;
   onDelete: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -228,8 +282,8 @@ function ExperimentCard({
           <ExperimentForm
             initial={experiment}
             submitLabel="Save changes"
-            onSubmit={(label, date, endDate) => {
-              onUpdate(label, date, endDate);
+            onSubmit={(fields) => {
+              onUpdate(fields);
               setEditing(false);
             }}
             onCancel={() => setEditing(false)}
@@ -247,6 +301,9 @@ function ExperimentCard({
           <p className="mt-1 text-xs text-muted-foreground">
             Started {formatDate(experiment.date)}
             {experiment.endDate ? ` · Ended ${formatDate(experiment.endDate)}` : ""}
+            {experiment.baselineStart
+              ? ` · Compared with ${formatDate(experiment.baselineStart)} – ${formatDate(dayjs(experiment.date).subtract(1, "day").format("YYYY-MM-DD"))}`
+              : ""}
           </p>
         </div>
         <div className="flex gap-1">
@@ -397,7 +454,7 @@ export function ExperimentsTab({
             key={experiment.id}
             experiment={experiment}
             insight={experimentInsights.get(experiment.id)}
-            onUpdate={(label, date, endDate) => onUpdateExperiment(experiment.id, label, date, endDate)}
+            onUpdate={(fields) => onUpdateExperiment(experiment.id, fields)}
             onDelete={() => onDeleteExperiment(experiment.id)}
           />
         ))

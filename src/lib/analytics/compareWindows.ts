@@ -230,7 +230,20 @@ export function compareWindows(
   return { status: "ok", windowA, windowB, performance, bodyComp, caveats };
 }
 
-/** The Experiment fields a comparison maps onto: window B's span. Window A is not stored (see CLAUDE.md). */
-export function windowToExperimentDates(windowB: DateWindow): { date: string; endDate: string } {
-  return { date: windowB.start, endDate: windowB.end };
+/**
+ * The Experiment fields a comparison maps onto: window B's span, and window
+ * A's start as the experiment's `baselineStart`. Exact when A ends the day
+ * before B starts (the default); an experiment's "before" side always runs
+ * up to its start date, so a custom A that ends earlier gains the gap.
+ */
+export function windowsToExperimentFields(
+  windowA: DateWindow,
+  windowB: DateWindow
+): { date: string; endDate: string; baselineStart: string } {
+  return { date: windowB.start, endDate: windowB.end, baselineStart: windowA.start };
+}
+
+/** Whether saving as an experiment reproduces window A exactly: A ends the day before B starts. */
+export function windowAIsContiguous(windowA: DateWindow, windowB: DateWindow): boolean {
+  return dayjs(windowA.end).add(1, "day").isSame(dayjs(windowB.start), "day");
 }

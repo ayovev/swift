@@ -59,14 +59,30 @@ describe("CompareTab", () => {
     expect(screen.getByText(/Jan 10, 2026 – Jan 31, 2026/)).toBeInTheDocument();
   });
 
-  it("saves window B as an experiment with its start and end, and says how that differs", () => {
+  it("saves window B and the earlier range as an experiment", () => {
     const save = vi.fn();
     render(<CompareTab workouts={workouts} scans={scans} tags={[]} initialWindowB={B} onSaveAsExperiment={save} />);
-    expect(screen.getByText(/compares its days against everything logged before its start date/)).toBeInTheDocument();
+    expect(screen.getByText(/compared with the earlier range shown above/)).toBeInTheDocument();
+    expect(screen.queryByText(/also include the days between/)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "New program" } });
     fireEvent.click(screen.getByRole("button", { name: "Save as experiment" }));
-    expect(save).toHaveBeenCalledWith("New program", "2026-02-01", "2026-02-28");
+    expect(save).toHaveBeenCalledWith({
+      label: "New program",
+      date: "2026-02-01",
+      endDate: "2026-02-28",
+      baselineStart: "2026-01-04",
+    });
     expect(screen.getByRole("button", { name: "Saved as experiment" })).toBeDisabled();
+  });
+
+  it("warns that a custom earlier range with a gap before window B will gain the gap when saved", () => {
+    const save = vi.fn();
+    render(<CompareTab workouts={workouts} scans={scans} tags={[]} initialWindowB={B} onSaveAsExperiment={save} />);
+    fireEvent.click(screen.getByRole("button", { name: "Choose the earlier range" }));
+    fireEvent.change(screen.getByLabelText("Earlier range ends"), { target: { value: "2026-01-20" } });
+    expect(screen.getByText(/also include the days between the two ranges/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save as experiment" }));
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ baselineStart: "2026-01-04" }));
   });
 
   it("names an overlapping tag in the caveats", () => {
