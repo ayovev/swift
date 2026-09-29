@@ -51,6 +51,13 @@ export interface PlateauBodyCompTrend {
   leanMassDelta: number | null;
   fatMassDelta: number | null;
   bodyFatPctDelta: number | null;
+  /**
+   * Set only when the trend was computed against noise bands
+   * (`bodyCompNoise.ts`). A `true` means the delta is real data but no bigger
+   * than ordinary scan-to-scan variation, so nothing may claim a direction
+   * from it; `false` means it cleared the band, or has no delta at all.
+   */
+  withinNoise?: { leanMass: boolean; fatMass: boolean; bodyFatPct: boolean };
 }
 
 export interface PlateauInsight {

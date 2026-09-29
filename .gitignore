@@ -26,3 +26,4 @@ coverage/
 # vercel
 .vercel
 .gstack/
+insight-findings.txt

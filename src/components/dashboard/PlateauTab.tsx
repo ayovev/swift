@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UploadDropzone } from "@/components/landing/UploadDropzone";
+import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
 import { formatDate } from "./charts/chartUtils";
 import type { BodyCompState } from "./BodyCompTab";
 import type { PlateauClassification, PlateauInsight } from "@/types/plateau";
@@ -177,6 +178,9 @@ export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: Platea
                           <span>Lean {formatDelta(insight.bodyCompTrend.leanMassDelta, " lb")}</span>
                           <span>Fat mass {formatDelta(insight.bodyCompTrend.fatMassDelta, " lb")}</span>
                           <span>Body fat {formatDelta(insight.bodyCompTrend.bodyFatPctDelta, "%")}</span>
+                          {describeWithinNoise(insight.bodyCompTrend) ? (
+                            <span className="mt-1">{describeWithinNoise(insight.bodyCompTrend)}</span>
+                          ) : null}
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">—</span>

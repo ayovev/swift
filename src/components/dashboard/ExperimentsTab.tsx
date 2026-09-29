@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { UploadDropzone } from "@/components/landing/UploadDropzone";
+import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
 import { formatDate } from "./charts/chartUtils";
 import type { BodyCompState } from "./BodyCompTab";
 import type { Experiment, ExperimentClassification, ExperimentInsight } from "@/types/experiment";
@@ -244,6 +245,9 @@ function ExperimentCard({
                   <dd className="tabular text-sm">{formatDelta(insight.bodyCompSummary.bodyFatPctDelta, "%")}</dd>
                 </div>
               </dl>
+            ) : null}
+            {insight.classification !== "insufficient_data" && describeWithinNoise(insight.bodyCompSummary) ? (
+              <p className="text-xs text-muted-foreground">{describeWithinNoise(insight.bodyCompSummary)}</p>
             ) : null}
           </>
         ) : null}

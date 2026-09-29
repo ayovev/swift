@@ -210,6 +210,32 @@ comment before changing anything; this section is a map, not a restatement.
   shape — they're computed separately in `App.tsx` and passed to `Dashboard.tsx` as their own
   props, rendered by `PlateauTab.tsx`/`AlignmentTab.tsx`.
 
+## Architecture: InBody noise band
+
+`src/lib/analytics/bodyCompNoise.ts` answers "is this change between two scans bigger than
+scan-to-scan noise?" so no body-composition claim rests on sign alone. `getBodyCompNoiseBand()`
+estimates a band per metric (`weight`, `leanMass`, `fatMass`, `bodyFatPct`) on a ladder — scans
+within a week of each other (`paired-scans`), else spread around a rolling median (`residual`),
+else a labelled per-metric `default` — and returns `status: "insufficient"` only when no scan
+reports the metric at all. `isMeaningfulChange(delta, band)` is the one comparison.
+
+- Every threshold lives in `insightConfig.ts` with a comment on how it was chosen, and every one
+  is *tunable, validate against real data*: the repo bundles no real InBody history. Do not put a
+  bare number in an insight module; add it there.
+- The seam is `computeBodyCompTrend(start, end, bands?)`. With bands it sets `withinNoise` flags
+  on the trend (delta values stay untouched), and `isBodyCompDeclining`/`isBodyCompImproving`
+  treat a within-noise delta as not having moved. Plateaus, Alignment and Experiments all go
+  through those, so none has its own threshold. `describeWithinNoise()` is the one sentence the
+  three tabs show ("... within normal scan variation.").
+- Bands are estimated from the athlete's whole scan history as of `asOfDate`, never from a
+  per-subject window (too few scans). `NO_NOISE_BANDS` (all zero) reproduces the old sign-only
+  behaviour exactly; `insightFindings.ts` uses it for the before/after diff.
+- `analyzeTimeOfDay()` is a diagnostic only. Nothing adjusts for time of day until the
+  maintainer has reviewed the findings.
+- Maintainer report: `SWIFT_SUGARWOD_CSV=… SWIFT_INBODY_CSV=… npx vitest run tests/insightFindings.test.ts`
+  writes `insight-findings.txt` (bands per metric and method, and every existing insight output
+  that changed).
+
 ## Architecture: Experiments
 
 `src/lib/analytics/experimentInsight.ts` is a third pipeline in the same family as Plateau

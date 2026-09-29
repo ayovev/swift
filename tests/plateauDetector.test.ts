@@ -386,11 +386,24 @@ describe("getPlateauInsights — body composition signal combination", () => {
   it("classifies plateaued_body_comp only when lean is down AND fat is up", () => {
     const inbodyScans = [
       inbodyRow({ date: "20240201000000", "Skeletal Muscle Mass(lb)": "90", "Body Fat Mass(lb)": "25" }),
-      inbodyRow({ date: "20240301000000", "Skeletal Muscle Mass(lb)": "85", "Body Fat Mass(lb)": "28" }),
+      inbodyRow({ date: "20240301000000", "Skeletal Muscle Mass(lb)": "85", "Body Fat Mass(lb)": "29" }),
     ];
     const insights = getPlateauInsights(decliningLift, inbodyScans, AS_OF);
     expect(insights[0]!.performanceTrend.direction).toBe("down");
     expect(insights[0]!.classification).toBe("plateaued_body_comp");
+  });
+
+  it("does not claim a body-comp cause when the fat-mass change is inside the noise band", () => {
+    // Two scans is too few to measure a band, so the standard 3 lb band
+    // applies: +3 lb fat is not larger than it. (Before noise bands this
+    // read as plateaued_body_comp on sign alone.)
+    const inbodyScans = [
+      inbodyRow({ date: "20240201000000", "Skeletal Muscle Mass(lb)": "90", "Body Fat Mass(lb)": "25" }),
+      inbodyRow({ date: "20240301000000", "Skeletal Muscle Mass(lb)": "85", "Body Fat Mass(lb)": "28" }),
+    ];
+    const insights = getPlateauInsights(decliningLift, inbodyScans, AS_OF);
+    expect(insights[0]!.bodyCompTrend?.withinNoise?.fatMass).toBe(true);
+    expect(insights[0]!.classification).toBe("plateaued_other");
   });
 
   it("defaults to plateaued_other on an ambiguous mixed signal (lean down AND fat down)", () => {

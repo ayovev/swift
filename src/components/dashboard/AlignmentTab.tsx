@@ -3,6 +3,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadDropzone } from "@/components/landing/UploadDropzone";
+import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
 import { formatDate } from "./charts/chartUtils";
 import type { BodyCompState } from "./BodyCompTab";
 import type { AlignmentClassification, AlignmentResult } from "@/types/alignment";
@@ -153,6 +154,9 @@ export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentT
               </dd>
             </div>
           </dl>
+          {describeWithinNoise(bodyCompSummary) ? (
+            <p className="mt-3 text-xs text-muted-foreground">{describeWithinNoise(bodyCompSummary)}</p>
+          ) : null}
         </CardContent>
       </Card>
     </div>

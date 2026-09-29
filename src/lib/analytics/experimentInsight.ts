@@ -1,5 +1,7 @@
 import dayjs from "dayjs";
+import { getBodyCompNoiseBands } from "./bodyCompNoise";
 import {
+  type InsightNoiseOptions,
   buildBenchmarkSubjects,
   buildLiftSubjects,
   computeBodyCompTrend,
@@ -79,7 +81,8 @@ export function getExperimentInsight(
   experiment: Experiment,
   workouts: SugarWodRow[],
   inbodyScans: InBodyRow[],
-  asOfDate: Date
+  asOfDate: Date,
+  options: InsightNoiseOptions = {}
 ): ExperimentInsight {
   const asOf = dayjs(asOfDate);
   const start = dayjs(experiment.date);
@@ -189,7 +192,11 @@ export function getExperimentInsight(
   // scan in the athlete's whole history.
   const nearestBefore = scansBefore.reduce((a, b) => (b.date.isAfter(a.date) ? b : a));
   const nearestAfter = scansAfter.reduce((a, b) => (b.date.isBefore(a.date) ? b : a));
-  const bodyCompSummary: ExperimentBodyCompSummary = computeBodyCompTrend(nearestBefore.raw, nearestAfter.raw);
+  const bodyCompSummary: ExperimentBodyCompSummary = computeBodyCompTrend(
+    nearestBefore.raw,
+    nearestAfter.raw,
+    options.noiseBands ?? getBodyCompNoiseBands(parsedScans.map((s) => s.raw))
+  );
 
   const bodyCompState: "declining" | "improving" | "stable" = isBodyCompDeclining(bodyCompSummary)
     ? "declining"
