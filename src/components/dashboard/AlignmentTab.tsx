@@ -87,7 +87,7 @@ export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentT
     );
   }
 
-  const { classification, reason, performanceSummary, bodyCompSummary } = alignment;
+  const { classification, reason, performanceSummary, bodyCompSummary, tagNotes } = alignment;
   const hasWindow = bodyCompSummary.windowStart !== "" && bodyCompSummary.windowEnd !== "";
 
   return (
@@ -98,6 +98,11 @@ export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentT
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {classification === "insufficient_data" ? reason : CLASSIFICATION_COPY[classification]}
           </p>
+          {tagNotes?.map((note) => (
+            <p key={note} className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              {note}
+            </p>
+          ))}
           {hasWindow ? (
             <p className="text-xs text-muted-foreground">
               Comparison window: {formatDate(bodyCompSummary.windowStart)} —{" "}

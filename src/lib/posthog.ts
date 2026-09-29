@@ -36,7 +36,15 @@ export type SyncRole = "host" | "joiner";
  * entered or a number derived from their data. Add a name here and nowhere
  * else; the type is what keeps an interaction event from carrying content.
  */
-export type InteractionName = "strength_view_toggled";
+export type InteractionName =
+  | "strength_view_toggled"
+  | "compare_range_selected"
+  | "compare_saved_as_experiment"
+  | "tag_range_selected"
+  | "tag_created"
+  | "tag_edited"
+  | "tags_exported"
+  | "tags_imported";
 
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }

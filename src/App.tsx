@@ -18,11 +18,13 @@ import { generateSampleBodyComp } from "@/lib/sample/generateSampleBodyComp";
 import { generateSampleExperiments } from "@/lib/sample/generateSampleExperiments";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { loadExperiments, saveExperiments } from "@/lib/storage/experimentsStorage";
+import { loadTags, saveTags } from "@/lib/storage/tagsStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
 import type { Experiment, ExperimentInsight } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
+import type { ContextTag } from "@/types/tag";
 import type { SugarWodRow } from "@/types/sugarwod";
 
 export type DataSource = "upload" | "sample";
@@ -80,6 +82,7 @@ export default function App() {
   const [granularity, setGranularity] = useState<Granularity>("monthly");
   const [bodyComp, setBodyComp] = useState<BodyCompState>({ status: "idle" });
   const [experiments, setExperiments] = useState<Experiment[]>([]);
+  const [tags, setTags] = useState<ContextTag[]>([]);
 
   // Restore whatever was uploaded last time — persistence is local-only (see
   // CLAUDE.md) and lasts until "Start over" clears it. Sample data is never
@@ -87,11 +90,12 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [rows, bodyRows, viewPrefs, storedExperiments] = await Promise.all([
+      const [rows, bodyRows, viewPrefs, storedExperiments, storedTags] = await Promise.all([
         loadWorkoutRows(),
         loadBodyCompRows(),
         loadViewPreferences(),
         loadExperiments(),
+        loadTags(),
       ]);
       if (cancelled) return;
       if (rows && rows.length > 0) {
@@ -101,6 +105,7 @@ export default function App() {
       }
       if (bodyRows && bodyRows.length > 0) setBodyComp({ status: "ready", rows: bodyRows });
       if (storedExperiments) setExperiments(storedExperiments);
+      if (storedTags) setTags(storedTags);
       if (viewPrefs) {
         setGranularity(viewPrefs.granularity);
         setRangePreset(viewPrefs.rangePreset);
@@ -162,9 +167,9 @@ export default function App() {
   const plateauInsights = useMemo(
     () =>
       state.status === "ready" && bodyComp.status === "ready"
-        ? getPlateauInsights(state.rows, bodyComp.rows, new Date())
+        ? getPlateauInsights(state.rows, bodyComp.rows, new Date(), { tags })
         : null,
-    [state, bodyComp]
+    [state, bodyComp, tags]
   );
 
   // A rollup of plateauInsights, not a re-derivation — recomputed whenever
@@ -172,9 +177,9 @@ export default function App() {
   const alignment = useMemo(
     () =>
       plateauInsights && bodyComp.status === "ready"
-        ? getAlignment(plateauInsights, bodyComp.rows, new Date())
+        ? getAlignment(plateauInsights, bodyComp.rows, new Date(), { tags })
         : null,
-    [plateauInsights, bodyComp]
+    [plateauInsights, bodyComp, tags]
   );
 
   // Same gate as plateauInsights, same reasoning: the whole unfiltered log as
@@ -385,6 +390,23 @@ export default function App() {
     });
   }, []);
 
+  // Context tags: user-authored, own IndexedDB key, same sample-mode exclusion
+  // as experiments above. `replaceTags` is what an import calls.
+  const commitTags = useCallback(
+    (update: (prev: ContextTag[]) => ContextTag[]) => {
+      setTags((prev) => {
+        const next = update(prev);
+        if (state.status === "ready" && state.source === "upload") void saveTags(next);
+        return next;
+      });
+    },
+    [state]
+  );
+  const addTag = useCallback((tag: Omit<ContextTag, "id">) => commitTags((prev) => [...prev, { ...tag, id: crypto.randomUUID() }]), [commitTags]);
+  const updateTag = useCallback((tag: ContextTag) => commitTags((prev) => prev.map((t) => (t.id === tag.id ? tag : t))), [commitTags]);
+  const deleteTag = useCallback((id: string) => commitTags((prev) => prev.filter((t) => t.id !== id)), [commitTags]);
+  const replaceTags = useCallback((incoming: ContextTag[]) => commitTags(() => incoming), [commitTags]);
+
   const handleSample = useCallback(
     () =>
       void run(
@@ -414,6 +436,7 @@ export default function App() {
     setGranularity("monthly");
     setBodyComp({ status: "idle" });
     setExperiments([]);
+    setTags([]);
     // "Start over" is also the one clear-my-data control: without wiping
     // storage here, a reload would silently restore the data this button
     // just appeared to discard.
@@ -441,6 +464,11 @@ export default function App() {
         plateauInsights={plateauInsights}
         alignment={alignment}
         relativeStrength={relativeStrength}
+        tags={tags}
+        onAddTag={addTag}
+        onUpdateTag={updateTag}
+        onDeleteTag={deleteTag}
+        onReplaceTags={replaceTags}
         experiments={experiments}
         experimentInsights={experimentInsights}
         onAddExperiment={addExperiment}

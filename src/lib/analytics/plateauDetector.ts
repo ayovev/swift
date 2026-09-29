@@ -6,8 +6,10 @@ import { parseInBodyDate, parseNumericField, parseWorkoutDate } from "./scanPars
 
 export { parseInBodyDate, parseNumericField, parseWorkoutDate };
 import type { SugarWodRow } from "@/types/dashboard";
+import { acknowledgeTags } from "./contextTags";
 import { getBodyCompNoiseBands, isMeaningfulChange, type BodyCompNoiseBands } from "./bodyCompNoise";
 import type { InBodyRow } from "@/types/inbody";
+import type { ContextTag } from "@/types/tag";
 import type {
   PlateauBodyCompTrend,
   PlateauClassification,
@@ -59,12 +61,18 @@ const MIN_SCANS_IN_WINDOW = 2;
 export const TREND_THRESHOLD = 0.03;
 
 /**
- * Shared by the three body-comp pipelines. `noiseBands` defaults to bands
+ * Options shared by the body-comp pipelines. `noiseBands` defaults to bands
  * estimated from the supplied scans; pass `NO_NOISE_BANDS` to reproduce the
  * sign-only behaviour that predates them (used by the before/after diff).
  */
-export interface InsightNoiseOptions {
+export interface InsightOptions {
   noiseBands?: BodyCompNoiseBands;
+  /**
+   * Context tags. They never change a classification or number; a plateau
+   * (or alignment) result overlapping a cut or injury tag gets a `tagNotes`
+   * sentence naming it. Omitted or empty gives exactly the untagged result.
+   */
+  tags?: readonly ContextTag[];
 }
 
 /** Exported for reuse by `experimentInsight.ts`, which needs the same shape for its own before/after split. */
@@ -446,7 +454,7 @@ export function getPlateauInsights(
   workouts: SugarWodRow[],
   inbodyScans: InBodyRow[],
   asOfDate: Date,
-  options: InsightNoiseOptions = {}
+  options: InsightOptions = {}
 ): PlateauInsight[] {
   const asOf = dayjs(asOfDate);
 
@@ -462,5 +470,10 @@ export function getPlateauInsights(
   // Bands come from the athlete's whole scan history (as of today), not the
   // per-subject window — a window holds too few scans to estimate noise from.
   const bands = options.noiseBands ?? getBodyCompNoiseBands(parsedScans.map((s) => s.raw));
-  return candidates.map((candidate) => computeInsight(candidate, parsedScans, bands));
+  return candidates.map((candidate) => {
+    const insight = computeInsight(candidate, parsedScans, bands);
+    if (insight.classification !== "plateaued_body_comp" && insight.classification !== "plateaued_other") return insight;
+    const tagNotes = acknowledgeTags(options.tags, insight.windowStart, insight.windowEnd, "plateau window");
+    return tagNotes.length > 0 ? { ...insight, tagNotes } : insight;
+  });
 }

@@ -128,3 +128,14 @@ export const RS_MAX_NEAREST_SCAN_DAYS = 21;
 
 /** Sessions averaged at each end of the window when comparing start to end. Capped at half the sessions. Tunable. */
 export const RS_END_SEGMENT_SESSIONS = 3;
+
+// ── Window comparison (compareWindows.ts) ───────────────────────────────
+
+/** Sessions a lift or benchmark needs inside EACH window before its two averages are compared. Tunable. */
+export const CMP_MIN_OBSERVATIONS_PER_WINDOW = 2;
+
+/** InBody scans a window needs before a body-comp metric is compared (the window's scans are averaged). Tunable. */
+export const CMP_MIN_SCANS_PER_WINDOW = 1;
+
+/** The two windows are called out as different lengths when they differ by more than this fraction of the longer one. Tunable. */
+export const CMP_LENGTH_MISMATCH_RATIO = 0.25;

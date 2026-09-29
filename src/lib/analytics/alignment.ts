@@ -1,7 +1,8 @@
 import dayjs, { type Dayjs } from "dayjs";
 import { getBodyCompNoiseBands } from "./bodyCompNoise";
+import { acknowledgeTags } from "./contextTags";
 import {
-  type InsightNoiseOptions,
+  type InsightOptions,
   computeBodyCompTrend,
   formatGateShortfall,
   isBodyCompDeclining,
@@ -90,7 +91,7 @@ export function getAlignment(
   plateauInsights: PlateauInsight[],
   inbodyScans: InBodyRow[],
   asOfDate: Date,
-  options: InsightNoiseOptions = {}
+  options: InsightOptions = {}
 ): AlignmentResult {
   const classified = plateauInsights.filter((i) => i.classification !== "insufficient_data");
   const performanceSummary = computePerformanceSummary(classified);
@@ -156,5 +157,6 @@ export function getAlignment(
     classification = "tension"; // trending down/mixed + lean stable/up, fat stable/down: signals contradict
   }
 
-  return { classification, performanceSummary, bodyCompSummary };
+  const tagNotes = acknowledgeTags(options.tags, windowStart, windowEnd, "comparison window");
+  return { classification, performanceSummary, bodyCompSummary, ...(tagNotes.length > 0 ? { tagNotes } : {}) };
 }

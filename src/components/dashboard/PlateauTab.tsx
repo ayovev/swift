@@ -158,6 +158,11 @@ export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: Platea
                       {insight.classification === "insufficient_data" ? (
                         <p className="mt-1 text-xs text-muted-foreground">{insight.reason}</p>
                       ) : null}
+                      {insight.tagNotes?.map((note) => (
+                        <p key={note} className="mt-1 text-xs text-muted-foreground">
+                          {note}
+                        </p>
+                      ))}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-0.5">

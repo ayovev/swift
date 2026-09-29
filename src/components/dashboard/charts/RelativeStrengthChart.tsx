@@ -1,5 +1,6 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { useChartInteraction } from "./chartInteraction";
 import { AXIS_PROPS, NUM_AXIS_WIDTH, formatDate, niceAxisTicks } from "./chartUtils";
 import type { RelativeStrengthPoint } from "@/lib/analytics/relativeStrength";
 
@@ -35,6 +36,7 @@ export function RelativeStrengthChart({
     .map((p) => ({ date: p.date, label: formatDate(p.date), value: valueForView(p, view) }))
     .filter((r): r is { date: string; label: string; value: number } => r.value !== null);
   const omitted = points.length - rows.length;
+  const interaction = useChartInteraction(rows.map((r) => ({ label: r.label, start: r.date, end: r.date })));
 
   if (rows.length < 2) {
     return <p className="text-sm text-muted-foreground">Fewer than two sessions have a value for this view.</p>;
@@ -55,7 +57,8 @@ export function RelativeStrengthChart({
         role="img"
         aria-label={`${liftName}, ${label.toLowerCase()}, latest ${latest.toFixed(decimals)}`}
       >
-        <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} {...interaction.handlers}>
+          {interaction.overlays}
           <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis dataKey="label" padding={{ left: 12, right: 12 }} angle={-35} textAnchor="end" height={60} minTickGap={16} {...AXIS_PROPS} />
           <YAxis
@@ -83,6 +86,7 @@ export function RelativeStrengthChart({
           />
         </LineChart>
       </ChartContainer>
+      {interaction.footer}
       {omitted > 0 ? (
         <p className="mt-1 text-xs text-muted-foreground">
           {omitted} {omitted === 1 ? "session has" : "sessions have"} no InBody reading close enough to use and{" "}

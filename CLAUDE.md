@@ -139,7 +139,7 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 20 views (`tabs.ts` → `ALL_TABS`): Overview,
+- **components**: `Dashboard.tsx` renders 22 views (`tabs.ts` → `ALL_TABS`): Overview,
   Workouts, the ten GPP domains, the three modalities, Body Comp, Plateaus, Alignment, and
   Experiments, grouped for navigation into four sections (see "Architecture: dashboard layout"
   below). A
@@ -252,6 +252,36 @@ for a lift change. Attribution is `strength-driven | mass-driven | mixed | flat 
 failing a gate keep their series and carry a `reason` naming the gate and the shortfall.
 Wired in `App.tsx` behind the same both-uploads gate as Plateaus; rendered by `RelativeStrengthTab.tsx`.
 
+## Architecture: window comparison and context tags
+
+`compareWindows.ts` (`compareWindows(workouts, scans, windowA, windowB, options)`) is "select a
+range, see what changed". It reuses the Plateau Detector's subject building unchanged and the
+noise band for body-comp deltas. A lift/benchmark needs `CMP_MIN_OBSERVATIONS_PER_WINDOW` entries
+in *each* window or its row is `comparable: false` with a reason and **no numbers** (never a
+partial comparison); overlapping or inverted windows are `insufficient`. `defaultWindowA()` is
+the equal-length window immediately before B.
+
+- **One data model.** "Save as experiment" writes window B to an `Experiment`'s `date`/`endDate`
+  (`windowToExperimentDates`). Window A is *not* stored: `getExperimentInsight` compares against
+  all history before the start date, so a saved experiment's numbers can differ from the table it
+  came from. `CompareTab` says so beside the button. Making it lossless would need an optional
+  `baselineStart` on `Experiment` (additive) — not done, it's the maintainer's call.
+- **Dragging is a convenience, never the only way.** `charts/chartInteraction.tsx` gives a chart a
+  drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`)
+  and shaded tag bands. A selection offers "Compare with the N days before" and "Tag this range";
+  every path also exists as date inputs on the Compare and Tags views. Wired into
+  `ConsistencyChart`, `BodyCompLineChart` and `RelativeStrengthChart`; `LiftChart` (a numeric-axis
+  scatter) has neither bands nor drag.
+- **Tags** (`types/tag.ts`, `contextTags.ts`, `storage/tagsStorage.ts`, key `"context-tags"`) are
+  user-authored, persist only when `source === "upload"`, are wiped by Start over, and have
+  JSON export/import (strict validation, merge by id). They are NOT in the sync manifest.
+- **Tags never change a result.** `getPlateauInsights`/`getAlignment` take `options.tags` and, when
+  a plateaued result's (or the alignment) window overlaps a cut or injury tag, add a `tagNotes`
+  sentence naming the tag. With no tags, or none overlapping, the output is identical to the
+  untagged one (the field is absent, not empty); `tests/insightTags.test.ts` pins that.
+- Analytics: `interaction_used` with a closed `InteractionName` union in `posthog.ts` — a name
+  from that list, never a value.
+
 ## Architecture: Experiments
 
 `src/lib/analytics/experimentInsight.ts` is a third pipeline in the same family as Plateau
@@ -358,7 +388,7 @@ home. Read the header comments of the files named here before moving anything be
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains and three
   modalities — a classification of the same workouts, not separate data), Body (Body Comp) and
-  Insights (Plateaus, Alignment, Strength, Experiments — the pipelines that need both uploads). The views
+  Insights (Plateaus, Alignment, Strength, Compare, Experiments, Tags). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
@@ -454,7 +484,7 @@ added after the app initially held everything in memory only.
   calls it (in the Settings sheet) is now gated behind a confirmation `AlertDialog`
   (`src/components/ui/alert-dialog.tsx`) whenever `source === "upload"` — sample mode still
   resets in one click, since nothing persisted is at risk there. The dialog's copy names exactly
-  what gets deleted (workout log, body composition history, experiments) so this is the one
+  what gets deleted (workout log, body composition history, experiments, context tags) so this is the one
   place all three are named together.
 - The theme preference remains on its own `localStorage` key (see Theming below), not this
   layer — it needs to be read synchronously before first paint to avoid a flash of the wrong

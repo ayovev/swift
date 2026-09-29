@@ -70,4 +70,10 @@ export interface PlateauInsight {
   confidence: "low" | "medium" | "high";
   /** Only set when classification === "insufficient_data"; names which gate failed and by how much. */
   reason?: string;
+  /**
+   * Set only on a plateaued result whose window overlaps a cut or injury tag
+   * the athlete logged: one sentence per tag, each naming it. Absent (not
+   * empty) otherwise, so an untagged result is unchanged.
+   */
+  tagNotes?: string[];
 }

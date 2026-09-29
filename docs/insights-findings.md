@@ -77,3 +77,24 @@ Things that looked off or worth deciding:
 - On the bundled sample (synthetic scans), 4 of 32 lift/status series qualify. Back Squat has 29
   sessions overall but only 2 in the last year, so it is listed as insufficient. If the
   365-day window (`RS_WINDOW_DAYS`) feels too strict for lifts you test rarely, widen it.
+
+## Phase 3: Compare and context tags
+
+Questions the plan asked to raise:
+
+- **Can `compareWindows` map onto `Experiment` without a schema change?** Window B, yes
+  (`date`/`endDate`). Window A, no: an Experiment compares against all history before its start,
+  so the saved numbers can differ from the comparison shown. I did not change the schema; the UI
+  says so. An optional `baselineStart` on `Experiment` would make it exact.
+- Thresholds (`insightConfig.ts`, tunable): 2 entries per window per lift/benchmark, 1 scan per
+  window (scans in a window are averaged, but the band is the two-scan one, so this is
+  conservative), windows called "different lengths" beyond a 25% gap.
+- Tags are not in the sync manifest, so they don't move between devices; export/import is the
+  route. Tags are not seeded in sample mode. Bands and drag are on the consistency, body-comp and
+  strength charts, not the per-lift scatter.
+- The tag sentence for an injury ("a change in training during an injury is not a plateau in the
+  usual sense") and for a cut ("lifts and lean mass often move differently during a cut") are my
+  wording; check they're the register you want.
+- Verified by hand in headless Chromium against the sample: a drag on the Body Comp weight chart
+  produced the selection bar, and Compare opened with window B filled in. Touch dragging isn't
+  handled; the date inputs are the fallback.

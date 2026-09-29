@@ -104,3 +104,38 @@ describe("AlignmentTab — ready state", () => {
     expect(screen.queryByText(/Comparison window/)).not.toBeInTheDocument();
   });
 });
+
+describe("AlignmentTab — context tags and noise", () => {
+  it("shows a sentence naming an overlapping tag, and nothing when there is none", () => {
+    const { rerender } = render(
+      <AlignmentTab
+        alignment={result({ tagNotes: ['This comparison window overlaps "Winter cut" (cut, Jan 1, 2024 – ongoing); lifts and lean mass often move differently during a cut.'] })}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={() => {}}
+      />
+    );
+    expect(screen.getByText(/overlaps "Winter cut"/)).toBeInTheDocument();
+    rerender(<AlignmentTab alignment={result()} bodyComp={{ status: "ready", rows: [] }} onBodyCompFile={() => {}} />);
+    expect(screen.queryByText(/overlaps/)).not.toBeInTheDocument();
+  });
+
+  it("says when body-comp changes are within normal scan variation", () => {
+    render(
+      <AlignmentTab
+        alignment={result({
+          bodyCompSummary: {
+            leanMassDelta: 1,
+            fatMassDelta: -1,
+            bodyFatPctDelta: -0.2,
+            windowStart: "2024-01-01",
+            windowEnd: "2024-03-01",
+            withinNoise: { leanMass: true, fatMass: true, bodyFatPct: true },
+          },
+        })}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={() => {}}
+      />
+    );
+    expect(screen.getByText("Lean mass, fat mass and body fat changes are within normal scan variation.")).toBeInTheDocument();
+  });
+});

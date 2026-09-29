@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { getBodyCompNoiseBands } from "./bodyCompNoise";
 import {
-  type InsightNoiseOptions,
+  type InsightOptions,
   buildBenchmarkSubjects,
   buildLiftSubjects,
   computeBodyCompTrend,
@@ -82,7 +82,7 @@ export function getExperimentInsight(
   workouts: SugarWodRow[],
   inbodyScans: InBodyRow[],
   asOfDate: Date,
-  options: InsightNoiseOptions = {}
+  options: InsightOptions = {}
 ): ExperimentInsight {
   const asOf = dayjs(asOfDate);
   const start = dayjs(experiment.date);
