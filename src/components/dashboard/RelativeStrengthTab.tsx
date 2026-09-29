@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { UploadDropzone } from "@/components/landing/UploadDropzone";
+import { TREND_THRESHOLD } from "@/lib/analytics/plateauDetector";
 import { capture } from "@/lib/posthog";
 import type { LiftRelativeStrength, RelativeStrengthResult, StrengthAttribution } from "@/lib/analytics/relativeStrength";
 import type { BodyCompState } from "./BodyCompTab";
@@ -24,6 +25,26 @@ const ATTRIBUTION_LABEL: Record<StrengthAttribution, string> = {
   flat: "Flat",
   declined: "Down",
 };
+
+const THRESHOLD_PCT = `${Math.round(TREND_THRESHOLD * 100)}%`;
+
+/** What each badge means, in the same order as the calculation checks them. Uses the calculation's own threshold. */
+const BADGE_LEGEND: readonly { attribution: StrengthAttribution; meaning: string }[] = [
+  {
+    attribution: "strength-driven",
+    meaning: `Estimated 1RM up ${THRESHOLD_PCT} or more, with body mass level or lower beyond normal scan variation.`,
+  },
+  {
+    attribution: "mixed",
+    meaning: `Estimated 1RM and body mass both up. Per lb of body mass, 1RM is still up ${THRESHOLD_PCT} or more.`,
+  },
+  {
+    attribution: "mass-driven",
+    meaning: `Estimated 1RM and body mass both up. Per lb of body mass, 1RM is up less than ${THRESHOLD_PCT}.`,
+  },
+  { attribution: "flat", meaning: `Estimated 1RM within ${THRESHOLD_PCT} either way.` },
+  { attribution: "declined", meaning: `Estimated 1RM down ${THRESHOLD_PCT} or more.` },
+];
 
 const VIEW_OPTIONS: readonly SegmentedControlOption<StrengthView>[] = [
   { id: "raw", label: "Raw" },
@@ -115,6 +136,22 @@ export function RelativeStrengthTab({ relativeStrength, bodyComp, onBodyCompFile
             in the workout text. Body mass at each session comes from the InBody scan on that day,
             or a straight line between two scans close together; sessions with no scan near enough
             are left out of the per-bodyweight and per-lean-mass views.
+          </p>
+          <dl aria-label="What the badges mean" className="mt-3 grid max-w-3xl grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2 text-sm">
+            {BADGE_LEGEND.map(({ attribution, meaning }) => (
+              <div key={attribution} className="contents">
+                <dt>
+                  <Badge variant={attribution === "strength-driven" ? "default" : "secondary"}>
+                    {ATTRIBUTION_LABEL[attribution]}
+                  </Badge>
+                </dt>
+                <dd className="text-muted-foreground">{meaning}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-2 max-w-3xl text-xs text-muted-foreground">
+            Body mass is lean mass, or bodyweight when the export has no lean mass close to the
+            sessions. Changes are measured from the start to the end of the last year of sessions.
           </p>
           {relativeStrength.status === "insufficient" ? (
             <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">

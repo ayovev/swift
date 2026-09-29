@@ -46,6 +46,16 @@ describe("RelativeStrengthTab", () => {
     expect(screen.getByRole("button", { name: "Per lean mass" })).toBeInTheDocument();
   });
 
+  it("explains every badge in a legend, using the calculation's own threshold", () => {
+    render(<RelativeStrengthTab relativeStrength={{ status: "ok", lifts: [lift()] }} bodyComp={idle} onBodyCompFile={() => {}} />);
+    const legend = screen.getByLabelText("What the badges mean");
+    const terms = Array.from(legend.querySelectorAll("dt")).map((t) => t.textContent);
+    expect(terms).toEqual(["Strength", "Strength and mass", "Mass", "Flat", "Down"]);
+    expect(legend).toHaveTextContent("Estimated 1RM up 3% or more, with body mass level or lower");
+    expect(legend).toHaveTextContent("Estimated 1RM within 3% either way.");
+    expect(legend).not.toHaveTextContent("!");
+  });
+
   it("disables the lean-mass view when no session has a lean reading", () => {
     const l = lift();
     l.series = l.series.map((p) => ({ ...p, perLeanMass: null }));
