@@ -144,6 +144,22 @@ Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather t
 
 `scripts/generate_parity_fixture.py` regenerated the Python reference fixture once, against the proof-of-concept implementation. It is dev-only and never bundled; the committed fixture means the test suite needs no Python.
 
+## Known limitations
+
+The body-composition insights (noise band, **Strength**, **Compare**, **Cycles**) are tuned on the
+bundled sample and synthetic scans, not on real InBody histories, so their thresholds are starting
+points. They are all in `src/lib/analytics/insightConfig.ts`, each with a note on how it was
+chosen. To see what they do on your own exports, run
+`SWIFT_SUGARWOD_CSV=/path/sugarwod.csv SWIFT_INBODY_CSV=/path/inbody.csv npx vitest run tests/insightFindings.test.ts`,
+which writes `insight-findings.txt` (gitignored) with the noise band per metric and every insight
+output that changed because of it. Nothing leaves your machine.
+
+Other things to know: training blocks for **Cycles** come from tags or typed dates, not automatic
+detection; a saved comparison becomes an experiment that compares against all earlier history, so
+its numbers can differ from the comparison it came from; context tags don't sync between devices
+(export them as JSON instead); and dragging on a chart is mouse-only, with date inputs as the
+alternative.
+
 ## Deployment
 
 Static SPA on Vercel. `vercel.json` is already configured — `npm run build`, output in `dist`, with a catch-all rewrite to `index.html`. There is no backend to deploy or operate. If PostHog is wanted in production, set `VITE_PUBLIC_POSTHOG_KEY` (and optionally `VITE_PUBLIC_POSTHOG_HOST`) as build-time environment variables; without them the deployed app simply runs without analytics.

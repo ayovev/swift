@@ -5,7 +5,7 @@ import type { StrengthAttribution } from "@/lib/analytics/relativeStrength";
  * A training block. `source: "user"` is the only source produced today: the
  * boundaries come from a tag (bulk, cut, maintain, other) or from dates the
  * athlete typed. "detected" is reserved for automatic segmentation, which is
- * deferred — see docs/insights-findings.md.
+ * deferred — see "Architecture: cycle reports" in CLAUDE.md.
  */
 export interface Cycle {
   label: string;

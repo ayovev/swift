@@ -297,6 +297,44 @@ under `CYCLE_MIN_DAYS`, empty, or inverted is `insufficient` with a reason. The 
 volume, lift changes, then body composition; it never grades them (a test rejects judgement words).
 Injury/travel tags inside the cycle add a sentence naming them. Rendered by `CyclesTab.tsx`.
 
+## Open items: what is unvalidated or undecided
+
+The insight pipelines above (noise band, relative strength, compare, tags, cycles) were built
+against the bundled sample and synthetic InBody data. The repo holds no real InBody history, so
+**none of the `insightConfig.ts` thresholds has been checked against a real athlete.** Treat them
+as starting points and run the maintainer report (see "Architecture: InBody noise band") on real
+exports before trusting a number. Specifically:
+
+- **Noise band.** On the synthetic sample the bands came from the `residual` method (weight
+  ±2.9 lb, lean ±2.1, fat mass ±2.3, body fat ±1.3 points) and no existing output changed. The
+  `paired-scans` method needs scans within 7 days of each other, so anyone scanning monthly or
+  less lands on `residual` or `default`; expect `default` under about 8 scans. Lean mass uses Soft
+  Lean Mass where present else Skeletal Muscle Mass; the band is estimated on that same field but
+  `computeBodyCompTrend` chooses per pair of scans, so an export mixing the two would judge a
+  delta in one field against a band from the other. Morning/afternoon has not been run on real
+  data. The one behaviour change from bands: a +3 lb fat-mass case that used to read
+  `plateaued_body_comp` is now within the default 3 lb band (the test uses +4 lb and a new case
+  pins the within-band result).
+- **Relative strength.** Not spot-checked by hand against raw CSVs (compute the e1RM from
+  `best_result_raw` and the rep scheme in the title/description, average of Epley and Brzycki,
+  and compare with the chart tooltip; `tests/relativeStrength.test.ts` pins the same arithmetic).
+  On the sample only 4 of 32 lift series qualify — Back Squat has 29 sessions but 2 in the last
+  year — so `RS_WINDOW_DAYS` may be too strict for lifts tested rarely. RX and Scaled are split
+  per lift, as on Plateaus, which halves sessions for anyone who switches; merging load lifts is
+  an open question. A title naming a different scheme than the athlete did will be mis-estimated;
+  that is inherent to the export.
+- **Compare and Experiments.** A saved comparison maps window B onto an `Experiment` but not
+  window A, so the saved numbers can differ from the table (see above). An optional
+  `baselineStart` would make it exact. Tags are not synced between devices or seeded in sample
+  mode, and there is no touch dragging on charts (date inputs are the fallback).
+- **Cycles.** Automatic detection is deferred. First prototype worth trying: a rolling share of
+  lift sessions per lift (about an 8-week window) with a boundary where the leading lifts change,
+  reviewed by eye on a multi-year history before committing to it. A lift can show a change with
+  no attribution when too few scans fall inside its window, and a cycle report only looks inside
+  the cycle (Compare is the before/after).
+- **Copy.** The tag sentences (cut, injury) and the cycle-summary phrases ("not explained by body
+  mass", "partly body mass") are first drafts; check them against the voice rules below.
+
 ## Architecture: Experiments
 
 `src/lib/analytics/experimentInsight.ts` is a third pipeline in the same family as Plateau
