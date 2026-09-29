@@ -81,6 +81,37 @@ describe("SyncSession", () => {
     ]);
   });
 
+  it("transfers tags and preferences after the other datasets, in the order the host lists them", async () => {
+    const { hostFactory, joinerFactory } = createFakeConnectionFactoryPair();
+    const received: Array<{ dataset: string; json: string }> = [];
+
+    const host = new SyncSession(hostFactory);
+    const joiner = new SyncSession(joinerFactory, {
+      onDatasetReceived: (dataset, json) => received.push({ dataset, json }),
+    });
+
+    const outgoing = [
+      { dataset: "workout" as const, json: JSON.stringify([{ id: 1 }]) },
+      { dataset: "tags" as const, json: JSON.stringify([{ id: "t", type: "cut", startDate: "2024-03-01", endDate: null }]) },
+      { dataset: "preferences" as const, json: JSON.stringify({ theme: { mode: "dark", accent: "teal" } }) },
+    ];
+    await host.startHost(outgoing);
+
+    const offerState = host.getState();
+    assertStatus(offerState, "awaiting-answer");
+    await joiner.startJoiner(offerState.offerCode);
+    const answerState = joiner.getState();
+    assertStatus(answerState, "awaiting-connection");
+    await host.submitAnswer(answerState.answerCode);
+
+    await vi.waitFor(() => {
+      assertStatus(host.getState(), "done");
+      assertStatus(joiner.getState(), "done");
+    });
+
+    expect(received).toEqual(outgoing);
+  });
+
   it("reports transferring progress on the joiner while a multi-chunk dataset is in flight", async () => {
     const { hostFactory, joinerFactory } = createFakeConnectionFactoryPair();
     const joinerStates: SyncSessionState[] = [];

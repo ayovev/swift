@@ -17,7 +17,9 @@ import { CompareTab } from "./CompareTab";
 import { CyclesTab } from "./CyclesTab";
 import { TagsTab } from "./TagsTab";
 import { ChartInteractionProvider } from "./charts/chartInteraction";
+import { buildSyncedPreferences, type SyncedPreferences } from "@/lib/sync/preferences";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
+import { useTheme } from "@/lib/theme/useTheme";
 import {
   ALL_TABS,
   BODY_COMP_TAB,
@@ -65,6 +67,8 @@ interface DashboardProps {
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
+  onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedPreferences: (preferences: SyncedPreferences) => void;
   plateauInsights: PlateauInsight[] | null;
   alignment: AlignmentResult | null;
   relativeStrength: RelativeStrengthResult | null;
@@ -96,6 +100,8 @@ export function Dashboard({
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedExperiments,
+  onSyncedTags,
+  onSyncedPreferences,
   plateauInsights,
   alignment,
   relativeStrength,
@@ -124,11 +130,13 @@ export function Dashboard({
   const effectiveRange = range ?? insights.dateBounds;
   const dailyDisabled = effectiveRange ? !dailyGranularityFits(effectiveRange) : false;
 
-  // Built once per data change, not on every render — JSON.stringify-ing the
-  // full unfiltered workout log (and body comp, if present) is real work at
-  // ~1,200 rows. Only used if "Send to a device" (SettingsSheet) actually starts a
-  // host session (see SyncDialog).
-  const syncOutgoing = useMemo<OutgoingDataset[]>(() => {
+  // The datasets are built once per data change, not on every render —
+  // JSON.stringify-ing the full unfiltered workout log (and body comp, if
+  // present) is real work at ~1,200 rows. They're kept apart from the
+  // preferences below so changing the grouping, range or theme doesn't
+  // re-serialise the log. Only used if "Send to a device" (SettingsSheet)
+  // actually starts a host session (see SyncDialog).
+  const dataOutgoing = useMemo<OutgoingDataset[]>(() => {
     const outgoing: OutgoingDataset[] = [{ dataset: "workout", json: JSON.stringify(workoutRows) }];
     if (bodyComp.status === "ready") {
       outgoing.push({ dataset: "bodyComp", json: JSON.stringify(bodyComp.rows) });
@@ -136,8 +144,38 @@ export function Dashboard({
     if (experiments.length > 0) {
       outgoing.push({ dataset: "experiments", json: JSON.stringify(experiments) });
     }
+    if (tags.length > 0) {
+      outgoing.push({ dataset: "tags", json: JSON.stringify(tags) });
+    }
     return outgoing;
-  }, [workoutRows, bodyComp, experiments]);
+  }, [workoutRows, bodyComp, experiments, tags]);
+
+  // The last thing sent, and always sent: how the dashboard is grouped and
+  // ranged, and how it looks. The preset id travels, not its dates (see
+  // sync/preferences.ts); only a custom range carries dates.
+  const theme = useTheme();
+  const syncOutgoing = useMemo<OutgoingDataset[]>(
+    () => [
+      ...dataOutgoing,
+      {
+        dataset: "preferences",
+        json: JSON.stringify(
+          buildSyncedPreferences(
+            {
+              granularity,
+              rangePreset,
+              customRange:
+                rangePreset === "custom" && range
+                  ? { start: range.start.toISOString(), end: range.end.toISOString() }
+                  : null,
+            },
+            { mode: theme.mode, accent: theme.accent }
+          )
+        ),
+      },
+    ],
+    [dataOutgoing, granularity, rangePreset, range, theme.mode, theme.accent]
+  );
 
   // Widening the range out from under an active daily view (via the date
   // picker, not this control) would otherwise leave a chart stuck rendering
@@ -228,10 +266,13 @@ export function Dashboard({
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
               experiments={experiments}
+              tags={tags}
               syncOutgoing={syncOutgoing}
               onSyncedWorkoutData={onSyncedWorkoutData}
               onSyncedBodyCompData={onSyncedBodyCompData}
               onSyncedExperiments={onSyncedExperiments}
+              onSyncedTags={onSyncedTags}
+              onSyncedPreferences={onSyncedPreferences}
               onReset={onReset}
             />
           </div>

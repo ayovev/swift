@@ -279,7 +279,9 @@ the equal-length window immediately before B.
   scatter) has neither bands nor drag.
 - **Tags** (`types/tag.ts`, `contextTags.ts`, `storage/tagsStorage.ts`, key `"context-tags"`) are
   user-authored, persist only when `source === "upload"`, are wiped by Start over, and have
-  JSON export/import (strict validation, merge by id). They are NOT in the sync manifest.
+  JSON export/import (strict validation, merge by id), and sync between devices (see "Architecture:
+  cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`) so the Tags, Cycles
+  and chart-band views aren't empty; they are in memory only, never persisted or synced.
 - **Tags never change a result.** `getPlateauInsights`/`getAlignment` take `options.tags` and, when
   a plateaued result's (or the alignment) window overlaps a cut or injury tag, add a `tagNotes`
   sentence naming the tag. With no tags, or none overlapping, the output is identical to the
@@ -328,8 +330,11 @@ exports before trusting a number. Specifically:
   per lift, as on Plateaus, which halves sessions for anyone who switches; merging load lifts is
   an open question. A title naming a different scheme than the athlete did will be mis-estimated;
   that is inherent to the export.
-- **Compare and Experiments.** Tags are not synced between devices or seeded in sample mode, and
-  there is no touch dragging on charts (date inputs are the fallback).
+- **Compare and Experiments.** There is no touch dragging on charts (date inputs are the fallback).
+- **Sync.** Tags and preferences sync, but like everything in sync they are verified by unit tests
+  and by hand on two devices, not by an automated two-device test. A joiner running an older cached
+  build rejects a manifest naming a dataset it doesn't know (`tags`, `preferences`), so both devices
+  need the current build; a refresh fixes it.
 - **Cycles.** Automatic detection is deferred. First prototype worth trying: a rolling share of
   lift sessions per lift (about an 8-week window) with a boundary where the leading lifts change,
   reviewed by eye on a multi-year history before committing to it. A lift can show a change with
@@ -407,8 +412,9 @@ back to one.
   and adding one was scoped out of this feature — see `webrtcTransport.ts`'s header comment.
   Those two paths are verified manually, across two real devices, before any change here ships.
 - **The wire protocol**, once connected: the host sends one small manifest naming which
-  datasets it's about to send — some subset of `["workout", "bodyComp", "experiments"]`, never
-  assumed, since a device might not have InBody data or any logged experiments — then for each
+  datasets it's about to send — some subset of `["workout", "bodyComp", "experiments", "tags",
+  "preferences"]`, never assumed, since a device might not have InBody data, experiments or tags
+  (`preferences` is always sent) — then for each
   dataset in order, `chunkPayload()`'s header followed by its chunks; once every dataset is sent,
   the host closes the channel. The joiner feeds every message after the manifest into a fresh
   `Reassembler` per dataset until each reports done.
@@ -419,8 +425,22 @@ back to one.
   dataset of that kind, an `AlertDialog` (same register as "Start over") names exactly what
   would be replaced and by how many entries, independently per dataset — accepting one doesn't
   silently accept the other. Only after that confirmation (or immediately, if there's nothing to
-  conflict with) does it call `onSyncedWorkoutData`/`onSyncedBodyCompData`.
-- **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` — both are
+  conflict with) does it call the `onSynced*` handlers. What to apply, hold back for confirmation or
+  skip is decided by the pure `planReceived()` in `src/lib/sync/receivedDatasets.ts`, which is where
+  the ordering rules live and are tested.
+- **What syncs: every piece of persisted state that belongs to the athlete.** The workout log, the
+  InBody history, experiments, context tags, and the preferences (`sync/preferences.ts`): grouping
+  and date range (the range as a preset id, or two dates for a custom one) and accent and light/dark
+  mode. The one thing that does not sync is PostHog's anonymous id in `localStorage`, on purpose:
+  it is an analytics identifier, not the athlete's data. **A new persisted dataset must be added to
+  sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a case in
+  `planReceived`, an `onSynced*` handler in `App.tsx`), or this list stops being true.
+  Preferences are validated on arrival (a bad half is dropped, never half-applied) and applied
+  straight after the workout log, never before it: loading a log resets the view to its defaults, so
+  applying them first would be wiped. Declining the workout overwrite declines the preferences that
+  travelled with it.
+- **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` (and
+  `handleSyncedExperiments`/`handleSyncedTags`/`handleSyncedPreferences`) — all are
   unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
   `SyncDialog` is what gates the call, not the handler. Synced data always carries
   `source: "upload"` (sync's entry points in the dashboard's Settings sheet, `SettingsSheet.tsx`,
@@ -493,12 +513,12 @@ added after the app initially held everything in memory only.
   never a requirement, so a blocked or disabled database must not break the app.
 - **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** /
   **`experimentsStorage.ts`** are thin typed wrappers, one key each (`"workout-rows"`,
-  `"body-comp-rows"`, `"view-preferences"`, `"experiments"` — see "Architecture: Experiments"
-  above for that last one). Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
+  `"body-comp-rows"`, `"view-preferences"`, `"experiments"`, plus `tagsStorage.ts` with `"context-tags"`
+  — see "Architecture: Experiments" and "window comparison and context tags" above). Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
   directly — a new dataset gets its own wrapper file, not a call site that reaches past it.
 - **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
-  existing loading UI — no new component) and a mount-only effect loads all four datasets
-  (workout rows, body-comp rows, view preferences, experiments) from storage in parallel before
+  existing loading UI — no new component) and a mount-only effect loads all five datasets
+  (workout rows, body-comp rows, view preferences, experiments, tags) from storage in parallel before
   deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
   bundled sample file is deliberately never cached, so demo mode never leaves anything behind. A

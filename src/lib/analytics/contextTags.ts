@@ -85,18 +85,12 @@ const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const validDate = (s: unknown): s is string => typeof s === "string" && ISO.test(s) && dayjs(s, "YYYY-MM-DD", true).isValid();
 
 /**
- * Reads a tags file back in. Strict on purpose: a hand-edited or wrong file
- * is rejected with a sentence saying which entry is wrong, rather than
- * half-imported. Unknown extra keys are dropped.
+ * Validates a list of tags — from an imported file or from another device.
+ * Strict on purpose: a hand-edited or wrong list is rejected with a sentence
+ * saying which entry is wrong, rather than half-imported. Unknown extra keys
+ * are dropped.
  */
-export function parseTagsJson(text: string): TagsParseResult {
-  let data: unknown;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    return { status: "invalid", reason: "That file isn't valid JSON." };
-  }
-  const list = Array.isArray(data) ? data : (data as Partial<TagsFile> | null)?.tags;
+export function validateTagList(list: unknown): TagsParseResult {
   if (!Array.isArray(list)) return { status: "invalid", reason: "That file doesn't contain a list of tags." };
 
   const tags: ContextTag[] = [];
@@ -127,6 +121,17 @@ export function parseTagsJson(text: string): TagsParseResult {
     });
   }
   return { status: "ok", tags };
+}
+
+/** Reads a tags file back in: `{ swiftTags: 1, tags: [...] }` or a bare array. */
+export function parseTagsJson(text: string): TagsParseResult {
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    return { status: "invalid", reason: "That file isn't valid JSON." };
+  }
+  return validateTagList(Array.isArray(data) ? data : (data as Partial<TagsFile> | null)?.tags);
 }
 
 // ── Chart bands ─────────────────────────────────────────────────────────

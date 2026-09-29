@@ -31,12 +31,14 @@ import { capture } from "@/lib/posthog";
 import { formatOklch } from "@/lib/theme/contrast";
 import { ACCENT_SWATCHES, accentRoles } from "@/lib/theme/palette";
 import { useTheme, type ModePreference } from "@/lib/theme/useTheme";
+import type { SyncedPreferences } from "@/lib/sync/preferences";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import { cn } from "@/lib/utils";
 import type { DataSource } from "@/App";
 import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
+import type { ContextTag } from "@/types/tag";
 
 const MODES: { value: ModePreference; label: string; Icon: typeof Sun }[] = [
   { value: "light", label: "Light", Icon: Sun },
@@ -51,11 +53,14 @@ interface SettingsSheetProps {
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
   experiments: Experiment[];
+  tags: ContextTag[];
   /** Host role only: what this device would send. Built once in Dashboard.tsx. */
   syncOutgoing: OutgoingDataset[];
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
+  onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedPreferences: (preferences: SyncedPreferences) => void;
   onReset: () => void;
 }
 
@@ -187,9 +192,12 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 existingWorkoutCount={null}
                 existingBodyCompCount={null}
                 existingExperimentsCount={null}
+                existingTagsCount={null}
                 onSyncedWorkoutData={props.onSyncedWorkoutData}
                 onSyncedBodyCompData={props.onSyncedBodyCompData}
                 onSyncedExperiments={props.onSyncedExperiments}
+                onSyncedTags={props.onSyncedTags}
+                onSyncedPreferences={props.onSyncedPreferences}
                 disabled={!upload}
                 className="h-10 gap-2"
               >
@@ -201,9 +209,12 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 existingWorkoutCount={props.workoutRows.length}
                 existingBodyCompCount={props.bodyComp.status === "ready" ? props.bodyComp.rows.length : null}
                 existingExperimentsCount={props.experiments.length > 0 ? props.experiments.length : null}
+                existingTagsCount={props.tags.length > 0 ? props.tags.length : null}
                 onSyncedWorkoutData={props.onSyncedWorkoutData}
                 onSyncedBodyCompData={props.onSyncedBodyCompData}
                 onSyncedExperiments={props.onSyncedExperiments}
+                onSyncedTags={props.onSyncedTags}
+                onSyncedPreferences={props.onSyncedPreferences}
                 disabled={!upload}
                 className="h-10 gap-2"
               >

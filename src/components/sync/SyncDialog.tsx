@@ -12,9 +12,12 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { bucketRowCount, capture, type SyncRole } from "@/lib/posthog";
 import type { SyncDataset } from "@/lib/sync/chunking";
+import type { SyncedPreferences } from "@/lib/sync/preferences";
+import { planReceived, type ConflictItem } from "@/lib/sync/receivedDatasets";
 import type { OutgoingDataset, SyncFailureReason } from "@/lib/sync/syncSession";
 import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
+import type { ContextTag } from "@/types/tag";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { HostQrView } from "./HostQrView";
 import { JoinerScanView } from "./JoinerScanView";
@@ -24,14 +27,9 @@ const DATASET_LABEL: Record<SyncDataset, string> = {
   workout: "workout log",
   bodyComp: "body composition history",
   experiments: "list of experiments",
+  tags: "list of context tags",
+  preferences: "preferences",
 };
-
-interface ConflictItem {
-  dataset: SyncDataset;
-  existingCount: number;
-  incomingCount: number;
-  apply: () => void;
-}
 
 export interface SyncDialogProps {
   open: boolean;
@@ -43,9 +41,12 @@ export interface SyncDialogProps {
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
   existingExperimentsCount: number | null;
+  existingTagsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
+  onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedPreferences: (preferences: SyncedPreferences) => void;
 }
 
 function failureMessage(reason: SyncFailureReason): string {
@@ -83,9 +84,12 @@ export function SyncDialog({
   existingWorkoutCount,
   existingBodyCompCount,
   existingExperimentsCount,
+  existingTagsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedExperiments,
+  onSyncedTags,
+  onSyncedPreferences,
 }: SyncDialogProps) {
   const [received, setReceived] = useState<Partial<Record<SyncDataset, unknown>>>({});
   const [conflicts, setConflicts] = useState<ConflictItem[] | null>(null);
@@ -156,43 +160,22 @@ export function SyncDialog({
       },
     });
 
-    const items: ConflictItem[] = [];
-    if (workoutRows) {
-      if (existingWorkoutCount !== null) {
-        items.push({
-          dataset: "workout",
-          existingCount: existingWorkoutCount,
-          incomingCount: workoutRows.length,
-          apply: () => onSyncedWorkoutData(workoutRows),
-        });
-      } else {
-        onSyncedWorkoutData(workoutRows);
+    const { conflicts: items } = planReceived(
+      received,
+      {
+        workout: existingWorkoutCount,
+        bodyComp: existingBodyCompCount,
+        experiments: existingExperimentsCount,
+        tags: existingTagsCount,
+      },
+      {
+        workout: onSyncedWorkoutData,
+        bodyComp: onSyncedBodyCompData,
+        experiments: onSyncedExperiments,
+        tags: onSyncedTags,
+        preferences: onSyncedPreferences,
       }
-    }
-    if (bodyCompRows) {
-      if (existingBodyCompCount !== null) {
-        items.push({
-          dataset: "bodyComp",
-          existingCount: existingBodyCompCount,
-          incomingCount: bodyCompRows.length,
-          apply: () => onSyncedBodyCompData(bodyCompRows),
-        });
-      } else {
-        onSyncedBodyCompData(bodyCompRows);
-      }
-    }
-    if (experimentsRows) {
-      if (existingExperimentsCount !== null) {
-        items.push({
-          dataset: "experiments",
-          existingCount: existingExperimentsCount,
-          incomingCount: experimentsRows.length,
-          apply: () => onSyncedExperiments(experimentsRows),
-        });
-      } else {
-        onSyncedExperiments(experimentsRows);
-      }
-    }
+    );
 
     if (items.length > 0) {
       setConflicts(items);
@@ -207,9 +190,12 @@ export function SyncDialog({
     existingWorkoutCount,
     existingBodyCompCount,
     existingExperimentsCount,
+    existingTagsCount,
     onSyncedWorkoutData,
     onSyncedBodyCompData,
     onSyncedExperiments,
+    onSyncedTags,
+    onSyncedPreferences,
     onOpenChange,
   ]);
 

@@ -16,9 +16,12 @@ import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
 import { extendSampleRows } from "@/lib/sample/extendSample";
 import { generateSampleBodyComp } from "@/lib/sample/generateSampleBodyComp";
 import { generateSampleExperiments } from "@/lib/sample/generateSampleExperiments";
+import { generateSampleTags } from "@/lib/sample/generateSampleTags";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { loadExperiments, saveExperiments } from "@/lib/storage/experimentsStorage";
 import { loadTags, saveTags } from "@/lib/storage/tagsStorage";
+import type { SyncedPreferences } from "@/lib/sync/preferences";
+import { useTheme } from "@/lib/theme/useTheme";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
@@ -83,6 +86,7 @@ export default function App() {
   const [bodyComp, setBodyComp] = useState<BodyCompState>({ status: "idle" });
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [tags, setTags] = useState<ContextTag[]>([]);
+  const { setMode, setAccent } = useTheme();
 
   // Restore whatever was uploaded last time — persistence is local-only (see
   // CLAUDE.md) and lasts until "Start over" clears it. Sample data is never
@@ -234,8 +238,8 @@ export default function App() {
       void saveWorkoutRows(rows);
       void saveViewPreferences({ granularity: "monthly", rangePreset: "all_time", customRange: null });
     } else {
-      // Fill in the two datasets the Plateau Detector, Alignment and
-      // Experiments tabs need, so sample mode has something for them to
+      // Fill in the datasets the Plateau Detector, Alignment,
+      // Experiments, Tags and Cycles tabs need, so sample mode has something for them to
       // show instead of their empty states — entirely in memory, never
       // persisted (see the two generators' own header comments). The
       // functional setState form means a previously-restored *real*
@@ -245,6 +249,8 @@ export default function App() {
       const generatedExperiments = generateSampleExperiments(rows);
       setBodyComp((prev) => (prev.status === "ready" ? prev : { status: "ready", rows: generatedBodyComp }));
       setExperiments((prev) => (prev.length > 0 ? prev : generatedExperiments));
+      const generatedTags = generateSampleTags(rows);
+      setTags((prev) => (prev.length > 0 ? prev : generatedTags));
     }
     setState({
       status: "reveal",
@@ -419,6 +425,41 @@ export default function App() {
   const deleteTag = useCallback((id: string) => commitTags((prev) => prev.filter((t) => t.id !== id)), [commitTags]);
   const replaceTags = useCallback((incoming: ContextTag[]) => commitTags(() => incoming), [commitTags]);
 
+  // Sync's tags and preferences handlers, alongside the three above: unconditional
+  // writers, gated by SyncDialog. Tags always persist for the same reason
+  // handleSyncedBodyCompData does — synced data is never sample data.
+  const handleSyncedTags = useCallback((incoming: ContextTag[]) => {
+    setTags(incoming);
+    void saveTags(incoming);
+  }, []);
+
+  // Preferences arrive validated (sync/preferences.ts) and after the workout
+  // log (sync/receivedDatasets.ts), so setting the view here isn't undone by
+  // finishSuccessfulLoad's reset to the defaults. A preset is recomputed
+  // against today, exactly as restore-on-mount does.
+  const handleSyncedPreferences = useCallback(
+    (prefs: SyncedPreferences) => {
+      if (prefs.theme) {
+        setMode(prefs.theme.mode);
+        setAccent(prefs.theme.accent);
+      }
+      if (prefs.view) {
+        const { granularity: g, rangePreset: preset, customRange } = prefs.view;
+        setGranularity(g);
+        setRangePreset(preset);
+        setRange(
+          preset === "custom"
+            ? customRange
+              ? { start: dayjs(customRange.start), end: dayjs(customRange.end) }
+              : null
+            : computePresetRange(preset, dayjs())
+        );
+        void saveViewPreferences(prefs.view);
+      }
+    },
+    [setMode, setAccent]
+  );
+
   const handleSample = useCallback(
     () =>
       void run(
@@ -473,6 +514,8 @@ export default function App() {
         onSyncedWorkoutData={handleSyncedWorkoutData}
         onSyncedBodyCompData={handleSyncedBodyCompData}
         onSyncedExperiments={handleSyncedExperiments}
+        onSyncedTags={handleSyncedTags}
+        onSyncedPreferences={handleSyncedPreferences}
         plateauInsights={plateauInsights}
         alignment={alignment}
         relativeStrength={relativeStrength}
@@ -501,6 +544,8 @@ export default function App() {
       onSyncedWorkoutData={handleSyncedWorkoutData}
       onSyncedBodyCompData={handleSyncedBodyCompData}
       onSyncedExperiments={handleSyncedExperiments}
+      onSyncedTags={handleSyncedTags}
+      onSyncedPreferences={handleSyncedPreferences}
     />
   );
 }
