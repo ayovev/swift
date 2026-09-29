@@ -76,6 +76,7 @@ interface DashboardProps {
   experiments: Experiment[];
   experimentInsights: Map<string, ExperimentInsight> | null;
   onAddExperiment: (label: string, date: string, endDate?: string) => void;
+  onUpdateExperiment: (id: string, label: string, date: string, endDate?: string) => void;
   onDeleteExperiment: (id: string) => void;
 }
 
@@ -106,6 +107,7 @@ export function Dashboard({
   experiments,
   experimentInsights,
   onAddExperiment,
+  onUpdateExperiment,
   onDeleteExperiment,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
@@ -376,6 +378,7 @@ export function Dashboard({
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
               onAddExperiment={onAddExperiment}
+              onUpdateExperiment={onUpdateExperiment}
               onDeleteExperiment={onDeleteExperiment}
             />
           </TabsContent>

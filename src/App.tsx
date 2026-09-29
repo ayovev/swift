@@ -382,6 +382,17 @@ export default function App() {
     });
   }, [state]);
 
+  // Editing replaces label and dates in place and keeps the id, so anything
+  // keyed by it (its insight, a saved comparison) follows the edit. An unset
+  // endDate clears a previous one: the experiment is ongoing again.
+  const updateExperiment = useCallback((id: string, label: string, date: string, endDate?: string) => {
+    setExperiments((prev) => {
+      const next = prev.map((e) => (e.id === id ? { id, date, label, ...(endDate ? { endDate } : {}) } : e));
+      if (state.status === "ready" && state.source === "upload") void saveExperiments(next);
+      return next;
+    });
+  }, [state]);
+
   const deleteExperiment = useCallback((id: string) => {
     setExperiments((prev) => {
       const next = prev.filter((e) => e.id !== id);
@@ -472,6 +483,7 @@ export default function App() {
         experiments={experiments}
         experimentInsights={experimentInsights}
         onAddExperiment={addExperiment}
+        onUpdateExperiment={updateExperiment}
         onDeleteExperiment={deleteExperiment}
       />
     );

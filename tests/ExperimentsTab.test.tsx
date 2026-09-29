@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ExperimentsTab } from "@/components/dashboard/ExperimentsTab";
 import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
@@ -23,6 +23,7 @@ describe("ExperimentsTab — empty state", () => {
         bodyComp={{ status: "idle" }}
         onBodyCompFile={onBodyCompFile}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -43,6 +44,7 @@ describe("ExperimentsTab — empty state", () => {
         bodyComp={bodyComp}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -59,6 +61,7 @@ describe("ExperimentsTab — empty state", () => {
         bodyComp={{ status: "idle" }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -80,6 +83,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -98,6 +102,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -129,6 +134,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -156,6 +162,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -177,6 +184,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={onDeleteExperiment}
       />
     );
@@ -193,6 +201,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -215,6 +224,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -231,6 +241,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={onAddExperiment}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -256,6 +267,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={onAddExperiment}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -286,6 +298,7 @@ describe("ExperimentsTab — ready state", () => {
         bodyComp={{ status: "ready", rows: [] }}
         onBodyCompFile={vi.fn()}
         onAddExperiment={vi.fn()}
+        onUpdateExperiment={vi.fn()}
         onDeleteExperiment={vi.fn()}
       />
     );
@@ -297,5 +310,72 @@ describe("ExperimentsTab — ready state", () => {
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     expect(screen.getByRole("button", { name: /Ended \(optional\)/ })).toHaveTextContent("Still ongoing");
     expect(screen.getByRole("button", { name: "Started" })).toHaveTextContent("Pick a date");
+  });
+});
+
+describe("ExperimentsTab — editing", () => {
+  const experiments: Experiment[] = [
+    { id: "a", date: "2024-05-01", endDate: "2024-07-01", label: "Started 5/3/1 cycle" },
+    { id: "b", date: "2024-08-15", label: "Switched to own programming" },
+  ];
+
+  function setup() {
+    const onUpdateExperiment = vi.fn();
+    render(
+      <ExperimentsTab
+        experiments={experiments}
+        experimentInsights={new Map()}
+        bodyComp={{ status: "ready", rows: [] }}
+        onBodyCompFile={vi.fn()}
+        onAddExperiment={vi.fn()}
+        onUpdateExperiment={onUpdateExperiment}
+        onDeleteExperiment={vi.fn()}
+      />
+    );
+    return onUpdateExperiment;
+  }
+
+  it("opens the form filled in with the experiment's label and dates", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: 'Edit "Started 5/3/1 cycle"' }));
+    expect(screen.getByLabelText("What did you try?", { selector: "input[value='Started 5/3/1 cycle']" })).toBeInTheDocument();
+    // The date buttons are named by their labels; their text is the picked date.
+    const form = within(screen.getByRole("button", { name: "Save changes" }).closest("form")!);
+    expect(form.getByRole("button", { name: "Started" })).toHaveTextContent("May 1, 2024");
+    expect(form.getByRole("button", { name: /^Ended/ })).toHaveTextContent("Jul 1, 2024");
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
+  });
+
+  it("saves a new label under the same id and keeps the dates", () => {
+    const onUpdate = setup();
+    fireEvent.click(screen.getByRole("button", { name: 'Edit "Switched to own programming"' }));
+    fireEvent.change(screen.getByDisplayValue("Switched to own programming"), { target: { value: "Own programming, 4 days a week" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(onUpdate).toHaveBeenCalledWith("b", "Own programming, 4 days a week", "2024-08-15", undefined);
+    expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument();
+  });
+
+  it("makes an ended experiment ongoing again when its end date is cleared", () => {
+    const onUpdate = setup();
+    fireEvent.click(screen.getByRole("button", { name: 'Edit "Started 5/3/1 cycle"' }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(onUpdate).toHaveBeenCalledWith("a", "Started 5/3/1 cycle", "2024-05-01", undefined);
+  });
+
+  it("will not save an empty label", () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: 'Edit "Started 5/3/1 cycle"' }));
+    fireEvent.change(screen.getByDisplayValue("Started 5/3/1 cycle"), { target: { value: "  " } });
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  });
+
+  it("cancel closes the form without saving", () => {
+    const onUpdate = setup();
+    fireEvent.click(screen.getByRole("button", { name: 'Edit "Started 5/3/1 cycle"' }));
+    fireEvent.change(screen.getByDisplayValue("Started 5/3/1 cycle"), { target: { value: "Something else" } });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onUpdate).not.toHaveBeenCalled();
+    expect(screen.getByText("Started 5/3/1 cycle")).toBeInTheDocument();
   });
 });

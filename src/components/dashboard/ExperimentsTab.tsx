@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import dayjs from "dayjs";
-import { AlertCircle, CalendarIcon, Trash2 } from "lucide-react";
+import { AlertCircle, CalendarIcon, Pencil, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ interface ExperimentsTabProps {
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
   onAddExperiment: (label: string, date: string, endDate?: string) => void;
+  /** Replaces the label and dates of an existing experiment; `endDate` undefined means still ongoing. */
+  onUpdateExperiment: (id: string, label: string, date: string, endDate?: string) => void;
   onDeleteExperiment: (id: string) => void;
 }
 
@@ -62,10 +64,32 @@ function formatDelta(delta: number | null, unit: string): string {
   return `${rounded > 0 ? "+" : ""}${rounded}${unit}`;
 }
 
-function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, endDate?: string) => void }) {
-  const [label, setLabel] = useState("");
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+/** "YYYY-MM-DD" to a local-midnight Date, which is what the calendar picker works in. */
+function isoToDate(iso: string | undefined): Date | undefined {
+  return iso ? dayjs(iso).toDate() : undefined;
+}
+
+/**
+ * The one form for adding an experiment and editing one. With `initial` it
+ * starts filled in, keeps its values after submit (the caller closes it), and
+ * offers Cancel; without, it's the add form and clears itself after submit.
+ */
+function ExperimentForm({
+  initial,
+  submitLabel,
+  onSubmit,
+  onCancel,
+}: {
+  initial?: Experiment;
+  submitLabel: string;
+  onSubmit: (label: string, date: string, endDate?: string) => void;
+  onCancel?: () => void;
+}) {
+  const editing = initial !== undefined;
+  const uid = useId();
+  const [label, setLabel] = useState(initial?.label ?? "");
+  const [date, setDate] = useState<Date | undefined>(isoToDate(initial?.date));
+  const [endDate, setEndDate] = useState<Date | undefined>(isoToDate(initial?.endDate));
   const [open, setOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
 
@@ -74,20 +98,22 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit || !date) return;
-    onAdd(label.trim(), dayjs(date).format("YYYY-MM-DD"), endDate ? dayjs(endDate).format("YYYY-MM-DD") : undefined);
-    setLabel("");
-    setDate(undefined);
-    setEndDate(undefined);
+    onSubmit(label.trim(), dayjs(date).format("YYYY-MM-DD"), endDate ? dayjs(endDate).format("YYYY-MM-DD") : undefined);
+    if (!editing) {
+      setLabel("");
+      setDate(undefined);
+      setEndDate(undefined);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="experiment-date">Started</Label>
+        <Label htmlFor={`${uid}-date`}>Started</Label>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
-              id="experiment-date"
+              id={`${uid}-date`}
               type="button"
               variant="outline"
               size="sm"
@@ -117,12 +143,12 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="experiment-end-date">Ended (optional)</Label>
+        <Label htmlFor={`${uid}-end-date`}>Ended (optional)</Label>
         <div className="flex items-center gap-1">
           <Popover open={endOpen} onOpenChange={setEndOpen}>
             <PopoverTrigger asChild>
               <Button
-                id="experiment-end-date"
+                id={`${uid}-end-date`}
                 type="button"
                 variant="outline"
                 size="sm"
@@ -160,9 +186,9 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
       </div>
 
       <div className="flex flex-1 flex-col gap-1.5">
-        <Label htmlFor="experiment-label">What did you try?</Label>
+        <Label htmlFor={`${uid}-label`}>What did you try?</Label>
         <Input
-          id="experiment-label"
+          id={`${uid}-label`}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Started 5/3/1 cycle"
@@ -171,8 +197,13 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
       </div>
 
       <Button type="submit" size="sm" disabled={!canSubmit} className="h-9">
-        Add experiment
+        {submitLabel}
       </Button>
+      {onCancel ? (
+        <Button type="button" variant="ghost" size="sm" className="h-9" onClick={onCancel}>
+          Cancel
+        </Button>
+      ) : null}
     </form>
   );
 }
@@ -180,12 +211,34 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
 function ExperimentCard({
   experiment,
   insight,
+  onUpdate,
   onDelete,
 }: {
   experiment: Experiment;
   insight: ExperimentInsight | undefined;
+  onUpdate: (label: string, date: string, endDate?: string) => void;
   onDelete: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <Card>
+        <CardContent>
+          <ExperimentForm
+            initial={experiment}
+            submitLabel="Save changes"
+            onSubmit={(label, date, endDate) => {
+              onUpdate(label, date, endDate);
+              setEditing(false);
+            }}
+            onCancel={() => setEditing(false)}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between pb-2">
@@ -196,14 +249,24 @@ function ExperimentCard({
             {experiment.endDate ? ` · Ended ${formatDate(experiment.endDate)}` : ""}
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={onDelete}
-          aria-label={`Delete "${experiment.label}"`}
-        >
-          <Trash2 className="size-3.5" aria-hidden="true" />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setEditing(true)}
+            aria-label={`Edit "${experiment.label}"`}
+          >
+            <Pencil className="size-3.5" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onDelete}
+            aria-label={`Delete "${experiment.label}"`}
+          >
+            <Trash2 className="size-3.5" aria-hidden="true" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {insight ? (
@@ -273,6 +336,7 @@ export function ExperimentsTab({
   bodyComp,
   onBodyCompFile,
   onAddExperiment,
+  onUpdateExperiment,
   onDeleteExperiment,
 }: ExperimentsTabProps) {
   if (!experimentInsights) {
@@ -317,7 +381,7 @@ export function ExperimentsTab({
             Mark when you tried something, and see whether your lifts, named benchmarks and body
             composition actually changed after that date compared to before it.
           </p>
-          <AddExperimentForm onAdd={onAddExperiment} />
+          <ExperimentForm submitLabel="Add experiment" onSubmit={onAddExperiment} />
         </CardContent>
       </Card>
 
@@ -333,6 +397,7 @@ export function ExperimentsTab({
             key={experiment.id}
             experiment={experiment}
             insight={experimentInsights.get(experiment.id)}
+            onUpdate={(label, date, endDate) => onUpdateExperiment(experiment.id, label, date, endDate)}
             onDelete={() => onDeleteExperiment(experiment.id)}
           />
         ))

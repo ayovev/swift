@@ -307,8 +307,9 @@ window.
 - **`Experiment`** (`src/types/experiment.ts`) is user-authored, not derived from either upload:
   just a `date` ("when I tried this") and a free-text `label` ("what I tried"). It's its own
   IndexedDB-backed dataset (`src/lib/storage/experimentsStorage.ts`, key `"experiments"`, same
-  thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added and deleted from the
-  Experiments tab (`ExperimentsTab.tsx`), persisted only when `state.source === "upload"` in
+  thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added, edited and deleted from the
+  Experiments tab (`ExperimentsTab.tsx`; the same `ExperimentForm` adds and edits — an edit keeps
+  the `id`, and clearing the end date makes it ongoing again), persisted only when `state.source === "upload"` in
   `App.tsx`, same sample-mode exclusion as everything else logged while browsing demo data.
 - **`getExperimentInsight(experiment, workouts, inbodyScans, asOfDate)`** reuses #1's subject
   identification and body-comp-trend helpers unchanged (`buildLiftSubjects`/
