@@ -1,4 +1,3 @@
-import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
 import { backupFilename, serializeBackup } from "@/lib/backup/backup";
@@ -38,8 +37,7 @@ export function DownloadBackupButton({ workoutRows, bodyComp, experiments, tags,
   };
 
   return (
-    <Button variant="outline" size="sm" className="h-8 gap-2" onClick={exportBackup} disabled={disabled}>
-      <Download className="size-3.5" aria-hidden="true" />
+    <Button variant="outline" size="sm" className="h-8" onClick={exportBackup} disabled={disabled}>
       Download
     </Button>
   );
