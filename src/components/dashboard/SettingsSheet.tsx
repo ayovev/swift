@@ -23,12 +23,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { BackupPassphraseForm } from "@/components/backup/BackupPassphraseForm";
 import { DownloadBackupButton } from "@/components/backup/DownloadBackupButton";
 import { useBackupRestore } from "@/components/backup/useBackupRestore";
 import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
 import { ACTIVE_SEGMENT_CLASSES } from "./SegmentedControl";
 import { FilePickerButton } from "./FilePickerButton";
 import type { BodyCompState } from "./BodyCompTab";
+import { cryptoAvailable } from "@/lib/backup/encryption";
+import { passphraseProblem } from "@/lib/backup/passphrase";
 import { capture } from "@/lib/posthog";
 import { formatOklch } from "@/lib/theme/contrast";
 import { ACCENT_SWATCHES, accentRoles } from "@/lib/theme/palette";
@@ -109,6 +112,24 @@ export function SettingsSheet(props: SettingsSheetProps) {
   const [open, setOpen] = useState(false);
   const { accent, setAccent, mode, setMode, resolvedMode } = useTheme();
   const upload = props.source === "upload";
+
+  // Passphrase for a new encrypted backup. Held here only while the sheet is
+  // open: closing it, or finishing a download, clears all three.
+  const [protect, setProtect] = useState(false);
+  const [passphrase, setPassphrase] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const clearPassphrase = () => {
+    setPassphrase("");
+    setConfirmation("");
+  };
+  const changeOpen = (next: boolean) => {
+    setOpen(next);
+    if (!next) {
+      setProtect(false);
+      clearPassphrase();
+    }
+  };
+  const canDownload = upload && (!protect || passphraseProblem(passphrase, confirmation) === null);
   // Sample data is never stored, so importing over it has nothing to confirm.
   const backupRestore = useBackupRestore({
     existing: {
@@ -126,12 +147,12 @@ export function SettingsSheet(props: SettingsSheetProps) {
   });
 
   const reset = () => {
-    setOpen(false);
+    changeOpen(false);
     props.onReset();
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={changeOpen}>
       <DialogTrigger asChild>
         {/* Ghost, in muted text: it's a door to rarely-used controls, so it
             shouldn't out-weigh the section links beside it. */}
@@ -210,10 +231,26 @@ export function SettingsSheet(props: SettingsSheetProps) {
                   bodyComp={props.bodyComp}
                   experiments={props.experiments}
                   tags={props.tags}
-                  disabled={!upload}
+                  passphrase={protect ? passphrase : undefined}
+                  onDownloaded={clearPassphrase}
+                  disabled={!canDownload}
                 />
               }
             />
+            {upload ? (
+              <BackupPassphraseForm
+                enabled={protect}
+                onEnabledChange={(next) => {
+                  setProtect(next);
+                  if (!next) clearPassphrase();
+                }}
+                passphrase={passphrase}
+                onPassphraseChange={setPassphrase}
+                confirmation={confirmation}
+                onConfirmationChange={setConfirmation}
+                available={cryptoAvailable()}
+              />
+            ) : null}
             <DatasetRow
               title="Restore from backup"
               detail="Replaces what's stored"
