@@ -92,7 +92,7 @@ describe("backup import from Settings", () => {
 
     const confirm = await screen.findByRole("alertdialog");
     expect(within(confirm).getByText(/workout log: 2 entries now, 1 in the backup/i)).toBeInTheDocument();
-    expect(within(confirm).getByText(/list of experiments: 1 entries now, 1 in the backup/i)).toBeInTheDocument();
+    expect(within(confirm).getByText(/list of experiments: 1 entry now, 1 in the backup/i)).toBeInTheDocument();
     fireEvent.click(within(confirm).getByRole("button", { name: "Cancel" }));
 
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());

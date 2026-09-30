@@ -16,6 +16,8 @@ const COPY = {
   device: { title: "Replace what's stored here with the synced data?", incoming: "coming from the other device" },
 } as const;
 
+const entries = (n: number) => `${n.toLocaleString()} ${n === 1 ? "entry" : "entries"}`;
+
 interface ReplaceConfirmDialogProps {
   conflicts: ConflictItem[];
   source: keyof typeof COPY;
@@ -40,7 +42,7 @@ export function ReplaceConfirmDialog({ conflicts, source, onConfirm, onCancel }:
               <ul className="list-disc pl-5">
                 {conflicts.map((c) => (
                   <li key={c.dataset}>
-                    Your {DATASET_LABEL[c.dataset]}: {c.existingCount.toLocaleString()} entries now,{" "}
+                    Your {DATASET_LABEL[c.dataset]}: {entries(c.existingCount)} now,{" "}
                     {c.incomingCount.toLocaleString()} {copy.incoming}.
                   </li>
                 ))}

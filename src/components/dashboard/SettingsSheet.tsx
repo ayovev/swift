@@ -203,7 +203,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
             </p>
             <DatasetRow
               title="Export backup"
-              detail="Workout log, body composition, experiments, tags"
+              detail="One file, all your data"
               action={
                 <ExportBackupButton
                   workoutRows={props.workoutRows}
@@ -216,7 +216,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
             />
             <DatasetRow
               title="Import backup"
-              detail="Replaces what is stored here, after you confirm"
+              detail="Replaces what's stored"
               action={
                 <FilePickerButton
                   onFile={backupImport.importFile}
