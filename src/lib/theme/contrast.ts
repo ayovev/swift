@@ -92,7 +92,7 @@ export function clampToGamut(color: Oklch): Oklch {
 }
 
 /** WCAG 2.1 relative luminance. */
-export function relativeLuminance(color: Oklch): number {
+function relativeLuminance(color: Oklch): number {
   const { r, g, b } = oklchToLinearSrgb(color);
   const lin = (v: number): number => clamp01(v);
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
@@ -130,5 +130,4 @@ export function formatOklch({ l, c, h }: Oklch): string {
 
 /** WCAG minimums. */
 export const CONTRAST_TEXT = 4.5;
-export const CONTRAST_LARGE_TEXT = 3;
 export const CONTRAST_UI = 3;

@@ -1,10 +1,9 @@
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadDropzone } from "@/components/landing/UploadDropzone";
-import { formatDate } from "./charts/chartUtils";
+import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
+import { formatDate, formatSignedDelta } from "./charts/chartUtils";
 import type { BodyCompState } from "./BodyCompTab";
+import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import type { AlignmentClassification, AlignmentResult } from "@/types/alignment";
 
 interface AlignmentTabProps {
@@ -39,12 +38,6 @@ function ClassificationBadge({ classification }: { classification: AlignmentClas
   );
 }
 
-function formatDelta(delta: number | null, unit: string): string {
-  if (delta === null) return "no data";
-  const rounded = Math.round(delta * 10) / 10;
-  return `${rounded > 0 ? "+" : ""}${rounded}${unit}`;
-}
-
 /**
  * Whole-athlete rollup of the Plateau Detector (PlateauTab) plus the same
  * InBody history — "are performance and body composition telling a
@@ -55,38 +48,16 @@ function formatDelta(delta: number | null, unit: string): string {
 export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentTabProps) {
   if (!alignment) {
     return (
-      <Card>
-        <CardContent className="flex flex-col gap-4">
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Rolls up the plateau detector's per-lift and per-benchmark reads into one
+      <InBodyUploadPrompt state={bodyComp} onFile={onBodyCompFile}>
+        Rolls up the plateau detector's per-lift and per-benchmark reads into one
             whole-athlete view: whether performance and body composition are telling the
             same story right now. Needs an InBody export in addition to the SugarWOD log
             already loaded.
-          </p>
-
-          {bodyComp.status === "error" ? (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" aria-hidden="true" />
-              <AlertTitle>That file didn't work</AlertTitle>
-              <AlertDescription>{bodyComp.message}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          <UploadDropzone
-            loading={bodyComp.status === "loading"}
-            onFile={onBodyCompFile}
-            ariaLabel="Upload your InBody CSV export"
-            loadingLabel="Reading your body composition history…"
-            loadingHint="This only takes a moment."
-            hint="The .csv file the InBody app gives you from Export"
-          />
-          <p className="text-xs text-muted-foreground">Your file never leaves this browser.</p>
-        </CardContent>
-      </Card>
+      </InBodyUploadPrompt>
     );
   }
 
-  const { classification, reason, performanceSummary, bodyCompSummary } = alignment;
+  const { classification, reason, performanceSummary, bodyCompSummary, tagNotes } = alignment;
   const hasWindow = bodyCompSummary.windowStart !== "" && bodyCompSummary.windowEnd !== "";
 
   return (
@@ -97,6 +68,11 @@ export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentT
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             {classification === "insufficient_data" ? reason : CLASSIFICATION_COPY[classification]}
           </p>
+          {tagNotes?.map((note) => (
+            <p key={note} className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              {note}
+            </p>
+          ))}
           {hasWindow ? (
             <p className="text-xs text-muted-foreground">
               Comparison window: {formatDate(bodyCompSummary.windowStart)} —{" "}
@@ -137,22 +113,25 @@ export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentT
             <div>
               <dt className="text-xs text-muted-foreground">Lean mass</dt>
               <dd className="tabular text-lg font-medium">
-                {formatDelta(bodyCompSummary.leanMassDelta, " lb")}
+                {formatSignedDelta(bodyCompSummary.leanMassDelta, " lb")}
               </dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Fat mass</dt>
               <dd className="tabular text-lg font-medium">
-                {formatDelta(bodyCompSummary.fatMassDelta, " lb")}
+                {formatSignedDelta(bodyCompSummary.fatMassDelta, " lb")}
               </dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Body fat</dt>
               <dd className="tabular text-lg font-medium">
-                {formatDelta(bodyCompSummary.bodyFatPctDelta, "%")}
+                {formatSignedDelta(bodyCompSummary.bodyFatPctDelta, "%")}
               </dd>
             </div>
           </dl>
+          {describeWithinNoise(bodyCompSummary) ? (
+            <p className="mt-3 text-xs text-muted-foreground">{describeWithinNoise(bodyCompSummary)}</p>
+          ) : null}
         </CardContent>
       </Card>
     </div>

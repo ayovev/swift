@@ -15,7 +15,7 @@ import { findMatch, type MatchRule } from "./matcher";
  *
  * Domains are NOT mutually exclusive: most workouts hit three or more.
  */
-export const DOMAIN_KEYWORDS: Record<Domain, readonly string[]> = {
+const DOMAIN_KEYWORDS: Record<Domain, readonly string[]> = {
   "Cardiovascular/Respiratory Endurance": [
     "run", "row", "bike", "ski erg", "ski 1000", "assault bike", "echo bike",
     "amrap", "for time", "calorie", " cal ", "metcon", "double-under", "double under",
@@ -89,7 +89,7 @@ const KEYWORD_EXCLUSIONS: Readonly<Record<string, readonly string[]>> = {
 };
 
 /** Build the shared-engine rule for a raw keyword string. */
-export function ruleForKeyword(keyword: string): MatchRule {
+function ruleForKeyword(keyword: string): MatchRule {
   const exclude = KEYWORD_EXCLUSIONS[keyword];
   return exclude ? { phrase: keyword, exclude } : { phrase: keyword };
 }

@@ -6,6 +6,7 @@ import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
+import type { ContextTag } from "@/types/tag";
 import { SyncDialog } from "./SyncDialog";
 
 interface SyncEntryPointProps extends VariantProps<typeof buttonVariants> {
@@ -15,9 +16,11 @@ interface SyncEntryPointProps extends VariantProps<typeof buttonVariants> {
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
   existingExperimentsCount: number | null;
+  existingTagsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
+  onSyncedTags: (tags: ContextTag[]) => void;
   disabled?: boolean;
   className?: string;
   children: ReactNode;
@@ -34,9 +37,11 @@ export function SyncEntryPoint({
   existingWorkoutCount,
   existingBodyCompCount,
   existingExperimentsCount,
+  existingTagsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedExperiments,
+  onSyncedTags,
   disabled,
   variant = "outline",
   size = "sm",
@@ -58,9 +63,11 @@ export function SyncEntryPoint({
         existingWorkoutCount={existingWorkoutCount}
         existingBodyCompCount={existingBodyCompCount}
         existingExperimentsCount={existingExperimentsCount}
+        existingTagsCount={existingTagsCount}
         onSyncedWorkoutData={onSyncedWorkoutData}
         onSyncedBodyCompData={onSyncedBodyCompData}
         onSyncedExperiments={onSyncedExperiments}
+        onSyncedTags={onSyncedTags}
       />
     </>
   );

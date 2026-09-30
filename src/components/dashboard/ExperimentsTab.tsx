@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import dayjs from "dayjs";
-import { AlertCircle, CalendarIcon, Trash2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CalendarIcon, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { UploadDropzone } from "@/components/landing/UploadDropzone";
-import { formatDate } from "./charts/chartUtils";
+import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
+import { formatDate, formatSignedDelta } from "./charts/chartUtils";
 import type { BodyCompState } from "./BodyCompTab";
-import type { Experiment, ExperimentClassification, ExperimentInsight } from "@/types/experiment";
+import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
+import type { Experiment, ExperimentClassification, ExperimentFields, ExperimentInsight } from "@/types/experiment";
 
 interface ExperimentsTabProps {
   experiments: Experiment[];
@@ -20,7 +20,9 @@ interface ExperimentsTabProps {
   experimentInsights: Map<string, ExperimentInsight> | null;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
-  onAddExperiment: (label: string, date: string, endDate?: string) => void;
+  onAddExperiment: (fields: ExperimentFields) => void;
+  /** Replaces everything but the id. An unset `endDate` means ongoing, an unset `baselineStart` means all earlier history. */
+  onUpdateExperiment: (id: string, fields: ExperimentFields) => void;
   onDeleteExperiment: (id: string) => void;
 }
 
@@ -55,38 +57,65 @@ function ClassificationBadge({ classification }: { classification: ExperimentCla
   );
 }
 
-function formatDelta(delta: number | null, unit: string): string {
-  if (delta === null) return "no data";
-  const rounded = Math.round(delta * 10) / 10;
-  return `${rounded > 0 ? "+" : ""}${rounded}${unit}`;
+/** "YYYY-MM-DD" to a local-midnight Date, which is what the calendar picker works in. */
+function isoToDate(iso: string | undefined): Date | undefined {
+  return iso ? dayjs(iso).toDate() : undefined;
 }
 
-function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, endDate?: string) => void }) {
-  const [label, setLabel] = useState("");
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+/**
+ * The one form for adding an experiment and editing one. With `initial` it
+ * starts filled in, keeps its values after submit (the caller closes it), and
+ * offers Cancel; without, it's the add form and clears itself after submit.
+ */
+function ExperimentForm({
+  initial,
+  submitLabel,
+  onSubmit,
+  onCancel,
+}: {
+  initial?: Experiment;
+  submitLabel: string;
+  onSubmit: (fields: ExperimentFields) => void;
+  onCancel?: () => void;
+}) {
+  const editing = initial !== undefined;
+  const uid = useId();
+  const [label, setLabel] = useState(initial?.label ?? "");
+  const [date, setDate] = useState<Date | undefined>(isoToDate(initial?.date));
+  const [endDate, setEndDate] = useState<Date | undefined>(isoToDate(initial?.endDate));
+  const [baselineStart, setBaselineStart] = useState<Date | undefined>(isoToDate(initial?.baselineStart));
   const [open, setOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
+  const [baselineOpen, setBaselineOpen] = useState(false);
 
   const canSubmit = label.trim() !== "" && date !== undefined;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit || !date) return;
-    onAdd(label.trim(), dayjs(date).format("YYYY-MM-DD"), endDate ? dayjs(endDate).format("YYYY-MM-DD") : undefined);
-    setLabel("");
-    setDate(undefined);
-    setEndDate(undefined);
+    const iso = (d: Date) => dayjs(d).format("YYYY-MM-DD");
+    onSubmit({
+      label: label.trim(),
+      date: iso(date),
+      ...(endDate ? { endDate: iso(endDate) } : {}),
+      ...(baselineStart ? { baselineStart: iso(baselineStart) } : {}),
+    });
+    if (!editing) {
+      setLabel("");
+      setDate(undefined);
+      setEndDate(undefined);
+      setBaselineStart(undefined);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="experiment-date">Started</Label>
+        <Label htmlFor={`${uid}-date`}>Started</Label>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
-              id="experiment-date"
+              id={`${uid}-date`}
               type="button"
               variant="outline"
               size="sm"
@@ -107,6 +136,8 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
                 // inverted range; clearing it is simpler than clamping, and
                 // this is a rare edit (both fields default unset).
                 if (d && endDate && dayjs(endDate).isBefore(dayjs(d), "day")) setEndDate(undefined);
+                // Same for the earlier range: it has to start before the experiment does.
+                if (d && baselineStart && !dayjs(baselineStart).isBefore(dayjs(d), "day")) setBaselineStart(undefined);
               }}
               disabled={{ after: new Date() }}
               defaultMonth={date ?? new Date()}
@@ -116,12 +147,12 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="experiment-end-date">Ended (optional)</Label>
+        <Label htmlFor={`${uid}-end-date`}>Ended (optional)</Label>
         <div className="flex items-center gap-1">
           <Popover open={endOpen} onOpenChange={setEndOpen}>
             <PopoverTrigger asChild>
               <Button
-                id="experiment-end-date"
+                id={`${uid}-end-date`}
                 type="button"
                 variant="outline"
                 size="sm"
@@ -158,10 +189,53 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
         </div>
       </div>
 
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`${uid}-baseline`}>Compare against (optional)</Label>
+        <div className="flex items-center gap-1">
+          <Popover open={baselineOpen} onOpenChange={setBaselineOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                id={`${uid}-baseline`}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 w-48 justify-start gap-2 font-normal"
+              >
+                <CalendarIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                {baselineStart ? `From ${formatDate(dayjs(baselineStart).format("YYYY-MM-DD"))}` : "All earlier history"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={baselineStart}
+                onSelect={(d) => {
+                  setBaselineStart(d);
+                  setBaselineOpen(false);
+                }}
+                disabled={{ after: date ? dayjs(date).subtract(1, "day").toDate() : new Date() }}
+                defaultMonth={baselineStart ?? date ?? new Date()}
+              />
+            </PopoverContent>
+          </Popover>
+          {baselineStart ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 px-2 font-normal"
+              onClick={() => setBaselineStart(undefined)}
+            >
+              All history
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
       <div className="flex flex-1 flex-col gap-1.5">
-        <Label htmlFor="experiment-label">What did you try?</Label>
+        <Label htmlFor={`${uid}-label`}>What did you try?</Label>
         <Input
-          id="experiment-label"
+          id={`${uid}-label`}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Started 5/3/1 cycle"
@@ -170,8 +244,13 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
       </div>
 
       <Button type="submit" size="sm" disabled={!canSubmit} className="h-9">
-        Add experiment
+        {submitLabel}
       </Button>
+      {onCancel ? (
+        <Button type="button" variant="ghost" size="sm" className="h-9" onClick={onCancel}>
+          Cancel
+        </Button>
+      ) : null}
     </form>
   );
 }
@@ -179,12 +258,34 @@ function AddExperimentForm({ onAdd }: { onAdd: (label: string, date: string, end
 function ExperimentCard({
   experiment,
   insight,
+  onUpdate,
   onDelete,
 }: {
   experiment: Experiment;
   insight: ExperimentInsight | undefined;
+  onUpdate: (fields: ExperimentFields) => void;
   onDelete: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <Card>
+        <CardContent>
+          <ExperimentForm
+            initial={experiment}
+            submitLabel="Save changes"
+            onSubmit={(fields) => {
+              onUpdate(fields);
+              setEditing(false);
+            }}
+            onCancel={() => setEditing(false)}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between pb-2">
@@ -193,16 +294,29 @@ function ExperimentCard({
           <p className="mt-1 text-xs text-muted-foreground">
             Started {formatDate(experiment.date)}
             {experiment.endDate ? ` · Ended ${formatDate(experiment.endDate)}` : ""}
+            {experiment.baselineStart
+              ? ` · Compared with ${formatDate(experiment.baselineStart)} – ${formatDate(dayjs(experiment.date).subtract(1, "day").format("YYYY-MM-DD"))}`
+              : ""}
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={onDelete}
-          aria-label={`Delete "${experiment.label}"`}
-        >
-          <Trash2 className="size-3.5" aria-hidden="true" />
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setEditing(true)}
+            aria-label={`Edit "${experiment.label}"`}
+          >
+            <Pencil className="size-3.5" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onDelete}
+            aria-label={`Delete "${experiment.label}"`}
+          >
+            <Trash2 className="size-3.5" aria-hidden="true" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {insight ? (
@@ -233,17 +347,20 @@ function ExperimentCard({
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Lean mass</dt>
-                  <dd className="tabular text-sm">{formatDelta(insight.bodyCompSummary.leanMassDelta, " lb")}</dd>
+                  <dd className="tabular text-sm">{formatSignedDelta(insight.bodyCompSummary.leanMassDelta, " lb")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Fat mass</dt>
-                  <dd className="tabular text-sm">{formatDelta(insight.bodyCompSummary.fatMassDelta, " lb")}</dd>
+                  <dd className="tabular text-sm">{formatSignedDelta(insight.bodyCompSummary.fatMassDelta, " lb")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Body fat</dt>
-                  <dd className="tabular text-sm">{formatDelta(insight.bodyCompSummary.bodyFatPctDelta, "%")}</dd>
+                  <dd className="tabular text-sm">{formatSignedDelta(insight.bodyCompSummary.bodyFatPctDelta, "%")}</dd>
                 </div>
               </dl>
+            ) : null}
+            {insight.classification !== "insufficient_data" && describeWithinNoise(insight.bodyCompSummary) ? (
+              <p className="text-xs text-muted-foreground">{describeWithinNoise(insight.bodyCompSummary)}</p>
             ) : null}
           </>
         ) : null}
@@ -269,37 +386,16 @@ export function ExperimentsTab({
   bodyComp,
   onBodyCompFile,
   onAddExperiment,
+  onUpdateExperiment,
   onDeleteExperiment,
 }: ExperimentsTabProps) {
   if (!experimentInsights) {
     return (
-      <Card>
-        <CardContent className="flex flex-col gap-4">
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Mark when you tried something — a new program, a strength cycle, a diet change — and
+      <InBodyUploadPrompt state={bodyComp} onFile={onBodyCompFile}>
+        Mark when you tried something — a new program, a strength cycle, a diet change — and
             see whether your performance and body composition actually shifted afterward. Needs
             an InBody export in addition to the SugarWOD log already loaded.
-          </p>
-
-          {bodyComp.status === "error" ? (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" aria-hidden="true" />
-              <AlertTitle>That file didn't work</AlertTitle>
-              <AlertDescription>{bodyComp.message}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          <UploadDropzone
-            loading={bodyComp.status === "loading"}
-            onFile={onBodyCompFile}
-            ariaLabel="Upload your InBody CSV export"
-            loadingLabel="Reading your body composition history…"
-            loadingHint="This only takes a moment."
-            hint="The .csv file the InBody app gives you from Export"
-          />
-          <p className="text-xs text-muted-foreground">Your file never leaves this browser.</p>
-        </CardContent>
-      </Card>
+      </InBodyUploadPrompt>
     );
   }
 
@@ -313,7 +409,7 @@ export function ExperimentsTab({
             Mark when you tried something, and see whether your lifts, named benchmarks and body
             composition actually changed after that date compared to before it.
           </p>
-          <AddExperimentForm onAdd={onAddExperiment} />
+          <ExperimentForm submitLabel="Add experiment" onSubmit={onAddExperiment} />
         </CardContent>
       </Card>
 
@@ -329,6 +425,7 @@ export function ExperimentsTab({
             key={experiment.id}
             experiment={experiment}
             insight={experimentInsights.get(experiment.id)}
+            onUpdate={(fields) => onUpdateExperiment(experiment.id, fields)}
             onDelete={() => onDeleteExperiment(experiment.id)}
           />
         ))

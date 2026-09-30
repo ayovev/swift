@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import {
-  clearViewPreferences,
   loadViewPreferences,
   saveViewPreferences,
   type StoredViewPreferences,
@@ -36,9 +35,9 @@ describe("viewPreferencesStorage", () => {
     expect(await loadViewPreferences()).toEqual(prefs);
   });
 
-  it("clears saved preferences", async () => {
+  it("is wiped by idbClearAll, which is what Start over calls", async () => {
     await saveViewPreferences({ granularity: "yearly", rangePreset: "all_time", customRange: null });
-    await clearViewPreferences();
+    await idbClearAll();
     expect(await loadViewPreferences()).toBeUndefined();
   });
 });

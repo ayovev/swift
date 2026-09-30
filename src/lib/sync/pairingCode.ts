@@ -45,7 +45,7 @@
  * else, and the cap keeps the top-ranked ones.
  */
 
-export const PAIRING_PAYLOAD_VERSION = 2;
+const PAIRING_PAYLOAD_VERSION = 2;
 
 // Base45 needs ~12.5% more characters than base64 did for the same
 // underlying bytes (2 bytes -> 3 Base45 chars vs. 4/3 base64 chars), so the

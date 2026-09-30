@@ -8,6 +8,8 @@ import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
 import { extendSampleRows } from "@/lib/sample/extendSample";
 import { generateSampleBodyComp } from "@/lib/sample/generateSampleBodyComp";
 import { generateSampleExperiments } from "@/lib/sample/generateSampleExperiments";
+import { generateSampleTags } from "@/lib/sample/generateSampleTags";
+import { getCycleReport, getCycles } from "@/lib/analytics/cycleReport";
 
 dayjs.extend(customParseFormat);
 
@@ -42,5 +44,23 @@ describe("sample demo data is full enough to drive the insights tabs", () => {
       getExperimentInsight(experiment, workoutRows, bodyCompRows, today.toDate())
     );
     expect(experimentInsights.some((i) => i.classification !== "insufficient_data")).toBe(true);
+  });
+
+  it("gives the Tags and Cycles views real tags and blocks, and the insights that read tags stay valid", async () => {
+    const workoutRows = extendSampleRows(await loadSampleRows(), dayjs("2026-10-02"));
+    const today = dayjs("2026-10-02");
+    const bodyCompRows = generateSampleBodyComp(workoutRows, today);
+    const tags = generateSampleTags(workoutRows, today);
+    expect(tags.length).toBeGreaterThan(0);
+
+    const cycles = getCycles(workoutRows, tags, { asOfDate: today.toDate() });
+    expect(cycles.length).toBeGreaterThan(0);
+    const reports = cycles.map((c) => getCycleReport(c, workoutRows, bodyCompRows, { tags }));
+    expect(reports.some((r) => r.status === "ok")).toBe(true);
+
+    // Tags only ever add notes; they must not change a classification.
+    const plain = getPlateauInsights(workoutRows, bodyCompRows, today.toDate());
+    const tagged = getPlateauInsights(workoutRows, bodyCompRows, today.toDate(), { tags });
+    expect(tagged.map((i) => i.classification)).toEqual(plain.map((i) => i.classification));
   });
 });

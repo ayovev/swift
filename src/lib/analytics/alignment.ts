@@ -1,5 +1,8 @@
 import dayjs, { type Dayjs } from "dayjs";
+import { getBodyCompNoiseBands } from "./bodyCompNoise";
+import { acknowledgeTags } from "./contextTags";
 import {
+  type InsightOptions,
   computeBodyCompTrend,
   formatGateShortfall,
   isBodyCompDeclining,
@@ -69,6 +72,14 @@ function scansInWindow(
     .sort((a, b) => a.date.valueOf() - b.date.valueOf());
 }
 
+function scansUpToToday(inbodyScans: InBodyRow[], asOfDate: Date): InBodyRow[] {
+  const asOf = dayjs(asOfDate);
+  return inbodyScans.filter((raw) => {
+    const d = parseInBodyDate(raw.date);
+    return d.isValid() && !d.isAfter(asOf, "day");
+  });
+}
+
 /**
  * Pure function: rolls up #1's per-subject Plateau Detector output plus the
  * raw InBody scans into one whole-athlete read — "are performance and body
@@ -79,7 +90,8 @@ function scansInWindow(
 export function getAlignment(
   plateauInsights: PlateauInsight[],
   inbodyScans: InBodyRow[],
-  asOfDate: Date
+  asOfDate: Date,
+  options: InsightOptions = {}
 ): AlignmentResult {
   const classified = plateauInsights.filter((i) => i.classification !== "insufficient_data");
   const performanceSummary = computePerformanceSummary(classified);
@@ -122,7 +134,8 @@ export function getAlignment(
 
   const bodyCompTrend = computeBodyCompTrend(
     scansInRange[0]!.raw,
-    scansInRange[scansInRange.length - 1]!.raw
+    scansInRange[scansInRange.length - 1]!.raw,
+    options.noiseBands ?? getBodyCompNoiseBands(scansUpToToday(inbodyScans, asOfDate))
   );
   const bodyCompSummary: AlignmentBodyCompSummary = { ...bodyCompTrend, windowStart, windowEnd };
 
@@ -144,5 +157,6 @@ export function getAlignment(
     classification = "tension"; // trending down/mixed + lean stable/up, fat stable/down: signals contradict
   }
 
-  return { classification, performanceSummary, bodyCompSummary };
+  const tagNotes = acknowledgeTags(options.tags, windowStart, windowEnd, "comparison window");
+  return { classification, performanceSummary, bodyCompSummary, ...(tagNotes.length > 0 ? { tagNotes } : {}) };
 }

@@ -31,6 +31,21 @@ export function bucketRowCount(rows: number): SizeBucket {
 /** Which side of a sync pairing this device was — never anything more identifying. */
 export type SyncRole = "host" | "joiner";
 
+/**
+ * Which control was used — a fixed vocabulary, never a value the athlete
+ * entered or a number derived from their data. Add a name here and nowhere
+ * else; the type is what keeps an interaction event from carrying content.
+ */
+export type InteractionName =
+  | "strength_view_toggled"
+  | "compare_range_selected"
+  | "compare_saved_as_experiment"
+  | "tag_range_selected"
+  | "tag_created"
+  | "tag_edited"
+  | "tags_exported"
+  | "tags_imported";
+
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }
   | { name: "upload_attempted"; props?: undefined }
@@ -40,6 +55,7 @@ type SwiftEvent =
   | { name: "sync_attempted"; props: { role: SyncRole } }
   | { name: "sync_succeeded"; props: { role: SyncRole; rows: SizeBucket } }
   | { name: "sync_failed"; props: { role: SyncRole; reason: SyncFailureReason } }
+  | { name: "interaction_used"; props: { interaction: InteractionName } }
   | { name: "tab_viewed"; props: { tab: string; source: DataSource } }
   | { name: "theme_changed"; props: { mode?: string; accent?: string } }
   | {

@@ -51,6 +51,13 @@ export interface PlateauBodyCompTrend {
   leanMassDelta: number | null;
   fatMassDelta: number | null;
   bodyFatPctDelta: number | null;
+  /**
+   * Set only when the trend was computed against noise bands
+   * (`bodyCompNoise.ts`). A `true` means the delta is real data but no bigger
+   * than ordinary scan-to-scan variation, so nothing may claim a direction
+   * from it; `false` means it cleared the band, or has no delta at all.
+   */
+  withinNoise?: { leanMass: boolean; fatMass: boolean; bodyFatPct: boolean };
 }
 
 export interface PlateauInsight {
@@ -63,4 +70,10 @@ export interface PlateauInsight {
   confidence: "low" | "medium" | "high";
   /** Only set when classification === "insufficient_data"; names which gate failed and by how much. */
   reason?: string;
+  /**
+   * Set only on a plateaued result whose window overlaps a cut or injury tag
+   * the athlete logged: one sentence per tag, each naming it. Absent (not
+   * empty) otherwise, so an untagged result is unchanged.
+   */
+  tagNotes?: string[];
 }

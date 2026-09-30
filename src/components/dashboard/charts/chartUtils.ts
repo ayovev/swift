@@ -12,6 +12,13 @@ export function formatDate(iso: string): string {
   return date.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** "+1.2 lb" / "-0.4%" / "no data". One decimal, explicit plus, for a body-composition delta. */
+export function formatSignedDelta(delta: number | null, unit: string): string {
+  if (delta === null) return "no data";
+  const rounded = Math.round(delta * 10) / 10;
+  return `${rounded > 0 ? "+" : ""}${rounded}${unit}`;
+}
+
 /** "25-03-14" (the workout-list format) -> "14 Mar 2025" */
 export function formatShortDate(yyMmDd: string): string {
   const [yy, mm, dd] = yyMmDd.split("-");

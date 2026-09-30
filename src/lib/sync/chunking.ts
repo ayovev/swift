@@ -7,9 +7,9 @@
  * here — so the framing logic is unit-testable without a real connection.
  */
 
-export type SyncDataset = "workout" | "bodyComp" | "experiments";
+export type SyncDataset = "workout" | "bodyComp" | "experiments" | "tags";
 
-const SYNC_DATASETS: readonly SyncDataset[] = ["workout", "bodyComp", "experiments"];
+const SYNC_DATASETS: readonly SyncDataset[] = ["workout", "bodyComp", "experiments", "tags"];
 
 export interface FrameHeader {
   dataset: SyncDataset;

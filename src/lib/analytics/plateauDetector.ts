@@ -2,8 +2,14 @@ import dayjs, { type Dayjs } from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { NAMED_BENCHMARKS, toTitleCase } from "./buildDashboardData";
 import { parseRepMax, repMaxCategory } from "./repMax";
+import { parseInBodyDate, parseNumericField, parseWorkoutDate } from "./scanParsing";
+
+export { parseInBodyDate, parseNumericField, parseWorkoutDate };
 import type { SugarWodRow } from "@/types/dashboard";
+import { acknowledgeTags } from "./contextTags";
+import { getBodyCompNoiseBands, isMeaningfulChange, type BodyCompNoiseBands } from "./bodyCompNoise";
 import type { InBodyRow } from "@/types/inbody";
+import type { ContextTag } from "@/types/tag";
 import type {
   PlateauBodyCompTrend,
   PlateauClassification,
@@ -54,6 +60,21 @@ const MIN_SCANS_IN_WINDOW = 2;
  */
 export const TREND_THRESHOLD = 0.03;
 
+/**
+ * Options shared by the body-comp pipelines. `noiseBands` defaults to bands
+ * estimated from the supplied scans; pass `NO_NOISE_BANDS` to reproduce the
+ * sign-only behaviour that predates them (used by the before/after diff).
+ */
+export interface InsightOptions {
+  noiseBands?: BodyCompNoiseBands;
+  /**
+   * Context tags. They never change a classification or number; a plateau
+   * (or alignment) result overlapping a cut or injury tag gets a `tagNotes`
+   * sentence naming it. Omitted or empty gives exactly the untagged result.
+   */
+  tags?: readonly ContextTag[];
+}
+
 /** Exported for reuse by `experimentInsight.ts`, which needs the same shape for its own before/after split. */
 export interface DatedValue {
   date: Dayjs;
@@ -66,21 +87,6 @@ export interface SubjectCandidate {
   entries: DatedValue[];
   scoreDirection: ScoreDirection;
   valueKind: "raw" | "estimated_1rm";
-}
-
-export function parseWorkoutDate(dateStr: string): Dayjs {
-  return dayjs((dateStr ?? "").trim(), "MM/DD/YYYY", true);
-}
-
-export function parseInBodyDate(dateStr: string): Dayjs {
-  return dayjs((dateStr ?? "").trim(), "YYYYMMDDHHmmss", true);
-}
-
-/** Treats "", undefined and the literal "-" (InBody's "not measured") as no data — never 0. */
-export function parseNumericField(raw: string | undefined): number | null {
-  if (raw === undefined || raw === "" || raw === "-") return null;
-  const n = Number.parseFloat(raw);
-  return Number.isNaN(n) ? null : n;
 }
 
 /**
@@ -108,16 +114,27 @@ export function formatGateShortfall(has: number, needs: number, singular: string
  * either formula's specific bias rather than committing to one. A true
  * 1-rep max (reps === 1) needs no estimating and is used as-is.
  */
-function estimateLiftValue(raw: SugarWodRow): number | null {
+function estimateLiftValue(raw: SugarWodRow, maxReps?: number): number | null {
   const rawValue = parseNumericField(raw.best_result_raw);
   if (rawValue === null) return null;
 
   const reps = parseRepMax(`${raw.title ?? ""} ${raw.description ?? ""}`);
-  if (reps === null || repMaxCategory(reps) === "other") return null;
-  if (reps === 1) return rawValue;
+  if (reps === null) return null;
+  // Default: only the four tracked schemes. `maxReps` (relative strength)
+  // widens that to any scheme up to a cap — high-rep estimates are unreliable.
+  if (maxReps === undefined ? repMaxCategory(reps) === "other" : reps < 1 || reps > maxReps) return null;
+  return estimateOneRepMax(rawValue, reps);
+}
 
-  const epley = rawValue * (1 + reps / 30);
-  const brzycki = (rawValue * 36) / (37 - reps);
+/**
+ * Average of Epley and Brzycki (see `estimateLiftValue`). Shared by the
+ * Plateau Detector and relative strength so both estimate a lift's 1RM the
+ * same way. A single (reps === 1) is used as-is.
+ */
+export function estimateOneRepMax(load: number, reps: number): number {
+  if (reps === 1) return load;
+  const epley = load * (1 + reps / 30);
+  const brzycki = (load * 36) / (37 - reps);
   return (epley + brzycki) / 2;
 }
 
@@ -157,7 +174,10 @@ interface LiftGroup {
  * logic (its "don't reimplement the normalization/grouping rules" spec
  * requirement) instead of maintaining a second copy that could drift.
  */
-export function buildLiftSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): SubjectCandidate[] {
+export function buildLiftSubjects(
+  workouts: { date: Dayjs; raw: SugarWodRow }[],
+  options: { maxReps?: number } = {}
+): SubjectCandidate[] {
   const groups = new Map<string, LiftGroup>();
 
   for (const w of workouts) {
@@ -184,7 +204,7 @@ export function buildLiftSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[])
       const entries: DatedValue[] = [];
       for (const w of group.rows) {
         if (w.raw.rx_or_scaled !== status) continue;
-        const value = estimateLiftValue(w.raw);
+        const value = estimateLiftValue(w.raw, options.maxReps);
         if (value !== null) entries.push({ date: w.date, value });
       }
       if (entries.length === 0) continue;
@@ -230,7 +250,7 @@ export function buildBenchmarkSubjects(workouts: { date: Dayjs; raw: SugarWodRow
   return candidates;
 }
 
-export function diffField(
+function diffField(
   start: InBodyRow,
   end: InBodyRow,
   field: keyof InBodyRow
@@ -251,13 +271,27 @@ export function diffField(
  * weight change than a percentage; bodyFatPctDelta is tracked separately for
  * display only.
  */
-export function computeBodyCompTrend(startScan: InBodyRow, endScan: InBodyRow): PlateauBodyCompTrend {
+export function computeBodyCompTrend(
+  startScan: InBodyRow,
+  endScan: InBodyRow,
+  bands?: BodyCompNoiseBands
+): PlateauBodyCompTrend {
   const softLeanDelta = diffField(startScan, endScan, "Soft Lean Mass(lb)");
   const smmDelta = diffField(startScan, endScan, "Skeletal Muscle Mass(lb)");
-  return {
+  const trend: PlateauBodyCompTrend = {
     leanMassDelta: softLeanDelta ?? smmDelta,
     fatMassDelta: diffField(startScan, endScan, "Body Fat Mass(lb)"),
     bodyFatPctDelta: diffField(startScan, endScan, "Percent Body Fat(%)"),
+  };
+  if (!bands) return trend;
+  const within = (delta: number | null, band: number) => delta !== null && !isMeaningfulChange(delta, band);
+  return {
+    ...trend,
+    withinNoise: {
+      leanMass: within(trend.leanMassDelta, bands.leanMass.band),
+      fatMass: within(trend.fatMassDelta, bands.fatMass.band),
+      bodyFatPct: within(trend.bodyFatPctDelta, bands.bodyFatPct.band),
+    },
   };
 }
 
@@ -270,8 +304,10 @@ export function computeBodyCompTrend(startScan: InBodyRow, endScan: InBodyRow): 
  * boolean at the whole-athlete level.
  */
 export function isBodyCompDeclining(bodyComp: PlateauBodyCompTrend): boolean {
-  const leanBad = bodyComp.leanMassDelta !== null && bodyComp.leanMassDelta < 0;
-  const fatBad = bodyComp.fatMassDelta !== null && bodyComp.fatMassDelta > 0;
+  const leanBad =
+    bodyComp.leanMassDelta !== null && bodyComp.leanMassDelta < 0 && !bodyComp.withinNoise?.leanMass;
+  const fatBad =
+    bodyComp.fatMassDelta !== null && bodyComp.fatMassDelta > 0 && !bodyComp.withinNoise?.fatMass;
   return leanBad && fatBad;
 }
 
@@ -284,8 +320,10 @@ export function isBodyCompDeclining(bodyComp: PlateauBodyCompTrend): boolean {
  * of the same signal stay defined in one place, next to each other.
  */
 export function isBodyCompImproving(bodyComp: PlateauBodyCompTrend): boolean {
-  const leanGood = bodyComp.leanMassDelta !== null && bodyComp.leanMassDelta > 0;
-  const fatGood = bodyComp.fatMassDelta !== null && bodyComp.fatMassDelta < 0;
+  const leanGood =
+    bodyComp.leanMassDelta !== null && bodyComp.leanMassDelta > 0 && !bodyComp.withinNoise?.leanMass;
+  const fatGood =
+    bodyComp.fatMassDelta !== null && bodyComp.fatMassDelta < 0 && !bodyComp.withinNoise?.fatMass;
   return leanGood && fatGood;
 }
 
@@ -337,7 +375,8 @@ function insufficientInsight(
 
 function computeInsight(
   candidate: SubjectCandidate,
-  scans: { date: Dayjs; raw: InBodyRow }[]
+  scans: { date: Dayjs; raw: InBodyRow }[],
+  bands: BodyCompNoiseBands
 ): PlateauInsight {
   const { subject, entries, scoreDirection, valueKind } = candidate;
   const sorted = [...entries].sort((a, b) => a.date.valueOf() - b.date.valueOf());
@@ -388,7 +427,8 @@ function computeInsight(
 
   const bodyCompTrend = computeBodyCompTrend(
     scansInWindow[0]!.raw,
-    scansInWindow[scansInWindow.length - 1]!.raw
+    scansInWindow[scansInWindow.length - 1]!.raw,
+    bands
   );
 
   return {
@@ -413,7 +453,8 @@ function computeInsight(
 export function getPlateauInsights(
   workouts: SugarWodRow[],
   inbodyScans: InBodyRow[],
-  asOfDate: Date
+  asOfDate: Date,
+  options: InsightOptions = {}
 ): PlateauInsight[] {
   const asOf = dayjs(asOfDate);
 
@@ -426,5 +467,13 @@ export function getPlateauInsights(
     .filter((s) => s.date.isValid() && !s.date.isAfter(asOf, "day"));
 
   const candidates = [...buildLiftSubjects(parsedWorkouts), ...buildBenchmarkSubjects(parsedWorkouts)];
-  return candidates.map((candidate) => computeInsight(candidate, parsedScans));
+  // Bands come from the athlete's whole scan history (as of today), not the
+  // per-subject window — a window holds too few scans to estimate noise from.
+  const bands = options.noiseBands ?? getBodyCompNoiseBands(parsedScans.map((s) => s.raw));
+  return candidates.map((candidate) => {
+    const insight = computeInsight(candidate, parsedScans, bands);
+    if (insight.classification !== "plateaued_body_comp" && insight.classification !== "plateaued_other") return insight;
+    const tagNotes = acknowledgeTags(options.tags, insight.windowStart, insight.windowEnd, "plateau window");
+    return tagNotes.length > 0 ? { ...insight, tagNotes } : insight;
+  });
 }

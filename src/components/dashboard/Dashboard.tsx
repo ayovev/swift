@@ -12,6 +12,11 @@ import { ExperimentsTab } from "./ExperimentsTab";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
 import { PlateauTab } from "./PlateauTab";
+import { RelativeStrengthTab } from "./RelativeStrengthTab";
+import { CompareTab } from "./CompareTab";
+import { CyclesTab } from "./CyclesTab";
+import { TagsTab } from "./TagsTab";
+import { ChartInteractionProvider } from "./charts/chartInteraction";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import {
   ALL_TABS,
@@ -20,6 +25,10 @@ import {
   ALIGNMENT_TAB,
   EXPERIMENTS_TAB,
   PLATEAU_TAB,
+  STRENGTH_TAB,
+  COMPARE_TAB,
+  CYCLES_TAB,
+  TAGS_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
 import { WorkoutsTab } from "./WorkoutsTab";
@@ -30,8 +39,11 @@ import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
+import type { RelativeStrengthResult } from "@/lib/analytics/relativeStrength";
 import type { AlignmentResult } from "@/types/alignment";
-import type { Experiment, ExperimentInsight } from "@/types/experiment";
+import type { DateWindow } from "@/types/compare";
+import type { Experiment, ExperimentFields, ExperimentInsight } from "@/types/experiment";
+import type { ContextTag } from "@/types/tag";
 import type { PlateauInsight } from "@/types/plateau";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -53,11 +65,19 @@ interface DashboardProps {
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
+  onSyncedTags: (tags: ContextTag[]) => void;
   plateauInsights: PlateauInsight[] | null;
   alignment: AlignmentResult | null;
+  relativeStrength: RelativeStrengthResult | null;
+  tags: ContextTag[];
+  onAddTag: (tag: Omit<ContextTag, "id">) => void;
+  onUpdateTag: (tag: ContextTag) => void;
+  onDeleteTag: (id: string) => void;
+  onReplaceTags: (tags: ContextTag[]) => void;
   experiments: Experiment[];
   experimentInsights: Map<string, ExperimentInsight> | null;
-  onAddExperiment: (label: string, date: string) => void;
+  onAddExperiment: (fields: ExperimentFields) => void;
+  onUpdateExperiment: (id: string, fields: ExperimentFields) => void;
   onDeleteExperiment: (id: string) => void;
 }
 
@@ -77,14 +97,25 @@ export function Dashboard({
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedExperiments,
+  onSyncedTags,
   plateauInsights,
   alignment,
+  relativeStrength,
+  tags,
+  onAddTag,
+  onUpdateTag,
+  onDeleteTag,
+  onReplaceTags,
   experiments,
   experimentInsights,
   onAddExperiment,
+  onUpdateExperiment,
   onDeleteExperiment,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
+  // A range dragged out on a chart, waiting for the Compare or Tags view to
+  // pick it up. `nonce` re-keys that view so a second drag replaces the first.
+  const [pendingWindow, setPendingWindow] = useState<{ window: DateWindow; nonce: number } | null>(null);
   const { summary } = insights.dashboard;
   // Insights views read the whole history, never the selected range (see App.tsx).
   const usesRange = sectionOf(tab) !== "Insights";
@@ -98,7 +129,8 @@ export function Dashboard({
   // Built once per data change, not on every render — JSON.stringify-ing the
   // full unfiltered workout log (and body comp, if present) is real work at
   // ~1,200 rows. Only used if "Send to a device" (SettingsSheet) actually starts a
-  // host session (see SyncDialog).
+  // host session (see SyncDialog). Data only: nothing about how the app looks
+  // or is configured is ever offered.
   const syncOutgoing = useMemo<OutgoingDataset[]>(() => {
     const outgoing: OutgoingDataset[] = [{ dataset: "workout", json: JSON.stringify(workoutRows) }];
     if (bodyComp.status === "ready") {
@@ -107,8 +139,11 @@ export function Dashboard({
     if (experiments.length > 0) {
       outgoing.push({ dataset: "experiments", json: JSON.stringify(experiments) });
     }
+    if (tags.length > 0) {
+      outgoing.push({ dataset: "tags", json: JSON.stringify(tags) });
+    }
     return outgoing;
-  }, [workoutRows, bodyComp, experiments]);
+  }, [workoutRows, bodyComp, experiments, tags]);
 
   // Widening the range out from under an active daily view (via the date
   // picker, not this control) would otherwise leave a chart stuck rendering
@@ -117,9 +152,29 @@ export function Dashboard({
     if (granularity === "daily" && dailyDisabled) onGranularityChange("weekly");
   }, [granularity, dailyDisabled, onGranularityChange]);
 
+  const chartInteraction = useMemo(
+    () => ({
+      tags,
+      onCompare: (window: DateWindow) => {
+        setPendingWindow((p) => ({ window, nonce: (p?.nonce ?? 0) + 1 }));
+        setTab(COMPARE_TAB);
+        capture({ name: "interaction_used", props: { interaction: "compare_range_selected" } });
+        capture({ name: "tab_viewed", props: { tab: "Compare", source } });
+      },
+      onTag: (window: DateWindow) => {
+        setPendingWindow((p) => ({ window, nonce: (p?.nonce ?? 0) + 1 }));
+        setTab(TAGS_TAB);
+        capture({ name: "interaction_used", props: { interaction: "tag_range_selected" } });
+        capture({ name: "tab_viewed", props: { tab: "Tags", source } });
+      },
+    }),
+    [tags, source]
+  );
+
   const onTabChange = useCallback(
     (value: string) => {
       setTab(value);
+      setPendingWindow(null);
       const label = ALL_TABS.find((t) => t.value === value)?.label ?? value;
       capture({ name: "tab_viewed", props: { tab: label, source } });
     },
@@ -127,6 +182,7 @@ export function Dashboard({
   );
 
   return (
+    <ChartInteractionProvider value={chartInteraction}>
     <div className="min-h-svh bg-background">
       {/* The one sample-mode indicator: a full-width strip above the header,
           rather than a chip in it or notes scattered through the page. */}
@@ -178,10 +234,12 @@ export function Dashboard({
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
               experiments={experiments}
+              tags={tags}
               syncOutgoing={syncOutgoing}
               onSyncedWorkoutData={onSyncedWorkoutData}
               onSyncedBodyCompData={onSyncedBodyCompData}
               onSyncedExperiments={onSyncedExperiments}
+              onSyncedTags={onSyncedTags}
               onReset={onReset}
             />
           </div>
@@ -221,7 +279,7 @@ export function Dashboard({
                 dailyDisabled={dailyDisabled}
               />
             ) : (
-              // Plateaus, Alignment and Experiments are computed in App.tsx
+              // Plateaus, Alignment, Strength and Experiments are computed in App.tsx
               // from the full, unfiltered history as of today — saying so
               // beats showing a date control that silently does nothing here.
               <p className="text-base text-muted-foreground">
@@ -285,6 +343,42 @@ export function Dashboard({
             />
           </TabsContent>
 
+          <TabsContent value={STRENGTH_TAB}>
+            <RelativeStrengthTab
+              relativeStrength={relativeStrength}
+              bodyComp={bodyComp}
+              onBodyCompFile={onBodyCompFile}
+            />
+          </TabsContent>
+
+          <TabsContent value={COMPARE_TAB}>
+            <CompareTab
+              key={pendingWindow?.nonce ?? 0}
+              workouts={workoutRows}
+              scans={bodyComp.status === "ready" ? bodyComp.rows : []}
+              tags={tags}
+              initialWindowB={pendingWindow?.window ?? null}
+              onSaveAsExperiment={onAddExperiment}
+            />
+          </TabsContent>
+
+          <TabsContent value={CYCLES_TAB}>
+            <CyclesTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} tags={tags} />
+          </TabsContent>
+
+          <TabsContent value={TAGS_TAB}>
+            <TagsTab
+              key={pendingWindow?.nonce ?? 0}
+              tags={tags}
+              source={source}
+              initialWindow={pendingWindow?.window ?? null}
+              onAdd={onAddTag}
+              onUpdate={onUpdateTag}
+              onDelete={onDeleteTag}
+              onReplace={onReplaceTags}
+            />
+          </TabsContent>
+
           <TabsContent value={EXPERIMENTS_TAB}>
             <ExperimentsTab
               experiments={experiments}
@@ -292,6 +386,7 @@ export function Dashboard({
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
               onAddExperiment={onAddExperiment}
+              onUpdateExperiment={onUpdateExperiment}
               onDeleteExperiment={onDeleteExperiment}
             />
           </TabsContent>
@@ -312,9 +407,10 @@ export function Dashboard({
               </>
             ) : null}
           </p>
-          <p className="mt-3">Your file never left this browser.</p>
+          <p className="mt-3">Your files never left this browser.</p>
         </footer>
       </main>
     </div>
+    </ChartInteractionProvider>
   );
 }

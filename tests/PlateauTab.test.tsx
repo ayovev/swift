@@ -142,3 +142,31 @@ describe("PlateauTab — ready state", () => {
     expect(graceRow).not.toHaveTextContent("Fat mass");
   });
 });
+
+describe("PlateauTab — context tags and noise", () => {
+  const ready: BodyCompState = { status: "ready", rows: [] };
+
+  it("shows tag notes and the within-noise line on a plateaued row", () => {
+    render(
+      <PlateauTab
+        plateauInsights={[
+          insight({
+            subject: { type: "lift", name: "Back Squat", status: "RX" },
+            classification: "plateaued_other",
+            tagNotes: ['This plateau window overlaps "Winter cut" (cut, Jan 1, 2024 – ongoing); lifts and lean mass often move differently during a cut.'],
+            bodyCompTrend: {
+              leanMassDelta: -1,
+              fatMassDelta: 1,
+              bodyFatPctDelta: 0.3,
+              withinNoise: { leanMass: true, fatMass: true, bodyFatPct: false },
+            },
+          }),
+        ]}
+        bodyComp={ready}
+        onBodyCompFile={() => {}}
+      />
+    );
+    expect(screen.getByText(/overlaps "Winter cut"/)).toBeInTheDocument();
+    expect(screen.getByText("Lean mass and fat mass changes are within normal scan variation.")).toBeInTheDocument();
+  });
+});

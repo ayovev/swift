@@ -6,25 +6,13 @@ import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorag
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
-import type { SugarWodRow } from "@/types/sugarwod";
 import { loadSampleInBodyRows } from "./fixtures/sampleInBodyRows";
 import { loadSampleCsvText, loadSampleRows } from "./fixtures/sampleRows";
+import { logRow } from "./fixtures/rows";
 
-function workoutRow(date: string): SugarWodRow {
-  return {
-    date,
-    title: "GRACE",
-    description: "30 clean and jerks for time Rx (95/135 lb)",
-    best_result_raw: "180",
-    best_result_display: "3:00",
-    score_type: "",
-    barbell_lift: "",
-    set_details: "",
-    notes: "",
-    rx_or_scaled: "RX",
-    pr: "",
-  };
-}
+/** A GRACE with a score; the App tests only need a dated, classifiable row. */
+const graceRow = (date: string) =>
+  logRow(date, "GRACE", "30 clean and jerks for time Rx (95/135 lb)", { best_result_raw: "180", best_result_display: "3:00" });
 
 function renderApp() {
   return render(
@@ -302,7 +290,7 @@ describe("App — local persistence", () => {
   it("persists granularity and date-range changes made in the UI across a remount", async () => {
     // Two entries a couple of years apart, as in the daily-gating tests below —
     // "Last month" narrows the effective range enough for Daily to be selectable.
-    const rows = [workoutRow("01/01/2022"), workoutRow("06/01/2024")];
+    const rows = [graceRow("01/01/2022"), graceRow("06/01/2024")];
     await saveWorkoutRows(rows);
 
     const { unmount } = renderApp();
@@ -353,7 +341,7 @@ describe("App — daily granularity gating", () => {
   // Two entries, a bit over two years apart — enough to make "All time"
   // outgrow MAX_DAILY_SPAN_DAYS without needing the real (and expensive to
   // parse) sample export.
-  const rows = [workoutRow("01/01/2022"), workoutRow("06/01/2024")];
+  const rows = [graceRow("01/01/2022"), graceRow("06/01/2024")];
 
   it("disables Daily at a multi-year all-time range, and enables it once the range narrows", async () => {
     await saveWorkoutRows(rows);

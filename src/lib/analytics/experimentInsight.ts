@@ -1,5 +1,7 @@
 import dayjs from "dayjs";
+import { getBodyCompNoiseBands } from "./bodyCompNoise";
 import {
+  type InsightOptions,
   buildBenchmarkSubjects,
   buildLiftSubjects,
   computeBodyCompTrend,
@@ -74,17 +76,29 @@ function insufficient(experiment: Experiment, reason: string): ExperimentInsight
  * before the start date (which the UI shouldn't produce, but this stays
  * defensive about it rather than throwing), falls back to the open-ended
  * behavior unchanged.
+ *
+ * When `experiment.baselineStart` is set (before `date`), the "before" side is
+ * [baselineStart, date) instead of all history before `date` — the earlier
+ * range a Compare was saved from — for both the lift/WOD entries and the
+ * InBody scans. Unset, nothing changes.
  */
 export function getExperimentInsight(
   experiment: Experiment,
   workouts: SugarWodRow[],
   inbodyScans: InBodyRow[],
-  asOfDate: Date
+  asOfDate: Date,
+  options: InsightOptions = {}
 ): ExperimentInsight {
   const asOf = dayjs(asOfDate);
   const start = dayjs(experiment.date);
   const rawEnd = experiment.endDate ? dayjs(experiment.endDate) : null;
   const end = rawEnd && rawEnd.isValid() && !rawEnd.isBefore(start, "day") ? rawEnd : null;
+  // Same defensiveness as `end`: a baselineStart that isn't strictly before the
+  // start date can't describe an earlier range, so it falls back to all history.
+  const rawBaseline = experiment.baselineStart ? dayjs(experiment.baselineStart) : null;
+  const baseline = rawBaseline && rawBaseline.isValid() && rawBaseline.isBefore(start, "day") ? rawBaseline : null;
+  const isBefore = (d: dayjs.Dayjs) => d.isBefore(start, "day") && (!baseline || !d.isBefore(baseline, "day"));
+  const beforeWhere = baseline ? "in the earlier range" : "before this date";
 
   const parsedWorkouts = workouts
     .map((raw) => ({ raw, date: parseWorkoutDate(raw.date) }))
@@ -102,7 +116,7 @@ export function getExperimentInsight(
   // capped at `end` when the experiment has one.
   const splits: SplitCandidate[] = candidates.map((candidate) => ({
     candidate,
-    before: candidate.entries.filter((e) => e.date.isBefore(start, "day")),
+    before: candidate.entries.filter((e) => isBefore(e.date)),
     after: candidate.entries.filter((e) => !e.date.isBefore(start, "day") && (!end || !e.date.isAfter(end, "day"))),
   }));
 
@@ -122,8 +136,8 @@ export function getExperimentInsight(
         ? formatGateShortfall(
             subjectsWithBefore,
             MIN_CLASSIFIED_SUBJECTS,
-            "lift/WOD with logged data before this date",
-            "lifts/WODs with logged data before this date"
+            `lift/WOD with logged data ${beforeWhere}`,
+            `lifts/WODs with logged data ${beforeWhere}`
           )
         : formatGateShortfall(
             subjectsWithAfter,
@@ -134,7 +148,7 @@ export function getExperimentInsight(
     return insufficient(experiment, reason);
   }
 
-  const scansBefore = parsedScans.filter((s) => s.date.isBefore(start, "day"));
+  const scansBefore = parsedScans.filter((s) => isBefore(s.date));
   const scansAfter = parsedScans.filter((s) => !s.date.isBefore(start, "day") && (!end || !s.date.isAfter(end, "day")));
 
   // Gate 2: enough InBody scans on each side, checked independently so the
@@ -145,8 +159,8 @@ export function getExperimentInsight(
       formatGateShortfall(
         scansBefore.length,
         MIN_SCANS_PER_SIDE,
-        "InBody scan before this date",
-        "InBody scans before this date"
+        `InBody scan ${beforeWhere}`,
+        `InBody scans ${beforeWhere}`
       )
     );
   }
@@ -189,7 +203,11 @@ export function getExperimentInsight(
   // scan in the athlete's whole history.
   const nearestBefore = scansBefore.reduce((a, b) => (b.date.isAfter(a.date) ? b : a));
   const nearestAfter = scansAfter.reduce((a, b) => (b.date.isBefore(a.date) ? b : a));
-  const bodyCompSummary: ExperimentBodyCompSummary = computeBodyCompTrend(nearestBefore.raw, nearestAfter.raw);
+  const bodyCompSummary: ExperimentBodyCompSummary = computeBodyCompTrend(
+    nearestBefore.raw,
+    nearestAfter.raw,
+    options.noiseBands ?? getBodyCompNoiseBands(parsedScans.map((s) => s.raw))
+  );
 
   const bodyCompState: "declining" | "improving" | "stable" = isBodyCompDeclining(bodyCompSummary)
     ? "declining"

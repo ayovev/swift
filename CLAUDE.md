@@ -139,10 +139,11 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
-  Workouts, the ten GPP domains, the three modalities, Body Comp, Plateaus, Alignment, and
-  Experiments, grouped for navigation into four sections (see "Architecture: dashboard layout"
-  below). A
+- **components**: `Dashboard.tsx` renders 23 views (`tabs.ts` → `ALL_TABS`): Overview,
+  Workouts, the ten GPP domains, the three modalities, Body Comp, and the Insights views
+  (Plateaus, Alignment, Strength, Compare, Cycles, Experiments, Tags), grouped for navigation into
+  four sections (see "Architecture: dashboard layout" below). The views that need an InBody export
+  all share one empty state, `InBodyUploadPrompt.tsx`. A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
   tabs — they differ in data, not structure. Body Comp is its own component (`BodyCompTab.tsx`),
   always present in the nav even before any InBody data is loaded, and Plateaus/Alignment follow
@@ -210,6 +211,132 @@ comment before changing anything; this section is a map, not a restatement.
   shape — they're computed separately in `App.tsx` and passed to `Dashboard.tsx` as their own
   props, rendered by `PlateauTab.tsx`/`AlignmentTab.tsx`.
 
+## Architecture: InBody noise band
+
+`src/lib/analytics/bodyCompNoise.ts` answers "is this change between two scans bigger than
+scan-to-scan noise?" so no body-composition claim rests on sign alone. `getBodyCompNoiseBand()`
+estimates a band per metric (`weight`, `leanMass`, `fatMass`, `bodyFatPct`) on a ladder — scans
+within a week of each other (`paired-scans`), else spread around a rolling median (`residual`),
+else a labelled per-metric `default` — and returns `status: "insufficient"` only when no scan
+reports the metric at all. `isMeaningfulChange(delta, band)` is the one comparison.
+
+- Every threshold lives in `insightConfig.ts` with a comment on how it was chosen, and every one
+  is *tunable, validate against real data*: the repo bundles no real InBody history. Do not put a
+  bare number in an insight module; add it there.
+- The seam is `computeBodyCompTrend(start, end, bands?)`. With bands it sets `withinNoise` flags
+  on the trend (delta values stay untouched), and `isBodyCompDeclining`/`isBodyCompImproving`
+  treat a within-noise delta as not having moved. Plateaus, Alignment and Experiments all go
+  through those, so none has its own threshold. `describeWithinNoise()` is the one sentence the
+  three tabs show ("... within normal scan variation.").
+- Bands are estimated from the athlete's whole scan history as of `asOfDate`, never from a
+  per-subject window (too few scans). `NO_NOISE_BANDS` (all zero) reproduces the old sign-only
+  behaviour exactly.
+
+## Architecture: Relative strength
+
+`src/lib/analytics/relativeStrength.ts` (`getRelativeStrength(workouts, scans, { asOfDate })`)
+divides each load-scored lift's per-session estimated 1RM by body mass, to tell "got stronger"
+from "got bigger". It reuses the Plateau Detector's lift grouping (`buildLiftSubjects`, same
+name normalisation, same RX/Scaled split, Load-scored rows only) and `estimateOneRepMax`; the
+one difference is the rep cap (`RS_MAX_REPS`, any scheme up to it, versus Plateaus' 1/2/3/5RM).
+Body mass at a session is the scan that day, else a straight line between bracketing scans no
+further apart than `RS_MAX_INTERPOLATION_GAP_DAYS`, else the nearest scan within
+`RS_MAX_NEAREST_SCAN_DAYS`, else `unmatched` — never extrapolated. The mass change over the
+window is judged with the noise band, so a change inside normal scan variation is never blamed
+for a lift change. Attribution is `strength-driven | mass-driven | mixed | flat | declined`
+(`declined` is an addition to the original plan's four, which had nowhere to put a fall). Lifts
+failing a gate keep their series and carry a `reason` naming the gate and the shortfall.
+Wired in `App.tsx` behind the same both-uploads gate as Plateaus; rendered by `RelativeStrengthTab.tsx`.
+
+## Architecture: window comparison and context tags
+
+`compareWindows.ts` (`compareWindows(workouts, scans, windowA, windowB, options)`) is "select a
+range, see what changed". It reuses the Plateau Detector's subject building unchanged and the
+noise band for body-comp deltas. A lift/benchmark needs `CMP_MIN_OBSERVATIONS_PER_WINDOW` entries
+in *each* window or its row is `comparable: false` with a reason and **no numbers** (never a
+partial comparison); overlapping or inverted windows are `insufficient`. `defaultWindowA()` is
+the equal-length window immediately before B.
+
+- **One data model.** "Save as experiment" writes window B to an `Experiment`'s `date`/`endDate`
+  and window A's start to its optional `baselineStart` (`windowsToExperimentFields`).
+  `getExperimentInsight` then compares `[baselineStart, date)` against the experiment's own range,
+  so the saved verdict is built on the earlier range the Compare table showed. An experiment with
+  no `baselineStart` (everything made before the field existed, and anything added directly)
+  compares against all history before its start date, exactly as before. `baselineStart` must be
+  strictly before `date`; otherwise it is ignored, the same defensiveness as an inverted `endDate`.
+  An experiment's "before" side always runs up to its start date, so a custom window A that ends
+  earlier than the day before window B gains the gap when saved; `CompareTab` says so
+  (`windowAIsContiguous`).
+- **Dragging is a convenience, never the only way.** `charts/chartInteraction.tsx` gives a chart a
+  drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`)
+  and shaded tag bands. A selection offers "Compare with the N days before" and "Tag this range";
+  every path also exists as date inputs on the Compare and Tags views. Wired into
+  `ConsistencyChart`, `BodyCompLineChart` and `RelativeStrengthChart`; `LiftChart` (a numeric-axis
+  scatter) has neither bands nor drag.
+- **Tags** (`types/tag.ts`, `contextTags.ts`, `storage/tagsStorage.ts`, key `"context-tags"`) are
+  user-authored, persist only when `source === "upload"`, are wiped by Start over, and have
+  JSON export/import (strict validation, merge by id), and sync between devices (see "Architecture:
+  cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`) so the Tags, Cycles
+  and chart-band views aren't empty; they are in memory only, never persisted or synced.
+- **Tags never change a result.** `getPlateauInsights`/`getAlignment` take `options.tags` and, when
+  a plateaued result's (or the alignment) window overlaps a cut or injury tag, add a `tagNotes`
+  sentence naming the tag. With no tags, or none overlapping, the output is identical to the
+  untagged one (the field is absent, not empty); `tests/insightTags.test.ts` pins that.
+- Analytics: `interaction_used` with a closed `InteractionName` union in `posthog.ts` — a name
+  from that list, never a value.
+
+## Architecture: cycle reports
+
+`cycleReport.ts` gives a retrospective per training block. **Cycles are user-defined only**:
+`getCycles()` turns tags of type bulk/cut/maintain/other into cycles (injury and travel are
+context, not blocks) and `customCycle()` takes typed dates. Automatic segmentation by lift-exposure
+share is *not* built — the plan requires prototyping it on a multi-year history and reviewing it by
+eye first, and none is in the repo. `Cycle.source` keeps `"detected"` so adding it changes no type.
+
+`getCycleReport()` does not recompute earlier phases: lift changes and their attribution come from
+`getRelativeStrength` (window = the cycle), and whether a body-comp change beats scan noise comes
+from `getBodyCompNoiseBands`/`isMeaningfulChange`. Volume is logged workouts per week. A cycle
+under `CYCLE_MIN_DAYS`, empty, or inverted is `insufficient` with a reason. The summary states
+volume, lift changes, then body composition; it never grades them (a test rejects judgement words).
+Injury/travel tags inside the cycle add a sentence naming them. Rendered by `CyclesTab.tsx`.
+
+## Open items: what is unvalidated or undecided
+
+The insight pipelines above (noise band, relative strength, compare, tags, cycles) were built
+against the bundled sample and synthetic InBody data. The repo holds no real InBody history, so
+**none of the `insightConfig.ts` thresholds has been checked against a real athlete.** Treat them
+as starting points and check them against real exports before trusting a number. Specifically:
+
+- **Noise band.** On the synthetic sample the bands came from the `residual` method (weight
+  ±2.9 lb, lean ±2.1, fat mass ±2.3, body fat ±1.3 points) and no existing output changed. The
+  `paired-scans` method needs scans within 7 days of each other, so anyone scanning monthly or
+  less lands on `residual` or `default`; expect `default` under about 8 scans. Lean mass uses Soft
+  Lean Mass where present else Skeletal Muscle Mass; the band is estimated on that same field but
+  `computeBodyCompTrend` chooses per pair of scans, so an export mixing the two would judge a
+  delta in one field against a band from the other. The one behaviour change from bands: a +3 lb fat-mass case that used to read
+  `plateaued_body_comp` is now within the default 3 lb band (the test uses +4 lb and a new case
+  pins the within-band result).
+- **Relative strength.** Not spot-checked by hand against raw CSVs (compute the e1RM from
+  `best_result_raw` and the rep scheme in the title/description, average of Epley and Brzycki,
+  and compare with the chart tooltip; `tests/relativeStrength.test.ts` pins the same arithmetic).
+  On the sample only 4 of 32 lift series qualify — Back Squat has 29 sessions but 2 in the last
+  year — so `RS_WINDOW_DAYS` may be too strict for lifts tested rarely. RX and Scaled are split
+  per lift, as on Plateaus, which halves sessions for anyone who switches; merging load lifts is
+  an open question. A title naming a different scheme than the athlete did will be mis-estimated;
+  that is inherent to the export.
+- **Compare and Experiments.** There is no touch dragging on charts (date inputs are the fallback).
+- **Sync.** Tags sync, but like everything in sync they are verified by unit tests and by hand on two
+  devices, not by an automated two-device test. A joiner running an older cached build rejects a
+  manifest naming a dataset it doesn't know (`tags`), so both devices need the current build; a
+  refresh fixes it.
+- **Cycles.** Automatic detection is deferred. First prototype worth trying: a rolling share of
+  lift sessions per lift (about an 8-week window) with a boundary where the leading lifts change,
+  reviewed by eye on a multi-year history before committing to it. A lift can show a change with
+  no attribution when too few scans fall inside its window, and a cycle report only looks inside
+  the cycle (Compare is the before/after).
+- **Copy.** The tag sentences (cut, injury) and the cycle-summary phrases ("not explained by body
+  mass", "partly body mass") are first drafts; check them against the voice rules below.
+
 ## Architecture: Experiments
 
 `src/lib/analytics/experimentInsight.ts` is a third pipeline in the same family as Plateau
@@ -218,10 +345,12 @@ datasets required — but anchored to an athlete-logged date instead of a rollin
 window.
 
 - **`Experiment`** (`src/types/experiment.ts`) is user-authored, not derived from either upload:
-  just a `date` ("when I tried this") and a free-text `label` ("what I tried"). It's its own
+  a `date` ("when I tried this"), a free-text `label` ("what I tried"), an optional `endDate` and
+  an optional `baselineStart` (where the "before" side starts; unset means all earlier history). It's its own
   IndexedDB-backed dataset (`src/lib/storage/experimentsStorage.ts`, key `"experiments"`, same
-  thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added and deleted from the
-  Experiments tab (`ExperimentsTab.tsx`), persisted only when `state.source === "upload"` in
+  thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added, edited and deleted from the
+  Experiments tab (`ExperimentsTab.tsx`; the same `ExperimentForm` adds and edits — an edit keeps
+  the `id`, and clearing the end date makes it ongoing again), persisted only when `state.source === "upload"` in
   `App.tsx`, same sample-mode exclusion as everything else logged while browsing demo data.
 - **`getExperimentInsight(experiment, workouts, inbodyScans, asOfDate)`** reuses #1's subject
   identification and body-comp-trend helpers unchanged (`buildLiftSubjects`/
@@ -277,8 +406,8 @@ back to one.
   and adding one was scoped out of this feature — see `webrtcTransport.ts`'s header comment.
   Those two paths are verified manually, across two real devices, before any change here ships.
 - **The wire protocol**, once connected: the host sends one small manifest naming which
-  datasets it's about to send — some subset of `["workout", "bodyComp", "experiments"]`, never
-  assumed, since a device might not have InBody data or any logged experiments — then for each
+  datasets it's about to send — some subset of `["workout", "bodyComp", "experiments", "tags"]`,
+  never assumed, since a device might not have InBody data, experiments or tags — then for each
   dataset in order, `chunkPayload()`'s header followed by its chunks; once every dataset is sent,
   the host closes the channel. The joiner feeds every message after the manifest into a fresh
   `Reassembler` per dataset until each reports done.
@@ -289,8 +418,29 @@ back to one.
   dataset of that kind, an `AlertDialog` (same register as "Start over") names exactly what
   would be replaced and by how many entries, independently per dataset — accepting one doesn't
   silently accept the other. Only after that confirmation (or immediately, if there's nothing to
-  conflict with) does it call `onSyncedWorkoutData`/`onSyncedBodyCompData`.
-- **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` — both are
+  conflict with) does it call the `onSynced*` handlers. What to apply, hold back for confirmation or
+  skip is decided by the pure `planReceived()` in `src/lib/sync/receivedDatasets.ts`, which is where
+  the ordering rules live and are tested.
+- **What syncs: the athlete's data, and only their data.** The workout log, the InBody history,
+  experiments and context tags. Preferences and configuration deliberately do **not** sync: theme
+  (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
+  reasonably want different ones. PostHog's anonymous id in `localStorage` doesn't either — it is an
+  analytics identifier. This is enforced at the wire, not by convention: `SyncDataset` has exactly
+  four members and `decodeHeader` rejects any other name (`tests/chunking.test.ts` pins that
+  `preferences` and `theme` are rejected). **A new persisted dataset that is the athlete's data must
+  be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a
+  case in `planReceived`, an `onSynced*` handler in `App.tsx`); a new preference or setting must not.
+  **Everything that arrives is validated before anything is written**, to the shape its own parser
+  produces (`validateReceived.ts` for the workout log, InBody history and experiments,
+  `validateTagList` for tags). Validation is all-or-nothing per dataset: one bad row rejects that
+  dataset with a reason naming the row, the local copy is left exactly as it was, and a rejected
+  dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
+  columns the app doesn't read are kept, and a payload that isn't valid JSON is reported as
+  damaged. `SyncDialog` then says which dataset was rejected and why, stays open on that notice,
+  and counts the transfer as `sync_failed` with the fixed reason `invalid_data`. Datasets that
+  were fine are still applied.
+- **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` (and
+  `handleSyncedExperiments`/`handleSyncedTags`) — all are
   unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
   `SyncDialog` is what gates the call, not the handler. Synced data always carries
   `source: "upload"` (sync's entry points in the dashboard's Settings sheet, `SettingsSheet.tsx`,
@@ -303,7 +453,7 @@ back to one.
 - **Analytics**: `sync_attempted`/`sync_succeeded`/`sync_failed` in `src/lib/posthog.ts`, same
   closed-vocabulary discipline as every other `SwiftEvent` — `role` (`"host" | "joiner"`) and,
   for failures, a fixed `SyncFailureReason` (`ice_timeout`, `camera_denied`, `invalid_qr`,
-  `connection_dropped`, `declined_overwrite`, `unsupported_browser`). No device identifiers, no
+  `connection_dropped`, `declined_overwrite`, `unsupported_browser`, `invalid_data`). No device identifiers, no
   session/pairing tokens, no SDP fragments — the payload types make that structurally
   impossible, not just a convention (`tests/syncAnalytics.test.ts`).
 
@@ -316,7 +466,7 @@ home. Read the header comments of the files named here before moving anything be
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains and three
   modalities — a classification of the same workouts, not separate data), Body (Body Comp) and
-  Insights (Plateaus, Alignment, Experiments — the pipelines that need both uploads). The views
+  Insights (Plateaus, Alignment, Strength, Compare, Cycles, Experiments, Tags). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
@@ -363,12 +513,12 @@ added after the app initially held everything in memory only.
   never a requirement, so a blocked or disabled database must not break the app.
 - **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** /
   **`experimentsStorage.ts`** are thin typed wrappers, one key each (`"workout-rows"`,
-  `"body-comp-rows"`, `"view-preferences"`, `"experiments"` — see "Architecture: Experiments"
-  above for that last one). Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
+  `"body-comp-rows"`, `"view-preferences"`, `"experiments"`, plus `tagsStorage.ts` with `"context-tags"`
+  — see "Architecture: Experiments" and "window comparison and context tags" above). Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
   directly — a new dataset gets its own wrapper file, not a call site that reaches past it.
 - **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
-  existing loading UI — no new component) and a mount-only effect loads all four datasets
-  (workout rows, body-comp rows, view preferences, experiments) from storage in parallel before
+  existing loading UI — no new component) and a mount-only effect loads all five datasets
+  (workout rows, body-comp rows, view preferences, experiments, tags) from storage in parallel before
   deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
   bundled sample file is deliberately never cached, so demo mode never leaves anything behind. A
@@ -412,7 +562,7 @@ added after the app initially held everything in memory only.
   calls it (in the Settings sheet) is now gated behind a confirmation `AlertDialog`
   (`src/components/ui/alert-dialog.tsx`) whenever `source === "upload"` — sample mode still
   resets in one click, since nothing persisted is at risk there. The dialog's copy names exactly
-  what gets deleted (workout log, body composition history, experiments) so this is the one
+  what gets deleted (workout log, body composition history, experiments, context tags) so this is the one
   place all three are named together.
 - The theme preference remains on its own `localStorage` key (see Theming below), not this
   layer — it needs to be read synchronously before first paint to avoid a flash of the wrong
@@ -501,6 +651,9 @@ through, not a backlog of fixes.
 
 - Tests live in `tests/`, Vitest with jsdom (`vite.config.ts`, `tests/setup.ts`); only
   `tests/**/*.test.ts(x)` are collected. Shared fixtures go in `tests/fixtures/`.
+- **Hand-made rows come from `tests/fixtures/rows.ts`** — `workoutRow`, `logRow` (positional),
+  `liftRow`, `franRow` (the sample-generator default), `inbodyRow` (raw timestamp) and `scanRow`
+  (ISO day). Don't define a local `row()` builder in a test file; extend the shared one.
 - **Write tests alongside the code, not at the end.** Every commit in this repo's history adds
   the tests for what it adds; the suite is the argument that the deviations are intentional.
 - `tests/fixtures/sampleRows.ts` loads the bundled export through the **real** production

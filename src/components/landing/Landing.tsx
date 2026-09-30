@@ -13,6 +13,7 @@ import { SwiftMark } from "@/components/SwiftMark";
 import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
+import type { ContextTag } from "@/types/tag";
 
 interface RevealSummary {
   workoutCount: number;
@@ -29,6 +30,7 @@ interface LandingProps {
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
+  onSyncedTags: (tags: ContextTag[]) => void;
 }
 
 export function Landing({
@@ -41,6 +43,7 @@ export function Landing({
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedExperiments,
+  onSyncedTags,
 }: LandingProps) {
   const busy = loading || reveal !== null;
 
@@ -110,9 +113,11 @@ export function Landing({
               existingWorkoutCount={null}
               existingBodyCompCount={null}
               existingExperimentsCount={null}
+              existingTagsCount={null}
               onSyncedWorkoutData={onSyncedWorkoutData}
               onSyncedBodyCompData={onSyncedBodyCompData}
               onSyncedExperiments={onSyncedExperiments}
+              onSyncedTags={onSyncedTags}
               disabled={busy}
               variant="ghost"
               className="gap-2"

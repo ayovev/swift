@@ -56,6 +56,19 @@ describe("chunkPayload", () => {
     expect(results.at(-1)).toEqual({ done: true, dataset: "experiments", json });
   });
 
+  it("round-trips a tags payload, including one spanning several chunks", () => {
+    const tags = JSON.stringify([{ id: "a", type: "cut", startDate: "2024-03-01", endDate: null }]);
+    expect(feedAll(chunkPayload("tags", tags, 1024)).at(-1)).toEqual({ done: true, dataset: "tags", json: tags });
+    expect(feedAll(chunkPayload("tags", tags, 16)).at(-1)).toEqual({ done: true, dataset: "tags", json: tags });
+  });
+
+  it("rejects a dataset name it doesn't know, including ones that describe preferences rather than data", () => {
+    for (const dataset of ["passwords", "preferences", "theme"]) {
+      const bad = new TextEncoder().encode(JSON.stringify({ dataset, byteLength: 0, chunkCount: 0 }));
+      expect(() => new Reassembler().feed(bad)).toThrow(/unknown dataset/);
+    }
+  });
+
   it("rejects a non-positive maxChunkBytes", () => {
     expect(() => chunkPayload("workout", "{}", 0)).toThrow(RangeError);
   });

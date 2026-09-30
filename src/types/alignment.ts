@@ -32,6 +32,8 @@ export interface AlignmentResult {
   classification: AlignmentClassification;
   /** Only set when classification === "insufficient_data". */
   reason?: string;
+  /** Sentences naming any cut/injury tag the comparison window overlaps; absent when none do. */
+  tagNotes?: string[];
   performanceSummary: AlignmentPerformanceSummary;
   bodyCompSummary: AlignmentBodyCompSummary;
 }

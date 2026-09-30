@@ -1,4 +1,4 @@
-import { idbDelete, idbGet, idbSet } from "./idbStore";
+import { idbGet, idbSet } from "./idbStore";
 import type { DateRangePreset } from "@/lib/analytics/dateRange";
 import type { Granularity } from "@/lib/analytics/granularity";
 
@@ -24,8 +24,4 @@ export function saveViewPreferences(prefs: StoredViewPreferences): Promise<void>
 
 export function loadViewPreferences(): Promise<StoredViewPreferences | undefined> {
   return idbGet<StoredViewPreferences>(KEY);
-}
-
-export function clearViewPreferences(): Promise<void> {
-  return idbDelete(KEY);
 }

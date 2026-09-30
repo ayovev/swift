@@ -1,5 +1,9 @@
-import type { Dayjs } from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import type { DateRange } from "./dateRange";
+
+// bucketRange parses strictly; the plugin is otherwise only loaded by whichever module happens to import first.
+dayjs.extend(customParseFormat);
 
 export type Granularity = "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
 
@@ -63,6 +67,47 @@ export function bucketKey(date: Dayjs, granularity: Granularity): string {
     case "yearly":
       return date.format("YYYY");
   }
+}
+
+/**
+ * The inclusive calendar span a bucket key covers, "YYYY-MM-DD" both ends —
+ * the inverse of `bucketKey`. Lets a selection on a bucketed chart become a
+ * date window. Null for a key that isn't one of this granularity's.
+ */
+export function bucketRange(key: string, granularity: Granularity): { start: string; end: string } | null {
+  const fmt = "YYYY-MM-DD";
+  let start: Dayjs;
+  let unit: "day" | "week" | "month" | "year";
+  let months = 1;
+  switch (granularity) {
+    case "daily":
+      start = dayjs(key, fmt, true);
+      unit = "day";
+      break;
+    case "weekly":
+      start = dayjs(key, fmt, true);
+      unit = "week";
+      break;
+    case "monthly":
+      start = dayjs(`${key}-01`, fmt, true);
+      unit = "month";
+      break;
+    case "quarterly": {
+      const m = /^(\d{4})-Q([1-4])$/.exec(key);
+      if (!m) return null;
+      start = dayjs(`${m[1]}-${String((Number(m[2]) - 1) * 3 + 1).padStart(2, "0")}-01`, fmt, true);
+      unit = "month";
+      months = 3;
+      break;
+    }
+    case "yearly":
+      start = dayjs(`${key}-01-01`, fmt, true);
+      unit = "year";
+      break;
+  }
+  if (!start.isValid()) return null;
+  const end = unit === "month" ? start.add(months, "month").subtract(1, "day") : start.add(1, unit).subtract(1, "day");
+  return { start: start.format(fmt), end: end.format(fmt) };
 }
 
 /** Human-readable axis/tooltip label for a bucket key produced by `bucketKey`. */

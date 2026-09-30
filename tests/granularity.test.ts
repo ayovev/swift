@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
 import {
   bucketKey,
+  bucketRange,
   bucketTickInterval,
   dailyGranularityFits,
   formatBucketLabel,
@@ -112,5 +113,31 @@ describe("GRANULARITY_OPTIONS", () => {
       "quarterly",
       "yearly",
     ]);
+  });
+});
+
+describe("bucketRange", () => {
+  it("is the inverse of bucketKey for every granularity", () => {
+    const date = dayjs("2025-03-12", "YYYY-MM-DD");
+    for (const g of ["daily", "weekly", "monthly", "quarterly", "yearly"] as const) {
+      const range = bucketRange(bucketKey(date, g), g)!;
+      expect(range.start <= "2025-03-12" && "2025-03-12" <= range.end).toBe(true);
+      expect(bucketKey(dayjs(range.start), g)).toBe(bucketKey(date, g));
+      expect(bucketKey(dayjs(range.end), g)).toBe(bucketKey(date, g));
+    }
+  });
+
+  it("gives the whole calendar span of a bucket", () => {
+    expect(bucketRange("2025-03-12", "daily")).toEqual({ start: "2025-03-12", end: "2025-03-12" });
+    expect(bucketRange("2025-03-09", "weekly")).toEqual({ start: "2025-03-09", end: "2025-03-15" });
+    expect(bucketRange("2024-02", "monthly")).toEqual({ start: "2024-02-01", end: "2024-02-29" });
+    expect(bucketRange("2025-Q4", "quarterly")).toEqual({ start: "2025-10-01", end: "2025-12-31" });
+    expect(bucketRange("2025", "yearly")).toEqual({ start: "2025-01-01", end: "2025-12-31" });
+  });
+
+  it("returns null for a key of the wrong shape", () => {
+    expect(bucketRange("nope", "monthly")).toBeNull();
+    expect(bucketRange("2025-Q5", "quarterly")).toBeNull();
+    expect(bucketRange("2025-03", "daily")).toBeNull();
   });
 });
