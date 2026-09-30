@@ -176,8 +176,8 @@ export function Landing({
               </p>
             ) : null}
             {backupRestore.dialog}
-            <p className="flex items-start gap-1.5 text-left text-xs text-muted-foreground">
-              <Lock className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
+            <p className="flex items-center gap-1.5 text-left text-xs text-muted-foreground">
+              <Lock className="size-3 shrink-0" aria-hidden="true" />
               <span>
                 Your file never leaves this browser.
                 <br />
