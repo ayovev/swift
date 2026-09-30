@@ -1,49 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { getExperimentInsight } from "@/lib/analytics/experimentInsight";
 import type { Experiment } from "@/types/experiment";
-import type { InBodyRow } from "@/types/inbody";
-import type { SugarWodRow } from "@/types/sugarwod";
 import { loadSampleRows } from "./fixtures/sampleRows";
 import { loadSampleInBodyRows } from "./fixtures/sampleInBodyRows";
-
-function row(overrides: Partial<SugarWodRow> & { date: string; title: string }): SugarWodRow {
-  return {
-    description: "",
-    best_result_raw: "",
-    best_result_display: "",
-    score_type: "",
-    barbell_lift: "",
-    set_details: "",
-    notes: "",
-    rx_or_scaled: "RX",
-    pr: "",
-    ...overrides,
-  };
-}
-
-function liftRow(date: string, lift: string, value: number): SugarWodRow {
-  return row({
-    date,
-    title: lift.toUpperCase(),
-    description: "1RM",
-    barbell_lift: lift,
-    score_type: "Load",
-    best_result_raw: String(value),
-  });
-}
-
-function inbodyRow(overrides: Partial<InBodyRow> & { date: string }): InBodyRow {
-  return {
-    "Weight(lb)": "-",
-    "Skeletal Muscle Mass(lb)": "-",
-    "Soft Lean Mass(lb)": "-",
-    "Body Fat Mass(lb)": "-",
-    "Percent Body Fat(%)": "-",
-    "BMI(kg/m²)": "-",
-    "InBody Score": "-",
-    ...overrides,
-  };
-}
+import { inbodyRow, liftRow } from "./fixtures/rows";
 
 function experiment(overrides: Partial<Experiment> = {}): Experiment {
   return { id: "exp-1", date: "2024-06-01", label: "Test experiment", ...overrides };

@@ -1,4 +1,4 @@
-import { idbDelete, idbGet, idbSet } from "./idbStore";
+import { idbGet, idbSet } from "./idbStore";
 import type { InBodyRow } from "@/types/inbody";
 
 const KEY = "body-comp-rows";
@@ -9,8 +9,4 @@ export function saveBodyCompRows(rows: InBodyRow[]): Promise<void> {
 
 export function loadBodyCompRows(): Promise<InBodyRow[] | undefined> {
   return idbGet<InBodyRow[]>(KEY);
-}
-
-export function clearBodyCompRows(): Promise<void> {
-  return idbDelete(KEY);
 }

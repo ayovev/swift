@@ -4,29 +4,7 @@ import { buildModalityData } from "@/lib/analytics/buildModalityData";
 import { MODALITY_LIST, type ModalityData } from "@/types/modality";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { loadSampleRows } from "./fixtures/sampleRows";
-
-/** Minimal row builder — only the fields the modality pipeline reads. */
-function row(
-  date: string,
-  title: string,
-  description = "",
-  overrides: Partial<SugarWodRow> = {}
-): SugarWodRow {
-  return {
-    date,
-    title,
-    description,
-    best_result_raw: "",
-    best_result_display: "",
-    score_type: "",
-    barbell_lift: "",
-    set_details: "",
-    notes: "",
-    rx_or_scaled: "RX",
-    pr: "",
-    ...overrides,
-  };
-}
+import { logRow as row } from "./fixtures/rows";
 
 const build = (rows: SugarWodRow[]) => buildModalityData(parseRows(rows));
 

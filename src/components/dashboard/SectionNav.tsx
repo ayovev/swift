@@ -54,7 +54,7 @@ export function sectionOf(value: string): Section {
 }
 
 /** The view's short label, as its tab shows it. */
-export function labelOf(value: string): string {
+function labelOf(value: string): string {
   return ALL_TABS.find((t) => t.value === value)?.label ?? value;
 }
 

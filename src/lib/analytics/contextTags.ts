@@ -46,7 +46,7 @@ export function overlappingTags(
 }
 
 /** Tag types an insight acknowledges by name in its explanation. */
-export const ACKNOWLEDGED_TYPES: readonly TagType[] = ["cut", "injury"];
+const ACKNOWLEDGED_TYPES: readonly TagType[] = ["cut", "injury"];
 
 /**
  * One sentence per overlapping cut/injury tag, each naming the tag. Empty

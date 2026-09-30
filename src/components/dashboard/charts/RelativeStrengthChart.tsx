@@ -12,7 +12,7 @@ const VIEW_META: Record<StrengthView, { label: string; decimals: number }> = {
   perLeanMass: { label: "Estimated 1RM per lb of lean mass", decimals: 2 },
 };
 
-export function valueForView(point: RelativeStrengthPoint, view: StrengthView): number | null {
+function valueForView(point: RelativeStrengthPoint, view: StrengthView): number | null {
   return view === "raw" ? point.e1rm : view === "perBodyweight" ? point.perBodyweight : point.perLeanMass;
 }
 

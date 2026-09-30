@@ -8,23 +8,10 @@ import {
   presetFitsDataSpan,
   PRESET_OPTIONS,
 } from "@/lib/analytics/dateRange";
-import type { SugarWodRow } from "@/types/sugarwod";
+import { logRow } from "./fixtures/rows";
 
-function row(date: string): SugarWodRow {
-  return {
-    date,
-    title: "ROW",
-    description: "2000m row",
-    best_result_raw: "",
-    best_result_display: "",
-    score_type: "",
-    barbell_lift: "",
-    set_details: "",
-    notes: "",
-    rx_or_scaled: "RX",
-    pr: "",
-  };
-}
+/** A dated ROW workout; only the date matters to the range helpers. */
+const row = (date: string) => logRow(date, "ROW", "2000m row");
 
 describe("computePresetRange", () => {
   const today = dayjs("2026-09-16", "YYYY-MM-DD");

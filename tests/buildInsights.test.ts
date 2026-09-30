@@ -2,22 +2,7 @@ import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import type { SugarWodRow } from "@/types/sugarwod";
-
-function row(date: string, title: string, description = ""): SugarWodRow {
-  return {
-    date,
-    title,
-    description,
-    best_result_raw: "",
-    best_result_display: "",
-    score_type: "",
-    barbell_lift: "",
-    set_details: "",
-    notes: "",
-    rx_or_scaled: "RX",
-    pr: "",
-  };
-}
+import { logRow as row } from "./fixtures/rows";
 
 const ROWS: SugarWodRow[] = [
   row("01/05/2025", "ROW", "2000m row"),

@@ -46,7 +46,7 @@ import type { ContextTag, TagType } from "@/types/tag";
  * Pure: raw rows in, a value out.
  */
 
-export const CYCLE_TAG_TYPES: readonly TagType[] = ["bulk", "cut", "maintain", "other"];
+const CYCLE_TAG_TYPES: readonly TagType[] = ["bulk", "cut", "maintain", "other"];
 
 /** Tag types that add a "this block overlaps X" sentence to a report. */
 const CONTEXT_TAG_TYPES: readonly TagType[] = ["injury", "travel"];
@@ -244,7 +244,7 @@ export function getCycleReport(
 }
 
 /** What happened, in order: volume, lifts, body composition. States numbers; never grades them. */
-export function summarizeCycle(report: CycleReport): string {
+function summarizeCycle(report: CycleReport): string {
   const { cycle, days, sessionsPerWeek, e1rmChanges, bodyCompChanges, bodyCompReason } = report;
   const parts: string[] = [
     `${cycle.label}, ${formatDay(cycle.start)} to ${formatDay(cycle.end)} (${days} days): ${(sessionsPerWeek ?? 0).toFixed(1)} logged workouts a week.`,

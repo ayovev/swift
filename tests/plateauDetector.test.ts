@@ -1,38 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getPlateauInsights, isBodyCompImproving } from "@/lib/analytics/plateauDetector";
-import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { PlateauInsight } from "@/types/plateau";
 import { loadSampleRows } from "./fixtures/sampleRows";
 import { loadSampleInBodyRows } from "./fixtures/sampleInBodyRows";
-
-function row(overrides: Partial<SugarWodRow> & { date: string; title: string }): SugarWodRow {
-  return {
-    description: "",
-    best_result_raw: "",
-    best_result_display: "",
-    score_type: "",
-    barbell_lift: "",
-    set_details: "",
-    notes: "",
-    rx_or_scaled: "RX",
-    pr: "",
-    ...overrides,
-  };
-}
-
-function inbodyRow(overrides: Partial<InBodyRow> & { date: string }): InBodyRow {
-  return {
-    "Weight(lb)": "-",
-    "Skeletal Muscle Mass(lb)": "-",
-    "Soft Lean Mass(lb)": "-",
-    "Body Fat Mass(lb)": "-",
-    "Percent Body Fat(%)": "-",
-    "BMI(kg/m²)": "-",
-    "InBody Score": "-",
-    ...overrides,
-  };
-}
+import { inbodyRow, workoutRow } from "./fixtures/rows";
 
 /** Past the last date in both the real sample export and the InBody fixture. */
 const AS_OF = new Date("2027-01-01");
@@ -151,9 +123,9 @@ describe("getPlateauInsights — real sample data", () => {
 describe("getPlateauInsights — grouping and normalization", () => {
   it("merges 'Deadlift' and 'Deadlifts' into one subject", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "DEADLIFT", description: "1RM", barbell_lift: "Deadlift", score_type: "Load", best_result_raw: "225" }),
-      row({ date: "02/01/2024", title: "DEADLIFTS", description: "1RM", barbell_lift: "Deadlifts", score_type: "Load", best_result_raw: "235" }),
-      row({ date: "03/01/2024", title: "DEADLIFT", description: "1RM", barbell_lift: "Deadlift", score_type: "Load", best_result_raw: "245" }),
+      workoutRow({ date: "01/01/2024", title: "DEADLIFT", description: "1RM", barbell_lift: "Deadlift", score_type: "Load", best_result_raw: "225" }),
+      workoutRow({ date: "02/01/2024", title: "DEADLIFTS", description: "1RM", barbell_lift: "Deadlifts", score_type: "Load", best_result_raw: "235" }),
+      workoutRow({ date: "03/01/2024", title: "DEADLIFT", description: "1RM", barbell_lift: "Deadlift", score_type: "Load", best_result_raw: "245" }),
     ];
     const inbodyScans = [
       inbodyRow({ date: "20240201000000" }),
@@ -170,11 +142,11 @@ describe("getPlateauInsights — grouping and normalization", () => {
 
   it("folds a freeform title match into an already-known barbell_lift-tagged lift", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "FRONT SQUAT", description: "1RM", barbell_lift: "Front Squat", score_type: "Load", best_result_raw: "165" }),
+      workoutRow({ date: "01/01/2024", title: "FRONT SQUAT", description: "1RM", barbell_lift: "Front Squat", score_type: "Load", best_result_raw: "165" }),
       // The freeform-title-match branch keys off the raw title text, so the
       // rep-scheme marker must live in the description here, not the title.
-      row({ date: "02/01/2024", title: "Front Squat", description: "1RM", barbell_lift: "", score_type: "Load", best_result_raw: "175" }),
-      row({ date: "03/01/2024", title: "FRONT SQUAT", description: "1RM", barbell_lift: "Front Squat", score_type: "Load", best_result_raw: "185" }),
+      workoutRow({ date: "02/01/2024", title: "Front Squat", description: "1RM", barbell_lift: "", score_type: "Load", best_result_raw: "175" }),
+      workoutRow({ date: "03/01/2024", title: "FRONT SQUAT", description: "1RM", barbell_lift: "Front Squat", score_type: "Load", best_result_raw: "185" }),
     ];
     const inbodyScans = [
       inbodyRow({ date: "20240201000000" }),
@@ -188,9 +160,9 @@ describe("getPlateauInsights — grouping and normalization", () => {
 
   it("never invents a new lift subject from a title match with no tagged barbell_lift anywhere", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "ALL SQUATS", barbell_lift: "", score_type: "Load", best_result_raw: "165" }),
-      row({ date: "02/01/2024", title: "ALL SQUATS", barbell_lift: "", score_type: "Load", best_result_raw: "175" }),
-      row({ date: "03/01/2024", title: "ALL SQUATS", barbell_lift: "", score_type: "Load", best_result_raw: "185" }),
+      workoutRow({ date: "01/01/2024", title: "ALL SQUATS", barbell_lift: "", score_type: "Load", best_result_raw: "165" }),
+      workoutRow({ date: "02/01/2024", title: "ALL SQUATS", barbell_lift: "", score_type: "Load", best_result_raw: "175" }),
+      workoutRow({ date: "03/01/2024", title: "ALL SQUATS", barbell_lift: "", score_type: "Load", best_result_raw: "185" }),
     ];
     const insights = getPlateauInsights(workouts, [], AS_OF);
     expect(insights).toHaveLength(0);
@@ -203,9 +175,9 @@ describe("getPlateauInsights — rep-scheme normalization", () => {
     // later by a 180 lb 3RM isn't a decline — normalized, 180 @ 3RM is
     // ~194 lb, close to 200. A third entry just clears the 3-entry minimum.
     const workouts = [
-      row({ date: "02/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "195" }),
-      row({ date: "04/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "200" }),
-      row({ date: "06/01/2024", title: "SQUAT", description: "3x3", barbell_lift: "Squat", score_type: "Load", best_result_raw: "180" }),
+      workoutRow({ date: "02/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "195" }),
+      workoutRow({ date: "04/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "200" }),
+      workoutRow({ date: "06/01/2024", title: "SQUAT", description: "3x3", barbell_lift: "Squat", score_type: "Load", best_result_raw: "180" }),
     ];
     const insights = getPlateauInsights(workouts, [], AS_OF);
     expect(insights[0]!.performanceTrend.direction).toBe("flat");
@@ -213,9 +185,9 @@ describe("getPlateauInsights — rep-scheme normalization", () => {
 
   it("excludes an entry with an untracked rep count (e.g. a 4RM) the same way as a schemeless one", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "200" }),
-      row({ date: "02/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "205" }),
-      row({ date: "03/01/2024", title: "SQUAT", description: "4RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "210" }),
+      workoutRow({ date: "01/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "200" }),
+      workoutRow({ date: "02/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "205" }),
+      workoutRow({ date: "03/01/2024", title: "SQUAT", description: "4RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "210" }),
     ];
     const insights = getPlateauInsights(workouts, [], AS_OF);
     // Only the two tracked (1RM) entries count — below the 3-entry minimum,
@@ -226,9 +198,9 @@ describe("getPlateauInsights — rep-scheme normalization", () => {
 
   it("uses the raw value unmodified for a true 1-rep max, no formula applied", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "190" }),
-      row({ date: "02/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "200" }),
-      row({ date: "03/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "210" }),
+      workoutRow({ date: "01/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "190" }),
+      workoutRow({ date: "02/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "200" }),
+      workoutRow({ date: "03/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "210" }),
     ];
     const insights = getPlateauInsights(workouts, [], AS_OF);
     expect(insights[0]!.performanceTrend.recentPoints[0]!.value).toBe(210);
@@ -236,9 +208,9 @@ describe("getPlateauInsights — rep-scheme normalization", () => {
 
   it("averages the Epley and Brzycki formulas for a tracked non-1RM entry", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "210" }),
-      row({ date: "02/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "210" }),
-      row({ date: "03/01/2024", title: "SQUAT", description: "5RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "200" }),
+      workoutRow({ date: "01/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "210" }),
+      workoutRow({ date: "02/01/2024", title: "SQUAT", description: "1RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "210" }),
+      workoutRow({ date: "03/01/2024", title: "SQUAT", description: "5RM", barbell_lift: "Squat", score_type: "Load", best_result_raw: "200" }),
     ];
     const insights = getPlateauInsights(workouts, [], AS_OF);
     // Epley: 200*(1+5/30) = 233.33; Brzycki: 200*36/32 = 225; average = 229.17.
@@ -249,8 +221,8 @@ describe("getPlateauInsights — rep-scheme normalization", () => {
 describe("getPlateauInsights — eligibility gate", () => {
   it("returns insufficient_data with fewer than 3 same-status entries, even with plenty of InBody scans", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "95" }),
-      row({ date: "02/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "100" }),
+      workoutRow({ date: "01/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "95" }),
+      workoutRow({ date: "02/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "100" }),
     ];
     const inbodyScans = [
       inbodyRow({ date: "20240101000000" }),
@@ -264,9 +236,9 @@ describe("getPlateauInsights — eligibility gate", () => {
 
   it("returns insufficient_data with 3+ entries but fewer than 2 InBody scans in the comparison window", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "90" }),
-      row({ date: "02/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "95" }),
-      row({ date: "03/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "100" }),
+      workoutRow({ date: "01/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "90" }),
+      workoutRow({ date: "02/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "95" }),
+      workoutRow({ date: "03/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "100" }),
     ];
     const inbodyScans = [inbodyRow({ date: "20240301000000" })];
     const insights = getPlateauInsights(workouts, inbodyScans, AS_OF);
@@ -276,9 +248,9 @@ describe("getPlateauInsights — eligibility gate", () => {
 
   it("clears the gate with exactly 3 entries and exactly 2 InBody scans in the window", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "90" }),
-      row({ date: "02/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "95" }),
-      row({ date: "03/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "100" }),
+      workoutRow({ date: "01/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "90" }),
+      workoutRow({ date: "02/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "95" }),
+      workoutRow({ date: "03/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "100" }),
     ];
     const inbodyScans = [
       inbodyRow({ date: "20240201000000" }),
@@ -293,7 +265,7 @@ describe("getPlateauInsights — eligibility gate", () => {
 describe("getPlateauInsights — session-count windowing", () => {
   function liftRows(values: number[]): SugarWodRow[] {
     return values.map((value, i) =>
-      row({
+      workoutRow({
         date: `${String(i + 1).padStart(2, "0")}/01/2024`,
         title: "TEST LIFT",
         description: "1RM",
@@ -329,9 +301,9 @@ describe("getPlateauInsights — session-count windowing", () => {
 describe("getPlateauInsights — confidence tiering", () => {
   it("is low at exactly the gate minimums (3 entries, 2 scans)", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "90" }),
-      row({ date: "02/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "95" }),
-      row({ date: "03/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "100" }),
+      workoutRow({ date: "01/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "90" }),
+      workoutRow({ date: "02/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "95" }),
+      workoutRow({ date: "03/01/2024", title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: "100" }),
     ];
     const inbodyScans = [inbodyRow({ date: "20240201000000" }), inbodyRow({ date: "20240301000000" })];
     const insights = getPlateauInsights(workouts, inbodyScans, AS_OF);
@@ -340,7 +312,7 @@ describe("getPlateauInsights — confidence tiering", () => {
 
   it("is medium at 6 entries and 3 scans in window", () => {
     const workouts = ["01", "02", "03", "04", "05", "06"].map((m, i) =>
-      row({ date: `${m}/01/2024`, title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: String(90 + i) })
+      workoutRow({ date: `${m}/01/2024`, title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: String(90 + i) })
     );
     const inbodyScans = [
       inbodyRow({ date: "20240201000000" }),
@@ -353,7 +325,7 @@ describe("getPlateauInsights — confidence tiering", () => {
 
   it("is high at 9+ entries and 4+ scans in window", () => {
     const workouts = ["01", "02", "03", "04", "05", "06", "07", "08", "09"].map((m, i) =>
-      row({ date: `${m}/01/2024`, title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: String(90 + i) })
+      workoutRow({ date: `${m}/01/2024`, title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: String(90 + i) })
     );
     const inbodyScans = [
       inbodyRow({ date: "20240401000000" }),
@@ -368,7 +340,7 @@ describe("getPlateauInsights — confidence tiering", () => {
 
   it("is low when entries clear high but scans don't (weakest of the two tiers wins)", () => {
     const workouts = ["01", "02", "03", "04", "05", "06", "07", "08", "09"].map((m, i) =>
-      row({ date: `${m}/01/2024`, title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: String(90 + i) })
+      workoutRow({ date: `${m}/01/2024`, title: "SNATCH", description: "1RM", barbell_lift: "Snatch", score_type: "Load", best_result_raw: String(90 + i) })
     );
     const inbodyScans = [inbodyRow({ date: "20240401000000" }), inbodyRow({ date: "20240501000000" })];
     const insights = getPlateauInsights(workouts, inbodyScans, AS_OF);
@@ -378,9 +350,9 @@ describe("getPlateauInsights — confidence tiering", () => {
 
 describe("getPlateauInsights — body composition signal combination", () => {
   const decliningLift: SugarWodRow[] = [
-    row({ date: "01/01/2024", title: "OHS", description: "1RM", barbell_lift: "Overhead Squat", score_type: "Load", best_result_raw: "100" }),
-    row({ date: "02/01/2024", title: "OHS", description: "1RM", barbell_lift: "Overhead Squat", score_type: "Load", best_result_raw: "100" }),
-    row({ date: "03/01/2024", title: "OHS", description: "1RM", barbell_lift: "Overhead Squat", score_type: "Load", best_result_raw: "80" }),
+    workoutRow({ date: "01/01/2024", title: "OHS", description: "1RM", barbell_lift: "Overhead Squat", score_type: "Load", best_result_raw: "100" }),
+    workoutRow({ date: "02/01/2024", title: "OHS", description: "1RM", barbell_lift: "Overhead Squat", score_type: "Load", best_result_raw: "100" }),
+    workoutRow({ date: "03/01/2024", title: "OHS", description: "1RM", barbell_lift: "Overhead Squat", score_type: "Load", best_result_raw: "80" }),
   ];
 
   it("classifies plateaued_body_comp only when lean is down AND fat is up", () => {
@@ -462,9 +434,9 @@ describe("isBodyCompImproving", () => {
 describe("getPlateauInsights — benchmark score direction", () => {
   it("treats Cindy as higher-is-better (rounds+reps), unlike the time-based benchmarks", () => {
     const workouts = [
-      row({ date: "01/01/2024", title: "Cindy", best_result_raw: "12.0" }),
-      row({ date: "02/01/2024", title: "Cindy", best_result_raw: "14.0" }),
-      row({ date: "03/01/2024", title: "Cindy", best_result_raw: "16.0" }),
+      workoutRow({ date: "01/01/2024", title: "Cindy", best_result_raw: "12.0" }),
+      workoutRow({ date: "02/01/2024", title: "Cindy", best_result_raw: "14.0" }),
+      workoutRow({ date: "03/01/2024", title: "Cindy", best_result_raw: "16.0" }),
     ];
     const inbodyScans = [
       inbodyRow({ date: "20240201000000" }),

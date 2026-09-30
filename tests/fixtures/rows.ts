@@ -30,10 +30,29 @@ export function liftRow(date: string, lift: string, load: number, extra: Partial
   });
 }
 
-/** `date` as YYYY-MM-DD; time of day defaults to 09:00. */
-export function scanRow(date: string, fields: Partial<InBodyRow> = {}, hhmmss = "090000"): InBodyRow {
+/** Positional form for tests that build many rows: `logRow("01/05/2025", "ROW", "2000m row")`. */
+export function logRow(date: string, title: string, description = "", overrides: Partial<SugarWodRow> = {}): SugarWodRow {
+  return workoutRow({ date, title, description, ...overrides });
+}
+
+/**
+ * The row the sample-generator tests use: a FRAN with a score, dated 2022
+ * unless told otherwise. Only its dates matter to those generators.
+ */
+export function franRow(overrides: Partial<SugarWodRow> = {}): SugarWodRow {
+  return workoutRow({
+    date: "01/01/2022",
+    title: "FRAN",
+    description: "21-15-9Thrusters (65/95 lb)Pull-ups",
+    best_result_raw: "240",
+    best_result_display: "4:00",
+    ...overrides,
+  });
+}
+
+/** An InBody row from its raw `YYYYMMDDHHmmss` timestamp; every metric is "-" (not measured) unless given. */
+export function inbodyRow(overrides: Partial<InBodyRow> & { date: string }): InBodyRow {
   return {
-    date: `${date.replaceAll("-", "")}${hhmmss}`,
     "Weight(lb)": "-",
     "Skeletal Muscle Mass(lb)": "-",
     "Soft Lean Mass(lb)": "-",
@@ -41,6 +60,11 @@ export function scanRow(date: string, fields: Partial<InBodyRow> = {}, hhmmss = 
     "Percent Body Fat(%)": "-",
     "BMI(kg/m²)": "-",
     "InBody Score": "-",
-    ...fields,
+    ...overrides,
   };
+}
+
+/** `date` as YYYY-MM-DD; time of day defaults to 09:00. */
+export function scanRow(date: string, fields: Partial<InBodyRow> = {}, hhmmss = "090000"): InBodyRow {
+  return inbodyRow({ date: `${date.replaceAll("-", "")}${hhmmss}`, ...fields });
 }

@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  clearBodyCompRows,
   loadBodyCompRows,
   saveBodyCompRows,
 } from "@/lib/storage/bodyCompStorage";
@@ -22,10 +21,10 @@ describe("bodyCompStorage", () => {
     expect(await loadBodyCompRows()).toEqual(rows);
   });
 
-  it("clears saved rows", async () => {
+  it("is wiped by idbClearAll, which is what Start over calls", async () => {
     const rows = await loadSampleInBodyRows();
     await saveBodyCompRows(rows);
-    await clearBodyCompRows();
+    await idbClearAll();
     expect(await loadBodyCompRows()).toBeUndefined();
   });
 });

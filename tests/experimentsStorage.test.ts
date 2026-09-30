@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  clearExperiments,
   loadExperiments,
   saveExperiments,
 } from "@/lib/storage/experimentsStorage";
@@ -26,9 +25,9 @@ describe("experimentsStorage", () => {
     expect(await loadExperiments()).toEqual(sample);
   });
 
-  it("clears saved experiments", async () => {
+  it("is wiped by idbClearAll, which is what Start over calls", async () => {
     await saveExperiments(sample);
-    await clearExperiments();
+    await idbClearAll();
     expect(await loadExperiments()).toBeUndefined();
   });
 });

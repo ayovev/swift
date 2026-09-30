@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import {
-  clearWorkoutRows,
   loadWorkoutRows,
   saveWorkoutRows,
 } from "@/lib/storage/workoutStorage";
@@ -22,10 +21,10 @@ describe("workoutStorage", () => {
     expect(await loadWorkoutRows()).toEqual(rows);
   });
 
-  it("clears saved rows", async () => {
+  it("is wiped by idbClearAll, which is what Start over calls", async () => {
     const rows = (await loadSampleRows()).slice(0, 3);
     await saveWorkoutRows(rows);
-    await clearWorkoutRows();
+    await idbClearAll();
     expect(await loadWorkoutRows()).toBeUndefined();
   });
 });

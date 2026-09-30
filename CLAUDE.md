@@ -658,6 +658,9 @@ through, not a backlog of fixes.
 
 - Tests live in `tests/`, Vitest with jsdom (`vite.config.ts`, `tests/setup.ts`); only
   `tests/**/*.test.ts(x)` are collected. Shared fixtures go in `tests/fixtures/`.
+- **Hand-made rows come from `tests/fixtures/rows.ts`** — `workoutRow`, `logRow` (positional),
+  `liftRow`, `franRow` (the sample-generator default), `inbodyRow` (raw timestamp) and `scanRow`
+  (ISO day). Don't define a local `row()` builder in a test file; extend the shared one.
 - **Write tests alongside the code, not at the end.** Every commit in this repo's history adds
   the tests for what it adds; the suite is the argument that the deviations are intentional.
 - `tests/fixtures/sampleRows.ts` loads the bundled export through the **real** production

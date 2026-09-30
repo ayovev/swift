@@ -250,7 +250,7 @@ export function buildBenchmarkSubjects(workouts: { date: Dayjs; raw: SugarWodRow
   return candidates;
 }
 
-export function diffField(
+function diffField(
   start: InBodyRow,
   end: InBodyRow,
   field: keyof InBodyRow
