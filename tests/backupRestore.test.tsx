@@ -59,6 +59,40 @@ describe("backup restore from the landing page", () => {
     });
   });
 
+  it("restores a backup dropped on the upload area instead of rejecting it as a bad CSV", { timeout: 15000 }, async () => {
+    renderApp();
+    const dropzone = await screen.findByRole("button", { name: /upload your sugarwod csv export/i });
+    await waitFor(() => expect(screen.getByRole("button", { name: /restore from a backup/i })).toBeEnabled());
+    fireEvent.drop(dropzone, { dataTransfer: { files: [backupFile({ workout: rowsA, tags })] } });
+
+    await screen.findByRole("button", { name: "Settings" }, { timeout: 5000 });
+    await waitFor(async () => {
+      expect(await loadWorkoutRows()).toEqual(rowsA);
+      expect(await loadTags()).toEqual(tags);
+    });
+    expect(screen.queryByText(/that file didn't work/i)).not.toBeInTheDocument();
+  });
+
+  it("restores a backup pasted onto the page", { timeout: 15000 }, async () => {
+    renderApp();
+    await waitFor(() => expect(screen.getByRole("button", { name: /restore from a backup/i })).toBeEnabled());
+    const paste = new Event("paste", { bubbles: true, cancelable: true });
+    Object.assign(paste, { clipboardData: { files: [backupFile({ workout: rowsA })] } });
+    window.dispatchEvent(paste);
+
+    await screen.findByRole("button", { name: "Settings" }, { timeout: 5000 });
+    await waitFor(async () => expect(await loadWorkoutRows()).toEqual(rowsA));
+  });
+
+  it("groups sync and restore under a label for people who already use Swift", async () => {
+    renderApp();
+    const group = await screen.findByRole("group", { name: /already use swift/i });
+    expect(within(group).getByRole("button", { name: /sync from another device/i })).toBeInTheDocument();
+    expect(within(group).getByRole("button", { name: /restore from a backup/i })).toBeInTheDocument();
+    // Sample data is for newcomers, so it sits outside the group.
+    expect(within(group).queryByRole("button", { name: /sample data/i })).not.toBeInTheDocument();
+  });
+
   it("names the problem inline and leaves storage alone when the file is wrong", async () => {
     await saveTags(tags);
     renderApp();

@@ -101,6 +101,15 @@ export async function readBackup(text: string): Promise<ReadBackupResult> {
   return { status: "ok", datasets, exportedAt };
 }
 
+/**
+ * Whether a chosen, dropped or pasted file is meant as a backup rather than a
+ * SugarWOD CSV. Judged by name and type only: the file is read, and rejected
+ * with a reason if it isn't really a backup, by `readBackup`.
+ */
+export function looksLikeBackup(file: { name: string; type: string }): boolean {
+  return file.type === "application/json" || file.name.toLowerCase().endsWith(".json");
+}
+
 /** `swift-backup-2026-09-30.json`, in the athlete's local day. */
 export function backupFilename(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");

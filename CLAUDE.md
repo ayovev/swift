@@ -510,8 +510,9 @@ own, so the two can't drift on what a valid row is.
   dataset that fails validation aborts the restore with a reason, and the athlete confirms once for
   everything that would overwrite through the shared `ReplaceConfirmDialog`.
 - **Wiring**: Download (`DownloadBackupButton`) and Restore (`useBackupRestore`) sit in Settings'
-  Backup section; restore is also on the landing page ("Restore from a backup"), the only place a
-  new browser can reach. The labels are Backup/Restore, not Export/Import, because the athlete's
+  Backup section; restore is also on the landing page ("Restore from a backup", grouped with sync under "Already use
+  Swift?"), the only place a new browser can reach. The landing page's dropzone and paste handler
+  route a `.json` file (`looksLikeBackup`) to restore instead of the CSV parser, which would reject it. The labels are Backup/Restore, not Export/Import, because the athlete's
   goal is getting their data back, because "Import" suggests adding rather than replacing, and
   because "Export" already means the SugarWOD CSV on the landing page. Tags keep their own
   Export/Import (that one does merge). Sample data can't be backed up and has nothing to confirm on

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backupFilename, readBackup, serializeBackup } from "@/lib/backup/backup";
+import { backupFilename, looksLikeBackup, readBackup, serializeBackup } from "@/lib/backup/backup";
 import { loadSampleRows } from "./fixtures/sampleRows";
 import { scanRow, workoutRow } from "./fixtures/rows";
 
@@ -57,5 +57,16 @@ describe("serializeBackup / readBackup", () => {
 describe("backupFilename", () => {
   it("uses the local day", () => {
     expect(backupFilename(new Date(2026, 8, 3))).toBe("swift-backup-2026-09-03.json");
+  });
+});
+
+describe("looksLikeBackup", () => {
+  it.each([
+    [{ name: "swift-backup-2026-09-30.json", type: "application/json" }, true],
+    [{ name: "backup.JSON", type: "" }, true],
+    [{ name: "export.csv", type: "text/csv" }, false],
+    [{ name: "export", type: "" }, false],
+  ])("judges %j as %s", (file, expected) => {
+    expect(looksLikeBackup(file)).toBe(expected);
   });
 });
