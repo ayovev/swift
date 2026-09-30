@@ -32,13 +32,13 @@ const good = {
   bodyComp: JSON.stringify([scanRow("2026-04-01", { "Weight(lb)": "180" })]),
 };
 
-function setup(existing: { workout?: number | null } = {}) {
+function setup(existing: { workout?: number | null; bodyComp?: number | null } = {}) {
   const props = {
     open: true,
     onOpenChange: vi.fn(),
     role: "joiner" as const,
     existingWorkoutCount: existing.workout ?? null,
-    existingBodyCompCount: null,
+    existingBodyCompCount: existing.bodyComp ?? null,
     existingExperimentsCount: null,
     existingTagsCount: null,
     onSyncedWorkoutData: vi.fn(),
@@ -76,9 +76,10 @@ describe("SyncDialog — receiving", () => {
     const { props, finish } = setup({ workout: 900 });
     finish([["workout", bad]]);
     expect(props.onSyncedWorkoutData).not.toHaveBeenCalled();
-    expect(screen.getByText(/The workout log from the other device was rejected\. Row 1 of the workout log has an unreadable date\. Your workout log on this device is unchanged\./)).toBeInTheDocument();
+    expect(screen.getByText(/The workout log from the other device was rejected\. Row 1 of the workout log has an unreadable date\./)).toBeInTheDocument();
+    expect(screen.getByText(/Nothing was synced\. Your data on this device is unchanged\./)).toBeInTheDocument();
     // No overwrite prompt for data that was rejected.
-    expect(screen.queryByText(/Replace your workout log/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Replace what's stored here/)).not.toBeInTheDocument();
     expect(props.onOpenChange).not.toHaveBeenCalled();
   });
 
@@ -89,11 +90,19 @@ describe("SyncDialog — receiving", () => {
     expect(posthog.capture).not.toHaveBeenCalledWith(expect.objectContaining({ name: "sync_succeeded" }));
   });
 
-  it("applies the datasets that are fine even when another is rejected", () => {
+  it("applies nothing when any dataset is rejected, even one that is fine", () => {
     const { props, finish } = setup();
     finish([["workout", "[]"], ["bodyComp", good.bodyComp]]);
-    expect(props.onSyncedBodyCompData).toHaveBeenCalledTimes(1);
+    expect(props.onSyncedBodyCompData).not.toHaveBeenCalled();
     expect(props.onSyncedWorkoutData).not.toHaveBeenCalled();
+    expect(screen.getByText(/Nothing was synced/)).toBeInTheDocument();
+  });
+
+  it("applies nothing when one dataset isn't valid JSON, even if the others are fine", () => {
+    const { props, finish } = setup();
+    finish([["workout", good.workout], ["bodyComp", "{not json"]]);
+    expect(props.onSyncedWorkoutData).not.toHaveBeenCalled();
+    expect(props.onSyncedBodyCompData).not.toHaveBeenCalled();
   });
 
   it("survives a payload that isn't valid JSON, and reports it as damaged", () => {
@@ -112,12 +121,37 @@ describe("SyncDialog — receiving", () => {
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("still asks before replacing existing data with valid data", () => {
-    const { props, finish } = setup({ workout: 5 });
-    finish([["workout", good.workout]]);
+  it("asks once for the whole transfer, naming every dataset it would replace, and applies all on Replace", () => {
+    const { props, finish } = setup({ workout: 5, bodyComp: 3 });
+    finish([["workout", good.workout], ["bodyComp", good.bodyComp]]);
     expect(props.onSyncedWorkoutData).not.toHaveBeenCalled();
-    expect(screen.getByText(/Replace your workout log\?/)).toBeInTheDocument();
+    expect(props.onSyncedBodyCompData).not.toHaveBeenCalled();
+    expect(screen.getAllByRole("alertdialog")).toHaveLength(1);
+    expect(screen.getByText(/your workout log: 5 entries now, 1 coming from the other device/i)).toBeInTheDocument();
+    expect(screen.getByText(/your body composition history: 3 entries now, 1 coming from the other device/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Replace" }));
     expect(props.onSyncedWorkoutData).toHaveBeenCalledTimes(1);
+    expect(props.onSyncedBodyCompData).toHaveBeenCalledTimes(1);
+    expect(props.onOpenChange).toHaveBeenCalledWith(false);
+    expect(posthog.capture).toHaveBeenCalledWith(expect.objectContaining({ name: "sync_succeeded" }));
+  });
+
+  it("applies none of it on Cancel, and counts a declined overwrite", () => {
+    const { props, finish } = setup({ workout: 5, bodyComp: 3 });
+    finish([["workout", good.workout], ["bodyComp", good.bodyComp]]);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(props.onSyncedWorkoutData).not.toHaveBeenCalled();
+    expect(props.onSyncedBodyCompData).not.toHaveBeenCalled();
+    expect(posthog.capture).toHaveBeenCalledWith({ name: "sync_failed", props: { role: "joiner", reason: "declined_overwrite" } });
+    expect(posthog.capture).not.toHaveBeenCalledWith(expect.objectContaining({ name: "sync_succeeded" }));
+  });
+
+  it("applies the datasets with nothing local to overwrite straight away, workout log last", () => {
+    const { props, finish } = setup();
+    const order: string[] = [];
+    props.onSyncedWorkoutData.mockImplementation(() => void order.push("workout"));
+    props.onSyncedBodyCompData.mockImplementation(() => void order.push("bodyComp"));
+    finish([["workout", good.workout], ["bodyComp", good.bodyComp]]);
+    expect(order).toEqual(["bodyComp", "workout"]);
   });
 });

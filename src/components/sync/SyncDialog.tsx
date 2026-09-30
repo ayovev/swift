@@ -1,20 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ReplaceConfirmDialog } from "./ReplaceConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { bucketRowCount, capture, type SyncRole } from "@/lib/posthog";
 import type { SyncDataset } from "@/lib/sync/chunking";
 import { DATASET_LABEL } from "@/lib/sync/datasetLabels";
-import { planReceived, type ConflictItem, type SkippedDataset } from "@/lib/sync/receivedDatasets";
+import { planTransfer, type TransferPlan } from "@/lib/sync/planTransfer";
+import type { SkippedDataset } from "@/lib/sync/receivedDatasets";
 import type { OutgoingDataset, SyncFailureReason } from "@/lib/sync/syncSession";
 import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
@@ -60,13 +52,26 @@ function failureMessage(reason: SyncFailureReason): string {
   }
 }
 
+/** A finished joiner transfer, counted by the size bucket of the first dataset present. */
+function captureJoinerSuccess(received: Partial<Record<SyncDataset, unknown>>) {
+  const count = (raw: unknown) => (Array.isArray(raw) ? raw.length : 0);
+  capture({
+    name: "sync_succeeded",
+    props: {
+      role: "joiner",
+      rows: bucketRowCount(count(received.workout) || count(received.bodyComp) || count(received.experiments)),
+    },
+  });
+}
+
 /**
  * The pairing wizard shell. Owns one SyncSession (via useSyncSession) for
  * the dialog's lifetime, renders the host or joiner half of the handshake,
- * and — once a joiner's transfer finishes — checks each received dataset
- * against what's already stored locally, confirming an overwrite per
- * dataset before ever calling onSyncedWorkoutData/onSyncedBodyCompData/
- * onSyncedExperiments. See CLAUDE.md's "Architecture: app state and local
+ * and — once a joiner's transfer finishes — treats it as all or nothing:
+ * any rejected dataset means none is applied, and anything that would
+ * overwrite local data is confirmed once for the whole transfer before
+ * onSyncedWorkoutData/onSyncedBodyCompData/onSyncedExperiments/onSyncedTags
+ * are called (planTransfer.ts). See CLAUDE.md's "Architecture: app state and local
  * persistence" for why those handlers are unconditional writers: this
  * dialog is what gates them.
  */
@@ -85,13 +90,13 @@ export function SyncDialog({
   onSyncedTags,
 }: SyncDialogProps) {
   const [received, setReceived] = useState<Partial<Record<SyncDataset, unknown>>>({});
-  const [conflicts, setConflicts] = useState<ConflictItem[] | null>(null);
+  // The one confirmation for the whole transfer, when anything would be overwritten.
+  const [pending, setPending] = useState<TransferPlan | null>(null);
   // Datasets whose payload wasn't even valid JSON, and datasets that arrived
   // but failed validation. Both are told to the athlete and leave the local
-  // copy untouched (see planReceived).
+  // copy untouched, and either one means nothing at all is applied (see planTransfer).
   const [unreadable, setUnreadable] = useState<SyncDataset[]>([]);
   const [skipped, setSkipped] = useState<SkippedDataset[]>([]);
-  const skippedRef = useRef(false);
   const processedRef = useRef(false);
   const attemptedRef = useRef(false);
 
@@ -132,10 +137,9 @@ export function SyncDialog({
     if (open) return;
     reset();
     setReceived({});
-    setConflicts(null);
+    setPending(null);
     setUnreadable([]);
     setSkipped([]);
-    skippedRef.current = false;
     processedRef.current = false;
     attemptedRef.current = false;
   }, [open, reset]);
@@ -158,7 +162,10 @@ export function SyncDialog({
     if (processedRef.current) return;
     processedRef.current = true;
 
-    const plan = planReceived(
+    // A sync is all or nothing: one rejected or unreadable dataset means none
+    // of them is applied, and everything that would overwrite is confirmed
+    // together (see planTransfer).
+    const plan = planTransfer(
       received,
       {
         workout: existingWorkoutCount,
@@ -176,28 +183,19 @@ export function SyncDialog({
     );
 
     // A transfer that delivered something unusable is a failure worth
-    // counting, even if the other datasets were fine: the fixed reason only,
-    // never which dataset or why (see posthog.ts).
+    // counting: the fixed reason only, never which dataset or why (see posthog.ts).
     if (plan.skipped.length > 0) {
       capture({ name: "sync_failed", props: { role: "joiner", reason: "invalid_data" } });
-    } else {
-      const count = (raw: unknown) => (Array.isArray(raw) ? raw.length : 0);
-      capture({
-        name: "sync_succeeded",
-        props: {
-          role: "joiner",
-          rows: bucketRowCount(count(received.workout) || count(received.bodyComp) || count(received.experiments)),
-        },
-      });
+      setSkipped(plan.skipped);
+      return;
     }
-
-    skippedRef.current = plan.skipped.length > 0;
-    setSkipped(plan.skipped);
     if (plan.conflicts.length > 0) {
-      setConflicts(plan.conflicts);
-    } else if (plan.skipped.length === 0) {
-      onOpenChange(false);
+      setPending(plan);
+      return;
     }
+    plan.flush();
+    captureJoinerSuccess(received);
+    onOpenChange(false);
   }, [
     state,
     role,
@@ -215,32 +213,24 @@ export function SyncDialog({
     onOpenChange,
   ]);
 
-  const currentConflict = conflicts?.[0] ?? null;
+  const confirmReplace = () => {
+    if (!pending) return;
+    for (const conflict of pending.conflicts) conflict.apply();
+    pending.flush();
+    captureJoinerSuccess(received);
+    setPending(null);
+    onOpenChange(false);
+  };
 
-  const resolveConflict = useCallback(
-    (apply: boolean) => {
-      if (!currentConflict) return;
-      if (apply) {
-        currentConflict.apply();
-      } else {
-        capture({ name: "sync_failed", props: { role: "joiner", reason: "declined_overwrite" } });
-      }
-      setConflicts((prev) => {
-        const rest = (prev ?? []).slice(1);
-        if (rest.length === 0) {
-          // Leave the dialog open on the notice if something was rejected.
-          if (!skippedRef.current) onOpenChange(false);
-          return null;
-        }
-        return rest;
-      });
-    },
-    [currentConflict, onOpenChange]
-  );
+  const declineReplace = () => {
+    capture({ name: "sync_failed", props: { role: "joiner", reason: "declined_overwrite" } });
+    setPending(null);
+    onOpenChange(false);
+  };
 
   return (
     <>
-      <Dialog open={open && !currentConflict} onOpenChange={onOpenChange}>
+      <Dialog open={open && !pending} onOpenChange={onOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{role === "host" ? "Sync to another device" : "Sync from another device"}</DialogTitle>
@@ -253,10 +243,10 @@ export function SyncDialog({
             <div className="flex flex-col gap-3">
               {skipped.map((item) => (
                 <p key={item.dataset} className="text-sm leading-relaxed">
-                  The {DATASET_LABEL[item.dataset]} from the other device was rejected. {item.reason} Your{" "}
-                  {DATASET_LABEL[item.dataset]} on this device is unchanged.
+                  The {DATASET_LABEL[item.dataset]} from the other device was rejected. {item.reason}
                 </p>
               ))}
+              <p className="text-sm leading-relaxed">Nothing was synced. Your data on this device is unchanged.</p>
               <Button variant="outline" size="sm" className="self-start" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
@@ -271,28 +261,13 @@ export function SyncDialog({
         </DialogContent>
       </Dialog>
 
-      {currentConflict ? (
-        <AlertDialog
-          open
-          onOpenChange={(next) => {
-            if (!next) resolveConflict(false);
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Replace your {DATASET_LABEL[currentConflict.dataset]}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This device already has a {DATASET_LABEL[currentConflict.dataset]} with{" "}
-                {currentConflict.existingCount} entries. Replacing it with the synced data (
-                {currentConflict.incomingCount} entries) can't be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => resolveConflict(false)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => resolveConflict(true)}>Replace</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+      {pending ? (
+        <ReplaceConfirmDialog
+          conflicts={pending.conflicts}
+          source="device"
+          onConfirm={confirmReplace}
+          onCancel={declineReplace}
+        />
       ) : null}
     </>
   );

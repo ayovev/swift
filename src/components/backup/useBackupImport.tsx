@@ -1,18 +1,9 @@
 import { useCallback, useState, type ReactNode } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ReplaceConfirmDialog } from "@/components/sync/ReplaceConfirmDialog";
 import { readBackup } from "@/lib/backup/backup";
-import { planBackupImport, type BackupImportPlan } from "@/lib/backup/planBackupImport";
 import { capture } from "@/lib/posthog";
 import { DATASET_LABEL } from "@/lib/sync/datasetLabels";
+import { planTransfer, type TransferPlan } from "@/lib/sync/planTransfer";
 import type { ExistingCounts, ReceivedHandlers } from "@/lib/sync/receivedDatasets";
 
 interface UseBackupImportOptions {
@@ -45,9 +36,9 @@ export interface BackupImport {
  */
 export function useBackupImport({ existing, handlers }: UseBackupImportOptions): BackupImport {
   const [message, setMessage] = useState<string | null>(null);
-  const [pending, setPending] = useState<BackupImportPlan | null>(null);
+  const [pending, setPending] = useState<TransferPlan | null>(null);
 
-  const finish = useCallback((plan: BackupImportPlan) => {
+  const finish = useCallback((plan: TransferPlan) => {
     plan.flush();
     capture({ name: "interaction_used", props: { interaction: "backup_imported" } });
     setMessage("Backup imported.");
@@ -66,7 +57,7 @@ export function useBackupImport({ existing, handlers }: UseBackupImportOptions):
           setMessage(`Nothing was imported. ${read.reason}`);
           return;
         }
-        const plan = planBackupImport(read.datasets, existing, handlers);
+        const plan = planTransfer(read.datasets, existing, handlers);
         const rejected = plan.skipped[0];
         if (rejected) {
           setMessage(`Nothing was imported. The ${DATASET_LABEL[rejected.dataset]} in that backup was rejected. ${rejected.reason}`);
@@ -88,30 +79,12 @@ export function useBackupImport({ existing, handlers }: UseBackupImportOptions):
   };
 
   const dialog = pending ? (
-    <AlertDialog open onOpenChange={(next) => !next && setPending(null)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Replace what's stored here with this backup?</AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="flex flex-col gap-2">
-              <ul className="list-disc pl-5">
-                {pending.conflicts.map((c) => (
-                  <li key={c.dataset}>
-                    Your {DATASET_LABEL[c.dataset]}: {c.existingCount.toLocaleString()} entries now,{" "}
-                    {c.incomingCount.toLocaleString()} in the backup.
-                  </li>
-                ))}
-              </ul>
-              <p>Replacing them can't be undone.</p>
-            </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={confirm}>Replace</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ReplaceConfirmDialog
+      conflicts={pending.conflicts}
+      source="backup"
+      onConfirm={confirm}
+      onCancel={() => setPending(null)}
+    />
   ) : null;
 
   return { importFile, message, dialog };

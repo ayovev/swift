@@ -434,13 +434,16 @@ back to one.
 - **`SyncDialog.tsx`** (`src/components/sync/`) is the pairing wizard shell — the one place that
   owns a `SyncSession` (via the `useSyncSession` hook, always backed by the real
   `webrtcConnectionFactory`) for the dialog's lifetime, and the one place that decides whether a
-  received dataset needs confirmation before it's applied. If the joining device already has a
-  dataset of that kind, an `AlertDialog` (same register as "Start over") names exactly what
-  would be replaced and by how many entries, independently per dataset — accepting one doesn't
-  silently accept the other. Only after that confirmation (or immediately, if there's nothing to
-  conflict with) does it call the `onSynced*` handlers. What to apply, hold back for confirmation or
-  skip is decided by the pure `planReceived()` in `src/lib/sync/receivedDatasets.ts`, which is where
-  the ordering rules live and are tested.
+  received data needs confirmation before it's applied. **A sync is all or nothing: there is no
+  per-dataset prompt.** If the joining device already has any of the incoming datasets, one
+  `AlertDialog` (`ReplaceConfirmDialog.tsx`, shared with backup import; same register as "Start
+  over") names every dataset that would be replaced with both entry counts, and Replace applies the
+  whole transfer while Cancel applies none of it. Only after that (or immediately, if there's nothing
+  to conflict with) does it call the `onSynced*` handlers. The pure `planTransfer()` in
+  `src/lib/sync/planTransfer.ts` (over `planReceived()` in `receivedDatasets.ts`) decides this; it
+  queues every write and `flush()` applies them with the workout log last, because applying the
+  workout log moves `App` to its reveal screen, which unmounts the dashboard and this dialog with it.
+  Backup import uses the same plan.
 - **What syncs: the athlete's data, and only their data.** The workout log, the InBody history,
   experiments and context tags. Preferences and configuration deliberately do **not** sync: theme
   (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
@@ -453,13 +456,14 @@ back to one.
   `BackupDatasets` is keyed by `SyncDataset`; a new preference or setting must not.
   **Everything that arrives is validated before anything is written**, to the shape its own parser
   produces (`validateReceived.ts` for the workout log, InBody history and experiments,
-  `validateTagList` for tags). Validation is all-or-nothing per dataset: one bad row rejects that
-  dataset with a reason naming the row, the local copy is left exactly as it was, and a rejected
-  dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
+  `validateTagList` for tags). Validation is all-or-nothing for the whole transfer: one bad row rejects
+  its dataset with a reason naming the row, and then nothing at all is applied, the local copy is
+  left exactly as it was, and a rejected dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
   columns the app doesn't read are kept, and a payload that isn't valid JSON is reported as
-  damaged. `SyncDialog` then says which dataset was rejected and why, stays open on that notice,
-  and counts the transfer as `sync_failed` with the fixed reason `invalid_data`. Datasets that
-  were fine are still applied.
+  damaged (an unreadable dataset also means nothing is applied). `SyncDialog` then says which
+  dataset was rejected and why, states that nothing was synced, stays open on that notice, and counts
+  the transfer as `sync_failed` with the fixed reason `invalid_data`. Datasets that were fine are
+  not applied either.
 - **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` (and
   `handleSyncedExperiments`/`handleSyncedTags`) — all are
   unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
@@ -499,13 +503,10 @@ own, so the two can't drift on what a valid row is.
 - **Import replaces per dataset, never merges**, and a missing dataset leaves the local copy alone.
   A backup must contain a workout log (Export always writes one), so a half-restored state where
   InBody data persists but the app lands on the upload screen can't happen.
-- **Nothing is written until the whole file is usable.** `planBackupImport()` runs `planReceived`
-  with collecting handlers; any dataset that fails validation aborts the import with a reason, and
-  the athlete confirms once for everything that would overwrite. `flush()` then applies the
-  datasets with **the workout log last**. That order is load-bearing: applying the workout log
-  moves `App` to its reveal screen, which unmounts the dashboard and any dialog inside it, so a
-  dataset still waiting on a confirmation would be dropped. (`SyncDialog`'s one-confirmation-per-
-  dataset flow has this same exposure; it is not fixed here.)
+- **Nothing is written until the whole file is usable.** It uses the same all-or-nothing
+  `planTransfer()` as sync (see the sync section for why the workout log is applied last): any
+  dataset that fails validation aborts the import with a reason, and the athlete confirms once for
+  everything that would overwrite through the shared `ReplaceConfirmDialog`.
 - **Wiring**: Export (`ExportBackupButton`) and Import (`useBackupImport`) sit in Settings' Backup
   section; import is also on the landing page, the only place a new browser can reach. Sample data
   can't be exported and has nothing to confirm on import (it is never stored). Import errors stay

@@ -3,7 +3,7 @@
  * cleared browser or a new computer doesn't mean starting over. Pure — no
  * React, no storage, no DOM. Parsing here only checks the envelope; each
  * dataset is validated afterwards by the same validators sync uses
- * (planBackupImport.ts), so the two can't drift on what a valid row is.
+ * (planTransfer.ts), so the two can't drift on what a valid row is.
  *
  * Which datasets: exactly the four sync carries, and only the athlete's data
  * (never theme, grouping or date range). `BackupDatasets` is keyed by
