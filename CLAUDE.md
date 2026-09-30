@@ -371,7 +371,9 @@ window.
   thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added, edited and deleted from the
   Experiments list on the Compare view (`PeriodsTab.tsx`; the same `ExperimentForm` adds and edits — an edit keeps
   the `id`, and clearing the end date makes it ongoing again), persisted only when `state.source === "upload"` in
-  `App.tsx`, same sample-mode exclusion as everything else logged while browsing demo data.
+  `App.tsx`, same sample-mode exclusion as everything else logged while browsing demo data. Experiments
+  that arrive by sync or backup restore are different: they are uploads by definition, so
+  `handleSyncedExperiments` always persists them (see "Write points" below).
 - **`getExperimentInsight(experiment, workouts, inbodyScans, asOfDate)`** reuses #1's subject
   identification and body-comp-trend helpers unchanged (`buildLiftSubjects`/
   `buildBenchmarkSubjects`, `parseWorkoutDate`/`parseInBodyDate`, `computeBodyCompTrend`,
@@ -587,7 +589,10 @@ added after the app initially held everything in memory only.
   deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
   bundled sample file is deliberately never cached, so demo mode never leaves anything behind. A
-  successful InBody parse always persists (there's no sample-data concept for it). `range` and
+  successful InBody parse always persists (there's no sample-data concept for it). Data that arrives
+  by sync or backup restore (the `handleSynced*` handlers) always persists too, since it is an upload
+  by definition; those handlers must never look at `state`, because on the landing page it is still the
+  previous screen, and checking it once made restored experiments vanish on reload. `range` and
   `granularity` persist from exactly two call sites in `App.tsx` — `persistRangeSelection`
   (passed to `DateRangePicker` as `onSelect`) and `persistGranularity` (passed to `ScopeLine`'s
   grouping menu/the daily-auto-downgrade effect as `onGranularityChange`) — rather than a
