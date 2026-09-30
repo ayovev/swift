@@ -77,7 +77,7 @@ function LiftCard({ lift }: { lift: LiftRelativeStrength }) {
 
 /**
  * "Got stronger" or "got bigger"? Lifts that fail an eligibility gate are
- * listed collapsed with the gate that failed, never hidden. Sits on the Lifts
+ * listed collapsed with the gate that failed, never hidden. Sits on the Progress
  * view under the plateau table, which is what gates it on both uploads.
  */
 export function StrengthSection({ relativeStrength }: StrengthSectionProps) {

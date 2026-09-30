@@ -141,12 +141,12 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   buckets are more numerous still).
 - **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
   Workouts, the ten GPP domains, the three modalities, Body Comp, and the Insights views
-  (Lifts, Periods, Tags), grouped for navigation into
+  (Progress, Compare, Tags), grouped for navigation into
   four sections (see "Architecture: dashboard layout" below). The views that need an InBody export
   all share one empty state, `InBodyUploadPrompt.tsx`. A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
   tabs — they differ in data, not structure. Body Comp is its own component (`BodyCompTab.tsx`),
-  always present in the nav even before any InBody data is loaded, and Lifts follows
+  always present in the nav even before any InBody data is loaded, and Progress follows
   the same always-present treatment (see "Architecture: Plateau Detector and Alignment" below).
   `buildModalityData`'s output shape deliberately mirrors `buildDashboardData`'s so those two
   components stay near-identical; keep that symmetry.
@@ -209,7 +209,7 @@ comment before changing anything; this section is a map, not a restatement.
 - Both are wired into `App.tsx` behind the same gate: neither runs until both a SugarWOD upload
   and an InBody upload are `"ready"`. Neither is part of `Insights`/`buildInsights.ts`'s return
   shape — they're computed separately in `App.tsx` and passed to `Dashboard.tsx` as their own
-  props, rendered together on the Lifts view (`LiftsTab.tsx`): `AlignmentSummary.tsx` on top, then
+  props, rendered together on the Progress view (`LiftsTab.tsx`): `AlignmentSummary.tsx` on top, then
   `PlateauSection.tsx`. Alignment is a summary above the plateau table, not a tab of its own,
   because it is only a rollup of that table's output.
 
@@ -248,7 +248,7 @@ window is judged with the noise band, so a change inside normal scan variation i
 for a lift change. Attribution is `strength-driven | mass-driven | mixed | flat | declined`
 (`declined` is an addition to the original plan's four, which had nowhere to put a fall). Lifts
 failing a gate keep their series and carry a `reason` naming the gate and the shortfall.
-Wired in `App.tsx` behind the same both-uploads gate as Plateaus; rendered by `StrengthSection.tsx`, the third section of the Lifts view. `LiftsTab` owns the
+Wired in `App.tsx` behind the same both-uploads gate as Plateaus; rendered by `StrengthSection.tsx`, the third section of the Progress view. `LiftsTab` owns the
 both-uploads gate for all three sections (one upload prompt), and a lift's plateau row carries its
 strength attribution with the strength window named (`RS_WINDOW_DAYS`), because the plateau read
 windows by session count and the strength read by a fixed year and the two must not read as one.
@@ -265,7 +265,7 @@ the equal-length window immediately before B.
 - **One data model.** "Save as experiment" writes window B to an `Experiment`'s `date`/`endDate`
   and window A's start to its optional `baselineStart` (`windowsToExperimentFields`).
   `getExperimentInsight` then compares `[baselineStart, date)` against the experiment's own range,
-  so the saved verdict is built on the earlier range the Periods table showed. An experiment with
+  so the saved verdict is built on the earlier range the Compare table showed. An experiment with
   no `baselineStart` (everything made before the field existed, and anything added directly)
   compares against all history before its start date, exactly as before. `baselineStart` must be
   strictly before `date`; otherwise it is ignored, the same defensiveness as an inverted `endDate`.
@@ -275,10 +275,10 @@ the equal-length window immediately before B.
 - **Dragging is a convenience, never the only way.** `charts/chartInteraction.tsx` gives a chart a
   drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`)
   and shaded tag bands. A selection offers "Compare with the N days before" and "Tag this range";
-  every path also exists as date inputs on the Periods and Tags views. Wired into
+  every path also exists as date inputs on the Compare and Tags views. Wired into
   `ConsistencyChart`, `BodyCompLineChart` and `RelativeStrengthChart`; `LiftChart` (a numeric-axis
   scatter) has neither bands nor drag.
-- **One view, not three.** Compare, Experiments and Cycles are one Periods view (`PeriodsTab.tsx`)
+- **One view, not three.** The former Compare, Experiments and Cycles views are one Compare view (`PeriodsTab.tsx`; its page title reads "Compare periods")
   because they answer one question about a range and differ only in how the range was named. The
   range (window B, plus the earlier window A) is the only input: typed, dragged out on a chart, or
   filled in from a saved experiment (its dates and `baselineStart`) or a block tag. Every range gets
@@ -287,7 +287,7 @@ the equal-length window immediately before B.
   `ExperimentVerdict`. Typing a date drops the saved-experiment framing, since the verdict no longer
   describes what is on screen. The experiment verdict compares against all history before the start
   date when there is no `baselineStart`, while the tables use the equal-length window before it;
-  the verdict card states which. Periods does **not** gate on InBody: the comparison and the report
+  the verdict card states which. Compare does **not** gate on InBody: the comparison and the report
   degrade on their own (body composition says why it can't be compared), and only the experiment
   verdict waits on both uploads, at which point it shows `InBodyUploadPrompt` in its place.
 - **Tags** (`types/tag.ts`, `contextTags.ts`, `storage/tagsStorage.ts`, key `"context-tags"`) are
@@ -315,7 +315,7 @@ eye first, and none is in the repo. `Cycle.source` keeps `"detected"` so adding 
 from `getBodyCompNoiseBands`/`isMeaningfulChange`. Volume is logged workouts per week. A cycle
 under `CYCLE_MIN_DAYS`, empty, or inverted is `insufficient` with a reason. The summary states
 volume, lift changes, then body composition; it never grades them (a test rejects judgement words).
-Injury/travel tags inside the cycle add a sentence naming them. Rendered by `CycleReportBody.tsx` inside the Periods view: a block tag fills the range in, and
+Injury/travel tags inside the cycle add a sentence naming them. Rendered by `CycleReportBody.tsx` inside the Compare view: a block tag fills the range in, and
 any range gets the same report (a typed range is the same as a block with no tag).
 
 ## Open items: what is unvalidated or undecided
@@ -367,7 +367,7 @@ window.
   an optional `baselineStart` (where the "before" side starts; unset means all earlier history). It's its own
   IndexedDB-backed dataset (`src/lib/storage/experimentsStorage.ts`, key `"experiments"`, same
   thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added, edited and deleted from the
-  Experiments list on the Periods view (`PeriodsTab.tsx`; the same `ExperimentForm` adds and edits — an edit keeps
+  Experiments list on the Compare view (`PeriodsTab.tsx`; the same `ExperimentForm` adds and edits — an edit keeps
   the `id`, and clearing the end date makes it ongoing again), persisted only when `state.source === "upload"` in
   `App.tsx`, same sample-mode exclusion as everything else logged while browsing demo data.
 - **`getExperimentInsight(experiment, workouts, inbodyScans, asOfDate)`** reuses #1's subject
@@ -388,7 +388,7 @@ window.
   the classification itself is never biased toward a rosy outcome; it falls out of whatever the
   real sample data shows.
 - Wired into `App.tsx` behind the same gate as Plateau Detector/Alignment — neither runs until
-  both uploads are `"ready"` — and rendered by `ExperimentVerdict.tsx` when an experiment is picked on the Periods view, not part of
+  both uploads are `"ready"` — and rendered by `ExperimentVerdict.tsx` when an experiment is picked on the Compare view, not part of
   `Insights`/`buildInsights.ts`'s return shape.
 
 ## Architecture: cross-device sync
@@ -484,13 +484,15 @@ home. Read the header comments of the files named here before moving anything be
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains and three
   modalities — a classification of the same workouts, not separate data), Body (Body Comp) and
-  Insights (Lifts, Periods, Tags). The views
+  Insights (Progress, Compare, Tags). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
   header — in line with them it read as one more tab. `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
-  `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section.
+  `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress and Compare
+  views keep their earlier internal names (tab ids `lifts`/`periods`, `LiftsTab.tsx`/`PeriodsTab.tsx`);
+  only the labels and page titles changed.
 - **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
   under the page title ("Showing all time, grouped by month"), next to the charts they change
   rather than in the global header. It sits in its own row under a thin rule (with "Stored in

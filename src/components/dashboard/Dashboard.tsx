@@ -151,7 +151,7 @@ export function Dashboard({
         setPendingWindow((p) => ({ window, nonce: (p?.nonce ?? 0) + 1 }));
         setTab(PERIODS_TAB);
         capture({ name: "interaction_used", props: { interaction: "compare_range_selected" } });
-        capture({ name: "tab_viewed", props: { tab: "Periods", source } });
+        capture({ name: "tab_viewed", props: { tab: "Compare", source } });
       },
       onTag: (window: DateWindow) => {
         setPendingWindow((p) => ({ window, nonce: (p?.nonce ?? 0) + 1 }));
@@ -271,7 +271,7 @@ export function Dashboard({
                 dailyDisabled={dailyDisabled}
               />
             ) : (
-              // Lifts and Periods are computed in App.tsx
+              // Progress and Compare are computed in App.tsx
               // from the full, unfiltered history as of today — saying so
               // beats showing a date control that silently does nothing here.
               <p className="text-base text-muted-foreground">

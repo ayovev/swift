@@ -22,7 +22,7 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Lifts, Periods and Tags", () => {
+  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Progress, Compare and Tags", () => {
     expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
   });
 });
@@ -53,6 +53,8 @@ describe("pageTitleOf", () => {
     expect(pageTitleOf(gymnasticsTab.value)).toBe(MODALITY_NAMES.G);
     expect(pageTitleOf(BODY_COMP_TAB)).toBe("Body composition");
     expect(pageTitleOf(OVERVIEW_TAB)).toBe("Overview");
+    expect(pageTitleOf(PERIODS_TAB)).toBe("Compare periods");
+    expect(pageTitleOf(LIFTS_TAB)).toBe("Progress");
   });
 });
 
@@ -102,8 +104,8 @@ describe("SubNav", () => {
     render(<SubNav value={LIFTS_TAB} onValueChange={vi.fn()} />);
     const nav = screen.getByRole("navigation", { name: "Insights views" });
     expect(within(nav).getAllByRole("button").map((b) => b.textContent)).toEqual([
-      "Lifts",
-      "Periods",
+      "Progress",
+      "Compare",
       "Tags",
     ]);
   });
