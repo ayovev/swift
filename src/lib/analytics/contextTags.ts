@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { formatDay } from "./formatting";
+import { isIsoDay } from "./scanParsing";
 import { TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
 
 /**
@@ -80,8 +81,6 @@ export function serializeTags(tags: readonly ContextTag[]): string {
 
 export type TagsParseResult = { status: "ok"; tags: ContextTag[] } | { status: "invalid"; reason: string };
 
-const ISO = /^\d{4}-\d{2}-\d{2}$/;
-const validDate = (s: unknown): s is string => typeof s === "string" && ISO.test(s) && dayjs(s, "YYYY-MM-DD", true).isValid();
 
 /**
  * Validates a list of tags — from an imported file or from another device.
@@ -101,8 +100,8 @@ export function validateTagList(list: unknown): TagsParseResult {
     if (typeof t.id !== "string" || t.id === "") return { status: "invalid", reason: `Tag ${n} has no id.` };
     if (seen.has(t.id)) return { status: "invalid", reason: `Tag ${n} repeats an id used by an earlier tag.` };
     if (!TAG_TYPES.includes(t.type as TagType)) return { status: "invalid", reason: `Tag ${n} has an unknown type.` };
-    if (!validDate(t.startDate)) return { status: "invalid", reason: `Tag ${n} has no valid start date (YYYY-MM-DD).` };
-    if (t.endDate !== null && t.endDate !== undefined && !validDate(t.endDate)) {
+    if (!isIsoDay(t.startDate)) return { status: "invalid", reason: `Tag ${n} has no valid start date (YYYY-MM-DD).` };
+    if (t.endDate !== null && t.endDate !== undefined && !isIsoDay(t.endDate)) {
       return { status: "invalid", reason: `Tag ${n} has an end date that isn't YYYY-MM-DD.` };
     }
     const endDate = (t.endDate ?? null) as string | null;

@@ -437,7 +437,15 @@ back to one.
   `preferences` and `theme` are rejected). **A new persisted dataset that is the athlete's data must
   be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a
   case in `planReceived`, an `onSynced*` handler in `App.tsx`); a new preference or setting must not.
-  Tags are validated on arrival (`validateTagList`) and skipped, never half-applied, if invalid.
+  **Everything that arrives is validated before anything is written**, to the shape its own parser
+  produces (`validateReceived.ts` for the workout log, InBody history and experiments,
+  `validateTagList` for tags). Validation is all-or-nothing per dataset: one bad row rejects that
+  dataset with a reason naming the row, the local copy is left exactly as it was, and a rejected
+  dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
+  columns the app doesn't read are kept, and a payload that isn't valid JSON is reported as
+  damaged. `SyncDialog` then says which dataset was rejected and why, stays open on that notice,
+  and counts the transfer as `sync_failed` with the fixed reason `invalid_data`. Datasets that
+  were fine are still applied.
 - **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` (and
   `handleSyncedExperiments`/`handleSyncedTags`) — all are
   unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
@@ -452,7 +460,7 @@ back to one.
 - **Analytics**: `sync_attempted`/`sync_succeeded`/`sync_failed` in `src/lib/posthog.ts`, same
   closed-vocabulary discipline as every other `SwiftEvent` — `role` (`"host" | "joiner"`) and,
   for failures, a fixed `SyncFailureReason` (`ice_timeout`, `camera_denied`, `invalid_qr`,
-  `connection_dropped`, `declined_overwrite`, `unsupported_browser`). No device identifiers, no
+  `connection_dropped`, `declined_overwrite`, `unsupported_browser`, `invalid_data`). No device identifiers, no
   session/pairing tokens, no SDP fragments — the payload types make that structurally
   impossible, not just a convention (`tests/syncAnalytics.test.ts`).
 

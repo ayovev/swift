@@ -23,3 +23,8 @@ export function parseNumericField(raw: string | undefined): number | null {
   const n = Number.parseFloat(raw);
   return Number.isNaN(n) ? null : n;
 }
+
+/** A strict "YYYY-MM-DD" calendar day — the shape every user-authored date (tags, experiments) is stored in. */
+export function isIsoDay(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && dayjs(value, "YYYY-MM-DD", true).isValid();
+}

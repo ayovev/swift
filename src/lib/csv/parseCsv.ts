@@ -24,7 +24,7 @@ export class CsvValidationError extends Error {
 }
 
 /** A date cell SugarWOD writes as MM/DD/YYYY. Cheap shape check only. */
-const DATE_SHAPE = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+export const DATE_SHAPE = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
 
 const EMPTY_MESSAGE = "That file is empty — there's nothing in it to read.";
 

@@ -50,6 +50,14 @@ describe("analytics — sync events", () => {
     expect(Object.keys(props as object).sort()).toEqual(["reason", "role"]);
   });
 
+  it("reports rejected data with the fixed invalid_data reason and nothing about which dataset or why", async () => {
+    const { initAnalytics, capture } = await loadAnalytics("phc_test");
+    initAnalytics();
+    capture({ name: "sync_failed", props: { role: "joiner", reason: "invalid_data" } });
+    const [, props] = mocked.capture.mock.calls[0]!;
+    expect(props).toEqual({ role: "joiner", reason: "invalid_data" });
+  });
+
   it("sends only role and a bucketed row count for sync_succeeded, never an exact count", async () => {
     const { initAnalytics, capture, bucketRowCount } = await loadAnalytics("phc_test");
     initAnalytics();

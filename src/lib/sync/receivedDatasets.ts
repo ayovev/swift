@@ -4,6 +4,8 @@ import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
 import type { SyncDataset } from "./chunking";
+import { DATASET_LABEL } from "./datasetLabels";
+import { validateBodyCompRows, validateExperiments, validateWorkoutRows, type Validated } from "./validateReceived";
 
 /**
  * What a joiner does with the datasets that arrived: nothing is applied
@@ -17,8 +19,10 @@ import type { SyncDataset } from "./chunking";
  * configured (theme, grouping, date range) stays on each device.
  *
  * Each dataset is confirmed independently: accepting one never accepts
- * another. A tags payload that fails validation is skipped and named in
- * `skipped`; it never half-applies.
+ * another. Every payload is validated first (`validateReceived.ts`, and
+ * `validateTagList` for tags): one that fails, or that arrived unreadable, is
+ * skipped and named in `skipped` with the reason, the local copy is left
+ * exactly as it was, and it never half-applies. The dialog tells the athlete.
  */
 
 export interface ExistingCounts {
@@ -43,41 +47,62 @@ export interface ConflictItem {
   apply: () => void;
 }
 
+export interface SkippedDataset {
+  dataset: SyncDataset;
+  /** A plain sentence naming what is wrong, e.g. "Row 12 of the workout log has an unreadable date." */
+  reason: string;
+}
+
 export interface ReceivedPlan {
   conflicts: ConflictItem[];
-  skipped: SyncDataset[];
+  skipped: SkippedDataset[];
 }
 
 export function planReceived(
   received: Partial<Record<SyncDataset, unknown>>,
   existing: ExistingCounts,
-  handlers: ReceivedHandlers
+  handlers: ReceivedHandlers,
+  /** Datasets whose payload wasn't valid JSON, so there is nothing to validate. */
+  unreadable: readonly SyncDataset[] = []
 ): ReceivedPlan {
   const conflicts: ConflictItem[] = [];
-  const skipped: SyncDataset[] = [];
+  const skipped: SkippedDataset[] = [];
 
-  const offer = (dataset: SyncDataset, existingCount: number | null, incomingCount: number, apply: () => void) => {
-    if (existingCount !== null) conflicts.push({ dataset, existingCount, incomingCount, apply });
-    else apply();
+  for (const dataset of unreadable) {
+    skipped.push({ dataset, reason: `The ${DATASET_LABEL[dataset]} arrived damaged and couldn't be read.` });
+  }
+
+  const offer = <T>(
+    dataset: SyncDataset,
+    payload: unknown,
+    validate: (raw: unknown) => Validated<T[]>,
+    existingCount: number | null,
+    apply: (value: T[]) => void
+  ) => {
+    if (payload === undefined) return;
+    const result = validate(payload);
+    if (result.status === "invalid") {
+      skipped.push({ dataset, reason: result.reason });
+      return;
+    }
+    const value = result.value;
+    if (existingCount !== null) conflicts.push({ dataset, existingCount, incomingCount: value.length, apply: () => apply(value) });
+    else apply(value);
   };
 
-  const workoutRows = received.workout as SugarWodRow[] | undefined;
-  if (workoutRows) offer("workout", existing.workout, workoutRows.length, () => handlers.workout(workoutRows));
-
-  const bodyCompRows = received.bodyComp as InBodyRow[] | undefined;
-  if (bodyCompRows) offer("bodyComp", existing.bodyComp, bodyCompRows.length, () => handlers.bodyComp(bodyCompRows));
-
-  const experiments = received.experiments as Experiment[] | undefined;
-  if (experiments) offer("experiments", existing.experiments, experiments.length, () => handlers.experiments(experiments));
-
-  if (received.tags !== undefined) {
-    const result = validateTagList(received.tags);
-    if (result.status === "ok") {
-      offer("tags", existing.tags, result.tags.length, () => handlers.tags(result.tags));
-    } else {
-      skipped.push("tags");
-    }
-  }
+  offer<SugarWodRow>("workout", received.workout, validateWorkoutRows, existing.workout, handlers.workout);
+  offer<InBodyRow>("bodyComp", received.bodyComp, validateBodyCompRows, existing.bodyComp, handlers.bodyComp);
+  offer<Experiment>("experiments", received.experiments, validateExperiments, existing.experiments, handlers.experiments);
+  offer<ContextTag>(
+    "tags",
+    received.tags,
+    (raw) => {
+      const result = validateTagList(raw);
+      return result.status === "ok" ? { status: "ok", value: result.tags } : result;
+    },
+    existing.tags,
+    handlers.tags
+  );
 
   return { conflicts, skipped };
 }

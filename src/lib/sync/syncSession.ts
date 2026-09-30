@@ -47,7 +47,8 @@ export type SyncFailureReason =
   | "invalid_qr"
   | "connection_dropped"
   | "declined_overwrite"
-  | "unsupported_browser";
+  | "unsupported_browser"
+  | "invalid_data";
 
 export interface OutgoingDataset {
   dataset: SyncDataset;

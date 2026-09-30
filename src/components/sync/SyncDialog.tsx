@@ -9,11 +9,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { bucketRowCount, capture, type SyncRole } from "@/lib/posthog";
 import type { SyncDataset } from "@/lib/sync/chunking";
 import { DATASET_LABEL } from "@/lib/sync/datasetLabels";
-import { planReceived, type ConflictItem } from "@/lib/sync/receivedDatasets";
+import { planReceived, type ConflictItem, type SkippedDataset } from "@/lib/sync/receivedDatasets";
 import type { OutgoingDataset, SyncFailureReason } from "@/lib/sync/syncSession";
 import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
@@ -54,6 +55,8 @@ function failureMessage(reason: SyncFailureReason): string {
       return "This browser doesn't support the technology sync needs. Try a different browser.";
     case "declined_overwrite":
       return "Sync was cancelled.";
+    case "invalid_data":
+      return "Some of the data from the other device couldn't be used.";
   }
 }
 
@@ -83,11 +86,24 @@ export function SyncDialog({
 }: SyncDialogProps) {
   const [received, setReceived] = useState<Partial<Record<SyncDataset, unknown>>>({});
   const [conflicts, setConflicts] = useState<ConflictItem[] | null>(null);
+  // Datasets whose payload wasn't even valid JSON, and datasets that arrived
+  // but failed validation. Both are told to the athlete and leave the local
+  // copy untouched (see planReceived).
+  const [unreadable, setUnreadable] = useState<SyncDataset[]>([]);
+  const [skipped, setSkipped] = useState<SkippedDataset[]>([]);
+  const skippedRef = useRef(false);
   const processedRef = useRef(false);
   const attemptedRef = useRef(false);
 
   const handleDatasetReceived = useCallback((dataset: SyncDataset, json: string) => {
-    setReceived((prev) => ({ ...prev, [dataset]: JSON.parse(json) as unknown }));
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(json);
+    } catch {
+      setUnreadable((prev) => [...prev, dataset]);
+      return;
+    }
+    setReceived((prev) => ({ ...prev, [dataset]: parsed }));
   }, []);
 
   const { state, startHost, startJoiner, submitAnswer, reset } = useSyncSession(handleDatasetReceived);
@@ -117,6 +133,9 @@ export function SyncDialog({
     reset();
     setReceived({});
     setConflicts(null);
+    setUnreadable([]);
+    setSkipped([]);
+    skippedRef.current = false;
     processedRef.current = false;
     attemptedRef.current = false;
   }, [open, reset]);
@@ -139,18 +158,7 @@ export function SyncDialog({
     if (processedRef.current) return;
     processedRef.current = true;
 
-    const workoutRows = received.workout as SugarWodRow[] | undefined;
-    const bodyCompRows = received.bodyComp as InBodyRow[] | undefined;
-    const experimentsRows = received.experiments as Experiment[] | undefined;
-    capture({
-      name: "sync_succeeded",
-      props: {
-        role: "joiner",
-        rows: bucketRowCount(workoutRows?.length ?? bodyCompRows?.length ?? experimentsRows?.length ?? 0),
-      },
-    });
-
-    const { conflicts: items } = planReceived(
+    const plan = planReceived(
       received,
       {
         workout: existingWorkoutCount,
@@ -163,12 +171,31 @@ export function SyncDialog({
         bodyComp: onSyncedBodyCompData,
         experiments: onSyncedExperiments,
         tags: onSyncedTags,
-      }
+      },
+      unreadable
     );
 
-    if (items.length > 0) {
-      setConflicts(items);
+    // A transfer that delivered something unusable is a failure worth
+    // counting, even if the other datasets were fine: the fixed reason only,
+    // never which dataset or why (see posthog.ts).
+    if (plan.skipped.length > 0) {
+      capture({ name: "sync_failed", props: { role: "joiner", reason: "invalid_data" } });
     } else {
+      const count = (raw: unknown) => (Array.isArray(raw) ? raw.length : 0);
+      capture({
+        name: "sync_succeeded",
+        props: {
+          role: "joiner",
+          rows: bucketRowCount(count(received.workout) || count(received.bodyComp) || count(received.experiments)),
+        },
+      });
+    }
+
+    skippedRef.current = plan.skipped.length > 0;
+    setSkipped(plan.skipped);
+    if (plan.conflicts.length > 0) {
+      setConflicts(plan.conflicts);
+    } else if (plan.skipped.length === 0) {
       onOpenChange(false);
     }
   }, [
@@ -176,6 +203,7 @@ export function SyncDialog({
     role,
     outgoing,
     received,
+    unreadable,
     existingWorkoutCount,
     existingBodyCompCount,
     existingExperimentsCount,
@@ -200,7 +228,8 @@ export function SyncDialog({
       setConflicts((prev) => {
         const rest = (prev ?? []).slice(1);
         if (rest.length === 0) {
-          onOpenChange(false);
+          // Leave the dialog open on the notice if something was rejected.
+          if (!skippedRef.current) onOpenChange(false);
           return null;
         }
         return rest;
@@ -220,7 +249,19 @@ export function SyncDialog({
             </DialogDescription>
           </DialogHeader>
 
-          {state.status === "failed" ? (
+          {skipped.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {skipped.map((item) => (
+                <p key={item.dataset} className="text-sm leading-relaxed">
+                  Couldn't use the {DATASET_LABEL[item.dataset]} from the other device. {item.reason} Your{" "}
+                  {DATASET_LABEL[item.dataset]} on this device wasn't changed.
+                </p>
+              ))}
+              <Button variant="outline" size="sm" className="self-start" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+            </div>
+          ) : state.status === "failed" ? (
             <p className="text-sm text-muted-foreground">{failureMessage(state.reason)}</p>
           ) : role === "host" ? (
             <HostQrView state={state} onScanAnswer={submitAnswer} />

@@ -3,7 +3,7 @@ import { CsvValidationError } from "@/lib/csv/parseCsv";
 import { REQUIRED_COLUMNS, type InBodyRow } from "@/types/inbody";
 
 /** InBody's own export uses a raw YYYYMMDDHHmmss timestamp, not a calendar-date string. */
-const DATE_SHAPE = /^\d{14}$/;
+export const DATE_SHAPE = /^\d{14}$/;
 
 const EMPTY_MESSAGE = "That file is empty — there's nothing in it to read.";
 
