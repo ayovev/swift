@@ -4,7 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ThemeControls } from "@/components/theme/ThemeControls";
 import { FilePickerButton } from "@/components/dashboard/FilePickerButton";
-import { useBackupImport } from "@/components/backup/useBackupImport";
+import { useBackupRestore } from "@/components/backup/useBackupRestore";
 import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
 import { ExportGuide } from "./ExportGuide";
 import { HowItWorks } from "./HowItWorks";
@@ -49,7 +49,7 @@ export function Landing({
 }: LandingProps) {
   const busy = loading || reveal !== null;
   // Nothing is stored yet, so a backup restores without asking.
-  const backupImport = useBackupImport({
+  const backupRestore = useBackupRestore({
     existing: { workout: null, bodyComp: null, experiments: null, tags: null },
     handlers: {
       workout: onSyncedWorkoutData,
@@ -138,21 +138,21 @@ export function Landing({
               Sync from another device
             </SyncEntryPoint>
             <FilePickerButton
-              onFile={backupImport.importFile}
+              onFile={backupRestore.restoreFile}
               accept="application/json,.json"
               variant="ghost"
               disabled={busy}
               className="gap-2"
             >
               <FileUp className="size-4" aria-hidden="true" />
-              Import a backup
+              Restore from a backup
             </FilePickerButton>
-            {backupImport.message ? (
+            {backupRestore.message ? (
               <p role="status" className="text-center text-[13px] text-muted-foreground">
-                {backupImport.message}
+                {backupRestore.message}
               </p>
             ) : null}
-            {backupImport.dialog}
+            {backupRestore.dialog}
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Lock className="size-3" aria-hidden="true" />
               Your file never leaves this browser. There's no account and no server.

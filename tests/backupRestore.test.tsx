@@ -30,7 +30,7 @@ const backupFile = (datasets: Parameters<typeof serializeBackup>[0]) =>
 
 /** The button stays disabled while the app restores from storage, so a real pick can't race it. */
 async function pickBackupWhenReady(file: File) {
-  await waitFor(() => expect(screen.getByRole("button", { name: /import a backup/i })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole("button", { name: /restore from a backup/i })).toBeEnabled());
   pickBackup(file);
 }
 
@@ -44,7 +44,7 @@ afterEach(async () => {
   await idbClearAll();
 });
 
-describe("backup import from the landing page", () => {
+describe("backup restore from the landing page", () => {
   it("restores every dataset, and a reload still has them", { timeout: 15000 }, async () => {
     renderApp();
     await pickBackupWhenReady(backupFile({ workout: rowsA, bodyComp: scans, experiments, tags }));
@@ -64,20 +64,20 @@ describe("backup import from the landing page", () => {
     renderApp();
     await screen.findByRole("button", { name: /upload your sugarwod csv export/i });
     await pickBackupWhenReady(new File(["{nope"], "backup.json", { type: "application/json" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Nothing was imported. That file isn't valid JSON.");
+    expect(await screen.findByRole("status")).toHaveTextContent("Nothing was restored. That file isn't valid JSON.");
     expect(await loadTags()).toEqual(tags);
-    expect(screen.getByRole("button", { name: /import a backup/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /restore from a backup/i })).toBeEnabled();
   });
 
   it("imports nothing when one dataset in the file is invalid", async () => {
     renderApp();
     await pickBackupWhenReady(backupFile({ workout: rowsA, tags: [{ nope: true }] }));
-    expect(await screen.findByRole("status")).toHaveTextContent(/nothing was imported.*list of context tags/i);
+    expect(await screen.findByRole("status")).toHaveTextContent(/nothing was restored.*list of context tags/i);
     expect(await loadWorkoutRows()).toBeUndefined();
   });
 });
 
-describe("backup import from Settings", () => {
+describe("backup restore from Settings", () => {
   async function openSettingsWithData() {
     await saveWorkoutRows(rowsA);
     await saveExperiments(experiments);
@@ -114,7 +114,7 @@ describe("backup import from Settings", () => {
   });
 });
 
-describe("backup export", () => {
+describe("backup download", () => {
   const createObjectURL = vi.fn(() => "blob:mock");
   const revokeObjectURL = vi.fn();
   let click: ReturnType<typeof vi.spyOn>;
@@ -141,7 +141,7 @@ describe("backup export", () => {
     await saveTags(tags);
     renderApp();
     fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Export" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Download" }));
 
     expect(names).toEqual([backupFilename(new Date())]);
     const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0];

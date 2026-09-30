@@ -6,15 +6,15 @@ import { DATASET_LABEL } from "@/lib/sync/datasetLabels";
 import { planTransfer, type TransferPlan } from "@/lib/sync/planTransfer";
 import type { ExistingCounts, ReceivedHandlers } from "@/lib/sync/receivedDatasets";
 
-interface UseBackupImportOptions {
+interface UseBackupRestoreOptions {
   /** What this device already holds, per dataset; null where nothing would be overwritten. */
   existing: ExistingCounts;
   handlers: ReceivedHandlers;
 }
 
-export interface BackupImport {
+export interface BackupRestore {
   /** Hand this to a file picker. */
-  importFile: (file: File) => void;
+  restoreFile: (file: File) => void;
   /** The last outcome as a sentence, or null. Render it near the picker. */
   message: string | null;
   /** Render once, anywhere: the overwrite confirmation. */
@@ -30,37 +30,37 @@ export interface BackupImport {
  * Nothing is written until the whole backup is known to be usable. Any
  * dataset that fails validation aborts the import: a backup is one file, and
  * a half-restored one (a workout log but no tags) would be harder to reason
- * about than one that says plainly why it wasn't imported. Errors stay here
+ * about than one that says plainly why it wasn't restored. Errors stay here
  * rather than going through the landing page's own error alert, whose
  * dismiss button is "Start over".
  */
-export function useBackupImport({ existing, handlers }: UseBackupImportOptions): BackupImport {
+export function useBackupRestore({ existing, handlers }: UseBackupRestoreOptions): BackupRestore {
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState<TransferPlan | null>(null);
 
   const finish = useCallback((plan: TransferPlan) => {
     plan.flush();
     capture({ name: "interaction_used", props: { interaction: "backup_imported" } });
-    setMessage("Backup imported.");
+    setMessage("Backup restored.");
   }, []);
 
-  const importFile = useCallback(
+  const restoreFile = useCallback(
     (file: File) => {
       setMessage(null);
       void (async () => {
         const read = await readBackup(await file.text());
         if (read.status === "needs_passphrase") {
-          setMessage("Nothing was imported. That backup is encrypted.");
+          setMessage("Nothing was restored. That backup is encrypted.");
           return;
         }
         if (read.status === "invalid") {
-          setMessage(`Nothing was imported. ${read.reason}`);
+          setMessage(`Nothing was restored. ${read.reason}`);
           return;
         }
         const plan = planTransfer(read.datasets, existing, handlers);
         const rejected = plan.skipped[0];
         if (rejected) {
-          setMessage(`Nothing was imported. The ${DATASET_LABEL[rejected.dataset]} in that backup was rejected. ${rejected.reason}`);
+          setMessage(`Nothing was restored. The ${DATASET_LABEL[rejected.dataset]} in that backup was rejected. ${rejected.reason}`);
           return;
         }
         if (plan.conflicts.length > 0) setPending(plan);
@@ -87,5 +87,5 @@ export function useBackupImport({ existing, handlers }: UseBackupImportOptions):
     />
   ) : null;
 
-  return { importFile, message, dialog };
+  return { restoreFile, message, dialog };
 }

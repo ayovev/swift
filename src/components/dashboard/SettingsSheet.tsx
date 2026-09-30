@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ExportBackupButton } from "@/components/backup/ExportBackupButton";
-import { useBackupImport } from "@/components/backup/useBackupImport";
+import { DownloadBackupButton } from "@/components/backup/DownloadBackupButton";
+import { useBackupRestore } from "@/components/backup/useBackupRestore";
 import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
 import { ACTIVE_SEGMENT_CLASSES } from "./SegmentedControl";
 import { FilePickerButton } from "./FilePickerButton";
@@ -110,7 +110,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
   const { accent, setAccent, mode, setMode, resolvedMode } = useTheme();
   const upload = props.source === "upload";
   // Sample data is never stored, so importing over it has nothing to confirm.
-  const backupImport = useBackupImport({
+  const backupRestore = useBackupRestore({
     existing: {
       workout: upload ? props.workoutRows.length : null,
       bodyComp: upload && props.bodyComp.status === "ready" ? props.bodyComp.rows.length : null,
@@ -202,10 +202,10 @@ export function SettingsSheet(props: SettingsSheetProps) {
               holds your full training and body composition history. Keep it somewhere private.
             </p>
             <DatasetRow
-              title="Export backup"
+              title="Download backup"
               detail="One file, all your data"
               action={
-                <ExportBackupButton
+                <DownloadBackupButton
                   workoutRows={props.workoutRows}
                   bodyComp={props.bodyComp}
                   experiments={props.experiments}
@@ -215,28 +215,28 @@ export function SettingsSheet(props: SettingsSheetProps) {
               }
             />
             <DatasetRow
-              title="Import backup"
+              title="Restore from backup"
               detail="Replaces what's stored"
               action={
                 <FilePickerButton
-                  onFile={backupImport.importFile}
+                  onFile={backupRestore.restoreFile}
                   accept="application/json,.json"
-                  ariaLabel="Import backup"
+                  ariaLabel="Restore from backup"
                   className="h-8"
                 >
-                  Choose file
+                  Restore
                 </FilePickerButton>
               }
             />
-            {backupImport.message ? (
+            {backupRestore.message ? (
               <p role="status" className="text-[13px] text-muted-foreground">
-                {backupImport.message}
+                {backupRestore.message}
               </p>
             ) : null}
             {!upload ? (
-              <p className="text-[13px] text-muted-foreground">Sample data can't be exported.</p>
+              <p className="text-[13px] text-muted-foreground">Sample data can't be backed up.</p>
             ) : null}
-            {backupImport.dialog}
+            {backupRestore.dialog}
           </Section>
 
           <Section title="Other devices">

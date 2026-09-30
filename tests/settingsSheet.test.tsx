@@ -44,15 +44,15 @@ describe("SettingsSheet", () => {
     expect(screen.getByRole("button", { name: "Add InBody file" })).toBeInTheDocument();
   });
 
-  it("offers backup export and import, and disables export on sample data", async () => {
+  it("offers backup download and restore, and disables download on sample data", async () => {
     renderSheet("upload");
-    expect(await screen.findByRole("button", { name: "Export" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Import backup" })).toBeEnabled();
+    expect(await screen.findByRole("button", { name: "Download" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Restore from backup" })).toBeEnabled();
     cleanup();
     renderSheet("sample");
-    expect(await screen.findByRole("button", { name: "Export" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Import backup" })).toBeEnabled();
-    expect(screen.getByText(/sample data can't be exported/i)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Download" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Restore from backup" })).toBeEnabled();
+    expect(screen.getByText(/sample data can't be backed up/i)).toBeInTheDocument();
   });
 
   it("offers sync on uploaded data", async () => {

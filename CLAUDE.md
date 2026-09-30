@@ -49,8 +49,8 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
    "Replace file" for the workout log and for InBody, both in the dashboard's Settings sheet
    (the InBody one also on the Body Comp view) — let an athlete bring in a fresh CSV without
    wiping anything else. They call the exact same upload handlers a first upload uses, so only
-   the one dataset being replaced changes. Backup export/import (Settings; import also on the
-   landing page) is the same stance: Export downloads a file to the athlete's own disk and Import
+   the one dataset being replaced changes. Backup download/restore (Settings; restore also on the
+   landing page) is the same stance: Download saves a file to the athlete's own disk and Restore
    reads a local `File`, so nothing is uploaded ("Architecture: backup" below). This does not
    extend to analytics — constraint 2 below is unaffected.
 2. **Analytics may only send closed-vocabulary usage events.** See `src/lib/posthog.ts`: the
@@ -436,14 +436,14 @@ back to one.
   `webrtcConnectionFactory`) for the dialog's lifetime, and the one place that decides whether a
   received data needs confirmation before it's applied. **A sync is all or nothing: there is no
   per-dataset prompt.** If the joining device already has any of the incoming datasets, one
-  `AlertDialog` (`ReplaceConfirmDialog.tsx`, shared with backup import; same register as "Start
+  `AlertDialog` (`ReplaceConfirmDialog.tsx`, shared with backup restore; same register as "Start
   over") names every dataset that would be replaced with both entry counts, and Replace applies the
   whole transfer while Cancel applies none of it. Only after that (or immediately, if there's nothing
   to conflict with) does it call the `onSynced*` handlers. The pure `planTransfer()` in
   `src/lib/sync/planTransfer.ts` (over `planReceived()` in `receivedDatasets.ts`) decides this; it
   queues every write and `flush()` applies them with the workout log last, because applying the
   workout log moves `App` to its reveal screen, which unmounts the dashboard and this dialog with it.
-  Backup import uses the same plan.
+  Backup restore uses the same plan.
 - **What syncs: the athlete's data, and only their data.** The workout log, the InBody history,
   experiments and context tags. Preferences and configuration deliberately do **not** sync: theme
   (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
@@ -492,28 +492,32 @@ own, so the two can't drift on what a valid row is.
 
 - **Format (v1)**: `{ format: "swift-backup", version, exportedAt, encoding: "plain", datasets }`.
   `datasets` holds the same bare arrays sync puts on the wire, keyed by `SyncDataset`. Athlete data
-  only: never theme, grouping or date range. Empty `experiments`/`tags` are omitted on export, so a
-  backup only ever replaces, never tells an import to clear something. Unknown dataset keys are
+  only: never theme, grouping or date range. Empty `experiments`/`tags` are omitted from the file, so a
+  backup only ever replaces, never tells a restore to clear something. Unknown dataset keys are
   ignored; a newer `version` or unknown `encoding` is refused with "made by a newer version".
 - **Encryption is deliberately not built but not designed out.** `encoding` says how the body is
   stored (an encrypted encoding would replace `datasets` with ciphertext of the same JSON, so
   everything after the envelope is shared), and `readBackup()` is async with a `needs_passphrase`
   result that v1 never returns. The UI already awaits it. The file is plaintext health data; the
   Settings copy says so once, plainly.
-- **Import replaces per dataset, never merges**, and a missing dataset leaves the local copy alone.
-  A backup must contain a workout log (Export always writes one), so a half-restored state where
+- **Restore replaces per dataset, never merges**, and a missing dataset leaves the local copy alone.
+  A backup must contain a workout log (Download always writes one), so a half-restored state where
   InBody data persists but the app lands on the upload screen can't happen.
 - **Nothing is written until the whole file is usable.** It uses the same all-or-nothing
   `planTransfer()` as sync (see the sync section for why the workout log is applied last): any
-  dataset that fails validation aborts the import with a reason, and the athlete confirms once for
+  dataset that fails validation aborts the restore with a reason, and the athlete confirms once for
   everything that would overwrite through the shared `ReplaceConfirmDialog`.
-- **Wiring**: Export (`ExportBackupButton`) and Import (`useBackupImport`) sit in Settings' Backup
-  section; import is also on the landing page, the only place a new browser can reach. Sample data
-  can't be exported and has nothing to confirm on import (it is never stored). Import errors stay
-  inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
+- **Wiring**: Download (`DownloadBackupButton`) and Restore (`useBackupRestore`) sit in Settings'
+  Backup section; restore is also on the landing page ("Restore from a backup"), the only place a
+  new browser can reach. The labels are Backup/Restore, not Export/Import, because the athlete's
+  goal is getting their data back, because "Import" suggests adding rather than replacing, and
+  because "Export" already means the SugarWOD CSV on the landing page. Tags keep their own
+  Export/Import (that one does merge). Sample data can't be backed up and has nothing to confirm on
+  restore (it is never stored). Restore errors stay inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
   the `onSynced*` handlers. `handleSyncedExperiments` must not look at `state`: on the landing page
   it is still the previous screen, which used to make received experiments vanish on reload.
-- **Analytics**: `interaction_used` with `backup_exported`/`backup_imported`, nothing else: no
+- **Analytics**: `interaction_used` with `backup_exported`/`backup_imported` (the event names predate the Download/Restore labels and stay as
+  they are: a closed vocabulary, not copy), nothing else: no
   filename, counts or failure text.
 
 ## Architecture: dashboard layout

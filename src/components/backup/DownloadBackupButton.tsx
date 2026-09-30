@@ -8,7 +8,7 @@ import type { Experiment } from "@/types/experiment";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
 
-interface ExportBackupButtonProps {
+interface DownloadBackupButtonProps {
   workoutRows: SugarWodRow[];
   bodyComp: BodyCompState;
   experiments: Experiment[];
@@ -21,7 +21,7 @@ interface ExportBackupButtonProps {
  * dashboard already holds in memory; the download is a local Blob, so nothing
  * leaves the browser. The event carries only the interaction name.
  */
-export function ExportBackupButton({ workoutRows, bodyComp, experiments, tags, disabled }: ExportBackupButtonProps) {
+export function DownloadBackupButton({ workoutRows, bodyComp, experiments, tags, disabled }: DownloadBackupButtonProps) {
   const exportBackup = () => {
     const now = new Date();
     const text = serializeBackup(
@@ -40,7 +40,7 @@ export function ExportBackupButton({ workoutRows, bodyComp, experiments, tags, d
   return (
     <Button variant="outline" size="sm" className="h-8 gap-2" onClick={exportBackup} disabled={disabled}>
       <Download className="size-3.5" aria-hidden="true" />
-      Export
+      Download
     </Button>
   );
 }
