@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { formatDay } from "./formatting";
 import { TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
 
 /**
@@ -10,8 +11,6 @@ import { TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
  * output is byte-for-byte what it was before tags existed.
  */
 
-const fmt = (iso: string) => dayjs(iso).format("MMM D, YYYY");
-
 /** The tag's own name, or its type when it has none. */
 export function tagLabel(tag: ContextTag): string {
   return tag.label?.trim() ? tag.label.trim() : tag.type;
@@ -19,7 +18,7 @@ export function tagLabel(tag: ContextTag): string {
 
 /** `"Spring cut" (cut, Mar 1, 2026 – ongoing)` */
 export function describeTag(tag: ContextTag): string {
-  const span = `${fmt(tag.startDate)} – ${tag.endDate ? fmt(tag.endDate) : "ongoing"}`;
+  const span = `${formatDay(tag.startDate)} – ${tag.endDate ? formatDay(tag.endDate) : "ongoing"}`;
   const name = tagLabel(tag);
   return name === tag.type ? `${tag.type} tag (${span})` : `"${name}" (${tag.type}, ${span})`;
 }

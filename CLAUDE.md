@@ -140,9 +140,10 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
 - **components**: `Dashboard.tsx` renders 23 views (`tabs.ts` → `ALL_TABS`): Overview,
-  Workouts, the ten GPP domains, the three modalities, Body Comp, Plateaus, Alignment, and
-  Experiments, grouped for navigation into four sections (see "Architecture: dashboard layout"
-  below). A
+  Workouts, the ten GPP domains, the three modalities, Body Comp, and the Insights views
+  (Plateaus, Alignment, Strength, Compare, Cycles, Experiments, Tags), grouped for navigation into
+  four sections (see "Architecture: dashboard layout" below). The views that need an InBody export
+  all share one empty state, `InBodyUploadPrompt.tsx`. A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
   tabs — they differ in data, not structure. Body Comp is its own component (`BodyCompTab.tsx`),
   always present in the nav even before any InBody data is loaded, and Plateaus/Alignment follow

@@ -1,14 +1,8 @@
 import { Progress } from "@/components/ui/progress";
 import type { SyncSessionState } from "@/lib/sync/syncSession";
+import { DATASET_LABEL } from "@/lib/sync/datasetLabels";
 import { QrDisplay } from "./QrDisplay";
 import { QrScanner } from "./QrScanner";
-
-const DATASET_LABEL: Record<string, string> = {
-  workout: "workout log",
-  bodyComp: "body composition history",
-  experiments: "list of experiments",
-  tags: "context tags",
-};
 
 interface JoinerScanViewProps {
   state: SyncSessionState;
@@ -52,7 +46,7 @@ export function JoinerScanView({ state, onScanOffer }: JoinerScanViewProps) {
       return (
         <div className="flex flex-col gap-2">
           <p className="text-sm text-muted-foreground">
-            Receiving {DATASET_LABEL[state.dataset] ?? state.dataset}…
+            Receiving {DATASET_LABEL[state.dataset]}…
           </p>
           <Progress value={pct} />
         </div>

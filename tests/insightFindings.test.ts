@@ -41,8 +41,13 @@ describe("insight findings report", () => {
     }
     const findings = buildInsightFindings(workouts, scans, experiments, new Date());
     const report = `${SUGARWOD ? "REAL EXPORTS" : "SYNTHETIC SAMPLE"}\n${formatInsightFindings(findings)}\n`;
-    // Written to a file because the suite's setup silences console output.
-    writeFileSync(process.env.SWIFT_FINDINGS_OUT ?? "insight-findings.txt", report);
+    // Written to a file because the suite's setup silences console output. Only when
+    // asked for (real exports, or an explicit output path): a plain `npm test` must not
+    // leave a file in the repo root.
+    if (SUGARWOD || process.env.SWIFT_FINDINGS_OUT) {
+      writeFileSync(process.env.SWIFT_FINDINGS_OUT ?? "insight-findings.txt", report);
+    }
+    expect(report).toContain("Noise bands");
     expect(findings.compared).toBeGreaterThan(0);
   });
 });

@@ -1,7 +1,6 @@
 import { useId, useState } from "react";
 import dayjs from "dayjs";
-import { AlertCircle, CalendarIcon, Pencil, Trash2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CalendarIcon, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,10 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { UploadDropzone } from "@/components/landing/UploadDropzone";
 import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
-import { formatDate } from "./charts/chartUtils";
+import { formatDate, formatSignedDelta } from "./charts/chartUtils";
 import type { BodyCompState } from "./BodyCompTab";
+import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import type { Experiment, ExperimentClassification, ExperimentFields, ExperimentInsight } from "@/types/experiment";
 
 interface ExperimentsTabProps {
@@ -56,12 +55,6 @@ function ClassificationBadge({ classification }: { classification: ExperimentCla
       {CLASSIFICATION_LABEL[classification]}
     </Badge>
   );
-}
-
-function formatDelta(delta: number | null, unit: string): string {
-  if (delta === null) return "no data";
-  const rounded = Math.round(delta * 10) / 10;
-  return `${rounded > 0 ? "+" : ""}${rounded}${unit}`;
 }
 
 /** "YYYY-MM-DD" to a local-midnight Date, which is what the calendar picker works in. */
@@ -354,15 +347,15 @@ function ExperimentCard({
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Lean mass</dt>
-                  <dd className="tabular text-sm">{formatDelta(insight.bodyCompSummary.leanMassDelta, " lb")}</dd>
+                  <dd className="tabular text-sm">{formatSignedDelta(insight.bodyCompSummary.leanMassDelta, " lb")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Fat mass</dt>
-                  <dd className="tabular text-sm">{formatDelta(insight.bodyCompSummary.fatMassDelta, " lb")}</dd>
+                  <dd className="tabular text-sm">{formatSignedDelta(insight.bodyCompSummary.fatMassDelta, " lb")}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted-foreground">Body fat</dt>
-                  <dd className="tabular text-sm">{formatDelta(insight.bodyCompSummary.bodyFatPctDelta, "%")}</dd>
+                  <dd className="tabular text-sm">{formatSignedDelta(insight.bodyCompSummary.bodyFatPctDelta, "%")}</dd>
                 </div>
               </dl>
             ) : null}
@@ -398,33 +391,11 @@ export function ExperimentsTab({
 }: ExperimentsTabProps) {
   if (!experimentInsights) {
     return (
-      <Card>
-        <CardContent className="flex flex-col gap-4">
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Mark when you tried something — a new program, a strength cycle, a diet change — and
+      <InBodyUploadPrompt state={bodyComp} onFile={onBodyCompFile}>
+        Mark when you tried something — a new program, a strength cycle, a diet change — and
             see whether your performance and body composition actually shifted afterward. Needs
             an InBody export in addition to the SugarWOD log already loaded.
-          </p>
-
-          {bodyComp.status === "error" ? (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" aria-hidden="true" />
-              <AlertTitle>That file didn't work</AlertTitle>
-              <AlertDescription>{bodyComp.message}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          <UploadDropzone
-            loading={bodyComp.status === "loading"}
-            onFile={onBodyCompFile}
-            ariaLabel="Upload your InBody CSV export"
-            loadingLabel="Reading your body composition history…"
-            loadingHint="This only takes a moment."
-            hint="The .csv file the InBody app gives you from Export"
-          />
-          <p className="text-xs text-muted-foreground">Your file never leaves this browser.</p>
-        </CardContent>
-      </Card>
+      </InBodyUploadPrompt>
     );
   }
 

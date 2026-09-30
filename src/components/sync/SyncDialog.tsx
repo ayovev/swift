@@ -12,6 +12,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { bucketRowCount, capture, type SyncRole } from "@/lib/posthog";
 import type { SyncDataset } from "@/lib/sync/chunking";
+import { DATASET_LABEL } from "@/lib/sync/datasetLabels";
 import { planReceived, type ConflictItem } from "@/lib/sync/receivedDatasets";
 import type { OutgoingDataset, SyncFailureReason } from "@/lib/sync/syncSession";
 import type { Experiment } from "@/types/experiment";
@@ -21,13 +22,6 @@ import type { SugarWodRow } from "@/types/sugarwod";
 import { HostQrView } from "./HostQrView";
 import { JoinerScanView } from "./JoinerScanView";
 import { useSyncSession } from "./useSyncSession";
-
-const DATASET_LABEL: Record<SyncDataset, string> = {
-  workout: "workout log",
-  bodyComp: "body composition history",
-  experiments: "list of experiments",
-  tags: "list of context tags",
-};
 
 export interface SyncDialogProps {
   open: boolean;

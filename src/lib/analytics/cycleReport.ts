@@ -5,6 +5,7 @@ import {
   readingsForMetric,
   type BodyCompNoiseBands,
 } from "./bodyCompNoise";
+import { formatDay, formatPercent } from "./formatting";
 import { describeTag, overlappingTags, tagLabel } from "./contextTags";
 import {
   BODY_COMP_METRICS,
@@ -57,7 +58,6 @@ export interface GetCyclesOptions {
 }
 
 const DATE_FMT = "YYYY-MM-DD";
-const fmt = (iso: string) => dayjs(iso).format("MMM D, YYYY");
 
 function liftSessionsByName(workouts: SugarWodRow[], start: string, end: string): Map<string, Set<string>> {
   const parsed = workouts
@@ -135,7 +135,6 @@ const ATTRIBUTION_PHRASE: Record<StrengthAttribution, string> = {
   declined: "",
 };
 
-const pct = (x: number) => `${Math.round(Math.abs(x) * 100)}%`;
 const oneDecimal = (x: number) => (Math.round(Math.abs(x) * 10) / 10).toFixed(1);
 
 function bodyChanges(scans: InBodyRow[], cycle: Cycle, bands: BodyCompNoiseBands, minScans: number) {
@@ -248,7 +247,7 @@ export function getCycleReport(
 export function summarizeCycle(report: CycleReport): string {
   const { cycle, days, sessionsPerWeek, e1rmChanges, bodyCompChanges, bodyCompReason } = report;
   const parts: string[] = [
-    `${cycle.label}, ${fmt(cycle.start)} to ${fmt(cycle.end)} (${days} days): ${(sessionsPerWeek ?? 0).toFixed(1)} logged workouts a week.`,
+    `${cycle.label}, ${formatDay(cycle.start)} to ${formatDay(cycle.end)} (${days} days): ${(sessionsPerWeek ?? 0).toFixed(1)} logged workouts a week.`,
   ];
 
   const liftSentences = (e1rmChanges.some((c) => c.focus) ? e1rmChanges.filter((c) => c.focus) : e1rmChanges.slice(0, CYCLE_MAX_FOCUS_LIFTS)).map((c) => {
@@ -256,7 +255,7 @@ export function summarizeCycle(report: CycleReport): string {
     if (c.attribution === "flat" || Math.abs(c.pctChange) < 0.005) return `${name} estimated 1RM held near ${Math.round(c.endE1rm)}`;
     const dir = c.pctChange > 0 ? "rose" : "fell";
     const why = c.attribution ? ATTRIBUTION_PHRASE[c.attribution] : "";
-    return `${name} estimated 1RM ${dir} ${pct(c.pctChange)} (${Math.round(c.startE1rm)} to ${Math.round(c.endE1rm)})${why ? `, ${why}` : ""}`;
+    return `${name} estimated 1RM ${dir} ${formatPercent(c.pctChange)} (${Math.round(c.startE1rm)} to ${Math.round(c.endE1rm)})${why ? `, ${why}` : ""}`;
   });
   parts.push(liftSentences.length > 0 ? `${liftSentences.join("; ")}.` : "No lift has enough logged sessions in this cycle for an estimated 1RM change.");
 

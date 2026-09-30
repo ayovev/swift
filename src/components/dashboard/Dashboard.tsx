@@ -407,7 +407,7 @@ export function Dashboard({
               </>
             ) : null}
           </p>
-          <p className="mt-3">Your file never left this browser.</p>
+          <p className="mt-3">Your files never left this browser.</p>
         </footer>
       </main>
     </div>

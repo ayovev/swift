@@ -1,9 +1,7 @@
 import { useMemo } from "react";
-import { AlertCircle } from "lucide-react";
 import inbodyLogo from "@/assets/inbody-logo.png";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UploadDropzone } from "@/components/landing/UploadDropzone";
+import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import { BodyCompLineChart } from "./charts/BodyCompLineChart";
 import { ConsistencyChart } from "./charts/ConsistencyChart";
 import { FilePickerButton } from "./FilePickerButton";
@@ -73,36 +71,12 @@ export function BodyCompTab({ state, granularity, onFile, dashboard }: BodyCompT
 
   if (!data) {
     return (
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-3 pb-2">
-          <InBodySourceMark />
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Add your InBody export to see weight, body fat, and skeletal muscle mass trends
+      <InBodyUploadPrompt state={state} onFile={onFile}
+        header={<InBodySourceMark />}>
+        Add your InBody export to see weight, body fat, and skeletal muscle mass trends
             alongside your training. This is entirely separate from your SugarWOD log — nothing
             is matched between the two files, they just share the same kind of timeline.
-          </p>
-
-          {state.status === "error" ? (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" aria-hidden="true" />
-              <AlertTitle>That file didn't work</AlertTitle>
-              <AlertDescription>{state.message}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          <UploadDropzone
-            loading={state.status === "loading"}
-            onFile={onFile}
-            ariaLabel="Upload your InBody CSV export"
-            loadingLabel="Reading your body composition history…"
-            loadingHint="This only takes a moment."
-            hint="The .csv file the InBody app gives you from Export"
-          />
-          <p className="text-xs text-muted-foreground">Your file never leaves this browser.</p>
-        </CardContent>
-      </Card>
+      </InBodyUploadPrompt>
     );
   }
 

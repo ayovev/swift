@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { AlertCircle, ChevronDown } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { UploadDropzone } from "@/components/landing/UploadDropzone";
 import { TREND_THRESHOLD } from "@/lib/analytics/plateauDetector";
 import { capture } from "@/lib/posthog";
 import type { LiftRelativeStrength, RelativeStrengthResult, StrengthAttribution } from "@/lib/analytics/relativeStrength";
 import type { BodyCompState } from "./BodyCompTab";
+import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import { SegmentedControl, type SegmentedControlOption } from "./SegmentedControl";
 import { RelativeStrengthChart, type StrengthView } from "./charts/RelativeStrengthChart";
 
@@ -89,38 +88,18 @@ function LiftCard({ lift }: { lift: LiftRelativeStrength }) {
 
 /**
  * "Got stronger" or "got bigger"? Needs both datasets, so it keeps the same
- * static upload state as Plateaus/Alignment/Experiments until an InBody
+ * static upload state (`InBodyUploadPrompt`) as the other Insights views until an InBody
  * export is loaded. Lifts that fail an eligibility gate are listed collapsed
  * with the gate that failed, never hidden.
  */
 export function RelativeStrengthTab({ relativeStrength, bodyComp, onBodyCompFile }: RelativeStrengthTabProps) {
   if (!relativeStrength) {
     return (
-      <Card>
-        <CardContent className="flex flex-col gap-4">
-          <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Divides each lift's estimated one-rep max by your bodyweight and lean mass, so a
+      <InBodyUploadPrompt state={bodyComp} onFile={onBodyCompFile}>
+        Divides each lift's estimated one-rep max by your bodyweight and lean mass, so a
             heavier lift can be told apart from a heavier athlete. Needs an InBody export in
             addition to the SugarWOD log already loaded.
-          </p>
-          {bodyComp.status === "error" ? (
-            <Alert variant="destructive">
-              <AlertCircle className="size-4" aria-hidden="true" />
-              <AlertTitle>That file didn't work</AlertTitle>
-              <AlertDescription>{bodyComp.message}</AlertDescription>
-            </Alert>
-          ) : null}
-          <UploadDropzone
-            loading={bodyComp.status === "loading"}
-            onFile={onBodyCompFile}
-            ariaLabel="Upload your InBody CSV export"
-            loadingLabel="Reading your body composition history…"
-            loadingHint="This only takes a moment."
-            hint="The .csv file the InBody app gives you from Export"
-          />
-          <p className="text-xs text-muted-foreground">Your files never leave this browser.</p>
-        </CardContent>
-      </Card>
+      </InBodyUploadPrompt>
     );
   }
 

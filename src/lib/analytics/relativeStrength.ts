@@ -10,6 +10,7 @@ import {
   RS_MIN_SESSIONS,
   RS_WINDOW_DAYS,
 } from "./insightConfig";
+import { formatPercent } from "./formatting";
 import { buildLiftSubjects, formatGateShortfall, TREND_THRESHOLD } from "./plateauDetector";
 import { parseInBodyDate, parseWorkoutDate } from "./scanParsing";
 import type { InBodyRow } from "@/types/inbody";
@@ -126,7 +127,6 @@ function matchReading(date: Dayjs, readings: Reading[], maxGap: number, maxNeare
   return Math.abs(dayDiff(nearest.date, date)) <= maxNearest ? { value: nearest.value, match: "nearest" } : null;
 }
 
-const pct = (x: number) => `${Math.round(Math.abs(x) * 100)}%`;
 const round = (x: number) => Math.round(x);
 const round1 = (x: number) => Math.round(x * 10) / 10;
 const mean = (v: number[]) => v.reduce((s, x) => s + x, 0) / v.length;
@@ -264,21 +264,21 @@ export function getRelativeStrength(
       if (!massUp) {
         attribution = "strength-driven";
         reason = massMoved
-          ? `Estimated 1RM up ${pct(rawChange)} (${rawText}) while ${massLabel.toLowerCase()} fell ${round1(Math.abs(massDelta))} lb.`
-          : `Estimated 1RM up ${pct(rawChange)} (${rawText}) while ${massLabel.toLowerCase()} stayed within normal scan variation.`;
+          ? `Estimated 1RM up ${formatPercent(rawChange)} (${rawText}) while ${massLabel.toLowerCase()} fell ${round1(Math.abs(massDelta))} lb.`
+          : `Estimated 1RM up ${formatPercent(rawChange)} (${rawText}) while ${massLabel.toLowerCase()} stayed within normal scan variation.`;
       } else if (normChange >= TREND_THRESHOLD) {
         attribution = "mixed";
-        reason = `Estimated 1RM up ${pct(rawChange)} (${rawText}); per ${normalizedBy === "lean mass" ? "lb of lean mass" : "lb of bodyweight"} it is up ${pct(normChange)}, and ${massLabel.toLowerCase()} rose ${round1(massDelta)} lb.`;
+        reason = `Estimated 1RM up ${formatPercent(rawChange)} (${rawText}); per ${normalizedBy === "lean mass" ? "lb of lean mass" : "lb of bodyweight"} it is up ${formatPercent(normChange)}, and ${massLabel.toLowerCase()} rose ${round1(massDelta)} lb.`;
       } else {
         attribution = "mass-driven";
-        reason = `Estimated 1RM up ${pct(rawChange)} (${rawText}), but ${massLabel.toLowerCase()} rose ${round1(massDelta)} lb; per ${normalizedBy === "lean mass" ? "lb of lean mass" : "lb of bodyweight"} the change is ${normChange >= 0 ? "up" : "down"} ${pct(normChange)}.`;
+        reason = `Estimated 1RM up ${formatPercent(rawChange)} (${rawText}), but ${massLabel.toLowerCase()} rose ${round1(massDelta)} lb; per ${normalizedBy === "lean mass" ? "lb of lean mass" : "lb of bodyweight"} the change is ${normChange >= 0 ? "up" : "down"} ${formatPercent(normChange)}.`;
       }
     } else if (rawChange <= -TREND_THRESHOLD) {
       attribution = "declined";
-      reason = `Estimated 1RM down ${pct(rawChange)} (${rawText}).`;
+      reason = `Estimated 1RM down ${formatPercent(rawChange)} (${rawText}).`;
     } else {
       attribution = "flat";
-      reason = `Estimated 1RM within ${pct(TREND_THRESHOLD)} (${rawText}).`;
+      reason = `Estimated 1RM within ${formatPercent(TREND_THRESHOLD)} (${rawText}).`;
     }
 
     return { ...base, status: "ok" as const, attribution, normalizedBy, reason };

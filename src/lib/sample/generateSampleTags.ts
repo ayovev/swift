@@ -1,9 +1,7 @@
 import dayjs, { type Dayjs } from "dayjs";
-import customParseFormat from "dayjs/plugin/customParseFormat";
+import { parseWorkoutDate } from "@/lib/analytics/scanParsing";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag, TagType } from "@/types/tag";
-
-dayjs.extend(customParseFormat);
 
 /**
  * Generates a handful of plausible context tags to go with the SugarWOD +
@@ -48,10 +46,6 @@ const MARGIN_DAYS = 28;
 /** The still-running block that closes the list: it starts this many days before today. */
 const CURRENT_BLOCK_DAYS = 70;
 
-function parseWorkoutDate(row: SugarWodRow): Dayjs {
-  return dayjs((row.date ?? "").trim(), "MM/DD/YYYY", true);
-}
-
 const iso = (d: Dayjs) => d.format("YYYY-MM-DD");
 
 /**
@@ -60,7 +54,7 @@ const iso = (d: Dayjs) => d.format("YYYY-MM-DD");
  * one.
  */
 export function generateSampleTags(workoutRows: readonly SugarWodRow[], today: Dayjs = dayjs()): ContextTag[] {
-  const dates = workoutRows.map(parseWorkoutDate).filter((d) => d.isValid());
+  const dates = workoutRows.map((row) => parseWorkoutDate(row.date)).filter((d) => d.isValid());
   if (dates.length === 0) return [];
 
   const firstDate = dates.reduce((a, b) => (a.isBefore(b) ? a : b)).startOf("day");

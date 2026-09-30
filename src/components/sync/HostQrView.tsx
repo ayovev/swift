@@ -2,15 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { SyncSessionState } from "@/lib/sync/syncSession";
+import { DATASET_LABEL } from "@/lib/sync/datasetLabels";
 import { QrDisplay } from "./QrDisplay";
 import { QrScanner } from "./QrScanner";
-
-const DATASET_LABEL: Record<string, string> = {
-  workout: "workout log",
-  bodyComp: "body composition history",
-  experiments: "list of experiments",
-  tags: "context tags",
-};
 
 interface HostQrViewProps {
   state: SyncSessionState;
@@ -69,7 +63,7 @@ export function HostQrView({ state, onScanAnswer }: HostQrViewProps) {
       return (
         <div className="flex flex-col gap-2">
           <p className="text-sm text-muted-foreground">
-            Sending your {DATASET_LABEL[state.dataset] ?? state.dataset}…
+            Sending your {DATASET_LABEL[state.dataset]}…
           </p>
           <Progress value={pct} />
         </div>
