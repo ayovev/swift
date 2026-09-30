@@ -24,7 +24,6 @@ function renderSheet(source: DataSource, onReset = vi.fn()) {
         onSyncedBodyCompData={vi.fn()}
         onSyncedExperiments={vi.fn()}
         onSyncedTags={vi.fn()}
-        onSyncedPreferences={vi.fn()}
         onReset={onReset}
       />
     </ThemeProvider>

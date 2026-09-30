@@ -12,7 +12,6 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { bucketRowCount, capture, type SyncRole } from "@/lib/posthog";
 import type { SyncDataset } from "@/lib/sync/chunking";
-import type { SyncedPreferences } from "@/lib/sync/preferences";
 import { planReceived, type ConflictItem } from "@/lib/sync/receivedDatasets";
 import type { OutgoingDataset, SyncFailureReason } from "@/lib/sync/syncSession";
 import type { Experiment } from "@/types/experiment";
@@ -28,7 +27,6 @@ const DATASET_LABEL: Record<SyncDataset, string> = {
   bodyComp: "body composition history",
   experiments: "list of experiments",
   tags: "list of context tags",
-  preferences: "preferences",
 };
 
 export interface SyncDialogProps {
@@ -46,7 +44,6 @@ export interface SyncDialogProps {
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
-  onSyncedPreferences: (preferences: SyncedPreferences) => void;
 }
 
 function failureMessage(reason: SyncFailureReason): string {
@@ -89,7 +86,6 @@ export function SyncDialog({
   onSyncedBodyCompData,
   onSyncedExperiments,
   onSyncedTags,
-  onSyncedPreferences,
 }: SyncDialogProps) {
   const [received, setReceived] = useState<Partial<Record<SyncDataset, unknown>>>({});
   const [conflicts, setConflicts] = useState<ConflictItem[] | null>(null);
@@ -173,7 +169,6 @@ export function SyncDialog({
         bodyComp: onSyncedBodyCompData,
         experiments: onSyncedExperiments,
         tags: onSyncedTags,
-        preferences: onSyncedPreferences,
       }
     );
 
@@ -195,7 +190,6 @@ export function SyncDialog({
     onSyncedBodyCompData,
     onSyncedExperiments,
     onSyncedTags,
-    onSyncedPreferences,
     onOpenChange,
   ]);
 

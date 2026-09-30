@@ -4,26 +4,20 @@ import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
 import type { SyncDataset } from "./chunking";
-import { parseSyncedPreferences, type SyncedPreferences } from "./preferences";
 
 /**
  * What a joiner does with the datasets that arrived: nothing is applied
  * until this says so, and anything that would overwrite existing local data
  * comes back as a conflict for the dialog to confirm first. Pure — handlers
- * in, conflicts out — so the ordering rules below are unit-testable without
- * a WebRTC connection.
+ * in, conflicts out — so the rules below are unit-testable without a WebRTC
+ * connection.
  *
- * Two rules matter:
- *  - Each dataset is confirmed independently. Accepting one never accepts
- *    another.
- *  - Preferences are applied straight after the workout log, inside the same
- *    apply, never before it. Loading a workout log resets the view to its
- *    defaults (`finishSuccessfulLoad` in App.tsx), so preferences applied
- *    first would be wiped. If the workout log is declined, so are the
- *    preferences that travelled with it — they describe how to view that log.
- *    With no workout log in the transfer they are applied immediately.
+ * Sync carries the athlete's data and nothing else: the workout log, the
+ * InBody history, experiments and context tags. How the app looks or is
+ * configured (theme, grouping, date range) stays on each device.
  *
- * A tags or preferences payload that fails validation is skipped and named in
+ * Each dataset is confirmed independently: accepting one never accepts
+ * another. A tags payload that fails validation is skipped and named in
  * `skipped`; it never half-applies.
  */
 
@@ -40,7 +34,6 @@ export interface ReceivedHandlers {
   bodyComp: (rows: InBodyRow[]) => void;
   experiments: (experiments: Experiment[]) => void;
   tags: (tags: ContextTag[]) => void;
-  preferences: (preferences: SyncedPreferences) => void;
 }
 
 export interface ConflictItem {
@@ -63,23 +56,13 @@ export function planReceived(
   const conflicts: ConflictItem[] = [];
   const skipped: SyncDataset[] = [];
 
-  const offer = (dataset: Exclude<SyncDataset, "preferences">, existingCount: number | null, incomingCount: number, apply: () => void) => {
+  const offer = (dataset: SyncDataset, existingCount: number | null, incomingCount: number, apply: () => void) => {
     if (existingCount !== null) conflicts.push({ dataset, existingCount, incomingCount, apply });
     else apply();
   };
 
-  const preferences = received.preferences === undefined ? undefined : parseSyncedPreferences(received.preferences);
-  if (received.preferences !== undefined && !preferences) skipped.push("preferences");
-
   const workoutRows = received.workout as SugarWodRow[] | undefined;
-  if (workoutRows) {
-    offer("workout", existing.workout, workoutRows.length, () => {
-      handlers.workout(workoutRows);
-      if (preferences) handlers.preferences(preferences);
-    });
-  } else if (preferences) {
-    handlers.preferences(preferences);
-  }
+  if (workoutRows) offer("workout", existing.workout, workoutRows.length, () => handlers.workout(workoutRows));
 
   const bodyCompRows = received.bodyComp as InBodyRow[] | undefined;
   if (bodyCompRows) offer("bodyComp", existing.bodyComp, bodyCompRows.length, () => handlers.bodyComp(bodyCompRows));

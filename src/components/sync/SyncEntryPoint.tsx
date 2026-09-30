@@ -2,7 +2,6 @@ import { useState, type ReactNode } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { VariantProps } from "class-variance-authority";
 import type { SyncRole } from "@/lib/posthog";
-import type { SyncedPreferences } from "@/lib/sync/preferences";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
@@ -22,7 +21,6 @@ interface SyncEntryPointProps extends VariantProps<typeof buttonVariants> {
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
-  onSyncedPreferences: (preferences: SyncedPreferences) => void;
   disabled?: boolean;
   className?: string;
   children: ReactNode;
@@ -44,7 +42,6 @@ export function SyncEntryPoint({
   onSyncedBodyCompData,
   onSyncedExperiments,
   onSyncedTags,
-  onSyncedPreferences,
   disabled,
   variant = "outline",
   size = "sm",
@@ -71,7 +68,6 @@ export function SyncEntryPoint({
         onSyncedBodyCompData={onSyncedBodyCompData}
         onSyncedExperiments={onSyncedExperiments}
         onSyncedTags={onSyncedTags}
-        onSyncedPreferences={onSyncedPreferences}
       />
     </>
   );

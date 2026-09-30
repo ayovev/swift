@@ -31,7 +31,6 @@ import { capture } from "@/lib/posthog";
 import { formatOklch } from "@/lib/theme/contrast";
 import { ACCENT_SWATCHES, accentRoles } from "@/lib/theme/palette";
 import { useTheme, type ModePreference } from "@/lib/theme/useTheme";
-import type { SyncedPreferences } from "@/lib/sync/preferences";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import { cn } from "@/lib/utils";
 import type { DataSource } from "@/App";
@@ -60,7 +59,6 @@ interface SettingsSheetProps {
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
-  onSyncedPreferences: (preferences: SyncedPreferences) => void;
   onReset: () => void;
 }
 
@@ -197,7 +195,6 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 onSyncedBodyCompData={props.onSyncedBodyCompData}
                 onSyncedExperiments={props.onSyncedExperiments}
                 onSyncedTags={props.onSyncedTags}
-                onSyncedPreferences={props.onSyncedPreferences}
                 disabled={!upload}
                 className="h-10 gap-2"
               >
@@ -214,7 +211,6 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 onSyncedBodyCompData={props.onSyncedBodyCompData}
                 onSyncedExperiments={props.onSyncedExperiments}
                 onSyncedTags={props.onSyncedTags}
-                onSyncedPreferences={props.onSyncedPreferences}
                 disabled={!upload}
                 className="h-10 gap-2"
               >

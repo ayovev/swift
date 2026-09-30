@@ -10,7 +10,6 @@ import { UploadDropzone } from "./UploadDropzone";
 import { UploadReveal } from "./UploadReveal";
 import { WhiteboardTexture } from "./WhiteboardTexture";
 import { SwiftMark } from "@/components/SwiftMark";
-import type { SyncedPreferences } from "@/lib/sync/preferences";
 import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -32,7 +31,6 @@ interface LandingProps {
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedExperiments: (experiments: Experiment[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
-  onSyncedPreferences: (preferences: SyncedPreferences) => void;
 }
 
 export function Landing({
@@ -46,7 +44,6 @@ export function Landing({
   onSyncedBodyCompData,
   onSyncedExperiments,
   onSyncedTags,
-  onSyncedPreferences,
 }: LandingProps) {
   const busy = loading || reveal !== null;
 
@@ -121,7 +118,6 @@ export function Landing({
               onSyncedBodyCompData={onSyncedBodyCompData}
               onSyncedExperiments={onSyncedExperiments}
               onSyncedTags={onSyncedTags}
-              onSyncedPreferences={onSyncedPreferences}
               disabled={busy}
               variant="ghost"
               className="gap-2"

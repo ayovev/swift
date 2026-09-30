@@ -331,10 +331,10 @@ exports before trusting a number. Specifically:
   an open question. A title naming a different scheme than the athlete did will be mis-estimated;
   that is inherent to the export.
 - **Compare and Experiments.** There is no touch dragging on charts (date inputs are the fallback).
-- **Sync.** Tags and preferences sync, but like everything in sync they are verified by unit tests
-  and by hand on two devices, not by an automated two-device test. A joiner running an older cached
-  build rejects a manifest naming a dataset it doesn't know (`tags`, `preferences`), so both devices
-  need the current build; a refresh fixes it.
+- **Sync.** Tags sync, but like everything in sync they are verified by unit tests and by hand on two
+  devices, not by an automated two-device test. A joiner running an older cached build rejects a
+  manifest naming a dataset it doesn't know (`tags`), so both devices need the current build; a
+  refresh fixes it.
 - **Cycles.** Automatic detection is deferred. First prototype worth trying: a rolling share of
   lift sessions per lift (about an 8-week window) with a boundary where the leading lifts change,
   reviewed by eye on a multi-year history before committing to it. A lift can show a change with
@@ -412,9 +412,8 @@ back to one.
   and adding one was scoped out of this feature — see `webrtcTransport.ts`'s header comment.
   Those two paths are verified manually, across two real devices, before any change here ships.
 - **The wire protocol**, once connected: the host sends one small manifest naming which
-  datasets it's about to send — some subset of `["workout", "bodyComp", "experiments", "tags",
-  "preferences"]`, never assumed, since a device might not have InBody data, experiments or tags
-  (`preferences` is always sent) — then for each
+  datasets it's about to send — some subset of `["workout", "bodyComp", "experiments", "tags"]`,
+  never assumed, since a device might not have InBody data, experiments or tags — then for each
   dataset in order, `chunkPayload()`'s header followed by its chunks; once every dataset is sent,
   the host closes the channel. The joiner feeds every message after the manifest into a fresh
   `Reassembler` per dataset until each reports done.
@@ -428,19 +427,18 @@ back to one.
   conflict with) does it call the `onSynced*` handlers. What to apply, hold back for confirmation or
   skip is decided by the pure `planReceived()` in `src/lib/sync/receivedDatasets.ts`, which is where
   the ordering rules live and are tested.
-- **What syncs: every piece of persisted state that belongs to the athlete.** The workout log, the
-  InBody history, experiments, context tags, and the preferences (`sync/preferences.ts`): grouping
-  and date range (the range as a preset id, or two dates for a custom one) and accent and light/dark
-  mode. The one thing that does not sync is PostHog's anonymous id in `localStorage`, on purpose:
-  it is an analytics identifier, not the athlete's data. **A new persisted dataset must be added to
-  sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a case in
-  `planReceived`, an `onSynced*` handler in `App.tsx`), or this list stops being true.
-  Preferences are validated on arrival (a bad half is dropped, never half-applied) and applied
-  straight after the workout log, never before it: loading a log resets the view to its defaults, so
-  applying them first would be wiped. Declining the workout overwrite declines the preferences that
-  travelled with it.
+- **What syncs: the athlete's data, and only their data.** The workout log, the InBody history,
+  experiments and context tags. Preferences and configuration deliberately do **not** sync: theme
+  (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
+  reasonably want different ones. PostHog's anonymous id in `localStorage` doesn't either — it is an
+  analytics identifier. This is enforced at the wire, not by convention: `SyncDataset` has exactly
+  four members and `decodeHeader` rejects any other name (`tests/chunking.test.ts` pins that
+  `preferences` and `theme` are rejected). **A new persisted dataset that is the athlete's data must
+  be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a
+  case in `planReceived`, an `onSynced*` handler in `App.tsx`); a new preference or setting must not.
+  Tags are validated on arrival (`validateTagList`) and skipped, never half-applied, if invalid.
 - **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` (and
-  `handleSyncedExperiments`/`handleSyncedTags`/`handleSyncedPreferences`) — all are
+  `handleSyncedExperiments`/`handleSyncedTags`) — all are
   unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
   `SyncDialog` is what gates the call, not the handler. Synced data always carries
   `source: "upload"` (sync's entry points in the dashboard's Settings sheet, `SettingsSheet.tsx`,

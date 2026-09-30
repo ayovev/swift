@@ -81,7 +81,7 @@ describe("SyncSession", () => {
     ]);
   });
 
-  it("transfers tags and preferences after the other datasets, in the order the host lists them", async () => {
+  it("transfers tags after the other datasets, in the order the host lists them", async () => {
     const { hostFactory, joinerFactory } = createFakeConnectionFactoryPair();
     const received: Array<{ dataset: string; json: string }> = [];
 
@@ -93,7 +93,6 @@ describe("SyncSession", () => {
     const outgoing = [
       { dataset: "workout" as const, json: JSON.stringify([{ id: 1 }]) },
       { dataset: "tags" as const, json: JSON.stringify([{ id: "t", type: "cut", startDate: "2024-03-01", endDate: null }]) },
-      { dataset: "preferences" as const, json: JSON.stringify({ theme: { mode: "dark", accent: "teal" } }) },
     ];
     await host.startHost(outgoing);
 

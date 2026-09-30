@@ -10,7 +10,6 @@ const DATASET_LABEL: Record<string, string> = {
   bodyComp: "body composition history",
   experiments: "list of experiments",
   tags: "context tags",
-  preferences: "preferences",
 };
 
 interface HostQrViewProps {
