@@ -2,14 +2,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
 import { formatDate, formatSignedDelta } from "./charts/chartUtils";
-import type { BodyCompState } from "./BodyCompTab";
-import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import type { AlignmentClassification, AlignmentResult } from "@/types/alignment";
 
-interface AlignmentTabProps {
-  alignment: AlignmentResult | null;
-  bodyComp: BodyCompState;
-  onBodyCompFile: (file: File) => void;
+interface AlignmentSummaryProps {
+  alignment: AlignmentResult;
 }
 
 /**
@@ -29,7 +25,7 @@ const CLASSIFICATION_LABEL: Record<AlignmentClassification, string> = {
   insufficient_data: "Not enough data yet",
 };
 
-/** Same convention as PlateauTab's ClassificationBadge: achromatic except for the one state that reads as a positive read on the accent. */
+/** Same convention as PlateauSection's ClassificationBadge: achromatic except for the one state that reads as a positive read on the accent. */
 function ClassificationBadge({ classification }: { classification: AlignmentClassification }) {
   return (
     <Badge variant={classification === "aligned" ? "default" : "secondary"}>
@@ -39,24 +35,12 @@ function ClassificationBadge({ classification }: { classification: AlignmentClas
 }
 
 /**
- * Whole-athlete rollup of the Plateau Detector (PlateauTab) plus the same
- * InBody history — "are performance and body composition telling a
- * consistent story, or are they in tension?" Needs both datasets, so this
- * stays a static empty state (reusing BodyCompTab's own upload entry point)
- * until InBody data is loaded, same treatment as PlateauTab.
+ * Whole-athlete rollup of the per-lift reads on the Plateaus view, shown above
+ * them — "are performance and body composition telling a consistent story, or
+ * are they in tension?" It has no empty state of its own: it renders only once
+ * LiftsTab has both datasets, which is the same gate `getAlignment` sits behind.
  */
-export function AlignmentTab({ alignment, bodyComp, onBodyCompFile }: AlignmentTabProps) {
-  if (!alignment) {
-    return (
-      <InBodyUploadPrompt state={bodyComp} onFile={onBodyCompFile}>
-        Rolls up the plateau detector's per-lift and per-benchmark reads into one
-            whole-athlete view: whether performance and body composition are telling the
-            same story right now. Needs an InBody export in addition to the SugarWOD log
-            already loaded.
-      </InBodyUploadPrompt>
-    );
-  }
-
+export function AlignmentSummary({ alignment }: AlignmentSummaryProps) {
   const { classification, reason, performanceSummary, bodyCompSummary, tagNotes } = alignment;
   const hasWindow = bodyCompSummary.windowStart !== "" && bodyCompSummary.windowEnd !== "";
 

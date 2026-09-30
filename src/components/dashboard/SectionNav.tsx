@@ -1,13 +1,9 @@
 import {
-  ALIGNMENT_TAB,
   ALL_TABS,
   BODY_COMP_TAB,
-  COMPARE_TAB,
-  CYCLES_TAB,
-  EXPERIMENTS_TAB,
+  LIFTS_TAB,
   OVERVIEW_TAB,
-  PLATEAU_TAB,
-  STRENGTH_TAB,
+  PERIODS_TAB,
   TAGS_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
@@ -24,12 +20,13 @@ interface SubGroup {
 }
 
 /**
- * Twenty-three views, grouped the way an athlete actually moves between them:
+ * Nineteen views, grouped the way an athlete actually moves between them:
  * what I did (Training), what it was made of (Breakdown — the ten GPP
  * domains and three modalities, which are a *classification* of the same
  * workouts rather than separate data), what my body did (Body), and what
- * the two datasets say together (Insights — Plateaus, Alignment,
- * Strength and Experiments, the pipelines that need both uploads).
+ * the two datasets say together (Insights — Progress, Compare and
+ * Tags: how lifts and body composition moved, over which stretches, and the
+ * labels the athlete puts on those stretches).
  *
  * Two levels, never a dropdown: the section row sits in the page header and
  * the views inside a section are a plain row of tabs under the page title,
@@ -46,7 +43,7 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
     ],
   },
   { id: "Body", groups: [{ values: [BODY_COMP_TAB] }] },
-  { id: "Insights", groups: [{ values: [PLATEAU_TAB, ALIGNMENT_TAB, STRENGTH_TAB, COMPARE_TAB, CYCLES_TAB, EXPERIMENTS_TAB, TAGS_TAB] }] },
+  { id: "Insights", groups: [{ values: [LIFTS_TAB, PERIODS_TAB, TAGS_TAB] }] },
 ];
 
 export function sectionOf(value: string): Section {
@@ -70,6 +67,7 @@ export function pageTitleOf(value: string): string {
   if (modality) return MODALITY_NAMES[modality];
   if (value === BODY_COMP_TAB) return "Body composition";
   if (value === TAGS_TAB) return "Context tags";
+  if (value === PERIODS_TAB) return "Compare periods";
   return labelOf(value);
 }
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import { RelativeStrengthTab } from "@/components/dashboard/RelativeStrengthTab";
+import { describe, expect, it } from "vitest";
+import { StrengthSection } from "@/components/dashboard/StrengthSection";
 import type { LiftRelativeStrength, RelativeStrengthResult } from "@/lib/analytics/relativeStrength";
 
 function lift(overrides: Partial<LiftRelativeStrength> = {}): LiftRelativeStrength {
@@ -23,21 +23,10 @@ function lift(overrides: Partial<LiftRelativeStrength> = {}): LiftRelativeStreng
   };
 }
 
-const idle = { status: "idle" } as const;
-
-describe("RelativeStrengthTab", () => {
-  it("shows the upload state when there is no result yet", () => {
-    const onFile = vi.fn();
-    render(<RelativeStrengthTab relativeStrength={null} bodyComp={idle} onBodyCompFile={onFile} />);
-    const dropzone = screen.getByRole("button", { name: "Upload your InBody CSV export" });
-    const file = new File(["date,Weight(lb)\n"], "inbody.csv", { type: "text/csv" });
-    fireEvent.drop(dropzone, { dataTransfer: { files: [file] } });
-    expect(onFile).toHaveBeenCalledWith(file);
-  });
-
+describe("StrengthSection", () => {
   it("shows one card per eligible lift with its one-sentence attribution and a view toggle", () => {
     const result: RelativeStrengthResult = { status: "ok", lifts: [lift()] };
-    render(<RelativeStrengthTab relativeStrength={result} bodyComp={idle} onBodyCompFile={() => {}} />);
+    render(<StrengthSection relativeStrength={result} />);
     expect(screen.getByText("Back Squat (RX)")).toBeInTheDocument();
     expect(screen.getByText(/Estimated 1RM up 12%/)).toBeInTheDocument();
     const group = screen.getByRole("group", { name: "Back Squat chart view" });
@@ -47,7 +36,7 @@ describe("RelativeStrengthTab", () => {
   });
 
   it("explains every badge in a legend, using the calculation's own threshold", () => {
-    render(<RelativeStrengthTab relativeStrength={{ status: "ok", lifts: [lift()] }} bodyComp={idle} onBodyCompFile={() => {}} />);
+    render(<StrengthSection relativeStrength={{ status: "ok", lifts: [lift()] }} />);
     const legend = screen.getByLabelText("What the badges mean");
     const terms = Array.from(legend.querySelectorAll("dt")).map((t) => t.textContent);
     expect(terms).toEqual(["Strength", "Strength and mass", "Mass", "Flat", "Down"]);
@@ -59,7 +48,7 @@ describe("RelativeStrengthTab", () => {
   it("disables the lean-mass view when no session has a lean reading", () => {
     const l = lift();
     l.series = l.series.map((p) => ({ ...p, perLeanMass: null }));
-    render(<RelativeStrengthTab relativeStrength={{ status: "ok", lifts: [l] }} bodyComp={idle} onBodyCompFile={() => {}} />);
+    render(<StrengthSection relativeStrength={{ status: "ok", lifts: [l] }} />);
     expect(screen.getByRole("button", { name: "Per lean mass" })).toBeDisabled();
   });
 
@@ -75,7 +64,7 @@ describe("RelativeStrengthTab", () => {
         }),
       ],
     };
-    render(<RelativeStrengthTab relativeStrength={result} bodyComp={idle} onBodyCompFile={() => {}} />);
+    render(<StrengthSection relativeStrength={result} />);
     const trigger = screen.getByText(/Not enough data yet \(1 lift\)/);
     expect(screen.queryByText(/needs 2 more logged sessions/)).not.toBeInTheDocument();
     fireEvent.click(trigger);
@@ -85,10 +74,8 @@ describe("RelativeStrengthTab", () => {
 
   it("states why nothing qualified when the whole result is insufficient", () => {
     render(
-      <RelativeStrengthTab
+      <StrengthSection
         relativeStrength={{ status: "insufficient", reason: "no InBody scans to normalise against", lifts: [] }}
-        bodyComp={idle}
-        onBodyCompFile={() => {}}
       />
     );
     expect(screen.getByText(/No InBody scans to normalise against/)).toBeInTheDocument();

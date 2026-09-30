@@ -1,7 +1,6 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import { AlignmentTab } from "@/components/dashboard/AlignmentTab";
-import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { AlignmentSummary } from "@/components/dashboard/AlignmentSummary";
 import type { AlignmentResult } from "@/types/alignment";
 
 function result(overrides: Partial<AlignmentResult> = {}): AlignmentResult {
@@ -19,40 +18,11 @@ function result(overrides: Partial<AlignmentResult> = {}): AlignmentResult {
   };
 }
 
-describe("AlignmentTab — empty state", () => {
-  it("shows the upload dropzone and forwards a dropped file when no InBody data is loaded", () => {
-    const onBodyCompFile = vi.fn();
-    render(
-      <AlignmentTab
-        alignment={null}
-        bodyComp={{ status: "idle" }}
-        onBodyCompFile={onBodyCompFile}
-      />
-    );
-
-    const dropzone = screen.getByRole("button", { name: "Upload your InBody CSV export" });
-    const file = new File(["date,Weight(lb)\n"], "inbody.csv", { type: "text/csv" });
-    fireEvent.drop(dropzone, { dataTransfer: { files: [file] } });
-
-    expect(onBodyCompFile).toHaveBeenCalledWith(file);
-  });
-
-  it("shows an error alert when the InBody upload failed", () => {
-    const bodyComp: BodyCompState = { status: "error", message: "That file is missing a date column." };
-    render(<AlignmentTab alignment={null} bodyComp={bodyComp} onBodyCompFile={vi.fn()} />);
-
-    expect(screen.getByText("That file didn't work")).toBeInTheDocument();
-    expect(screen.getByText("That file is missing a date column.")).toBeInTheDocument();
-  });
-});
-
-describe("AlignmentTab — ready state", () => {
+describe("AlignmentSummary — ready state", () => {
   it("shows the aligned copy and summary numbers, without good/bad framing", () => {
     render(
-      <AlignmentTab
+      <AlignmentSummary
         alignment={result({ classification: "aligned" })}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={vi.fn()}
       />
     );
 
@@ -65,10 +35,8 @@ describe("AlignmentTab — ready state", () => {
 
   it("shows the tension copy", () => {
     render(
-      <AlignmentTab
+      <AlignmentSummary
         alignment={result({ classification: "tension" })}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={vi.fn()}
       />
     );
 
@@ -82,7 +50,7 @@ describe("AlignmentTab — ready state", () => {
 
   it("surfaces the reason directly for insufficient_data, not a generic message", () => {
     render(
-      <AlignmentTab
+      <AlignmentSummary
         alignment={result({
           classification: "insufficient_data",
           reason: "needs 1 more classified lift/WOD (has 2, needs 3)",
@@ -94,8 +62,6 @@ describe("AlignmentTab — ready state", () => {
             windowEnd: "",
           },
         })}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={vi.fn()}
       />
     );
 
@@ -105,23 +71,21 @@ describe("AlignmentTab — ready state", () => {
   });
 });
 
-describe("AlignmentTab — context tags and noise", () => {
+describe("AlignmentSummary — context tags and noise", () => {
   it("shows a sentence naming an overlapping tag, and nothing when there is none", () => {
     const { rerender } = render(
-      <AlignmentTab
+      <AlignmentSummary
         alignment={result({ tagNotes: ['This comparison window overlaps "Winter cut" (cut, Jan 1, 2024 – ongoing); lifts and lean mass often move differently during a cut.'] })}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={() => {}}
       />
     );
     expect(screen.getByText(/overlaps "Winter cut"/)).toBeInTheDocument();
-    rerender(<AlignmentTab alignment={result()} bodyComp={{ status: "ready", rows: [] }} onBodyCompFile={() => {}} />);
+    rerender(<AlignmentSummary alignment={result()} />);
     expect(screen.queryByText(/overlaps/)).not.toBeInTheDocument();
   });
 
   it("says when body-comp changes are within normal scan variation", () => {
     render(
-      <AlignmentTab
+      <AlignmentSummary
         alignment={result({
           bodyCompSummary: {
             leanMassDelta: 1,
@@ -132,8 +96,6 @@ describe("AlignmentTab — context tags and noise", () => {
             withinNoise: { leanMass: true, fatMass: true, bodyFatPct: true },
           },
         })}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={() => {}}
       />
     );
     expect(screen.getByText("Lean mass, fat mass and body fat changes are within normal scan variation.")).toBeInTheDocument();
