@@ -76,7 +76,7 @@ describe("SyncDialog — receiving", () => {
     const { props, finish } = setup({ workout: 900 });
     finish([["workout", bad]]);
     expect(props.onSyncedWorkoutData).not.toHaveBeenCalled();
-    expect(screen.getByText(/Couldn't use the workout log from the other device\. Row 1 of the workout log has an unreadable date\. Your workout log on this device wasn't changed\./)).toBeInTheDocument();
+    expect(screen.getByText(/The workout log from the other device was rejected\. Row 1 of the workout log has an unreadable date\. Your workout log on this device is unchanged\./)).toBeInTheDocument();
     // No overwrite prompt for data that was rejected.
     expect(screen.queryByText(/Replace your workout log/)).not.toBeInTheDocument();
     expect(props.onOpenChange).not.toHaveBeenCalled();
@@ -107,7 +107,7 @@ describe("SyncDialog — receiving", () => {
     const { props, finish } = setup();
     finish([["workout", "[]"]]);
     // The dialog has its own X button also named "Close"; use the notice's.
-    const notice = screen.getByText(/Couldn't use the workout log/).parentElement!;
+    const notice = screen.getByText(/The workout log from the other device was rejected/).parentElement!;
     fireEvent.click(within(notice).getByRole("button", { name: "Close" }));
     expect(props.onOpenChange).toHaveBeenCalledWith(false);
   });

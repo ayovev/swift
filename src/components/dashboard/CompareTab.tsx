@@ -287,7 +287,7 @@ export function CompareTab({ workouts, scans, tags, initialWindowB, onSaveAsExpe
               earlier range shown above.{" "}
               {windowAIsContiguous(a, b)
                 ? ""
-                : "An experiment's earlier range always runs up to its start date, so it will also include the days between the two ranges here."}
+                : "A saved experiment's earlier range runs up to its start date, so the days between these two ranges will be included."}
             </p>
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex flex-1 flex-col gap-1.5">

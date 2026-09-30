@@ -111,7 +111,7 @@ export function TagsTab({ tags, source, initialWindow, onAdd, onUpdate, onDelete
     const incoming = new Map(result.tags.map((t) => [t.id, t]));
     const kept = tags.filter((t) => !incoming.has(t.id));
     onReplace([...kept, ...result.tags]);
-    setImportMessage(`Imported ${result.tags.length} ${result.tags.length === 1 ? "tag" : "tags"}. Tags with an id already here were replaced.`);
+    setImportMessage(`Imported ${result.tags.length} ${result.tags.length === 1 ? "tag" : "tags"}. Tags you already had were updated.`);
     capture({ name: "interaction_used", props: { interaction: "tags_imported" } });
   };
 

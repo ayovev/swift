@@ -80,7 +80,7 @@ describe("CompareTab", () => {
     render(<CompareTab workouts={workouts} scans={scans} tags={[]} initialWindowB={B} onSaveAsExperiment={save} />);
     fireEvent.click(screen.getByRole("button", { name: "Choose the earlier range" }));
     fireEvent.change(screen.getByLabelText("Earlier range ends"), { target: { value: "2026-01-20" } });
-    expect(screen.getByText(/also include the days between the two ranges/)).toBeInTheDocument();
+    expect(screen.getByText(/the days between these two ranges will be included/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save as experiment" }));
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ baselineStart: "2026-01-04" }));
   });

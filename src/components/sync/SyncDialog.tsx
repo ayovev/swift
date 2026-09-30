@@ -56,7 +56,7 @@ function failureMessage(reason: SyncFailureReason): string {
     case "declined_overwrite":
       return "Sync was cancelled.";
     case "invalid_data":
-      return "Some of the data from the other device couldn't be used.";
+      return "The other device sent data this one couldn't read.";
   }
 }
 
@@ -253,8 +253,8 @@ export function SyncDialog({
             <div className="flex flex-col gap-3">
               {skipped.map((item) => (
                 <p key={item.dataset} className="text-sm leading-relaxed">
-                  Couldn't use the {DATASET_LABEL[item.dataset]} from the other device. {item.reason} Your{" "}
-                  {DATASET_LABEL[item.dataset]} on this device wasn't changed.
+                  The {DATASET_LABEL[item.dataset]} from the other device was rejected. {item.reason} Your{" "}
+                  {DATASET_LABEL[item.dataset]} on this device is unchanged.
                 </p>
               ))}
               <Button variant="outline" size="sm" className="self-start" onClick={() => onOpenChange(false)}>
