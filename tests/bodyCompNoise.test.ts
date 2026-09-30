@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import dayjs from "dayjs";
 import {
-  analyzeTimeOfDay,
   describeWithinNoise,
   getBodyCompNoiseBand,
   getBodyCompNoiseBands,
@@ -220,28 +219,5 @@ describe("describeWithinNoise", () => {
     expect(
       describeWithinNoise({ leanMassDelta: null, fatMassDelta: 1, bodyFatPctDelta: null, withinNoise: { leanMass: false, fatMass: true, bodyFatPct: false } })
     ).toBe("Fat mass change is within normal scan variation.");
-  });
-});
-
-describe("analyzeTimeOfDay (diagnostic only)", () => {
-  it("reports insufficient when either side is thin", () => {
-    const r = analyzeTimeOfDay(daily([180, 181, 182]), "weight");
-    expect(r.status).toBe("insufficient");
-    expect(r.reason).toMatch(/needs 5 scans/);
-  });
-
-  it("reports the afternoon-minus-morning mean and its size in bands", () => {
-    const scans: InBodyRow[] = [];
-    for (let i = 0; i < 6; i++) {
-      const d = dayjs("2026-01-01").add(i * 2, "day").format("YYYY-MM-DD");
-      scans.push(scan(at(d, "070000"), { "Weight(lb)": "180" }));
-      scans.push(scan(at(d, "170000"), { "Weight(lb)": "182" }));
-    }
-    const r = analyzeTimeOfDay(scans, "weight");
-    expect(r.status).toBe("ok");
-    expect(r.morningCount).toBe(6);
-    expect(r.afternoonCount).toBe(6);
-    expect(r.meanDifference).toBeCloseTo(2, 5);
-    expect(r.differenceInBands).not.toBeNull();
   });
 });

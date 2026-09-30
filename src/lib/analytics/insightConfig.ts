@@ -7,8 +7,7 @@
  * EVERY value below is a starting point — *tunable, validate against real
  * data*. The repo bundles no real InBody history (only a synthetic fixture and
  * a synthetic sample generator), so none of these has yet been checked against
- * a real athlete's scans. `scripts/insight_findings.ts` prints what each one
- * does on real exports; run it before trusting a number.
+ * a real athlete's scans.
  *
  * The pre-existing thresholds (`TREND_THRESHOLD`, the MIN_* eligibility gates
  * in plateauDetector.ts / alignment.ts / experimentInsight.ts) stay where they
@@ -82,16 +81,6 @@ export const DEFAULT_NOISE_BAND: Record<BodyCompMetric, number> = {
   fatMass: 3,
   bodyFatPct: 1.5,
 };
-
-/**
- * Morning/afternoon diagnostic: local hour at which "morning" ends.
- * Diagnostic only — no adjustment is built on it until the maintainer has
- * seen the findings. Tunable.
- */
-export const TIME_OF_DAY_SPLIT_HOUR = 12;
-
-/** Fewest scans on each side of the split before a morning/afternoon comparison is reported. Tunable. */
-export const TIME_OF_DAY_MIN_PER_SIDE = 5;
 
 // ── Relative strength (relativeStrength.ts) ─────────────────────────────
 

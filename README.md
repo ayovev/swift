@@ -125,7 +125,7 @@ Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather t
 - `themeContrast.test.ts` — every accent swatch holds adequate contrast in both light and dark mode.
 - `analytics.test.ts` — analytics stays off without a key, and no event payload can carry workout content.
 - `plateauDetector.test.ts` — the plateau eligibility gates (entry count, InBody-scan count) and their `reason` messages, the improving/plateaued classification, and windowing behaviour against real sample data.
-- `bodyCompNoise.test.ts` — the InBody noise band: the paired-scans, rolling-median and default methods, the fallback ladder between them, the within-noise flags the three insights read, and the morning/afternoon diagnostic.
+- `bodyCompNoise.test.ts` — the InBody noise band: the paired-scans, rolling-median and default methods, the fallback ladder between them, and the within-noise flags the three insights read.
 - `relativeStrength.test.ts` — e1RM series, lift-name variants, body-comp matching (exact, interpolated, nearest, unmatched, never extrapolated), the attribution table, and the eligibility gates.
 - `compareWindows.test.ts`, `contextTags.test.ts`, `insightTags.test.ts`, `chartInteraction.test.tsx`, `CompareTab.test.tsx`, `TagsTab.test.tsx` — window comparison (no partial numbers, noise gating, RX/Scaled), tag overlap/open-ended/out-of-range, tags leaving results unchanged and only adding notes that name them, drag selection, and the Compare and Tags views.
 - `cycleReport.test.ts`, `CyclesTab.test.tsx` — cycles from tags, focus lifts, the report built from relative strength and the noise band, insufficient states, and a summary that describes without judging.
@@ -151,10 +151,7 @@ Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather t
 The body-composition insights (noise band, **Strength**, **Compare**, **Cycles**) are tuned on the
 bundled sample and synthetic scans, not on real InBody histories, so their thresholds are starting
 points. They are all in `src/lib/analytics/insightConfig.ts`, each with a note on how it was
-chosen. To see what they do on your own exports, run
-`SWIFT_SUGARWOD_CSV=/path/sugarwod.csv SWIFT_INBODY_CSV=/path/inbody.csv npx vitest run tests/insightFindings.test.ts`,
-which writes `insight-findings.txt` (gitignored) with the noise band per metric and every insight
-output that changed because of it. Nothing leaves your machine.
+chosen. Check them against your own history before trusting a number.
 
 Other things to know: training blocks for **Cycles** come from tags or typed dates, not automatic
 detection; and dragging on a chart is mouse-only, with date inputs as the alternative.

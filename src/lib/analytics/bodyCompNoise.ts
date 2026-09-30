@@ -10,8 +10,6 @@ import {
   NOISE_PAIR_MAX_GAP_DAYS,
   NOISE_RESIDUAL_HALF_WINDOW,
   NOISE_RESIDUAL_MAX_SPAN_DAYS,
-  TIME_OF_DAY_MIN_PER_SIDE,
-  TIME_OF_DAY_SPLIT_HOUR,
   type BodyCompMetric,
 } from "./insightConfig";
 import { parseInBodyDate, parseNumericField } from "./scanParsing";
@@ -228,58 +226,6 @@ export const NO_NOISE_BANDS: BodyCompNoiseBands = Object.fromEntries(
 /** A change is meaningful only when its magnitude exceeds the band. */
 export function isMeaningfulChange(delta: number, band: number): boolean {
   return Math.abs(delta) > band;
-}
-
-export interface TimeOfDayFinding {
-  status: "ok" | "insufficient";
-  morningCount: number;
-  afternoonCount: number;
-  /** Mean of afternoon-and-later readings minus mean of morning readings; 0 when insufficient. */
-  meanDifference: number;
-  /** meanDifference relative to the metric's band, so it reads on the same scale as everything else. */
-  differenceInBands: number | null;
-  reason?: string;
-}
-
-/**
- * DIAGNOSTIC ONLY. Do morning scans read systematically differently from
- * afternoon ones? Reported for the maintainer to review; nothing in the
- * insights adjusts for it. Compares raw group means, so a trend that happens
- * to line up with a change in scan habits will show up here too — read it as
- * a prompt to look, not a measurement.
- */
-export function analyzeTimeOfDay(
-  scans: InBodyRow[],
-  metric: BodyCompMetric,
-  options: NoiseBandOptions & { splitHour?: number; minPerSide?: number } = {}
-): TimeOfDayFinding {
-  const splitHour = options.splitHour ?? TIME_OF_DAY_SPLIT_HOUR;
-  const minPerSide = options.minPerSide ?? TIME_OF_DAY_MIN_PER_SIDE;
-  const readings = readingsForMetric(scans, metric);
-  const morning = readings.filter((r) => r.date.hour() < splitHour).map((r) => r.value);
-  const afternoon = readings.filter((r) => r.date.hour() >= splitHour).map((r) => r.value);
-
-  if (morning.length < minPerSide || afternoon.length < minPerSide) {
-    return {
-      status: "insufficient",
-      morningCount: morning.length,
-      afternoonCount: afternoon.length,
-      meanDifference: 0,
-      differenceInBands: null,
-      reason: `needs ${minPerSide} scans before and after ${splitHour}:00 (has ${morning.length} and ${afternoon.length})`,
-    };
-  }
-
-  const avg = (v: number[]) => v.reduce((s, x) => s + x, 0) / v.length;
-  const meanDifference = avg(afternoon) - avg(morning);
-  const { band } = getBodyCompNoiseBand(scans, metric, options);
-  return {
-    status: "ok",
-    morningCount: morning.length,
-    afternoonCount: afternoon.length,
-    meanDifference,
-    differenceInBands: band > 0 ? meanDifference / band : null,
-  };
 }
 
 const WITHIN_NOISE_LABEL = { leanMass: "lean mass", fatMass: "fat mass", bodyFatPct: "body fat" } as const;

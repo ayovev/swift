@@ -230,12 +230,7 @@ reports the metric at all. `isMeaningfulChange(delta, band)` is the one comparis
   three tabs show ("... within normal scan variation.").
 - Bands are estimated from the athlete's whole scan history as of `asOfDate`, never from a
   per-subject window (too few scans). `NO_NOISE_BANDS` (all zero) reproduces the old sign-only
-  behaviour exactly; `insightFindings.ts` uses it for the before/after diff.
-- `analyzeTimeOfDay()` is a diagnostic only. Nothing adjusts for time of day until the
-  maintainer has reviewed the findings.
-- Maintainer report: `SWIFT_SUGARWOD_CSV=… SWIFT_INBODY_CSV=… npx vitest run tests/insightFindings.test.ts`
-  writes `insight-findings.txt` (bands per metric and method, and every existing insight output
-  that changed).
+  behaviour exactly.
 
 ## Architecture: Relative strength
 
@@ -310,8 +305,7 @@ Injury/travel tags inside the cycle add a sentence naming them. Rendered by `Cyc
 The insight pipelines above (noise band, relative strength, compare, tags, cycles) were built
 against the bundled sample and synthetic InBody data. The repo holds no real InBody history, so
 **none of the `insightConfig.ts` thresholds has been checked against a real athlete.** Treat them
-as starting points and run the maintainer report (see "Architecture: InBody noise band") on real
-exports before trusting a number. Specifically:
+as starting points and check them against real exports before trusting a number. Specifically:
 
 - **Noise band.** On the synthetic sample the bands came from the `residual` method (weight
   ±2.9 lb, lean ±2.1, fat mass ±2.3, body fat ±1.3 points) and no existing output changed. The
@@ -319,8 +313,7 @@ exports before trusting a number. Specifically:
   less lands on `residual` or `default`; expect `default` under about 8 scans. Lean mass uses Soft
   Lean Mass where present else Skeletal Muscle Mass; the band is estimated on that same field but
   `computeBodyCompTrend` chooses per pair of scans, so an export mixing the two would judge a
-  delta in one field against a band from the other. Morning/afternoon has not been run on real
-  data. The one behaviour change from bands: a +3 lb fat-mass case that used to read
+  delta in one field against a band from the other. The one behaviour change from bands: a +3 lb fat-mass case that used to read
   `plateaued_body_comp` is now within the default 3 lb band (the test uses +4 lb and a new case
   pins the within-band result).
 - **Relative strength.** Not spot-checked by hand against raw CSVs (compute the e1RM from
