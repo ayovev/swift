@@ -10,9 +10,9 @@ import {
 import {
   ALL_TABS,
   BODY_COMP_TAB,
-  EXPERIMENTS_TAB,
+  LIFTS_TAB,
   OVERVIEW_TAB,
-  PLATEAU_TAB,
+  PERIODS_TAB,
   WORKOUTS_TAB,
 } from "@/components/dashboard/tabs";
 import { DOMAIN_LIST } from "@/types/dashboard";
@@ -22,8 +22,8 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Plateaus, Alignment, Strength, Compare, Cycles, Experiments and Tags", () => {
-    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1);
+  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Lifts, Periods and Tags", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
   });
 });
 
@@ -40,8 +40,8 @@ describe("SECTIONS", () => {
     expect(sectionOf(strengthTab.value)).toBe("Breakdown");
     expect(sectionOf(gymnasticsTab.value)).toBe("Breakdown");
     expect(sectionOf(BODY_COMP_TAB)).toBe("Body");
-    expect(sectionOf(PLATEAU_TAB)).toBe("Insights");
-    expect(sectionOf(EXPERIMENTS_TAB)).toBe("Insights");
+    expect(sectionOf(LIFTS_TAB)).toBe("Insights");
+    expect(sectionOf(PERIODS_TAB)).toBe("Insights");
   });
 });
 
@@ -65,7 +65,7 @@ describe("SectionLinks", () => {
     expect(screen.getByRole("button", { name: "Training" })).not.toHaveAttribute("aria-current");
 
     fireEvent.click(screen.getByRole("button", { name: "Insights" }));
-    expect(onValueChange).toHaveBeenCalledWith(PLATEAU_TAB);
+    expect(onValueChange).toHaveBeenCalledWith(LIFTS_TAB);
     fireEvent.click(screen.getByRole("button", { name: "Body" }));
     expect(onValueChange).toHaveBeenCalledWith(BODY_COMP_TAB);
   });
@@ -99,15 +99,11 @@ describe("SubNav", () => {
   });
 
   it("lists the Insights views", () => {
-    render(<SubNav value={PLATEAU_TAB} onValueChange={vi.fn()} />);
+    render(<SubNav value={LIFTS_TAB} onValueChange={vi.fn()} />);
     const nav = screen.getByRole("navigation", { name: "Insights views" });
     expect(within(nav).getAllByRole("button").map((b) => b.textContent)).toEqual([
-      "Plateaus",
-      "Alignment",
-      "Strength",
-      "Compare",
-      "Cycles",
-      "Experiments",
+      "Lifts",
+      "Periods",
       "Tags",
     ]);
   });

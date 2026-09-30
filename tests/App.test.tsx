@@ -328,7 +328,7 @@ describe("App — view scope", () => {
       "The ability of the body’s systems to gather, process, and deliver oxygen."
     );
 
-    // Plateaus, Alignment and Experiments are computed from the full
+    // Plateaus, Strength and Experiments are computed from the full
     // history as of today (App.tsx), never the selected range.
     fireEvent.click(screen.getByRole("button", { name: "Insights" }));
     expect(await screen.findByText(/uses your full history, as of today/i)).toBeInTheDocument();

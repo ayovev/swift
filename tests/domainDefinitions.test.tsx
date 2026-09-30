@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { pageSubtitleOf } from "@/components/dashboard/SectionNav";
-import { ALIGNMENT_TAB, BODY_COMP_TAB, OVERVIEW_TAB } from "@/components/dashboard/tabs";
+import { LIFTS_TAB, BODY_COMP_TAB, OVERVIEW_TAB } from "@/components/dashboard/tabs";
 import { CROSSFIT_DEFINITIONS, DOMAIN_BLURBS, DOMAIN_LIST } from "@/types/dashboard";
 
 describe("CROSSFIT_DEFINITIONS", () => {
@@ -44,7 +44,7 @@ describe("pageSubtitleOf", () => {
   });
 
   it("gives other views no subtitle", () => {
-    for (const tab of [OVERVIEW_TAB, BODY_COMP_TAB, ALIGNMENT_TAB, "modality:W"]) {
+    for (const tab of [OVERVIEW_TAB, BODY_COMP_TAB, LIFTS_TAB, "modality:W"]) {
       expect(pageSubtitleOf(tab)).toBeNull();
     }
   });

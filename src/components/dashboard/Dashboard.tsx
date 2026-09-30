@@ -5,16 +5,12 @@ import { SwiftMark } from "@/components/SwiftMark";
 import { ScopeLine } from "./ScopeLine";
 import { SectionLinks, SubNav, pageSubtitleOf, pageTitleOf, sectionOf } from "./SectionNav";
 import { SettingsSheet } from "./SettingsSheet";
-import { AlignmentTab } from "./AlignmentTab";
 import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
 import { DomainTab } from "./DomainTab";
-import { ExperimentsTab } from "./ExperimentsTab";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
-import { PlateauTab } from "./PlateauTab";
-import { RelativeStrengthTab } from "./RelativeStrengthTab";
-import { CompareTab } from "./CompareTab";
-import { CyclesTab } from "./CyclesTab";
+import { LiftsTab } from "./LiftsTab";
+import { PeriodsTab } from "./PeriodsTab";
 import { TagsTab } from "./TagsTab";
 import { ChartInteractionProvider } from "./charts/chartInteraction";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
@@ -22,12 +18,8 @@ import {
   ALL_TABS,
   BODY_COMP_TAB,
   OVERVIEW_TAB,
-  ALIGNMENT_TAB,
-  EXPERIMENTS_TAB,
-  PLATEAU_TAB,
-  STRENGTH_TAB,
-  COMPARE_TAB,
-  CYCLES_TAB,
+  LIFTS_TAB,
+  PERIODS_TAB,
   TAGS_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
@@ -157,9 +149,9 @@ export function Dashboard({
       tags,
       onCompare: (window: DateWindow) => {
         setPendingWindow((p) => ({ window, nonce: (p?.nonce ?? 0) + 1 }));
-        setTab(COMPARE_TAB);
+        setTab(PERIODS_TAB);
         capture({ name: "interaction_used", props: { interaction: "compare_range_selected" } });
-        capture({ name: "tab_viewed", props: { tab: "Compare", source } });
+        capture({ name: "tab_viewed", props: { tab: "Periods", source } });
       },
       onTag: (window: DateWindow) => {
         setPendingWindow((p) => ({ window, nonce: (p?.nonce ?? 0) + 1 }));
@@ -279,7 +271,7 @@ export function Dashboard({
                 dailyDisabled={dailyDisabled}
               />
             ) : (
-              // Plateaus, Alignment, Strength and Experiments are computed in App.tsx
+              // Lifts and Periods are computed in App.tsx
               // from the full, unfiltered history as of today — saying so
               // beats showing a date control that silently does nothing here.
               <p className="text-base text-muted-foreground">
@@ -327,43 +319,31 @@ export function Dashboard({
             />
           </TabsContent>
 
-          <TabsContent value={PLATEAU_TAB}>
-            <PlateauTab
+          <TabsContent value={LIFTS_TAB}>
+            <LiftsTab
               plateauInsights={plateauInsights}
-              bodyComp={bodyComp}
-              onBodyCompFile={onBodyCompFile}
-            />
-          </TabsContent>
-
-          <TabsContent value={ALIGNMENT_TAB}>
-            <AlignmentTab
               alignment={alignment}
-              bodyComp={bodyComp}
-              onBodyCompFile={onBodyCompFile}
-            />
-          </TabsContent>
-
-          <TabsContent value={STRENGTH_TAB}>
-            <RelativeStrengthTab
               relativeStrength={relativeStrength}
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
             />
           </TabsContent>
 
-          <TabsContent value={COMPARE_TAB}>
-            <CompareTab
+          <TabsContent value={PERIODS_TAB}>
+            <PeriodsTab
               key={pendingWindow?.nonce ?? 0}
               workouts={workoutRows}
               scans={bodyComp.status === "ready" ? bodyComp.rows : []}
               tags={tags}
+              experiments={experiments}
+              experimentInsights={experimentInsights}
+              bodyComp={bodyComp}
+              onBodyCompFile={onBodyCompFile}
               initialWindowB={pendingWindow?.window ?? null}
-              onSaveAsExperiment={onAddExperiment}
+              onAddExperiment={onAddExperiment}
+              onUpdateExperiment={onUpdateExperiment}
+              onDeleteExperiment={onDeleteExperiment}
             />
-          </TabsContent>
-
-          <TabsContent value={CYCLES_TAB}>
-            <CyclesTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} tags={tags} />
           </TabsContent>
 
           <TabsContent value={TAGS_TAB}>
@@ -376,18 +356,6 @@ export function Dashboard({
               onUpdate={onUpdateTag}
               onDelete={onDeleteTag}
               onReplace={onReplaceTags}
-            />
-          </TabsContent>
-
-          <TabsContent value={EXPERIMENTS_TAB}>
-            <ExperimentsTab
-              experiments={experiments}
-              experimentInsights={experimentInsights}
-              bodyComp={bodyComp}
-              onBodyCompFile={onBodyCompFile}
-              onAddExperiment={onAddExperiment}
-              onUpdateExperiment={onUpdateExperiment}
-              onDeleteExperiment={onDeleteExperiment}
             />
           </TabsContent>
         </Tabs>

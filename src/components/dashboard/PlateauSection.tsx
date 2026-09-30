@@ -3,14 +3,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
 import { formatDate, formatSignedDelta } from "./charts/chartUtils";
-import type { BodyCompState } from "./BodyCompTab";
-import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
+import { ATTRIBUTION_LABEL } from "./strengthLabels";
+import { RS_WINDOW_DAYS } from "@/lib/analytics/insightConfig";
+import type { LiftRelativeStrength } from "@/lib/analytics/relativeStrength";
 import type { PlateauClassification, PlateauInsight } from "@/types/plateau";
 
-interface PlateauTabProps {
-  plateauInsights: PlateauInsight[] | null;
-  bodyComp: BodyCompState;
-  onBodyCompFile: (file: File) => void;
+interface PlateauSectionProps {
+  plateauInsights: PlateauInsight[];
+  /** Each lift's strength read, keyed `name:status`, so a lift's row can carry it beside its own plateau classification. */
+  strengthByLift: ReadonlyMap<string, LiftRelativeStrength>;
 }
 
 const CLASSIFICATION_LABEL: Record<PlateauClassification, string> = {
@@ -55,24 +56,14 @@ const CLASSIFICATION_ORDER: Record<PlateauClassification, number> = {
 };
 
 /**
- * Combines the SugarWOD log with an InBody export to answer "has my
- * lift/benchmark performance stalled, and if so, is body composition working
- * against me?" — needs both datasets, so this stays a static empty state
- * (reusing BodyCompTab's own upload entry point) until InBody data is
- * loaded, the same way BodyCompTab itself is always in the nav before any
- * InBody data exists.
+ * "Has my lift/benchmark performance stalled, and if so, is body composition
+ * working against me?" One row per lift or named benchmark. A lift's row also
+ * carries its strength read (stronger or just heavier) when it has one, over
+ * the last `RS_WINDOW_DAYS` days: the plateau read looks back over a run of
+ * sessions and the strength read over a fixed year, so the row names the
+ * second window instead of letting the two look like one.
  */
-export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: PlateauTabProps) {
-  if (!plateauInsights) {
-    return (
-      <InBodyUploadPrompt state={bodyComp} onFile={onBodyCompFile}>
-        Checks your lifts and named benchmarks against your InBody history, so a stalled
-            number can be told apart from a body-composition one. Needs an InBody export in
-            addition to the SugarWOD log already loaded.
-      </InBodyUploadPrompt>
-    );
-  }
-
+export function PlateauSection({ plateauInsights, strengthByLift }: PlateauSectionProps) {
   const sorted = [...plateauInsights].sort((a, b) => {
     const order = CLASSIFICATION_ORDER[a.classification] - CLASSIFICATION_ORDER[b.classification];
     return order !== 0 ? order : a.subject.name.localeCompare(b.subject.name);
@@ -128,6 +119,17 @@ export function PlateauTab({ plateauInsights, bodyComp, onBodyCompFile }: Platea
                       {insight.classification === "insufficient_data" ? (
                         <p className="mt-1 text-xs text-muted-foreground">{insight.reason}</p>
                       ) : null}
+                      {(() => {
+                        const strength =
+                          insight.subject.type === "lift"
+                            ? strengthByLift.get(`${insight.subject.name}:${insight.subject.status}`)
+                            : undefined;
+                        return strength?.status === "ok" && strength.attribution ? (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Per body mass, last {RS_WINDOW_DAYS} days: {ATTRIBUTION_LABEL[strength.attribution]}
+                          </p>
+                        ) : null;
+                      })()}
                       {insight.tagNotes?.map((note) => (
                         <p key={note} className="mt-1 text-xs text-muted-foreground">
                           {note}

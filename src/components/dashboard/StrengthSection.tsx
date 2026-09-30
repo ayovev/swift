@@ -6,24 +6,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { TREND_THRESHOLD } from "@/lib/analytics/plateauDetector";
 import { capture } from "@/lib/posthog";
 import type { LiftRelativeStrength, RelativeStrengthResult, StrengthAttribution } from "@/lib/analytics/relativeStrength";
-import type { BodyCompState } from "./BodyCompTab";
-import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
+import { ATTRIBUTION_LABEL } from "./strengthLabels";
 import { SegmentedControl, type SegmentedControlOption } from "./SegmentedControl";
 import { RelativeStrengthChart, type StrengthView } from "./charts/RelativeStrengthChart";
 
-interface RelativeStrengthTabProps {
-  relativeStrength: RelativeStrengthResult | null;
-  bodyComp: BodyCompState;
-  onBodyCompFile: (file: File) => void;
+interface StrengthSectionProps {
+  relativeStrength: RelativeStrengthResult;
 }
-
-const ATTRIBUTION_LABEL: Record<StrengthAttribution, string> = {
-  "strength-driven": "Strength",
-  "mass-driven": "Mass",
-  mixed: "Strength and mass",
-  flat: "Flat",
-  declined: "Down",
-};
 
 const THRESHOLD_PCT = `${Math.round(TREND_THRESHOLD * 100)}%`;
 
@@ -87,22 +76,11 @@ function LiftCard({ lift }: { lift: LiftRelativeStrength }) {
 }
 
 /**
- * "Got stronger" or "got bigger"? Needs both datasets, so it keeps the same
- * static upload state (`InBodyUploadPrompt`) as the other Insights views until an InBody
- * export is loaded. Lifts that fail an eligibility gate are listed collapsed
- * with the gate that failed, never hidden.
+ * "Got stronger" or "got bigger"? Lifts that fail an eligibility gate are
+ * listed collapsed with the gate that failed, never hidden. Sits on the Lifts
+ * view under the plateau table, which is what gates it on both uploads.
  */
-export function RelativeStrengthTab({ relativeStrength, bodyComp, onBodyCompFile }: RelativeStrengthTabProps) {
-  if (!relativeStrength) {
-    return (
-      <InBodyUploadPrompt state={bodyComp} onFile={onBodyCompFile}>
-        Divides each lift's estimated one-rep max by your bodyweight and lean mass, so a
-            heavier lift can be told apart from a heavier athlete. Needs an InBody export in
-            addition to the SugarWOD log already loaded.
-      </InBodyUploadPrompt>
-    );
-  }
-
+export function StrengthSection({ relativeStrength }: StrengthSectionProps) {
   const eligible = relativeStrength.lifts.filter((l) => l.status === "ok");
   const ineligible = relativeStrength.lifts.filter((l) => l.status === "insufficient");
 
