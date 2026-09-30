@@ -1,8 +1,11 @@
-import { useEffect } from "react";
-import { AlertCircle, Lock, PlayCircle, Smartphone } from "lucide-react";
+import { useCallback, useEffect } from "react";
+import { AlertCircle, FileUp, Lock, PlayCircle, Smartphone } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ThemeControls } from "@/components/theme/ThemeControls";
+import { FilePickerButton } from "@/components/dashboard/FilePickerButton";
+import { useBackupRestore } from "@/components/backup/useBackupRestore";
+import { looksLikeBackup } from "@/lib/backup/backup";
 import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
 import { ExportGuide } from "./ExportGuide";
 import { HowItWorks } from "./HowItWorks";
@@ -46,6 +49,25 @@ export function Landing({
   onSyncedTags,
 }: LandingProps) {
   const busy = loading || reveal !== null;
+  // Nothing is stored yet, so a backup restores without asking.
+  const backupRestore = useBackupRestore({
+    existing: { workout: null, bodyComp: null, experiments: null, tags: null },
+    handlers: {
+      workout: onSyncedWorkoutData,
+      bodyComp: onSyncedBodyCompData,
+      experiments: onSyncedExperiments,
+      tags: onSyncedTags,
+    },
+  });
+
+  // The dropzone and paste take whatever file the athlete has to hand. A
+  // backup dropped there is restored rather than fed to the CSV parser, which
+  // would reject it.
+  const { restoreFile } = backupRestore;
+  const handleFile = useCallback(
+    (file: File) => (looksLikeBackup(file) ? restoreFile(file) : onFile(file)),
+    [restoreFile, onFile]
+  );
 
   // A copied file works anywhere on the page, not just when the dropzone is
   // focused — the fastest of the three ways in, alongside drag/drop and browse.
@@ -55,12 +77,12 @@ export function Landing({
       const file = e.clipboardData?.files?.[0];
       if (file) {
         e.preventDefault();
-        onFile(file);
+        handleFile(file);
       }
     }
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
-  }, [busy, onFile]);
+  }, [busy, handleFile]);
 
   return (
     <div className="relative isolate min-h-svh bg-background">
@@ -86,7 +108,13 @@ export function Landing({
             {reveal ? (
               <UploadReveal workoutCount={reveal.workoutCount} prCount={reveal.prCount} />
             ) : (
-              <UploadDropzone loading={loading} onFile={onFile} loadingVariant="bar" frame="soft" />
+              <UploadDropzone
+                loading={loading}
+                onFile={handleFile}
+                loadingVariant="bar"
+                frame="soft"
+                hint="The .csv file SugarWOD gives you from Export Workouts. A Swift backup works too."
+              />
             )}
           </div>
 
@@ -108,26 +136,53 @@ export function Landing({
               <PlayCircle className="size-4" aria-hidden="true" />
               Or try it with sample data
             </Button>
-            <SyncEntryPoint
-              role="joiner"
-              existingWorkoutCount={null}
-              existingBodyCompCount={null}
-              existingExperimentsCount={null}
-              existingTagsCount={null}
-              onSyncedWorkoutData={onSyncedWorkoutData}
-              onSyncedBodyCompData={onSyncedBodyCompData}
-              onSyncedExperiments={onSyncedExperiments}
-              onSyncedTags={onSyncedTags}
-              disabled={busy}
-              variant="ghost"
-              className="gap-2"
-            >
-              <Smartphone className="size-4" aria-hidden="true" />
-              Sync from another device
-            </SyncEntryPoint>
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Lock className="size-3" aria-hidden="true" />
-              Your file never leaves this browser. There's no account and no server.
+            <div role="group" aria-labelledby="landing-returning" className="flex flex-col items-center gap-1">
+              <p id="landing-returning" className="text-xs text-muted-foreground">
+                Already use Swift?
+              </p>
+              <div className="flex flex-col items-center sm:flex-row sm:gap-2">
+                <SyncEntryPoint
+                  role="joiner"
+                  existingWorkoutCount={null}
+                  existingBodyCompCount={null}
+                  existingExperimentsCount={null}
+                  existingTagsCount={null}
+                  onSyncedWorkoutData={onSyncedWorkoutData}
+                  onSyncedBodyCompData={onSyncedBodyCompData}
+                  onSyncedExperiments={onSyncedExperiments}
+                  onSyncedTags={onSyncedTags}
+                  disabled={busy}
+                  variant="ghost"
+                  className="gap-2"
+                >
+                  <Smartphone className="size-4" aria-hidden="true" />
+                  Sync from another device
+                </SyncEntryPoint>
+                <FilePickerButton
+                  onFile={backupRestore.restoreFile}
+                  accept="application/json,.json"
+                  variant="ghost"
+                  disabled={busy}
+                  className="gap-2"
+                >
+                  <FileUp className="size-4" aria-hidden="true" />
+                  Restore from a backup
+                </FilePickerButton>
+              </div>
+            </div>
+            {backupRestore.message ? (
+              <p role="status" className="text-center text-[13px] text-muted-foreground">
+                {backupRestore.message}
+              </p>
+            ) : null}
+            {backupRestore.dialog}
+            <p className="flex items-center gap-1.5 text-left text-xs text-muted-foreground">
+              <Lock className="size-3 shrink-0" aria-hidden="true" />
+              <span>
+                Your file never leaves this browser.
+                <br />
+                There's no account and no server.
+              </span>
             </p>
           </div>
 

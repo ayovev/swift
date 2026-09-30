@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { describeTag, parseTagsJson, serializeTags, tagLabel } from "@/lib/analytics/contextTags";
+import { downloadTextFile } from "@/lib/download";
 import { capture } from "@/lib/posthog";
 import { TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
 import type { DateWindow } from "@/types/compare";
@@ -93,12 +94,7 @@ export function TagsTab({ tags, source, initialWindow, onAdd, onUpdate, onDelete
   };
 
   const exportTags = () => {
-    const url = URL.createObjectURL(new Blob([serializeTags(tags)], { type: "application/json" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "swift-tags.json";
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile("swift-tags.json", serializeTags(tags));
     capture({ name: "interaction_used", props: { interaction: "tags_exported" } });
   };
 

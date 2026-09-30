@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SettingsSheet } from "@/components/dashboard/SettingsSheet";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -36,12 +36,23 @@ describe("SettingsSheet", () => {
   it("groups data, devices, appearance and start over in one sheet", async () => {
     renderSheet("upload");
     await screen.findByRole("dialog", { name: "Settings" });
-    for (const name of ["Your data", "Other devices", "Appearance", "Start over"]) {
+    for (const name of ["Your data", "Backup", "Other devices", "Appearance", "Start over"]) {
       expect(screen.getByRole("region", { name })).toBeInTheDocument();
     }
     expect(screen.getByRole("button", { name: "Replace workout log" })).toBeInTheDocument();
     // No InBody data loaded yet, so the same slot offers to add one.
     expect(screen.getByRole("button", { name: "Add InBody file" })).toBeInTheDocument();
+  });
+
+  it("offers backup download and restore, and disables download on sample data", async () => {
+    renderSheet("upload");
+    expect(await screen.findByRole("button", { name: "Download" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Restore from backup" })).toBeEnabled();
+    cleanup();
+    renderSheet("sample");
+    expect(await screen.findByRole("button", { name: "Download" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Restore from backup" })).toBeEnabled();
+    expect(screen.getByText(/sample data can't be backed up/i)).toBeInTheDocument();
   });
 
   it("offers sync on uploaded data", async () => {

@@ -18,11 +18,12 @@ import { validateBodyCompRows, validateExperiments, validateWorkoutRows, type Va
  * InBody history, experiments and context tags. How the app looks or is
  * configured (theme, grouping, date range) stays on each device.
  *
- * Each dataset is confirmed independently: accepting one never accepts
- * another. Every payload is validated first (`validateReceived.ts`, and
+ * Every payload is validated first (`validateReceived.ts`, and
  * `validateTagList` for tags): one that fails, or that arrived unreadable, is
- * skipped and named in `skipped` with the reason, the local copy is left
- * exactly as it was, and it never half-applies. The dialog tells the athlete.
+ * named in `skipped` with the reason and never half-applies. This is the
+ * per-dataset layer; a transfer as a whole is all-or-nothing, which is
+ * `planTransfer` (`planTransfer.ts`): any skipped dataset means nothing is
+ * applied, and all conflicts are confirmed together.
  */
 
 export interface ExistingCounts {

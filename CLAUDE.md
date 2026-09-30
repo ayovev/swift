@@ -49,8 +49,10 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
    "Replace file" for the workout log and for InBody, both in the dashboard's Settings sheet
    (the InBody one also on the Body Comp view) — let an athlete bring in a fresh CSV without
    wiping anything else. They call the exact same upload handlers a first upload uses, so only
-   the one dataset being replaced changes. This does not extend to analytics — constraint 2
-   below is unaffected.
+   the one dataset being replaced changes. Backup download/restore (Settings; restore also on the
+   landing page) is the same stance: Download saves a file to the athlete's own disk and Restore
+   reads a local `File`, so nothing is uploaded ("Architecture: backup" below). This does not
+   extend to analytics — constraint 2 below is unaffected.
 2. **Analytics may only send closed-vocabulary usage events.** See `src/lib/posthog.ts`: the
    `SwiftEvent` union *is* the entire analytics surface, and it is deliberately narrow rather
    than `Record<string, unknown>`. Never add workout content, movement names, athlete notes,
@@ -369,7 +371,9 @@ window.
   thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added, edited and deleted from the
   Experiments list on the Compare view (`PeriodsTab.tsx`; the same `ExperimentForm` adds and edits — an edit keeps
   the `id`, and clearing the end date makes it ongoing again), persisted only when `state.source === "upload"` in
-  `App.tsx`, same sample-mode exclusion as everything else logged while browsing demo data.
+  `App.tsx`, same sample-mode exclusion as everything else logged while browsing demo data. Experiments
+  that arrive by sync or backup restore are different: they are uploads by definition, so
+  `handleSyncedExperiments` always persists them (see "Write points" below).
 - **`getExperimentInsight(experiment, workouts, inbodyScans, asOfDate)`** reuses #1's subject
   identification and body-comp-trend helpers unchanged (`buildLiftSubjects`/
   `buildBenchmarkSubjects`, `parseWorkoutDate`/`parseInBodyDate`, `computeBodyCompTrend`,
@@ -432,13 +436,16 @@ back to one.
 - **`SyncDialog.tsx`** (`src/components/sync/`) is the pairing wizard shell — the one place that
   owns a `SyncSession` (via the `useSyncSession` hook, always backed by the real
   `webrtcConnectionFactory`) for the dialog's lifetime, and the one place that decides whether a
-  received dataset needs confirmation before it's applied. If the joining device already has a
-  dataset of that kind, an `AlertDialog` (same register as "Start over") names exactly what
-  would be replaced and by how many entries, independently per dataset — accepting one doesn't
-  silently accept the other. Only after that confirmation (or immediately, if there's nothing to
-  conflict with) does it call the `onSynced*` handlers. What to apply, hold back for confirmation or
-  skip is decided by the pure `planReceived()` in `src/lib/sync/receivedDatasets.ts`, which is where
-  the ordering rules live and are tested.
+  received data needs confirmation before it's applied. **A sync is all or nothing: there is no
+  per-dataset prompt.** If the joining device already has any of the incoming datasets, one
+  `AlertDialog` (`ReplaceConfirmDialog.tsx`, shared with backup restore; same register as "Start
+  over") names every dataset that would be replaced with both entry counts, and Replace applies the
+  whole transfer while Cancel applies none of it. Only after that (or immediately, if there's nothing
+  to conflict with) does it call the `onSynced*` handlers. The pure `planTransfer()` in
+  `src/lib/sync/planTransfer.ts` (over `planReceived()` in `receivedDatasets.ts`) decides this; it
+  queues every write and `flush()` applies them with the workout log last, because applying the
+  workout log moves `App` to its reveal screen, which unmounts the dashboard and this dialog with it.
+  Backup restore uses the same plan.
 - **What syncs: the athlete's data, and only their data.** The workout log, the InBody history,
   experiments and context tags. Preferences and configuration deliberately do **not** sync: theme
   (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
@@ -447,16 +454,18 @@ back to one.
   four members and `decodeHeader` rejects any other name (`tests/chunking.test.ts` pins that
   `preferences` and `theme` are rejected). **A new persisted dataset that is the athlete's data must
   be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a
-  case in `planReceived`, an `onSynced*` handler in `App.tsx`); a new preference or setting must not.
+  case in `planReceived`, an `onSynced*` handler in `App.tsx`), which also adds it to backup, since
+  `BackupDatasets` is keyed by `SyncDataset`; a new preference or setting must not.
   **Everything that arrives is validated before anything is written**, to the shape its own parser
   produces (`validateReceived.ts` for the workout log, InBody history and experiments,
-  `validateTagList` for tags). Validation is all-or-nothing per dataset: one bad row rejects that
-  dataset with a reason naming the row, the local copy is left exactly as it was, and a rejected
-  dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
+  `validateTagList` for tags). Validation is all-or-nothing for the whole transfer: one bad row rejects
+  its dataset with a reason naming the row, and then nothing at all is applied, the local copy is
+  left exactly as it was, and a rejected dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
   columns the app doesn't read are kept, and a payload that isn't valid JSON is reported as
-  damaged. `SyncDialog` then says which dataset was rejected and why, stays open on that notice,
-  and counts the transfer as `sync_failed` with the fixed reason `invalid_data`. Datasets that
-  were fine are still applied.
+  damaged (an unreadable dataset also means nothing is applied). `SyncDialog` then says which
+  dataset was rejected and why, states that nothing was synced, stays open on that notice, and counts
+  the transfer as `sync_failed` with the fixed reason `invalid_data`. Datasets that were fine are
+  not applied either.
 - **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` (and
   `handleSyncedExperiments`/`handleSyncedTags`) — all are
   unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
@@ -474,6 +483,45 @@ back to one.
   `connection_dropped`, `declined_overwrite`, `unsupported_browser`, `invalid_data`). No device identifiers, no
   session/pairing tokens, no SDP fragments — the payload types make that structurally
   impossible, not just a convention (`tests/syncAnalytics.test.ts`).
+
+## Architecture: backup
+
+`src/lib/backup/` and `src/components/backup/` let an athlete download everything they have in
+the app as one JSON file and restore it later, after clearing the browser or on another computer.
+The workout and InBody CSVs are already their own backups; what only a backup file preserves is
+**experiments and context tags**. It reuses sync's validators and planner rather than growing its
+own, so the two can't drift on what a valid row is.
+
+- **Format (v1)**: `{ format: "swift-backup", version, exportedAt, encoding: "plain", datasets }`.
+  `datasets` holds the same bare arrays sync puts on the wire, keyed by `SyncDataset`. Athlete data
+  only: never theme, grouping or date range. Empty `experiments`/`tags` are omitted from the file, so a
+  backup only ever replaces, never tells a restore to clear something. Unknown dataset keys are
+  ignored; a newer `version` or unknown `encoding` is refused with "made by a newer version".
+- **Encryption is deliberately not built but not designed out.** `encoding` says how the body is
+  stored (an encrypted encoding would replace `datasets` with ciphertext of the same JSON, so
+  everything after the envelope is shared), and `readBackup()` is async with a `needs_passphrase`
+  result that v1 never returns. The UI already awaits it. The file is plaintext health data; the
+  Settings copy says so once, plainly.
+- **Restore replaces per dataset, never merges**, and a missing dataset leaves the local copy alone.
+  A backup must contain a workout log (Download always writes one), so a half-restored state where
+  InBody data persists but the app lands on the upload screen can't happen.
+- **Nothing is written until the whole file is usable.** It uses the same all-or-nothing
+  `planTransfer()` as sync (see the sync section for why the workout log is applied last): any
+  dataset that fails validation aborts the restore with a reason, and the athlete confirms once for
+  everything that would overwrite through the shared `ReplaceConfirmDialog`.
+- **Wiring**: Download (`DownloadBackupButton`) and Restore (`useBackupRestore`) sit in Settings'
+  Backup section; restore is also on the landing page ("Restore from a backup", grouped with sync under "Already use
+  Swift?"), the only place a new browser can reach. The landing page's dropzone and paste handler
+  route a `.json` file (`looksLikeBackup`) to restore instead of the CSV parser, which would reject it. The labels are Backup/Restore, not Export/Import, because the athlete's
+  goal is getting their data back, because "Import" suggests adding rather than replacing, and
+  because "Export" already means the SugarWOD CSV on the landing page. Tags keep their own
+  Export/Import (that one does merge). Sample data can't be backed up and has nothing to confirm on
+  restore (it is never stored). Restore errors stay inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
+  the `onSynced*` handlers. `handleSyncedExperiments` must not look at `state`: on the landing page
+  it is still the previous screen, which used to make received experiments vanish on reload.
+- **Analytics**: `interaction_used` with `backup_exported`/`backup_imported` (the event names predate the Download/Restore labels and stay as
+  they are: a closed vocabulary, not copy), nothing else: no
+  filename, counts or failure text.
 
 ## Architecture: dashboard layout
 
@@ -502,8 +550,8 @@ home. Read the header comments of the files named here before moving anything be
   from the whole unfiltered log as of today — a date control there would silently do nothing.
 - **Manage** and **Preferences** (monthly at most / once) — `SettingsSheet.tsx`, behind the
   header's single Settings button (a ghost button in muted text, so it never out-weighs the
-  section links): replace either file, send/receive to another device, accent and mode, Start
-  over. Every control there calls the same handler it did when it lived in the header; moving
+  section links): replace either file, back up to or restore from a file, send/receive to another
+  device, accent and mode, Start over. Every control there calls the same handler it did when it lived in the header; moving
   them changed where they live, not what they do. The accent/mode UI there is a second rendering
   of the same `useTheme()` state `ThemeControls.tsx` renders on the landing page.
 
@@ -542,7 +590,10 @@ added after the app initially held everything in memory only.
   deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
   bundled sample file is deliberately never cached, so demo mode never leaves anything behind. A
-  successful InBody parse always persists (there's no sample-data concept for it). `range` and
+  successful InBody parse always persists (there's no sample-data concept for it). Data that arrives
+  by sync or backup restore (the `handleSynced*` handlers) always persists too, since it is an upload
+  by definition; those handlers must never look at `state`, because on the landing page it is still the
+  previous screen, and checking it once made restored experiments vanish on reload. `range` and
   `granularity` persist from exactly two call sites in `App.tsx` — `persistRangeSelection`
   (passed to `DateRangePicker` as `onSelect`) and `persistGranularity` (passed to `ScopeLine`'s
   grouping menu/the daily-auto-downgrade effect as `onGranularityChange`) — rather than a
