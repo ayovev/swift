@@ -20,6 +20,22 @@ describe("passphraseStrength", () => {
     expect(passphraseStrength(passphrase)).toBe(expected);
   });
 
+  // Known limitation, pinned deliberately (see the header of passphrase.ts): the hint
+  // measures length, so long predictable passphrases still rate "Strong". If this
+  // ever changes, move these cases rather than deleting them.
+  it.each([
+    ["passwordpasswordpassword", "strong"],
+    ["1234567890123456", "strong"],
+    ["qwertyuiopasdfgh", "strong"],
+  ])("rates the predictable %j as %s (length only)", (passphrase, expected) => {
+    expect(passphraseStrength(passphrase)).toBe(expected);
+  });
+
+  it("does not care about character classes", () => {
+    // Same length, one all-lowercase and one mixed with digits and symbols.
+    expect(passphraseStrength("abcdefghijkl")).toBe(passphraseStrength("aB3$eF6&hI9*"));
+  });
+
   it("counts characters, not UTF-16 units", () => {
     // Eight emoji are 16 code units but eight characters.
     expect(passphraseStrength("🏋️‍♀️".repeat(1))).toBe("too_short");

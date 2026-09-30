@@ -350,8 +350,13 @@ as starting points and check them against real exports before trusting a number.
   manifest naming a dataset it doesn't know (`tags`), so both devices need the current build; a
   refresh fixes it.
 - **Backup encryption.** The iteration count (600,000) and the strength bands are first drafts: measure
-  derive time on a mid-range phone before raising the former, and the bands are length-only by design
-  (no entropy estimate). Argon2id would be stronger against GPUs but needs a library; the upgrade path is
+  derive time on a mid-range phone before raising the former. The strength hint is length-only by design
+  (character classes are ignored on purpose, since composition rules reward `Password1!`), with one
+  guard for fewer than 5 distinct characters. The known gap, pinned in `tests/passphrase.test.ts`, is that
+  long predictable passphrases (`passwordpasswordpassword`, `1234567890123456`) rate "Strong". Left as is
+  because encrypted backups are optional and the hint is not a gate; if it needs to be smarter, the options
+  are cheap pattern checks (repeated chunks, sequences, a short common-passwords list) or a real estimator
+  such as zxcvbn loaded only when the checkbox is ticked. Argon2id would be stronger against GPUs but needs a library; the upgrade path is
   a new `encoding` via `kdf.name`. There is no passphrase recovery, by design. Not tested by hand on a real
   password manager beyond the `autocomplete` attributes.
 - **Cycles.** Automatic detection is deferred. First prototype worth trying: a rolling share of

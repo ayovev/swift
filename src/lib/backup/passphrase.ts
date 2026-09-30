@@ -5,6 +5,16 @@
  * backup file can be attacked offline with no rate limit, so what actually
  * protects it is length, and the bands below are length bands. They are a
  * first draft, not a measured policy (see "Open items" in CLAUDE.md).
+ *
+ * Known limitation, left on purpose: this measures length, not guessability.
+ * Character classes (letters, digits, symbols) are deliberately ignored, since
+ * composition rules reward predictable tricks like "Password1!", and the only
+ * variety check is the distinct-character guard below. So a long predictable
+ * passphrase ("passwordpasswordpassword", "1234567890123456") rates "Strong".
+ * Encrypted backups are optional and this is a hint, not a gate; if it ever
+ * needs to be smarter, the options were cheap pattern checks (repeated chunks,
+ * sequences, a short common-passwords list) or a real estimator such as zxcvbn
+ * loaded only when the checkbox is ticked. Pinned in tests/passphrase.test.ts.
  */
 
 /** The shortest passphrase accepted for a new encrypted backup. */
