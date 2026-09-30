@@ -323,14 +323,15 @@ export default function App() {
   // Sync's third dataset, alongside handleSyncedWorkoutData/
   // handleSyncedBodyCompData above: SyncDialog's own conflict-confirmation
   // prompt (mirroring the other two) is what gates this call, so this is an
-  // unconditional writer exactly like they are.
-  const handleSyncedExperiments = useCallback(
-    (incoming: Experiment[]) => {
-      setExperiments(incoming);
-      if (state.status === "ready" && state.source === "upload") void saveExperiments(incoming);
-    },
-    [state]
-  );
+  // unconditional writer exactly like they are. It must not look at `state`:
+  // received data is always a genuine upload, and on the landing page (or in
+  // the same tick as the workout log) `state` is still the previous screen,
+  // so a check on it silently skipped the save and the experiments were gone
+  // after a reload. Backup import shares this handler.
+  const handleSyncedExperiments = useCallback((incoming: Experiment[]) => {
+    setExperiments(incoming);
+    void saveExperiments(incoming);
+  }, []);
 
   // A wholly separate upload, independent of the SugarWOD flow above: its own
   // state, its own parser, never joined to `state.rows`. See BodyCompTab.

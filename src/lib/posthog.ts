@@ -44,7 +44,9 @@ export type InteractionName =
   | "tag_created"
   | "tag_edited"
   | "tags_exported"
-  | "tags_imported";
+  | "tags_imported"
+  | "backup_exported"
+  | "backup_imported";
 
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }

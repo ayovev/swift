@@ -5,6 +5,9 @@ import { Button, buttonVariants } from "@/components/ui/button";
 interface FilePickerButtonProps extends VariantProps<typeof buttonVariants> {
   onFile: (file: File) => void;
   ariaLabel?: string;
+  /** The picker's file filter. Defaults to CSV, what both uploads take. */
+  accept?: string;
+  disabled?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -20,6 +23,8 @@ interface FilePickerButtonProps extends VariantProps<typeof buttonVariants> {
 export function FilePickerButton({
   onFile,
   ariaLabel,
+  accept = ".csv,text/csv",
+  disabled,
   className,
   variant = "outline",
   size = "sm",
@@ -31,13 +36,13 @@ export function FilePickerButton({
 
   return (
     <>
-      <Button variant={variant} size={size} className={className} onClick={open} aria-label={ariaLabel}>
+      <Button variant={variant} size={size} className={className} onClick={open} aria-label={ariaLabel} disabled={disabled}>
         {children}
       </Button>
       <input
         ref={inputRef}
         type="file"
-        accept=".csv,text/csv"
+        accept={accept}
         className="sr-only"
         tabIndex={-1}
         onChange={(e) => {

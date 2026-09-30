@@ -142,3 +142,16 @@ describe("analytics — event payloads carry no workout content", () => {
     }
   });
 });
+
+describe("analytics — backup", () => {
+  it("reports export and import as bare interaction names, nothing about the file", async () => {
+    const { initAnalytics, capture } = await loadAnalytics("phc_test");
+    initAnalytics();
+    capture({ name: "interaction_used", props: { interaction: "backup_exported" } });
+    capture({ name: "interaction_used", props: { interaction: "backup_imported" } });
+    const calls = mocked.capture.mock.calls;
+    expect(calls.map((c) => c[1])).toEqual([{ interaction: "backup_exported" }, { interaction: "backup_imported" }]);
+    // No filename, no counts: the name is the whole payload.
+    expect(JSON.stringify(calls)).not.toMatch(/swift-backup|\.json|\d{4}-\d{2}-\d{2}/);
+  });
+});

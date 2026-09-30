@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ExportBackupButton } from "@/components/backup/ExportBackupButton";
+import { useBackupImport } from "@/components/backup/useBackupImport";
 import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
 import { ACTIVE_SEGMENT_CLASSES } from "./SegmentedControl";
 import { FilePickerButton } from "./FilePickerButton";
@@ -86,8 +88,8 @@ function DatasetRow({ title, detail, action }: { title: string; detail: string; 
 /**
  * Everything on the dashboard that is neither navigation nor view scope,
  * in one sheet behind the header's single Settings button: replacing either
- * uploaded file, syncing to or from another device, accent and colour mode,
- * and Start over.
+ * uploaded file, backing up to or restoring from a file, syncing to or from
+ * another device, accent and colour mode, and Start over.
  *
  * These used to be six separate controls across the header (and "Replace
  * file" for InBody only on the Body Comp tab). They're used monthly at most
@@ -107,6 +109,21 @@ export function SettingsSheet(props: SettingsSheetProps) {
   const [open, setOpen] = useState(false);
   const { accent, setAccent, mode, setMode, resolvedMode } = useTheme();
   const upload = props.source === "upload";
+  // Sample data is never stored, so importing over it has nothing to confirm.
+  const backupImport = useBackupImport({
+    existing: {
+      workout: upload ? props.workoutRows.length : null,
+      bodyComp: upload && props.bodyComp.status === "ready" ? props.bodyComp.rows.length : null,
+      experiments: upload && props.experiments.length > 0 ? props.experiments.length : null,
+      tags: upload && props.tags.length > 0 ? props.tags.length : null,
+    },
+    handlers: {
+      workout: props.onSyncedWorkoutData,
+      bodyComp: props.onSyncedBodyCompData,
+      experiments: props.onSyncedExperiments,
+      tags: props.onSyncedTags,
+    },
+  });
 
   const reset = () => {
     setOpen(false);
@@ -135,7 +152,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-5 sm:px-7">
           <DialogTitle className="text-lg font-semibold">Settings</DialogTitle>
           <DialogDescription className="sr-only">
-            Your data, other devices, appearance, and starting over.
+            Your data, backup, other devices, appearance, and starting over.
           </DialogDescription>
           <DialogPrimitive.Close asChild>
             <Button variant="ghost" size="sm" className="-mr-2 size-9 p-0" aria-label="Close settings">
@@ -177,6 +194,49 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 ? "Stored in this browser only. There's no account and no server."
                 : "This is sample data. Nothing is stored."}
             </p>
+          </Section>
+
+          <Section title="Backup">
+            <p className="text-sm leading-relaxed">
+              Save everything stored in this browser as one file, and restore it here or on another computer. The file
+              holds your full training and body composition history. Keep it somewhere private.
+            </p>
+            <DatasetRow
+              title="Export backup"
+              detail="Workout log, body composition, experiments, tags"
+              action={
+                <ExportBackupButton
+                  workoutRows={props.workoutRows}
+                  bodyComp={props.bodyComp}
+                  experiments={props.experiments}
+                  tags={props.tags}
+                  disabled={!upload}
+                />
+              }
+            />
+            <DatasetRow
+              title="Import backup"
+              detail="Replaces what is stored here, after you confirm"
+              action={
+                <FilePickerButton
+                  onFile={backupImport.importFile}
+                  accept="application/json,.json"
+                  ariaLabel="Import backup"
+                  className="h-8"
+                >
+                  Choose file
+                </FilePickerButton>
+              }
+            />
+            {backupImport.message ? (
+              <p role="status" className="text-[13px] text-muted-foreground">
+                {backupImport.message}
+              </p>
+            ) : null}
+            {!upload ? (
+              <p className="text-[13px] text-muted-foreground">Sample data can't be exported.</p>
+            ) : null}
+            {backupImport.dialog}
           </Section>
 
           <Section title="Other devices">

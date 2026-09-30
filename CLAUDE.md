@@ -49,8 +49,10 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
    "Replace file" for the workout log and for InBody, both in the dashboard's Settings sheet
    (the InBody one also on the Body Comp view) — let an athlete bring in a fresh CSV without
    wiping anything else. They call the exact same upload handlers a first upload uses, so only
-   the one dataset being replaced changes. This does not extend to analytics — constraint 2
-   below is unaffected.
+   the one dataset being replaced changes. Backup export/import (Settings; import also on the
+   landing page) is the same stance: Export downloads a file to the athlete's own disk and Import
+   reads a local `File`, so nothing is uploaded ("Architecture: backup" below). This does not
+   extend to analytics — constraint 2 below is unaffected.
 2. **Analytics may only send closed-vocabulary usage events.** See `src/lib/posthog.ts`: the
    `SwiftEvent` union *is* the entire analytics surface, and it is deliberately narrow rather
    than `Record<string, unknown>`. Never add workout content, movement names, athlete notes,
@@ -447,7 +449,8 @@ back to one.
   four members and `decodeHeader` rejects any other name (`tests/chunking.test.ts` pins that
   `preferences` and `theme` are rejected). **A new persisted dataset that is the athlete's data must
   be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a
-  case in `planReceived`, an `onSynced*` handler in `App.tsx`); a new preference or setting must not.
+  case in `planReceived`, an `onSynced*` handler in `App.tsx`), which also adds it to backup, since
+  `BackupDatasets` is keyed by `SyncDataset`; a new preference or setting must not.
   **Everything that arrives is validated before anything is written**, to the shape its own parser
   produces (`validateReceived.ts` for the workout log, InBody history and experiments,
   `validateTagList` for tags). Validation is all-or-nothing per dataset: one bad row rejects that
@@ -474,6 +477,43 @@ back to one.
   `connection_dropped`, `declined_overwrite`, `unsupported_browser`, `invalid_data`). No device identifiers, no
   session/pairing tokens, no SDP fragments — the payload types make that structurally
   impossible, not just a convention (`tests/syncAnalytics.test.ts`).
+
+## Architecture: backup
+
+`src/lib/backup/` and `src/components/backup/` let an athlete download everything they have in
+the app as one JSON file and restore it later, after clearing the browser or on another computer.
+The workout and InBody CSVs are already their own backups; what only a backup file preserves is
+**experiments and context tags**. It reuses sync's validators and planner rather than growing its
+own, so the two can't drift on what a valid row is.
+
+- **Format (v1)**: `{ format: "swift-backup", version, exportedAt, encoding: "plain", datasets }`.
+  `datasets` holds the same bare arrays sync puts on the wire, keyed by `SyncDataset`. Athlete data
+  only: never theme, grouping or date range. Empty `experiments`/`tags` are omitted on export, so a
+  backup only ever replaces, never tells an import to clear something. Unknown dataset keys are
+  ignored; a newer `version` or unknown `encoding` is refused with "made by a newer version".
+- **Encryption is deliberately not built but not designed out.** `encoding` says how the body is
+  stored (an encrypted encoding would replace `datasets` with ciphertext of the same JSON, so
+  everything after the envelope is shared), and `readBackup()` is async with a `needs_passphrase`
+  result that v1 never returns. The UI already awaits it. The file is plaintext health data; the
+  Settings copy says so once, plainly.
+- **Import replaces per dataset, never merges**, and a missing dataset leaves the local copy alone.
+  A backup must contain a workout log (Export always writes one), so a half-restored state where
+  InBody data persists but the app lands on the upload screen can't happen.
+- **Nothing is written until the whole file is usable.** `planBackupImport()` runs `planReceived`
+  with collecting handlers; any dataset that fails validation aborts the import with a reason, and
+  the athlete confirms once for everything that would overwrite. `flush()` then applies the
+  datasets with **the workout log last**. That order is load-bearing: applying the workout log
+  moves `App` to its reveal screen, which unmounts the dashboard and any dialog inside it, so a
+  dataset still waiting on a confirmation would be dropped. (`SyncDialog`'s one-confirmation-per-
+  dataset flow has this same exposure; it is not fixed here.)
+- **Wiring**: Export (`ExportBackupButton`) and Import (`useBackupImport`) sit in Settings' Backup
+  section; import is also on the landing page, the only place a new browser can reach. Sample data
+  can't be exported and has nothing to confirm on import (it is never stored). Import errors stay
+  inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
+  the `onSynced*` handlers. `handleSyncedExperiments` must not look at `state`: on the landing page
+  it is still the previous screen, which used to make received experiments vanish on reload.
+- **Analytics**: `interaction_used` with `backup_exported`/`backup_imported`, nothing else: no
+  filename, counts or failure text.
 
 ## Architecture: dashboard layout
 
@@ -502,8 +542,8 @@ home. Read the header comments of the files named here before moving anything be
   from the whole unfiltered log as of today — a date control there would silently do nothing.
 - **Manage** and **Preferences** (monthly at most / once) — `SettingsSheet.tsx`, behind the
   header's single Settings button (a ghost button in muted text, so it never out-weighs the
-  section links): replace either file, send/receive to another device, accent and mode, Start
-  over. Every control there calls the same handler it did when it lived in the header; moving
+  section links): replace either file, back up to or restore from a file, send/receive to another
+  device, accent and mode, Start over. Every control there calls the same handler it did when it lived in the header; moving
   them changed where they live, not what they do. The accent/mode UI there is a second rendering
   of the same `useTheme()` state `ThemeControls.tsx` renders on the landing page.
 
