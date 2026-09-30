@@ -10,14 +10,15 @@
  * `SyncDataset`, so adding a fifth persisted dataset fails to compile here
  * until backup is updated, the same rule sync already has.
  *
- * Encryption is not built, but the format leaves room for it: `encoding`
- * says how the body is stored. Only "plain" exists today; an encrypted
- * encoding would replace `datasets` with ciphertext of the same JSON, so
- * everything after the envelope is shared. `readBackup` is async, and its
- * result already has a `needs_passphrase` outcome, for that reason: the UI
- * won't need re-plumbing when Web Crypto arrives.
+ * Encryption is optional. `encoding` says how the body is stored: "plain"
+ * keeps `datasets` readable, "aes-256-gcm" replaces it with ciphertext of the
+ * same JSON (see encryption.ts), so everything after the envelope (validation,
+ * planTransfer) is shared. `readBackup` is async and returns `needs_passphrase`
+ * for an encrypted file given none, `wrong_passphrase` when it can't be opened.
+ * The passphrase is an argument and nothing more: never stored, never logged.
  */
 import type { SyncDataset } from "@/lib/sync/chunking";
+import { cryptoAvailable, decryptText, encryptText, type EncryptedPayload } from "./encryption";
 
 export const BACKUP_FORMAT = "swift-backup";
 export const BACKUP_VERSION = 1;
@@ -25,35 +26,81 @@ export const BACKUP_VERSION = 1;
 /** Each key holds the raw array sync would put on the wire for that dataset. */
 export type BackupDatasets = Partial<Record<SyncDataset, unknown[]>>;
 
-export interface BackupFile {
+interface BackupEnvelope {
   format: typeof BACKUP_FORMAT;
   version: typeof BACKUP_VERSION;
   exportedAt: string;
+}
+
+export interface PlainBackupFile extends BackupEnvelope {
   encoding: "plain";
   datasets: BackupDatasets;
 }
 
+export interface EncryptedBackupFile extends BackupEnvelope, EncryptedPayload {
+  encoding: typeof ENCRYPTED_ENCODING;
+}
+
+export type BackupFile = PlainBackupFile | EncryptedBackupFile;
+
+export const ENCRYPTED_ENCODING = "aes-256-gcm";
+
 export type ReadBackupResult =
   | { status: "ok"; datasets: BackupDatasets; exportedAt: string }
   | { status: "invalid"; reason: string }
-  | { status: "needs_passphrase" };
+  | { status: "needs_passphrase" }
+  | { status: "wrong_passphrase" };
+
+/** Authenticated with the ciphertext, so it can't be replayed under another header. */
+const backupAad = (version: number, encoding: string) => `${BACKUP_FORMAT}:${version}:${encoding}`;
 
 /**
  * An empty dataset is omitted rather than written as `[]`: a backup then
- * never tells an import to clear something, it only ever replaces.
+ * never tells a restore to clear something, it only ever replaces.
  */
-export function serializeBackup(datasets: BackupDatasets, exportedAt: Date): string {
+function keepNonEmpty(datasets: BackupDatasets): BackupDatasets {
   const kept: BackupDatasets = {};
   for (const key of Object.keys(datasets) as SyncDataset[]) {
     const list = datasets[key];
     if (list && list.length > 0) kept[key] = list;
   }
-  const file: BackupFile = {
+  return kept;
+}
+
+export function serializeBackup(datasets: BackupDatasets, exportedAt: Date): string {
+  const file: PlainBackupFile = {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
     exportedAt: exportedAt.toISOString(),
     encoding: "plain",
-    datasets: kept,
+    datasets: keepNonEmpty(datasets),
+  };
+  return JSON.stringify(file, null, 2);
+}
+
+/**
+ * Same content as `serializeBackup`, encrypted under `passphrase`. What stays
+ * readable in the file: format, version, export time, the KDF parameters and
+ * the approximate size. `options.iterations` exists so tests can run fast.
+ */
+export async function serializeEncryptedBackup(
+  datasets: BackupDatasets,
+  exportedAt: Date,
+  passphrase: string,
+  options: { iterations?: number } = {}
+): Promise<string> {
+  const payload = await encryptText(
+    JSON.stringify(keepNonEmpty(datasets)),
+    passphrase,
+    backupAad(BACKUP_VERSION, ENCRYPTED_ENCODING),
+    options
+  );
+  const file: EncryptedBackupFile = {
+    format: BACKUP_FORMAT,
+    version: BACKUP_VERSION,
+    exportedAt: exportedAt.toISOString(),
+    encoding: ENCRYPTED_ENCODING,
+    ...payload,
   };
   return JSON.stringify(file, null, 2);
 }
@@ -65,7 +112,17 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const NEWER_VERSION = "That backup was made by a newer version of Swift. Refresh this page and try again.";
 
-export async function readBackup(text: string): Promise<ReadBackupResult> {
+const isString = (value: unknown): value is string => typeof value === "string";
+
+/** The encrypted envelope's own fields, or null when any is missing or the wrong kind. */
+function encryptedPayload(parsed: Record<string, unknown>): EncryptedPayload | null {
+  const { kdf, iv, ciphertext } = parsed;
+  if (!isRecord(kdf) || kdf.name !== "pbkdf2-sha256") return null;
+  if (typeof kdf.iterations !== "number" || !isString(kdf.salt) || !isString(iv) || !isString(ciphertext)) return null;
+  return { kdf: { name: "pbkdf2-sha256", iterations: kdf.iterations, salt: kdf.salt }, iv, ciphertext };
+}
+
+export async function readBackup(text: string, options: { passphrase?: string } = {}): Promise<ReadBackupResult> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -79,9 +136,28 @@ export async function readBackup(text: string): Promise<ReadBackupResult> {
     return { status: "invalid", reason: "That backup has no readable version." };
   }
   if (parsed.version > BACKUP_VERSION) return { status: "invalid", reason: NEWER_VERSION };
-  if (parsed.encoding !== "plain") return { status: "invalid", reason: NEWER_VERSION };
 
-  const raw = parsed.datasets;
+  let raw: unknown;
+  if (parsed.encoding === "plain") {
+    raw = parsed.datasets;
+  } else if (parsed.encoding === ENCRYPTED_ENCODING) {
+    const payload = encryptedPayload(parsed);
+    if (!payload) return { status: "invalid", reason: "That backup's encryption details are damaged." };
+    if (options.passphrase === undefined) return { status: "needs_passphrase" };
+    if (!cryptoAvailable()) {
+      return { status: "invalid", reason: "This browser can't open encrypted backups. Try another browser." };
+    }
+    const opened = await decryptText(payload, options.passphrase, backupAad(parsed.version, ENCRYPTED_ENCODING));
+    if (opened.status !== "ok") return opened;
+    try {
+      raw = JSON.parse(opened.plaintext);
+    } catch {
+      return { status: "invalid", reason: "That backup opened but its contents are damaged." };
+    }
+  } else {
+    return { status: "invalid", reason: NEWER_VERSION };
+  }
+
   if (!isRecord(raw)) return { status: "invalid", reason: "That backup has no datasets." };
 
   const datasets: BackupDatasets = {};

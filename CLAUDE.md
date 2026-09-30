@@ -349,6 +349,16 @@ as starting points and check them against real exports before trusting a number.
   devices, not by an automated two-device test. A joiner running an older cached build rejects a
   manifest naming a dataset it doesn't know (`tags`), so both devices need the current build; a
   refresh fixes it.
+- **Backup encryption.** The iteration count (600,000) and the strength bands are first drafts: measure
+  derive time on a mid-range phone before raising the former. The strength hint is length-only by design
+  (character classes are ignored on purpose, since composition rules reward `Password1!`), with one
+  guard for fewer than 5 distinct characters. The known gap, pinned in `tests/passphrase.test.ts`, is that
+  long predictable passphrases (`passwordpasswordpassword`, `1234567890123456`) rate "Strong". Left as is
+  because encrypted backups are optional and the hint is not a gate; if it needs to be smarter, the options
+  are cheap pattern checks (repeated chunks, sequences, a short common-passwords list) or a real estimator
+  such as zxcvbn loaded only when the checkbox is ticked. Argon2id would be stronger against GPUs but needs a library; the upgrade path is
+  a new `encoding` via `kdf.name`. There is no passphrase recovery, by design. Not tested by hand on a real
+  password manager beyond the `autocomplete` attributes.
 - **Cycles.** Automatic detection is deferred. First prototype worth trying: a rolling share of
   lift sessions per lift (about an 8-week window) with a boundary where the leading lifts change,
   reviewed by eye on a multi-year history before committing to it. A lift can show a change with
@@ -492,24 +502,45 @@ The workout and InBody CSVs are already their own backups; what only a backup fi
 **experiments and context tags**. It reuses sync's validators and planner rather than growing its
 own, so the two can't drift on what a valid row is.
 
-- **Format (v1)**: `{ format: "swift-backup", version, exportedAt, encoding: "plain", datasets }`.
-  `datasets` holds the same bare arrays sync puts on the wire, keyed by `SyncDataset`. Athlete data
+- **Format (v1)**: `{ format: "swift-backup", version, exportedAt, encoding: "plain", datasets }`, or
+  for an encrypted one `encoding: "aes-256-gcm"` with `kdf`, `iv` and `ciphertext` in place of
+  `datasets`. `datasets` (or the decrypted plaintext) holds the same bare arrays sync puts on the wire,
+  keyed by `SyncDataset`. Athlete data
   only: never theme, grouping or date range. Empty `experiments`/`tags` are omitted from the file, so a
   backup only ever replaces, never tells a restore to clear something. Unknown dataset keys are
   ignored; a newer `version` or unknown `encoding` is refused with "made by a newer version".
-- **Encryption is deliberately not built but not designed out.** `encoding` says how the body is
-  stored (an encrypted encoding would replace `datasets` with ciphertext of the same JSON, so
-  everything after the envelope is shared), and `readBackup()` is async with a `needs_passphrase`
-  result that v1 never returns. The UI already awaits it. The file is plaintext health data; the
-  Settings copy says so once, plainly.
+- **Encryption is optional and off by default** (`encryption.ts`, `passphrase.ts`). PBKDF2-HMAC-SHA-256
+  (`KDF_ITERATIONS` = 600,000, OWASP's floor for it) into an AES-256-GCM key, a fresh random 16-byte salt
+  and 12-byte IV per export, all through Web Crypto: **no dependency**. PBKDF2 was chosen because it is
+  native (nothing to ship, and nothing to be abandoned before a backup is opened years later), not
+  because it is the strongest: it needs almost no memory, so GPUs guess faster against it than against
+  scrypt or Argon2id, and the 8-character floor and the strength hint are what make up for that. The KDF
+  is named in the file (`kdf.name`), so Argon2id is a new `encoding`, not a rewrite, and PBKDF2 backups
+  must stay readable forever. The plaintext encrypted is exactly the plain `datasets` JSON, so
+  validation and `planTransfer` are shared. The additional authenticated data
+  (`swift-backup:<version>:<encoding>`) binds the ciphertext to its header. The iteration count is stored
+  per file and bounds-checked on read (`MAX_KDF_ITERATIONS`) so a crafted file can't hang the tab. The
+  passphrase is NFKC-normalised before deriving (so accents typed on two devices match) and is otherwise
+  untouched: not trimmed, not case-folded. **The passphrase is never stored, logged, sent or put in
+  analytics**: it is a function argument, held in component state only until the download or restore
+  finishes. AES-GCM can't tell a wrong passphrase from a damaged or tampered file, so `readBackup`
+  returns `wrong_passphrase` for both and the UI says so. There is no recovery: Swift has no account and
+  no server, and the form says so once. What the file still shows: format, version, export time, KDF
+  parameters and the approximate size, never dataset names or counts. `readBackup` returns
+  `needs_passphrase` for an encrypted file given none. A plain backup is plaintext health data; the
+  Settings copy says so once.
 - **Restore replaces per dataset, never merges**, and a missing dataset leaves the local copy alone.
   A backup must contain a workout log (Download always writes one), so a half-restored state where
   InBody data persists but the app lands on the upload screen can't happen.
 - **Nothing is written until the whole file is usable.** It uses the same all-or-nothing
   `planTransfer()` as sync (see the sync section for why the workout log is applied last): any
   dataset that fails validation aborts the restore with a reason, and the athlete confirms once for
-  everything that would overwrite through the shared `ReplaceConfirmDialog`.
-- **Wiring**: Download (`DownloadBackupButton`) and Restore (`useBackupRestore`) sit in Settings'
+  everything that would overwrite through the shared `ReplaceConfirmDialog`. An encrypted file asks for
+  its passphrase first (`PassphraseDialog`, which stays open on a wrong one), before any overwrite
+  confirmation; nothing is written while it is locked.
+- **Wiring**: Download (`DownloadBackupButton`, with `BackupPassphraseForm`: a "Protect with a
+  passphrase" checkbox, the passphrase typed twice, a length-band strength hint and a show/hide toggle
+  inside each field) and Restore (`useBackupRestore`) sit in Settings'
   Backup section; restore is also on the landing page ("Restore from a backup", grouped with sync under "Already use
   Swift?"), the only place a new browser can reach. The landing page's dropzone and paste handler
   route a `.json` file (`looksLikeBackup`) to restore instead of the CSV parser, which would reject it. The labels are Backup/Restore, not Export/Import, because the athlete's
@@ -521,7 +552,7 @@ own, so the two can't drift on what a valid row is.
   it is still the previous screen, which used to make received experiments vanish on reload.
 - **Analytics**: `interaction_used` with `backup_exported`/`backup_imported` (the event names predate the Download/Restore labels and stay as
   they are: a closed vocabulary, not copy), nothing else: no
-  filename, counts or failure text.
+  filename, counts or failure text, and not whether a backup was encrypted (`tests/backupPassphrase.test.tsx` pins that the passphrase and the word "encrypted" never reach a payload).
 
 ## Architecture: dashboard layout
 
