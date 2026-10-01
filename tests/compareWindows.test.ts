@@ -133,8 +133,8 @@ describe("compareWindows — eligibility and caveats", () => {
     expect(withTags.bodyComp).toEqual(without.bodyComp);
     const text = withTags.caveats.join("\n");
     expect(text).toMatch(/Window B overlaps "Lisbon" \(travel/);
-    expect(text).toMatch(/Window A overlaps cut tag/);
-    expect(text).toMatch(/Window B overlaps cut tag/);
+    expect(text).toMatch(/Window A overlaps cut period/);
+    expect(text).toMatch(/Window B overlaps cut period/);
     expect(text).not.toMatch(/injury/);
   });
 

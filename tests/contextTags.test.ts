@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  validateTagList,
   acknowledgeTags,
   describeTag,
   overlappingTags,
-  parseTagsJson,
-  serializeTags,
   tagLabel,
   tagOverlaps,
 } from "@/lib/analytics/contextTags";
@@ -68,7 +67,7 @@ describe("naming", () => {
   it("falls back to the type when there is no label", () => {
     expect(tagLabel(tag({ label: undefined }))).toBe("cut");
     expect(tagLabel(tag({ label: "  " }))).toBe("cut");
-    expect(describeTag(tag({ label: undefined, endDate: null }))).toBe("cut tag (Mar 1, 2026 – ongoing)");
+    expect(describeTag(tag({ label: undefined, endDate: null }))).toBe("cut period (Mar 1, 2026 – ongoing)");
     expect(describeTag(tag())).toBe('"Spring cut" (cut, Mar 1, 2026 – Apr 30, 2026)');
   });
 });
@@ -90,32 +89,34 @@ describe("acknowledgeTags", () => {
   });
 });
 
-describe("JSON export and import", () => {
-  it("round-trips", () => {
-    const tags = [tag(), tag({ id: "x", type: "other", label: undefined, note: "sleep was bad", endDate: null })];
-    expect(parseTagsJson(serializeTags(tags))).toEqual({ status: "ok", tags });
-  });
+describe("validateTagList", () => {
+  const ok = (list: unknown) => validateTagList(list);
 
-  it("accepts a bare array", () => {
-    expect(parseTagsJson(JSON.stringify([tag()]))).toEqual({ status: "ok", tags: [tag()] });
+  it("accepts a valid list unchanged, including an open-ended one", () => {
+    const tags = [tag(), tag({ id: "x", type: "other", label: undefined, note: "sleep was bad", endDate: null })];
+    expect(ok(tags)).toEqual({ status: "ok", tags });
   });
 
   it.each([
-    ["not json", "{", /isn't valid JSON/],
-    ["no list", "{}", /doesn't contain a list/],
-    ["bad type", JSON.stringify([tag({ type: "nap" as never })]), /Tag 1 has an unknown type/],
-    ["bad date", JSON.stringify([tag({ startDate: "3/1/2026" })]), /Tag 1 has no valid start date/],
-    ["end before start", JSON.stringify([tag({ endDate: "2026-02-01" })]), /Tag 1 ends before it starts/],
-    ["duplicate id", JSON.stringify([tag(), tag()]), /Tag 2 repeats an id/],
-    ["no id", JSON.stringify([{ ...tag(), id: "" }]), /Tag 1 has no id/],
-  ])("rejects %s with a sentence naming the problem", (_name, text, message) => {
-    const r = parseTagsJson(text);
+    ["no list", {}, /doesn't contain a list/],
+    ["bad type", [tag({ type: "nap" as never })], /Period 1 has an unknown type/],
+    ["bad date", [tag({ startDate: "3/1/2026" })], /Period 1 has no valid start date/],
+    ["end before start", [tag({ endDate: "2026-02-01" })], /Period 1 ends before it starts/],
+    ["duplicate id", [tag(), tag()], /Period 2 repeats an id/],
+    ["no id", [{ ...tag(), id: "" }], /Period 1 has no id/],
+    ["bad compare-against date", [tag({ baselineStart: "Feb 1" })], /Period 1 has a compare-against start that isn't YYYY-MM-DD/],
+  ])("rejects %s with a sentence naming the problem", (_name, list, message) => {
+    const r = ok(list);
     expect(r.status).toBe("invalid");
     expect(r.status === "invalid" && r.reason).toMatch(message);
   });
 
+  it("keeps an experiment's compare-against start", () => {
+    const experiment = tag({ type: "experiment", label: "Started 5/3/1", baselineStart: "2026-02-01" });
+    expect(ok([experiment])).toEqual({ status: "ok", tags: [experiment] });
+  });
+
   it("drops unknown keys", () => {
-    const r = parseTagsJson(JSON.stringify([{ ...tag(), secret: "x" }]));
-    expect(r).toEqual({ status: "ok", tags: [tag()] });
+    expect(ok([{ ...tag(), secret: "x" }])).toEqual({ status: "ok", tags: [tag()] });
   });
 });

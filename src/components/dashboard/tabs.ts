@@ -5,8 +5,8 @@ export const OVERVIEW_TAB = "overview";
 export const WORKOUTS_TAB = "workouts";
 export const BODY_COMP_TAB = "body-comp";
 export const LIFTS_TAB = "lifts";
+export const COMPARE_TAB = "compare";
 export const PERIODS_TAB = "periods";
-export const TAGS_TAB = "tags";
 
 export interface TabDescriptor {
   value: string;
@@ -18,7 +18,7 @@ export interface TabDescriptor {
     | "Modalities"
     | "Body composition"
     | "Progress"
-    | "Tags"
+    | "Periods"
     | "Compare";
 }
 
@@ -35,8 +35,9 @@ export interface TabDescriptor {
  * present: the whole-athlete Alignment read, a plateau row per lift or
  * benchmark, and each lift's estimated 1RM per unit of body mass (see
  * LiftsTab), Compare, which sets any range against the one before it and is
- * also where saved experiments and training blocks live (see PeriodsTab), and
- * Tags, the athlete's own labelled stretches of time (see TagsTab).
+ * also where saved periods (the ones for something you changed) are opened
+ * (see CompareTab), and Periods, the athlete's own labelled stretches of time —
+ * experiments included — (see PeriodsTab; stored as "tags" under the hood).
  */
 export const ALL_TABS: TabDescriptor[] = [
   { value: OVERVIEW_TAB, label: "Overview", group: "Overview" },
@@ -53,6 +54,6 @@ export const ALL_TABS: TabDescriptor[] = [
   })),
   { value: BODY_COMP_TAB, label: "Body Comp", group: "Body composition" },
   { value: LIFTS_TAB, label: "Progress", group: "Progress" },
-  { value: PERIODS_TAB, label: "Compare", group: "Compare" },
-  { value: TAGS_TAB, label: "Tags", group: "Tags" },
+  { value: COMPARE_TAB, label: "Compare", group: "Compare" },
+  { value: PERIODS_TAB, label: "Periods", group: "Periods" },
 ];

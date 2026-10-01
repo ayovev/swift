@@ -3,7 +3,6 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import type { VariantProps } from "class-variance-authority";
 import type { SyncRole } from "@/lib/posthog";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
-import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
@@ -15,11 +14,9 @@ interface SyncEntryPointProps extends VariantProps<typeof buttonVariants> {
   outgoing?: OutgoingDataset[];
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
-  existingExperimentsCount: number | null;
   existingTagsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
-  onSyncedExperiments: (experiments: Experiment[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
   disabled?: boolean;
   className?: string;
@@ -36,11 +33,9 @@ export function SyncEntryPoint({
   outgoing,
   existingWorkoutCount,
   existingBodyCompCount,
-  existingExperimentsCount,
   existingTagsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
-  onSyncedExperiments,
   onSyncedTags,
   disabled,
   variant = "outline",
@@ -62,11 +57,9 @@ export function SyncEntryPoint({
         {...(outgoing ? { outgoing } : {})}
         existingWorkoutCount={existingWorkoutCount}
         existingBodyCompCount={existingBodyCompCount}
-        existingExperimentsCount={existingExperimentsCount}
         existingTagsCount={existingTagsCount}
         onSyncedWorkoutData={onSyncedWorkoutData}
         onSyncedBodyCompData={onSyncedBodyCompData}
-        onSyncedExperiments={onSyncedExperiments}
         onSyncedTags={onSyncedTags}
       />
     </>

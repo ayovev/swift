@@ -7,6 +7,12 @@
  * here — so the framing logic is unit-testable without a real connection.
  */
 
+/**
+ * `experiments` is receive-only: an experiment is a tag of type "experiment"
+ * now, so nothing sends this dataset, but an older device (or an older backup
+ * file) still does, and the header is accepted so it can be converted to tags
+ * (receivedDatasets.ts) instead of being refused.
+ */
 export type SyncDataset = "workout" | "bodyComp" | "experiments" | "tags";
 
 const SYNC_DATASETS: readonly SyncDataset[] = ["workout", "bodyComp", "experiments", "tags"];

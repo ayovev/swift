@@ -39,7 +39,6 @@ describe("serializeBackup / readBackup", () => {
   it.each([
     ["not JSON", "{nope", /isn't valid JSON/],
     ["a bare array", "[]", /isn't a Swift backup/],
-    ["the tags export", JSON.stringify({ swiftTags: 1, tags: [] }), /isn't a Swift backup/],
     ["a newer version", envelope({ version: 2 }), /newer version of Swift/],
     ["an unknown encoding", envelope({ encoding: "aes-gcm-pbkdf2" }), /newer version of Swift/],
     ["a missing version", envelope({ version: undefined }), /no readable version/],

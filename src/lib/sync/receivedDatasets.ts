@@ -1,5 +1,5 @@
 import { validateTagList } from "@/lib/analytics/contextTags";
-import type { Experiment } from "@/types/experiment";
+import { experimentToTag, mergeTagsById } from "@/lib/analytics/experimentTags";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
@@ -15,8 +15,14 @@ import { validateBodyCompRows, validateExperiments, validateWorkoutRows, type Va
  * connection.
  *
  * Sync carries the athlete's data and nothing else: the workout log, the
- * InBody history, experiments and context tags. How the app looks or is
- * configured (theme, grouping, date range) stays on each device.
+ * InBody history and context tags (an experiment is a tag of type
+ * "experiment"). How the app looks or is configured (theme, grouping, date
+ * range) stays on each device.
+ *
+ * `experiments` is still a name on the wire, but only for receiving: an older
+ * device, or an older backup file, sends experiments as their own list. They
+ * are validated as before and folded into the tags that arrive with them, so
+ * this device only ever holds one list. Nothing sends it any more.
  *
  * Every payload is validated first (`validateReceived.ts`, and
  * `validateTagList` for tags): one that fails, or that arrived unreadable, is
@@ -30,14 +36,12 @@ export interface ExistingCounts {
   /** `null` means nothing local to conflict with. */
   workout: number | null;
   bodyComp: number | null;
-  experiments: number | null;
   tags: number | null;
 }
 
 export interface ReceivedHandlers {
   workout: (rows: SugarWodRow[]) => void;
   bodyComp: (rows: InBodyRow[]) => void;
-  experiments: (experiments: Experiment[]) => void;
   tags: (tags: ContextTag[]) => void;
 }
 
@@ -93,17 +97,35 @@ export function planReceived(
 
   offer<SugarWodRow>("workout", received.workout, validateWorkoutRows, existing.workout, handlers.workout);
   offer<InBodyRow>("bodyComp", received.bodyComp, validateBodyCompRows, existing.bodyComp, handlers.bodyComp);
-  offer<Experiment>("experiments", received.experiments, validateExperiments, existing.experiments, handlers.experiments);
-  offer<ContextTag>(
-    "tags",
-    received.tags,
-    (raw) => {
-      const result = validateTagList(raw);
-      return result.status === "ok" ? { status: "ok", value: result.tags } : result;
-    },
-    existing.tags,
-    handlers.tags
-  );
+
+  // Experiments from an older sender become tags, joined with any tags that
+  // came alongside them, so the tags dataset is offered (and conflicts are
+  // counted) once, as the one list it now is.
+  let legacyTags: ContextTag[] = [];
+  if (received.experiments !== undefined) {
+    const legacy = validateExperiments(received.experiments);
+    if (legacy.status === "invalid") skipped.push({ dataset: "experiments", reason: legacy.reason });
+    else legacyTags = legacy.value.map(experimentToTag);
+  }
+
+  const validateTags = (raw: unknown): Validated<ContextTag[]> => {
+    const result = validateTagList(raw);
+    return result.status === "ok" ? { status: "ok", value: result.tags } : result;
+  };
+  if (received.tags !== undefined) {
+    offer<ContextTag>(
+      "tags",
+      received.tags,
+      (raw) => {
+        const result = validateTags(raw);
+        return result.status === "ok" ? { status: "ok", value: mergeTagsById(result.value, legacyTags) } : result;
+      },
+      existing.tags,
+      handlers.tags
+    );
+  } else if (legacyTags.length > 0) {
+    offer<ContextTag>("tags", legacyTags, validateTags, existing.tags, handlers.tags);
+  }
 
   return { conflicts, skipped };
 }

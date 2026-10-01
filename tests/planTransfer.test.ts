@@ -3,11 +3,10 @@ import { planTransfer } from "@/lib/sync/planTransfer";
 import type { ExistingCounts, ReceivedHandlers } from "@/lib/sync/receivedDatasets";
 import { scanRow, workoutRow } from "./fixtures/rows";
 
-const none: ExistingCounts = { workout: null, bodyComp: null, experiments: null, tags: null };
+const none: ExistingCounts = { workout: null, bodyComp: null, tags: null };
 const datasets = {
   workout: [workoutRow({ date: "03/05/2024", title: "FRAN" })],
   bodyComp: [scanRow("2026-04-01")],
-  experiments: [{ id: "e", date: "2024-05-01", label: "5/3/1" }],
   tags: [{ id: "t", type: "cut", label: "Cut", startDate: "2024-03-01", endDate: null }],
 };
 
@@ -16,7 +15,6 @@ function handlers() {
   const h: ReceivedHandlers = {
     workout: vi.fn(() => void calls.push("workout")),
     bodyComp: vi.fn(() => void calls.push("bodyComp")),
-    experiments: vi.fn(() => void calls.push("experiments")),
     tags: vi.fn(() => void calls.push("tags")),
   };
   return { h, calls };
@@ -29,26 +27,26 @@ describe("planTransfer", () => {
     expect(calls).toEqual([]);
     expect(plan.conflicts).toEqual([]);
     plan.flush();
-    expect(calls).toEqual(["tags", "experiments", "bodyComp", "workout"]);
+    expect(calls).toEqual(["tags", "bodyComp", "workout"]);
   });
 
   it("lists every dataset that would overwrite local data, with both counts", () => {
     const { h, calls } = handlers();
-    const plan = planTransfer(datasets, { workout: 10, bodyComp: null, experiments: 2, tags: null }, h);
+    const plan = planTransfer(datasets, { workout: 10, bodyComp: null, tags: 2 }, h);
     expect(plan.conflicts.map((c) => [c.dataset, c.existingCount, c.incomingCount])).toEqual([
       ["workout", 10, 1],
-      ["experiments", 2, 1],
+      ["tags", 2, 1],
     ]);
     plan.flush();
-    expect(calls).toEqual(["tags", "bodyComp"]);
+    expect(calls).toEqual(["bodyComp"]);
   });
 
   it("applies a conflicting dataset only once its apply has run, still with the workout log last", () => {
     const { h, calls } = handlers();
-    const plan = planTransfer(datasets, { workout: 10, bodyComp: 5, experiments: null, tags: null }, h);
+    const plan = planTransfer(datasets, { workout: 10, bodyComp: 5, tags: null }, h);
     for (const conflict of plan.conflicts) conflict.apply();
     plan.flush();
-    expect(calls).toEqual(["tags", "experiments", "bodyComp", "workout"]);
+    expect(calls).toEqual(["tags", "bodyComp", "workout"]);
   });
 
   it("declining leaves the conflicting datasets alone", () => {

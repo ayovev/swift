@@ -163,7 +163,7 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
               Compare with the {windowLengthDays(defaultWindowA(committed.window))} days before
             </Button>
             <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => ctx.onTag(committed.window)}>
-              Tag this range
+              Save as a period
             </Button>
             <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setCommitted(null)}>
               Clear

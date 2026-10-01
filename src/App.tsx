@@ -7,6 +7,7 @@ import { getAlignment } from "@/lib/analytics/alignment";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
 import { getExperimentInsight } from "@/lib/analytics/experimentInsight";
+import { experimentToTag, isExperimentTag, tagToExperiment } from "@/lib/analytics/experimentTags";
 import type { Granularity } from "@/lib/analytics/granularity";
 import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
 import { getRelativeStrength } from "@/lib/analytics/relativeStrength";
@@ -18,12 +19,12 @@ import { generateSampleBodyComp } from "@/lib/sample/generateSampleBodyComp";
 import { generateSampleExperiments } from "@/lib/sample/generateSampleExperiments";
 import { generateSampleTags } from "@/lib/sample/generateSampleTags";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
-import { loadExperiments, saveExperiments } from "@/lib/storage/experimentsStorage";
+import { migrateLegacyExperiments } from "@/lib/storage/legacyExperiments";
 import { loadTags, saveTags } from "@/lib/storage/tagsStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
-import type { Experiment, ExperimentFields, ExperimentInsight } from "@/types/experiment";
+import type { ExperimentInsight } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { ContextTag } from "@/types/tag";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -82,7 +83,6 @@ export default function App() {
   const [rangePreset, setRangePreset] = useState<DateRangePreset>("all_time");
   const [granularity, setGranularity] = useState<Granularity>("monthly");
   const [bodyComp, setBodyComp] = useState<BodyCompState>({ status: "idle" });
-  const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [tags, setTags] = useState<ContextTag[]>([]);
 
   // Restore whatever was uploaded last time — persistence is local-only (see
@@ -91,12 +91,13 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [rows, bodyRows, viewPrefs, storedExperiments, storedTags] = await Promise.all([
+      const [rows, bodyRows, viewPrefs, storedTags] = await Promise.all([
         loadWorkoutRows(),
         loadBodyCompRows(),
         loadViewPreferences(),
-        loadExperiments(),
-        loadTags(),
+        // Experiments are tags now; anything still stored as the old list is
+        // moved into the tags first (legacyExperiments.ts), then read as one.
+        migrateLegacyExperiments().then((migrated) => migrated ?? loadTags()),
       ]);
       if (cancelled) return;
       if (rows && rows.length > 0) {
@@ -105,7 +106,6 @@ export default function App() {
         setState({ status: "idle" });
       }
       if (bodyRows && bodyRows.length > 0) setBodyComp({ status: "ready", rows: bodyRows });
-      if (storedExperiments) setExperiments(storedExperiments);
       if (storedTags) setTags(storedTags);
       if (viewPrefs) {
         setGranularity(viewPrefs.granularity);
@@ -193,17 +193,19 @@ export default function App() {
     [state, bodyComp]
   );
 
-  // Same gate as plateauInsights: needs both datasets. Each experiment is
-  // analyzed independently (no cross-experiment view in v1), so this is a
-  // map keyed by experiment id rather than a single derived value.
+  // Same gate as plateauInsights: needs both datasets. Each experiment (a tag
+  // of type "experiment") is analyzed independently (no cross-experiment view
+  // in v1), so this is a map keyed by tag id rather than a single derived value.
   const experimentInsights = useMemo(
     () =>
       state.status === "ready" && bodyComp.status === "ready"
         ? new Map<string, ExperimentInsight>(
-            experiments.map((e) => [e.id, getExperimentInsight(e, state.rows, bodyComp.rows, new Date())])
+            tags
+              .filter(isExperimentTag)
+              .map((t) => [t.id, getExperimentInsight(tagToExperiment(t), state.rows, bodyComp.rows, new Date())])
           )
         : null,
-    [state, bodyComp, experiments]
+    [state, bodyComp, tags]
   );
 
   // Hold on "reveal" just long enough for UploadReveal's numbers to chalk
@@ -235,18 +237,16 @@ export default function App() {
       void saveWorkoutRows(rows);
       void saveViewPreferences({ granularity: "monthly", rangePreset: "all_time", customRange: null });
     } else {
-      // Fill in the datasets the Plateau Detector, Alignment,
-      // Experiments, Tags and Cycles tabs need, so sample mode has something for them to
-      // show instead of their empty states — entirely in memory, never
-      // persisted (see the two generators' own header comments). The
-      // functional setState form means a previously-restored *real*
-      // InBody upload or real logged experiments are never clobbered:
-      // sample data only fills in what's genuinely still empty.
+      // Fill in the datasets the Progress, Compare and Tags views need, so
+      // sample mode has something for them to show instead of their empty
+      // states — entirely in memory, never persisted (see the generators' own
+      // header comments). The functional setState form means a
+      // previously-restored *real* InBody upload or real tags are never
+      // clobbered: sample data only fills in what's genuinely still empty.
       const generatedBodyComp = generateSampleBodyComp(rows);
-      const generatedExperiments = generateSampleExperiments(rows);
       setBodyComp((prev) => (prev.status === "ready" ? prev : { status: "ready", rows: generatedBodyComp }));
-      setExperiments((prev) => (prev.length > 0 ? prev : generatedExperiments));
-      const generatedTags = generateSampleTags(rows);
+      // Sample experiments are tags of type "experiment", like real ones.
+      const generatedTags = [...generateSampleTags(rows), ...generateSampleExperiments(rows).map(experimentToTag)];
       setTags((prev) => (prev.length > 0 ? prev : generatedTags));
     }
     setState({
@@ -320,19 +320,6 @@ export default function App() {
     [run]
   );
 
-  // Sync's third dataset, alongside handleSyncedWorkoutData/
-  // handleSyncedBodyCompData above: SyncDialog's own conflict-confirmation
-  // prompt (mirroring the other two) is what gates this call, so this is an
-  // unconditional writer exactly like they are. It must not look at `state`:
-  // received data is always a genuine upload, and on the landing page (or in
-  // the same tick as the workout log) `state` is still the previous screen,
-  // so a check on it silently skipped the save and the experiments were gone
-  // after a reload. Backup import shares this handler.
-  const handleSyncedExperiments = useCallback((incoming: Experiment[]) => {
-    setExperiments(incoming);
-    void saveExperiments(incoming);
-  }, []);
-
   // A wholly separate upload, independent of the SugarWOD flow above: its own
   // state, its own parser, never joined to `state.rows`. See BodyCompTab.
   const handleBodyCompFile = useCallback((file: File) => {
@@ -372,42 +359,11 @@ export default function App() {
     void saveBodyCompRows(rows);
   }, []);
 
-  // User-authored state, not derived from an upload — its own IndexedDB key
-  // (see experimentsStorage.ts), persisted in full on every change, except
-  // in sample mode (see handleBodyCompFile's comment above — same reasoning
-  // applies here: an experiment added or deleted while sample data is
-  // loaded must not leave anything in IndexedDB for a later real session to
-  // stumble on).
-  const addExperiment = useCallback((fields: ExperimentFields) => {
-    setExperiments((prev) => {
-      const next = [...prev, { id: crypto.randomUUID(), ...fields }];
-      if (state.status === "ready" && state.source === "upload") void saveExperiments(next);
-      return next;
-    });
-  }, [state]);
-
-  // Editing replaces everything but the id, so anything keyed by it (its
-  // insight) follows the edit. Fields left out of `fields` are cleared, not
-  // kept: no endDate means ongoing again, no baselineStart means all earlier
-  // history — the form always sends the full set.
-  const updateExperiment = useCallback((id: string, fields: ExperimentFields) => {
-    setExperiments((prev) => {
-      const next = prev.map((e) => (e.id === id ? { id, ...fields } : e));
-      if (state.status === "ready" && state.source === "upload") void saveExperiments(next);
-      return next;
-    });
-  }, [state]);
-
-  const deleteExperiment = useCallback((id: string) => {
-    setExperiments((prev) => {
-      const next = prev.filter((e) => e.id !== id);
-      if (state.status === "ready" && state.source === "upload") void saveExperiments(next);
-      return next;
-    });
-  }, []);
-
-  // Context tags: user-authored, own IndexedDB key, same sample-mode exclusion
-  // as experiments above. `replaceTags` is what an import calls.
+  // Context tags (experiments included): user-authored state, not derived from
+  // an upload — its own IndexedDB key (see tagsStorage.ts), persisted in full on
+  // every change, except in sample mode (see handleBodyCompFile's comment
+  // above: a tag added or deleted while sample data is loaded must not leave
+  // anything in IndexedDB for a later real session to stumble on).
   const commitTags = useCallback(
     (update: (prev: ContextTag[]) => ContextTag[]) => {
       setTags((prev) => {
@@ -421,10 +377,10 @@ export default function App() {
   const addTag = useCallback((tag: Omit<ContextTag, "id">) => commitTags((prev) => [...prev, { ...tag, id: crypto.randomUUID() }]), [commitTags]);
   const updateTag = useCallback((tag: ContextTag) => commitTags((prev) => prev.map((t) => (t.id === tag.id ? tag : t))), [commitTags]);
   const deleteTag = useCallback((id: string) => commitTags((prev) => prev.filter((t) => t.id !== id)), [commitTags]);
-  const replaceTags = useCallback((incoming: ContextTag[]) => commitTags(() => incoming), [commitTags]);
 
-  // Sync's tags handler, alongside the three above: an unconditional writer,
-  // gated by SyncDialog. Tags always persist for the same reason
+  // Sync's tags handler, alongside the two above: an unconditional writer,
+  // gated by SyncDialog. An experiment arrives as a tag (or, from an older
+  // device, is converted to one before this runs). Tags always persist for the same reason
   // handleSyncedBodyCompData does — synced data is never sample data.
   const handleSyncedTags = useCallback((incoming: ContextTag[]) => {
     setTags(incoming);
@@ -459,7 +415,6 @@ export default function App() {
     setRangePreset("all_time");
     setGranularity("monthly");
     setBodyComp({ status: "idle" });
-    setExperiments([]);
     setTags([]);
     // "Start over" is also the one clear-my-data control: without wiping
     // storage here, a reload would silently restore the data this button
@@ -484,7 +439,6 @@ export default function App() {
         onBodyCompFile={handleBodyCompFile}
         onSyncedWorkoutData={handleSyncedWorkoutData}
         onSyncedBodyCompData={handleSyncedBodyCompData}
-        onSyncedExperiments={handleSyncedExperiments}
         onSyncedTags={handleSyncedTags}
         plateauInsights={plateauInsights}
         alignment={alignment}
@@ -493,12 +447,7 @@ export default function App() {
         onAddTag={addTag}
         onUpdateTag={updateTag}
         onDeleteTag={deleteTag}
-        onReplaceTags={replaceTags}
-        experiments={experiments}
         experimentInsights={experimentInsights}
-        onAddExperiment={addExperiment}
-        onUpdateExperiment={updateExperiment}
-        onDeleteExperiment={deleteExperiment}
       />
     );
   }
@@ -513,7 +462,6 @@ export default function App() {
       onDismissError={reset}
       onSyncedWorkoutData={handleSyncedWorkoutData}
       onSyncedBodyCompData={handleSyncedBodyCompData}
-      onSyncedExperiments={handleSyncedExperiments}
       onSyncedTags={handleSyncedTags}
     />
   );

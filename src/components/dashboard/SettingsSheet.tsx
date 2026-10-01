@@ -39,7 +39,6 @@ import { useTheme, type ModePreference } from "@/lib/theme/useTheme";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import { cn } from "@/lib/utils";
 import type { DataSource } from "@/App";
-import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
@@ -56,13 +55,11 @@ interface SettingsSheetProps {
   onWorkoutFile: (file: File) => void;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
-  experiments: Experiment[];
   tags: ContextTag[];
   /** Host role only: what this device would send. Built once in Dashboard.tsx. */
   syncOutgoing: OutgoingDataset[];
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
-  onSyncedExperiments: (experiments: Experiment[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
   onReset: () => void;
 }
@@ -135,13 +132,11 @@ export function SettingsSheet(props: SettingsSheetProps) {
     existing: {
       workout: upload ? props.workoutRows.length : null,
       bodyComp: upload && props.bodyComp.status === "ready" ? props.bodyComp.rows.length : null,
-      experiments: upload && props.experiments.length > 0 ? props.experiments.length : null,
       tags: upload && props.tags.length > 0 ? props.tags.length : null,
     },
     handlers: {
       workout: props.onSyncedWorkoutData,
       bodyComp: props.onSyncedBodyCompData,
-      experiments: props.onSyncedExperiments,
       tags: props.onSyncedTags,
     },
   });
@@ -229,7 +224,6 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 <DownloadBackupButton
                   workoutRows={props.workoutRows}
                   bodyComp={props.bodyComp}
-                  experiments={props.experiments}
                   tags={props.tags}
                   passphrase={protect ? passphrase : undefined}
                   onDownloaded={clearPassphrase}
@@ -286,11 +280,9 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 outgoing={props.syncOutgoing}
                 existingWorkoutCount={null}
                 existingBodyCompCount={null}
-                existingExperimentsCount={null}
                 existingTagsCount={null}
                 onSyncedWorkoutData={props.onSyncedWorkoutData}
                 onSyncedBodyCompData={props.onSyncedBodyCompData}
-                onSyncedExperiments={props.onSyncedExperiments}
                 onSyncedTags={props.onSyncedTags}
                 disabled={!upload}
                 className="h-10 gap-2"
@@ -302,11 +294,9 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 role="joiner"
                 existingWorkoutCount={props.workoutRows.length}
                 existingBodyCompCount={props.bodyComp.status === "ready" ? props.bodyComp.rows.length : null}
-                existingExperimentsCount={props.experiments.length > 0 ? props.experiments.length : null}
                 existingTagsCount={props.tags.length > 0 ? props.tags.length : null}
                 onSyncedWorkoutData={props.onSyncedWorkoutData}
                 onSyncedBodyCompData={props.onSyncedBodyCompData}
-                onSyncedExperiments={props.onSyncedExperiments}
                 onSyncedTags={props.onSyncedTags}
                 disabled={!upload}
                 className="h-10 gap-2"
@@ -386,7 +376,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
             <div className="flex items-center gap-4">
               <p className="grow text-[13px] leading-relaxed text-muted-foreground">
                 {upload
-                  ? "Deletes your workout log, body composition history, experiments and context tags from this browser."
+                  ? "Deletes your workout log, body composition history and periods, experiments included, from this browser."
                   : "Leaves the sample and goes back to the upload screen."}
               </p>
               {upload ? (
@@ -401,7 +391,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
                       <AlertDialogTitle>Start over?</AlertDialogTitle>
                       <AlertDialogDescription>
                         This deletes your uploaded workout log, body composition history, and any
-                        experiments and context tags you've logged. This can't be undone.
+                        periods you've added, experiments included. This can't be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

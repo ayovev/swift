@@ -5,7 +5,8 @@ import { TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
 
 /**
  * Pure helpers over the athlete's context tags: overlap tests, the one
- * sentence an insight uses to acknowledge a tag, and JSON export/import.
+ * sentence an insight uses to acknowledge a tag, and the validation that
+ * sync and backup restore run on a received list.
  *
  * Tags never change a classification or a number. An insight that overlaps a
  * tag adds a sentence naming it; with no tags (or none overlapping) its
@@ -21,7 +22,7 @@ export function tagLabel(tag: ContextTag): string {
 export function describeTag(tag: ContextTag): string {
   const span = `${formatDay(tag.startDate)} – ${tag.endDate ? formatDay(tag.endDate) : "ongoing"}`;
   const name = tagLabel(tag);
-  return name === tag.type ? `${tag.type} tag (${span})` : `"${name}" (${tag.type}, ${span})`;
+  return name === tag.type ? `${tag.type} period (${span})` : `"${name}" (${tag.type}, ${span})`;
 }
 
 /** Whether the tag and the inclusive window share at least one day. An open-ended tag runs to the end of time. */
@@ -67,47 +68,40 @@ export function acknowledgeTags(
   );
 }
 
-// ── JSON export / import ────────────────────────────────────────────────
-
-export interface TagsFile {
-  swiftTags: 1;
-  tags: ContextTag[];
-}
-
-export function serializeTags(tags: readonly ContextTag[]): string {
-  const file: TagsFile = { swiftTags: 1, tags: [...tags] };
-  return JSON.stringify(file, null, 2);
-}
+// ── Validation ──────────────────────────────────────────────────────────
 
 export type TagsParseResult = { status: "ok"; tags: ContextTag[] } | { status: "invalid"; reason: string };
 
 
 /**
- * Validates a list of tags — from an imported file or from another device.
+ * Validates a list of tags — from a backup file or from another device.
  * Strict on purpose: a hand-edited or wrong list is rejected with a sentence
  * saying which entry is wrong, rather than half-imported. Unknown extra keys
  * are dropped.
  */
 export function validateTagList(list: unknown): TagsParseResult {
-  if (!Array.isArray(list)) return { status: "invalid", reason: "That file doesn't contain a list of tags." };
+  if (!Array.isArray(list)) return { status: "invalid", reason: "That file doesn't contain a list of periods." };
 
   const tags: ContextTag[] = [];
   const seen = new Set<string>();
   for (const [i, raw] of list.entries()) {
     const n = i + 1;
     const t = raw as Partial<Record<keyof ContextTag, unknown>> | null;
-    if (!t || typeof t !== "object") return { status: "invalid", reason: `Tag ${n} isn't an object.` };
-    if (typeof t.id !== "string" || t.id === "") return { status: "invalid", reason: `Tag ${n} has no id.` };
-    if (seen.has(t.id)) return { status: "invalid", reason: `Tag ${n} repeats an id used by an earlier tag.` };
-    if (!TAG_TYPES.includes(t.type as TagType)) return { status: "invalid", reason: `Tag ${n} has an unknown type.` };
-    if (!isIsoDay(t.startDate)) return { status: "invalid", reason: `Tag ${n} has no valid start date (YYYY-MM-DD).` };
+    if (!t || typeof t !== "object") return { status: "invalid", reason: `Period ${n} isn't an object.` };
+    if (typeof t.id !== "string" || t.id === "") return { status: "invalid", reason: `Period ${n} has no id.` };
+    if (seen.has(t.id)) return { status: "invalid", reason: `Period ${n} repeats an id used by an earlier period.` };
+    if (!TAG_TYPES.includes(t.type as TagType)) return { status: "invalid", reason: `Period ${n} has an unknown type.` };
+    if (!isIsoDay(t.startDate)) return { status: "invalid", reason: `Period ${n} has no valid start date (YYYY-MM-DD).` };
     if (t.endDate !== null && t.endDate !== undefined && !isIsoDay(t.endDate)) {
-      return { status: "invalid", reason: `Tag ${n} has an end date that isn't YYYY-MM-DD.` };
+      return { status: "invalid", reason: `Period ${n} has an end date that isn't YYYY-MM-DD.` };
     }
     const endDate = (t.endDate ?? null) as string | null;
-    if (endDate !== null && endDate < t.startDate) return { status: "invalid", reason: `Tag ${n} ends before it starts.` };
-    if (t.label !== undefined && typeof t.label !== "string") return { status: "invalid", reason: `Tag ${n} has a label that isn't text.` };
-    if (t.note !== undefined && typeof t.note !== "string") return { status: "invalid", reason: `Tag ${n} has a note that isn't text.` };
+    if (endDate !== null && endDate < t.startDate) return { status: "invalid", reason: `Period ${n} ends before it starts.` };
+    if (t.label !== undefined && typeof t.label !== "string") return { status: "invalid", reason: `Period ${n} has a label that isn't text.` };
+    if (t.note !== undefined && typeof t.note !== "string") return { status: "invalid", reason: `Period ${n} has a note that isn't text.` };
+    if (t.baselineStart !== undefined && !isIsoDay(t.baselineStart)) {
+      return { status: "invalid", reason: `Period ${n} has a compare-against start that isn't YYYY-MM-DD.` };
+    }
     seen.add(t.id);
     tags.push({
       id: t.id,
@@ -116,20 +110,10 @@ export function validateTagList(list: unknown): TagsParseResult {
       startDate: t.startDate,
       endDate,
       ...(typeof t.note === "string" && t.note !== "" ? { note: t.note } : {}),
+      ...(typeof t.baselineStart === "string" ? { baselineStart: t.baselineStart } : {}),
     });
   }
   return { status: "ok", tags };
-}
-
-/** Reads a tags file back in: `{ swiftTags: 1, tags: [...] }` or a bare array. */
-export function parseTagsJson(text: string): TagsParseResult {
-  let data: unknown;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    return { status: "invalid", reason: "That file isn't valid JSON." };
-  }
-  return validateTagList(Array.isArray(data) ? data : (data as Partial<TagsFile> | null)?.tags);
 }
 
 // ── Chart bands ─────────────────────────────────────────────────────────

@@ -17,12 +17,10 @@ function renderSheet(source: DataSource, onReset = vi.fn()) {
         onWorkoutFile={vi.fn()}
         bodyComp={{ status: "idle" }}
         onBodyCompFile={vi.fn()}
-        experiments={[]}
         tags={[]}
         syncOutgoing={[]}
         onSyncedWorkoutData={vi.fn()}
         onSyncedBodyCompData={vi.fn()}
-        onSyncedExperiments={vi.fn()}
         onSyncedTags={vi.fn()}
         onReset={onReset}
       />

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { planReceived, type ExistingCounts, type ReceivedHandlers } from "@/lib/sync/receivedDatasets";
 
-const none: ExistingCounts = { workout: null, bodyComp: null, experiments: null, tags: null };
+const none: ExistingCounts = { workout: null, bodyComp: null, tags: null };
 import { scanRow, workoutRow } from "./fixtures/rows";
 
 const wRow = workoutRow({ date: "03/05/2024", title: "FRAN" });
@@ -14,7 +14,6 @@ function handlers() {
   const h: ReceivedHandlers = {
     workout: vi.fn(() => void calls.push("workout")),
     bodyComp: vi.fn(() => void calls.push("bodyComp")),
-    experiments: vi.fn(() => void calls.push("experiments")),
     tags: vi.fn(() => void calls.push("tags")),
   };
   return { h, calls };
@@ -23,29 +22,28 @@ function handlers() {
 describe("planReceived", () => {
   it("applies everything straight away when nothing local would be overwritten", () => {
     const { h, calls } = handlers();
-    const plan = planReceived({ workout: [wRow], bodyComp: [bRow], experiments: [exp], tags: [tag] }, none, h);
+    const plan = planReceived({ workout: [wRow], bodyComp: [bRow], tags: [tag] }, none, h);
     expect(plan).toEqual({ conflicts: [], skipped: [] });
-    expect(calls).toEqual(["workout", "bodyComp", "experiments", "tags"]);
+    expect(calls).toEqual(["workout", "bodyComp", "tags"]);
   });
 
   it("holds each existing dataset back as its own conflict, and applies nothing for it yet", () => {
     const { h, calls } = handlers();
     const plan = planReceived(
-      { workout: [wRow, wRow], bodyComp: [bRow], experiments: [exp], tags: [tag] },
-      { workout: 10, bodyComp: null, experiments: 3, tags: 2 },
+      { workout: [wRow, wRow], bodyComp: [bRow], tags: [tag] },
+      { workout: 10, bodyComp: null, tags: 2 },
       h
     );
     expect(calls).toEqual(["bodyComp"]);
     expect(plan.conflicts.map((c) => [c.dataset, c.existingCount, c.incomingCount])).toEqual([
       ["workout", 10, 2],
-      ["experiments", 3, 1],
       ["tags", 2, 1],
     ]);
   });
 
   it("accepting one conflict applies only that dataset", () => {
     const { h, calls } = handlers();
-    const plan = planReceived({ experiments: [exp], tags: [tag] }, { ...none, experiments: 1, tags: 1 }, h);
+    const plan = planReceived({ workout: [wRow], tags: [tag] }, { ...none, workout: 1, tags: 1 }, h);
     plan.conflicts.find((c) => c.dataset === "tags")!.apply();
     expect(calls).toEqual(["tags"]);
   });
@@ -59,7 +57,8 @@ describe("planReceived", () => {
     );
     expect(plan.skipped.map((s) => s.dataset)).toEqual(["workout", "experiments", "tags"]);
     expect(plan.skipped[0]!.reason).toMatch(/Row 1 of the workout log has an unreadable date/);
-    expect(plan.skipped[2]!.reason).toMatch(/Tag 1 has an unknown type/);
+    expect(plan.skipped[1]!.reason).toMatch(/Experiment 1 has no valid start date/);
+    expect(plan.skipped[2]!.reason).toMatch(/Period 1 has an unknown type/);
     expect(calls).toEqual(["bodyComp"]);
     expect(planReceived({ tags: "nope" }, none, h).skipped.map((s) => s.dataset)).toEqual(["tags"]);
   });
@@ -96,5 +95,44 @@ describe("planReceived", () => {
     const { h, calls } = handlers();
     expect(planReceived({}, none, h)).toEqual({ conflicts: [], skipped: [] });
     expect(calls).toEqual([]);
+  });
+
+  describe("experiments from an older device or backup", () => {
+    const converted = { id: "e", type: "experiment", label: "5/3/1", startDate: "2024-05-01", endDate: null };
+
+    it("arrive as tags: validated, converted, and applied through the tags handler", () => {
+      const { h, calls } = handlers();
+      const plan = planReceived({ experiments: [exp] }, none, h);
+      expect(plan).toEqual({ conflicts: [], skipped: [] });
+      expect(calls).toEqual(["tags"]);
+      expect(h.tags).toHaveBeenCalledWith([converted]);
+    });
+
+    it("keep their end date and earlier-range start", () => {
+      const { h } = handlers();
+      planReceived({ experiments: [{ ...exp, endDate: "2024-07-01", baselineStart: "2024-04-01" }] }, none, h);
+      expect(h.tags).toHaveBeenCalledWith([{ ...converted, endDate: "2024-07-01", baselineStart: "2024-04-01" }]);
+    });
+
+    it("join the tags that came with them as one list, so tags are offered, and counted as a conflict, once", () => {
+      const { h } = handlers();
+      const plan = planReceived({ experiments: [exp], tags: [tag] }, { ...none, tags: 4 }, h);
+      expect(plan.conflicts.map((c) => [c.dataset, c.existingCount, c.incomingCount])).toEqual([["tags", 4, 2]]);
+      plan.conflicts[0]!.apply();
+      expect(h.tags).toHaveBeenCalledWith([tag, converted]);
+    });
+
+    it("are skipped with their own reason when they don't validate, without touching the tags that arrived", () => {
+      const { h } = handlers();
+      const plan = planReceived({ experiments: [{ ...exp, label: "" }], tags: [tag] }, none, h);
+      expect(plan.skipped).toEqual([{ dataset: "experiments", reason: "Experiment 1 has no label." }]);
+      expect(h.tags).toHaveBeenCalledWith([tag]);
+    });
+
+    it("add nothing when the list is empty", () => {
+      const { h, calls } = handlers();
+      expect(planReceived({ experiments: [] }, none, h)).toEqual({ conflicts: [], skipped: [] });
+      expect(calls).toEqual([]);
+    });
   });
 });

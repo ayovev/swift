@@ -3,8 +3,8 @@ import {
   BODY_COMP_TAB,
   LIFTS_TAB,
   OVERVIEW_TAB,
+  COMPARE_TAB,
   PERIODS_TAB,
-  TAGS_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
 import { CROSSFIT_DEFINITIONS, DOMAIN_LIST } from "@/types/dashboard";
@@ -25,8 +25,8 @@ interface SubGroup {
  * domains and three modalities, which are a *classification* of the same
  * workouts rather than separate data), what my body did (Body), and what
  * the two datasets say together (Insights — Progress, Compare and
- * Tags: how lifts and body composition moved, over which stretches, and the
- * labels the athlete puts on those stretches).
+ * Periods: how lifts and body composition moved, over which stretches, and the
+ * labelled stretches the athlete saves).
  *
  * Two levels, never a dropdown: the section row sits in the page header and
  * the views inside a section are a plain row of tabs under the page title,
@@ -43,7 +43,7 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
     ],
   },
   { id: "Body", groups: [{ values: [BODY_COMP_TAB] }] },
-  { id: "Insights", groups: [{ values: [LIFTS_TAB, PERIODS_TAB, TAGS_TAB] }] },
+  { id: "Insights", groups: [{ values: [LIFTS_TAB, COMPARE_TAB, PERIODS_TAB] }] },
 ];
 
 export function sectionOf(value: string): Section {
@@ -66,8 +66,7 @@ export function pageTitleOf(value: string): string {
   const modality = MODALITY_LIST.find((m) => value === `modality:${m}`);
   if (modality) return MODALITY_NAMES[modality];
   if (value === BODY_COMP_TAB) return "Body composition";
-  if (value === TAGS_TAB) return "Context tags";
-  if (value === PERIODS_TAB) return "Compare periods";
+  if (value === COMPARE_TAB) return "Compare periods";
   return labelOf(value);
 }
 

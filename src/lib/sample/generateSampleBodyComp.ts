@@ -11,8 +11,8 @@ import type { SugarWodRow } from "@/types/sugarwod";
  * disk, or based on a real person's body-composition history — see
  * `tests/fixtures/sampleInBodyRows.ts`'s own header comment for why no real
  * InBody export is bundled the way the SugarWOD one is. This exists so a
- * first-time visitor sees the Body Comp, Plateau Detector, Alignment and
- * Experiments tabs actually populated, not stuck on their empty states.
+ * first-time visitor sees the Body Comp, Progress and Compare views
+ * actually populated, not stuck on their empty states.
  *
  * Scans land roughly every two weeks (with jitter, so the cadence doesn't
  * look robotic) from shortly after the athlete's first logged workout

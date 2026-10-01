@@ -58,7 +58,7 @@ describe("useChartInteraction", () => {
     expect(screen.queryByRole("group", { name: "Selected range" })).not.toBeInTheDocument();
   });
 
-  it("commits a drag and offers Compare and Tag with the selected window", () => {
+  it("commits a drag and offers Compare and Save as a period with the selected window", () => {
     render(
       <ChartInteractionProvider value={value}>
         <Probe xs={months} />
@@ -71,7 +71,7 @@ describe("useChartInteraction", () => {
     expect(group).toHaveTextContent("Jan 1, 2026 – Mar 31, 2026");
     fireEvent.click(screen.getByRole("button", { name: /Compare with the 90 days before/ }));
     expect(value.onCompare).toHaveBeenCalledWith({ start: "2026-01-01", end: "2026-03-31" });
-    fireEvent.click(screen.getByRole("button", { name: "Tag this range" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save as a period" }));
     expect(value.onTag).toHaveBeenCalledWith({ start: "2026-01-01", end: "2026-03-31" });
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     expect(screen.queryByRole("group", { name: "Selected range" })).not.toBeInTheDocument();
