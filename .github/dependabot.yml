@@ -1,0 +1,25 @@
+# Weekly, grouped, and capped, so updates arrive as a few reviewable PRs rather
+# than one per package. CI runs the build and the whole suite on each branch, so
+# a bump that breaks types or tests shows up red before it can be merged.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Minor and patch bumps travel together; a major bump gets its own PR so
+      # its breaking changes are reviewed on their own.
+      minor-and-patch:
+        update-types: [minor, patch]
+    labels: [dependencies]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+    labels: [dependencies]
