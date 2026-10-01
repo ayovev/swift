@@ -9,20 +9,20 @@ import {
   compareWindows,
   defaultWindowA,
   windowAIsContiguous,
-  windowsToExperimentFields,
+  windowsToPeriodFields,
 } from "@/lib/analytics/compareWindows";
-import { tagLabel } from "@/lib/analytics/contextTags";
+import { VERDICT_NOTE, hasVerdict, tagLabel } from "@/lib/analytics/contextTags";
 import { customCycle, getCycleReport, getCycles } from "@/lib/analytics/cycleReport";
 import { capture } from "@/lib/posthog";
 import type { DateWindow } from "@/types/compare";
-import type { ExperimentInsight } from "@/types/experiment";
+import type { PeriodVerdict } from "@/types/verdict";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
-import { TAG_GROUPS, type ContextTag, type TagType } from "@/types/tag";
+import { TAG_GROUPS, TAG_TYPE_LABEL, type ContextTag, type TagType } from "@/types/tag";
 import type { BodyCompState } from "./BodyCompTab";
 import { ComparisonTables } from "./ComparisonTables";
 import { CycleReportBody } from "./CycleReportBody";
-import { ClassificationBadge, ExperimentVerdict } from "./ExperimentVerdict";
+import { VerdictBadge, VerdictSummary } from "./VerdictSummary";
 import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import { formatDate } from "./charts/chartUtils";
 
@@ -31,8 +31,8 @@ interface CompareTabProps {
   /** Empty when no InBody file is loaded — body composition then reports why it can't be compared. */
   scans: InBodyRow[];
   tags: ContextTag[];
-  /** Keyed by tag id, for tags of type "experiment". null until both a SugarWOD upload and an InBody upload are ready, same gate as LiftsTab. */
-  experimentInsights: Map<string, ExperimentInsight> | null;
+  /** Keyed by tag id, for the periods that have a verdict (the ones in "Something you changed"). null until both a SugarWOD upload and an InBody upload are ready, same gate as LiftsTab. */
+  verdicts: Map<string, PeriodVerdict> | null;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
   /** Window B from a drag on a chart, if that's how the athlete got here. */
@@ -83,7 +83,7 @@ export function CompareTab({
   workouts,
   scans,
   tags,
-  experimentInsights,
+  verdicts,
   bodyComp,
   onBodyCompFile,
   initialWindowB,
@@ -112,7 +112,7 @@ export function CompareTab({
   const windowsValid = b.start !== "" && b.end !== "" && b.end >= b.start;
 
   const selectedTag = selectedId ? tags.find((t) => t.id === selectedId) : undefined;
-  const selectedExperiment = selectedTag?.type === "experiment" ? selectedTag : undefined;
+  const selectedJudged = selectedTag && hasVerdict(selectedTag) ? selectedTag : undefined;
   const rangeLabel = selectedTag ? tagLabel(selectedTag) : "Range";
 
   const comparison = useMemo(
@@ -149,11 +149,11 @@ export function CompareTab({
 
   const suggested = windowsValid ? `${formatDate(b.start)} – ${formatDate(b.end)}` : "";
   const save = () => {
-    const fields = windowsToExperimentFields(a, b);
+    const fields = windowsToPeriodFields(a, b);
     onAddTag({
       type: saveType,
       label: (name.trim() || `Comparison, ${suggested}`).slice(0, 80),
-      startDate: fields.date,
+      startDate: fields.startDate,
       endDate: fields.endDate,
       baselineStart: fields.baselineStart,
     });
@@ -201,21 +201,24 @@ export function CompareTab({
         </CardContent>
       </Card>
 
-      {selectedExperiment ? (
-        experimentInsights ? (
+      {selectedJudged ? (
+        verdicts ? (
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{tagLabel(selectedExperiment)}</CardTitle>
+              <CardTitle className="text-base">{tagLabel(selectedJudged)}</CardTitle>
               <p className="text-xs text-muted-foreground">
                 Compared with{" "}
-                {selectedExperiment.baselineStart
-                  ? `${formatDate(selectedExperiment.baselineStart)} – ${formatDate(dayjs(selectedExperiment.startDate).subtract(1, "day").format(ISO))}`
-                  : `all history before ${formatDate(selectedExperiment.startDate)}`}
+                {selectedJudged.baselineStart
+                  ? `${formatDate(selectedJudged.baselineStart)} – ${formatDate(dayjs(selectedJudged.startDate).subtract(1, "day").format(ISO))}`
+                  : `all history before ${formatDate(selectedJudged.startDate)}`}
               </p>
             </CardHeader>
             <CardContent>
-              {experimentInsights.get(selectedExperiment.id) ? (
-                <ExperimentVerdict insight={experimentInsights.get(selectedExperiment.id)!} />
+              {verdicts.get(selectedJudged.id) ? (
+                <VerdictSummary insight={verdicts.get(selectedJudged.id)!} />
+              ) : null}
+              {VERDICT_NOTE[selectedJudged.type] ? (
+                <p className="mt-3 text-xs text-muted-foreground">{VERDICT_NOTE[selectedJudged.type]}</p>
               ) : null}
             </CardContent>
           </Card>
@@ -230,7 +233,7 @@ export function CompareTab({
       {rangeReport ? (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">{selectedTag && !selectedExperiment ? tagLabel(selectedTag) : "In this range"}</CardTitle>
+            <CardTitle className="text-base">{selectedTag && !selectedJudged ? tagLabel(selectedTag) : "In this range"}</CardTitle>
             <p className="text-xs text-muted-foreground">
               {formatDate(b.start)} – {formatDate(b.end)}
               {rangeReport.cycle.focusLifts.length > 0 ? ` · Focus: ${rangeReport.cycle.focusLifts.join(", ")}` : ""}
@@ -252,7 +255,7 @@ export function CompareTab({
               shown above.{" "}
               {windowAIsContiguous(a, b)
                 ? ""
-                : "A saved experiment's earlier range runs up to its start date, so the days between these two ranges will be included."}
+                : "A saved period's earlier range runs up to its start date, so the days between these two ranges will be included."}
             </p>
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1.5">
@@ -266,12 +269,20 @@ export function CompareTab({
                   }}
                   className="h-9 rounded-md border border-input bg-background px-2 text-sm"
                 >
-                  {TAG_GROUPS[0]?.types.map((t) => (
-                    <option key={t} value={t}>
-                      {t.charAt(0).toUpperCase()}
-                      {t.slice(1)}
-                    </option>
-                  ))}
+                  {TAG_GROUPS[0]?.categories.map((category) => {
+                    const options = category.types.map((t) => (
+                      <option key={t} value={t}>
+                        {TAG_TYPE_LABEL[t]}
+                      </option>
+                    ));
+                    return category.label ? (
+                      <optgroup key={category.label} label={category.label}>
+                        {options}
+                      </optgroup>
+                    ) : (
+                      options
+                    );
+                  })}
                 </select>
               </div>
               <div className="flex flex-1 flex-col gap-1.5">
@@ -301,8 +312,8 @@ export function CompareTab({
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Periods for something you changed: experiments, cuts, bulks and the like. Add and edit them on
-            the Periods view.
+            Periods for something you changed: nutrition, programming, recovery and the like. Add and edit
+            them on the Periods view.
           </p>
           {blocks.length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -311,18 +322,18 @@ export function CompareTab({
           ) : (
             <ul className="flex flex-col divide-y divide-border border-t border-border">
               {blocks.map(({ cycle, tag }) => {
-                const insight = tag?.type === "experiment" ? experimentInsights?.get(tag.id) : undefined;
+                const insight = tag && hasVerdict(tag) ? verdicts?.get(tag.id) : undefined;
                 return (
                   <li key={cycle.tagId ?? `${cycle.start}:${cycle.end}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div className="flex min-w-0 flex-col gap-1">
                       <span className="text-sm font-medium">{cycle.label}</span>
                       <span className="text-xs text-muted-foreground">
-                        {tag ? `${tag.type.charAt(0).toUpperCase()}${tag.type.slice(1)} · ` : ""}
+                        {tag ? `${TAG_TYPE_LABEL[tag.type]} · ` : ""}
                         {formatDate(cycle.start)} – {formatDate(cycle.end)}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {insight ? <ClassificationBadge classification={insight.classification} /> : null}
+                      {insight ? <VerdictBadge classification={insight.classification} /> : null}
                       <Button
                         type="button"
                         variant="outline"

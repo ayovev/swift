@@ -1,24 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { getExperimentInsight } from "@/lib/analytics/experimentInsight";
-import type { Experiment } from "@/types/experiment";
+import { getPeriodVerdict } from "@/lib/analytics/periodVerdict";
+import type { ContextTag } from "@/types/tag";
 import { loadSampleRows } from "./fixtures/sampleRows";
 import { loadSampleInBodyRows } from "./fixtures/sampleInBodyRows";
 import { inbodyRow, liftRow } from "./fixtures/rows";
 
-function experiment(overrides: Partial<Experiment> = {}): Experiment {
-  return { id: "exp-1", date: "2024-06-01", label: "Test experiment", ...overrides };
+function period(overrides: Partial<ContextTag> = {}): ContextTag {
+  return { id: "exp-1", type: "experiment", label: "Test experiment", startDate: "2024-06-01", endDate: null, ...overrides };
 }
 
 const AS_OF = new Date("2027-01-01");
 
-describe("getExperimentInsight — eligibility gate, subject side", () => {
+describe("getPeriodVerdict — eligibility gate, subject side", () => {
   it("names 'before' as the thin side when every subject only has data after the start date", () => {
     const workouts = [
       liftRow("07/01/2024", "Snatch", 100),
       liftRow("07/05/2024", "Clean", 150),
       liftRow("07/10/2024", "Jerk", 120),
     ];
-    const result = getExperimentInsight(experiment(), workouts, [], AS_OF);
+    const result = getPeriodVerdict(period(), workouts, [], AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 3 more lifts/WODs with logged data before this date (has 0, needs 3)");
     expect(result.performanceSummary).toEqual({
@@ -36,7 +36,7 @@ describe("getExperimentInsight — eligibility gate, subject side", () => {
       liftRow("01/05/2024", "Clean", 150),
       liftRow("01/10/2024", "Jerk", 120),
     ];
-    const result = getExperimentInsight(experiment(), workouts, [], AS_OF);
+    const result = getPeriodVerdict(period(), workouts, [], AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 3 more lifts/WODs with logged data after this date (has 0, needs 3)");
   });
@@ -48,9 +48,23 @@ describe("getExperimentInsight — eligibility gate, subject side", () => {
       liftRow("01/05/2024", "Clean", 150),
       liftRow("07/05/2024", "Clean", 160),
     ];
-    const result = getExperimentInsight(experiment(), workouts, [], AS_OF);
+    const result = getPeriodVerdict(period(), workouts, [], AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 1 more lift/WOD with logged data after this date (has 2, needs 3)");
+  });
+
+  it("names the overlap when each side has enough subjects but they are not the same ones", () => {
+    const workouts = [
+      liftRow("01/01/2024", "Snatch", 100),
+      liftRow("01/05/2024", "Clean", 150),
+      liftRow("01/10/2024", "Jerk", 120),
+      liftRow("07/01/2024", "Back Squat", 200),
+      liftRow("07/05/2024", "Deadlift", 250),
+      liftRow("07/10/2024", "Front Squat", 180),
+    ];
+    const result = getPeriodVerdict(period(), workouts, [], AS_OF);
+    expect(result.classification).toBe("insufficient_data");
+    expect(result.reason).toBe("needs 3 more lifts/WODs logged both before and after this date (has 0, needs 3)");
   });
 
   it("a subject only logged on one side never counts toward the classified total", () => {
@@ -61,7 +75,7 @@ describe("getExperimentInsight — eligibility gate, subject side", () => {
       liftRow("07/05/2024", "Clean", 160),
       liftRow("01/10/2024", "Jerk", 120), // before-only: doesn't help clear the gate
     ];
-    const result = getExperimentInsight(experiment(), workouts, [], AS_OF);
+    const result = getPeriodVerdict(period(), workouts, [], AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 1 more lift/WOD with logged data after this date (has 2, needs 3)");
   });
@@ -76,10 +90,10 @@ const threeSubjectsBothSides = [
   liftRow("07/10/2024", "Jerk", 120),
 ];
 
-describe("getExperimentInsight — eligibility gate, InBody scan side", () => {
+describe("getPeriodVerdict — eligibility gate, InBody scan side", () => {
   it("names 'before' as the thin side with fewer than 2 InBody scans before the start date", () => {
     const inbodyScans = [inbodyRow({ date: "20240301000000" }), inbodyRow({ date: "20240701000000" })];
-    const result = getExperimentInsight(experiment(), threeSubjectsBothSides, inbodyScans, AS_OF);
+    const result = getPeriodVerdict(period(), threeSubjectsBothSides, inbodyScans, AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 1 more InBody scan before this date (has 1, needs 2)");
   });
@@ -90,7 +104,7 @@ describe("getExperimentInsight — eligibility gate, InBody scan side", () => {
       inbodyRow({ date: "20240301000000" }),
       inbodyRow({ date: "20240701000000" }),
     ];
-    const result = getExperimentInsight(experiment(), threeSubjectsBothSides, inbodyScans, AS_OF);
+    const result = getPeriodVerdict(period(), threeSubjectsBothSides, inbodyScans, AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 1 more InBody scan after this date (has 1, needs 2)");
   });
@@ -102,12 +116,12 @@ describe("getExperimentInsight — eligibility gate, InBody scan side", () => {
       inbodyRow({ date: "20240701000000" }),
       inbodyRow({ date: "20240801000000" }),
     ];
-    const result = getExperimentInsight(experiment(), threeSubjectsBothSides, inbodyScans, AS_OF);
+    const result = getPeriodVerdict(period(), threeSubjectsBothSides, inbodyScans, AS_OF);
     expect(result.classification).not.toBe("insufficient_data");
   });
 });
 
-describe("getExperimentInsight — classification table", () => {
+describe("getPeriodVerdict — classification table", () => {
   const stableScans = [
     inbodyRow({ date: "20240201000000" }),
     inbodyRow({ date: "20240501000000" }),
@@ -124,7 +138,7 @@ describe("getExperimentInsight — classification table", () => {
       liftRow("01/10/2024", "Jerk", 120),
       liftRow("07/10/2024", "Jerk", 135),
     ];
-    const result = getExperimentInsight(experiment(), workouts, stableScans, AS_OF);
+    const result = getPeriodVerdict(period(), workouts, stableScans, AS_OF);
     expect(result.classification).toBe("improved");
     expect(result.performanceSummary).toEqual({
       improvingCount: 3,
@@ -143,7 +157,7 @@ describe("getExperimentInsight — classification table", () => {
       liftRow("01/10/2024", "Jerk", 135),
       liftRow("07/10/2024", "Jerk", 120),
     ];
-    const result = getExperimentInsight(experiment(), workouts, stableScans, AS_OF);
+    const result = getPeriodVerdict(period(), workouts, stableScans, AS_OF);
     expect(result.classification).toBe("declined");
   });
 
@@ -156,7 +170,7 @@ describe("getExperimentInsight — classification table", () => {
       liftRow("01/10/2024", "Jerk", 120),
       liftRow("07/10/2024", "Jerk", 121),
     ];
-    const result = getExperimentInsight(experiment(), workouts, stableScans, AS_OF);
+    const result = getPeriodVerdict(period(), workouts, stableScans, AS_OF);
     expect(result.classification).toBe("no_change");
   });
 
@@ -178,7 +192,7 @@ describe("getExperimentInsight — classification table", () => {
       inbodyRow({ date: "20240605000000", "Skeletal Muscle Mass(lb)": "80", "Body Fat Mass(lb)": "30" }),
       inbodyRow({ date: "20240901000000", "Skeletal Muscle Mass(lb)": "95", "Body Fat Mass(lb)": "18" }),
     ];
-    const result = getExperimentInsight(experiment(), workouts, inbodyScans, AS_OF);
+    const result = getPeriodVerdict(period(), workouts, inbodyScans, AS_OF);
     expect(result.bodyCompSummary.leanMassDelta).toBe(-10);
     expect(result.bodyCompSummary.fatMassDelta).toBe(5);
     expect(result.classification).toBe("mixed");
@@ -193,7 +207,7 @@ describe("getExperimentInsight — classification table", () => {
       liftRow("01/10/2024", "Jerk", 100),
       liftRow("07/10/2024", "Jerk", 102), // flat
     ];
-    const result = getExperimentInsight(experiment(), workouts, stableScans, AS_OF);
+    const result = getPeriodVerdict(period(), workouts, stableScans, AS_OF);
     expect(result.performanceSummary).toEqual({
       improvingCount: 1,
       decliningCount: 1,
@@ -204,7 +218,7 @@ describe("getExperimentInsight — classification table", () => {
   });
 });
 
-describe("getExperimentInsight — endDate bounds the 'after' window", () => {
+describe("getPeriodVerdict — endDate bounds the 'after' window", () => {
   it("excludes entries logged after the end date from the per-subject averages", () => {
     const workouts = [
       liftRow("01/01/2024", "Snatch", 100),
@@ -223,8 +237,8 @@ describe("getExperimentInsight — endDate bounds the 'after' window", () => {
       inbodyRow({ date: "20240615000000" }),
       inbodyRow({ date: "20240715000000" }),
     ];
-    const withEnd = getExperimentInsight(experiment({ endDate: "2024-08-01" }), workouts, stableScans, AS_OF);
-    const openEnded = getExperimentInsight(experiment(), workouts, stableScans, AS_OF);
+    const withEnd = getPeriodVerdict(period({ endDate: "2024-08-01" }), workouts, stableScans, AS_OF);
+    const openEnded = getPeriodVerdict(period(), workouts, stableScans, AS_OF);
 
     // Capped at the end date, Snatch's after-average is just the 115 entry
     // (+15%, improving). Left open-ended, the 12/01 crash drags the average
@@ -253,7 +267,7 @@ describe("getExperimentInsight — endDate bounds the 'after' window", () => {
       liftRow("01/10/2024", "Jerk", 120),
       liftRow("07/10/2024", "Jerk", 135),
     ];
-    const result = getExperimentInsight(experiment({ endDate: "2024-08-01" }), workouts, [], AS_OF);
+    const result = getPeriodVerdict(period({ endDate: "2024-08-01" }), workouts, [], AS_OF);
     expect(result.classification).toBe("insufficient_data");
     expect(result.reason).toBe("needs 1 more lift/WOD with logged data after this date (has 2, needs 3)");
   });
@@ -268,8 +282,8 @@ describe("getExperimentInsight — endDate bounds the 'after' window", () => {
       inbodyRow({ date: "20240901000000" }), // after end — excluded once endDate caps it
       inbodyRow({ date: "20241001000000" }), // after end — excluded once endDate caps it
     ];
-    const withEnd = getExperimentInsight(
-      experiment({ endDate: "2024-08-01" }),
+    const withEnd = getPeriodVerdict(
+      period({ endDate: "2024-08-01" }),
       threeSubjectsBothSides,
       inbodyScans,
       AS_OF
@@ -277,7 +291,7 @@ describe("getExperimentInsight — endDate bounds the 'after' window", () => {
     expect(withEnd.classification).toBe("insufficient_data");
     expect(withEnd.reason).toBe("needs 1 more InBody scan after this date (has 1, needs 2)");
 
-    const openEnded = getExperimentInsight(experiment(), threeSubjectsBothSides, inbodyScans, AS_OF);
+    const openEnded = getPeriodVerdict(period(), threeSubjectsBothSides, inbodyScans, AS_OF);
     expect(openEnded.classification).not.toBe("insufficient_data");
   });
 
@@ -296,15 +310,15 @@ describe("getExperimentInsight — endDate bounds the 'after' window", () => {
       inbodyRow({ date: "20240701000000" }),
       inbodyRow({ date: "20240901000000" }),
     ];
-    const invalidEnd = getExperimentInsight(
-      experiment({ endDate: "2023-01-01" }),
+    const invalidEnd = getPeriodVerdict(
+      period({ endDate: "2023-01-01" }),
       workouts,
       stableScans,
       AS_OF
     );
-    const openEnded = getExperimentInsight(experiment(), workouts, stableScans, AS_OF);
+    const openEnded = getPeriodVerdict(period(), workouts, stableScans, AS_OF);
 
-    // Compare everything but `experiment` itself, which legitimately differs
+    // Compare everything but `period` itself, which legitimately differs
     // (one carries the stale endDate, the other has none) even though the
     // computed result must not.
     expect(invalidEnd.classification).toBe(openEnded.classification);
@@ -313,7 +327,7 @@ describe("getExperimentInsight — endDate bounds the 'after' window", () => {
   });
 });
 
-describe("getExperimentInsight — baselineStart bounds the 'before' window", () => {
+describe("getPeriodVerdict — baselineStart bounds the 'before' window", () => {
   // Three lifts, each logged far before (100), just before (150) and after (152) a 2024-06-01 start.
   const lifts = ["Snatch", "Clean", "Jerk"];
   const workouts = lifts.flatMap((l) => [
@@ -326,20 +340,20 @@ describe("getExperimentInsight — baselineStart bounds the 'before' window", ()
   );
 
   it("with no baselineStart, compares against all earlier history (unchanged behaviour)", () => {
-    const r = getExperimentInsight(experiment(), workouts, scans, AS_OF);
+    const r = getPeriodVerdict(period(), workouts, scans, AS_OF);
     expect(r.performanceSummary).toMatchObject({ improvingCount: 3, flatCount: 0, classifiedCount: 3 });
   });
 
   it("with baselineStart, the before side is only [baselineStart, start): the far-earlier entries drop out", () => {
-    const r = getExperimentInsight(experiment({ baselineStart: "2024-03-01" }), workouts, scans, AS_OF);
+    const r = getPeriodVerdict(period({ baselineStart: "2024-03-01" }), workouts, scans, AS_OF);
     // Before is 150 alone, after 152: +1.3%, under the 3% threshold.
     expect(r.performanceSummary).toMatchObject({ improvingCount: 0, flatCount: 3, classifiedCount: 3 });
   });
 
   it("applies the baseline to InBody scans too, and names the earlier range in the reason when it leaves a side thin", () => {
     // Only the 2024-05-01 scan is on or after 2024-04-20 and before the start.
-    const scansThin = getExperimentInsight(
-      experiment({ baselineStart: "2024-04-20" }),
+    const scansThin = getPeriodVerdict(
+      period({ baselineStart: "2024-04-20" }),
       [...workouts, ...lifts.map((l) => liftRow("05/01/2024", l, 151))],
       scans,
       AS_OF
@@ -349,36 +363,36 @@ describe("getExperimentInsight — baselineStart bounds the 'before' window", ()
   });
 
   it("names the earlier range in the subject-gate reason too", () => {
-    const r = getExperimentInsight(experiment({ baselineStart: "2024-05-15" }), workouts, scans, AS_OF);
+    const r = getPeriodVerdict(period({ baselineStart: "2024-05-15" }), workouts, scans, AS_OF);
     expect(r.classification).toBe("insufficient_data");
     expect(r.reason).toMatch(/lifts\/WODs with logged data in the earlier range/);
   });
 
   it("ignores a baselineStart that is not before the start date, as it does an inverted endDate", () => {
-    const all = getExperimentInsight(experiment(), workouts, scans, AS_OF);
-    expect(getExperimentInsight(experiment({ baselineStart: "2024-06-01" }), workouts, scans, AS_OF)).toEqual({
+    const all = getPeriodVerdict(period(), workouts, scans, AS_OF);
+    expect(getPeriodVerdict(period({ baselineStart: "2024-06-01" }), workouts, scans, AS_OF)).toEqual({
       ...all,
-      experiment: experiment({ baselineStart: "2024-06-01" }),
+      period: period({ baselineStart: "2024-06-01" }),
     });
-    expect(getExperimentInsight(experiment({ baselineStart: "2024-09-01" }), workouts, scans, AS_OF).performanceSummary).toEqual(
+    expect(getPeriodVerdict(period({ baselineStart: "2024-09-01" }), workouts, scans, AS_OF).performanceSummary).toEqual(
       all.performanceSummary
     );
-    expect(getExperimentInsight(experiment({ baselineStart: "nope" }), workouts, scans, AS_OF).performanceSummary).toEqual(
+    expect(getPeriodVerdict(period({ baselineStart: "nope" }), workouts, scans, AS_OF).performanceSummary).toEqual(
       all.performanceSummary
     );
   });
 
   it("works together with endDate", () => {
-    const r = getExperimentInsight(experiment({ baselineStart: "2024-03-01", endDate: "2024-08-01" }), workouts, scans, AS_OF);
+    const r = getPeriodVerdict(period({ baselineStart: "2024-03-01", endDate: "2024-08-01" }), workouts, scans, AS_OF);
     expect(r.performanceSummary.classifiedCount).toBe(3);
   });
 });
 
-describe("getExperimentInsight — real sample data", () => {
+describe("getPeriodVerdict — real sample data", () => {
   it("doesn't throw and returns a valid classification against the real SugarWOD export + synthetic InBody fixture", async () => {
     const workouts = await loadSampleRows();
     const inbodyScans = await loadSampleInBodyRows();
-    const result = getExperimentInsight(experiment({ date: "2024-06-01" }), workouts, inbodyScans, AS_OF);
+    const result = getPeriodVerdict(period({ startDate: "2024-06-01" }), workouts, inbodyScans, AS_OF);
     expect(["improved", "declined", "no_change", "mixed", "insufficient_data"]).toContain(result.classification);
   });
 });

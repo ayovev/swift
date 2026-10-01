@@ -1,9 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { describeWithinNoise } from "@/lib/analytics/bodyCompNoise";
 import { formatSignedDelta } from "./charts/chartUtils";
-import type { ExperimentClassification, ExperimentInsight } from "@/types/experiment";
+import type { VerdictClassification, PeriodVerdict } from "@/types/verdict";
 
-const CLASSIFICATION_LABEL: Record<ExperimentClassification, string> = {
+const CLASSIFICATION_LABEL: Record<VerdictClassification, string> = {
   improved: "Improved",
   declined: "Declined",
   no_change: "No change",
@@ -18,7 +18,7 @@ const CLASSIFICATION_LABEL: Record<ExperimentClassification, string> = {
  * informative outcome rather than an incomplete one (see the spec's own
  * "an inconclusive result, worth a closer look" framing).
  */
-const CLASSIFICATION_COPY: Record<ExperimentClassification, string> = {
+const CLASSIFICATION_COPY: Record<VerdictClassification, string> = {
   improved: "Performance improved after this started, without body composition working against it.",
   declined: "Performance declined after this started.",
   no_change: "No meaningful change in performance or body composition since this started.",
@@ -26,7 +26,7 @@ const CLASSIFICATION_COPY: Record<ExperimentClassification, string> = {
   insufficient_data: "",
 };
 
-export function ClassificationBadge({ classification }: { classification: ExperimentClassification }) {
+export function VerdictBadge({ classification }: { classification: VerdictClassification }) {
   return (
     <Badge variant={classification === "improved" ? "default" : "secondary"}>
       {CLASSIFICATION_LABEL[classification]}
@@ -35,14 +35,14 @@ export function ClassificationBadge({ classification }: { classification: Experi
 }
 
 /**
- * What a saved experiment's before/after comparison found: the classification,
+ * What a period's before/after comparison found: the classification,
  * one sentence saying what it means, and the counts and body-comp deltas behind
  * it. An `insufficient_data` verdict shows its own reason and no numbers.
  */
-export function ExperimentVerdict({ insight }: { insight: ExperimentInsight }) {
+export function VerdictSummary({ insight }: { insight: PeriodVerdict }) {
   return (
     <div className="flex flex-col gap-3">
-      <ClassificationBadge classification={insight.classification} />
+      <VerdictBadge classification={insight.classification} />
       <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
         {insight.classification === "insufficient_data" ? insight.reason : CLASSIFICATION_COPY[insight.classification]}
       </p>

@@ -2,12 +2,12 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { describe, expect, it } from "vitest";
 import { loadSampleRows } from "./fixtures/sampleRows";
+import { hasVerdict } from "@/lib/analytics/contextTags";
 import { getAlignment } from "@/lib/analytics/alignment";
-import { getExperimentInsight } from "@/lib/analytics/experimentInsight";
+import { getPeriodVerdict } from "@/lib/analytics/periodVerdict";
 import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
 import { extendSampleRows } from "@/lib/sample/extendSample";
 import { generateSampleBodyComp } from "@/lib/sample/generateSampleBodyComp";
-import { generateSampleExperiments } from "@/lib/sample/generateSampleExperiments";
 import { generateSampleTags } from "@/lib/sample/generateSampleTags";
 import { getCycleReport, getCycles } from "@/lib/analytics/cycleReport";
 
@@ -17,21 +17,21 @@ dayjs.extend(customParseFormat);
  * This is the test that actually pins the point of this feature: not just
  * that each generator produces schema-valid output (see their own test
  * files), but that feeding the real bundled sample export through the full
- * demo-mode pipeline — extendSampleRows, then the two new generators —
+ * demo-mode pipeline — extendSampleRows, then the sample generators —
  * gives the Progress, Compare and Tags views something
  * real to show, not their empty/insufficient_data states across the board.
  */
 describe("sample demo data is full enough to drive the insights tabs", () => {
-  it("produces at least some classified plateau insights, an alignment read, and a classified experiment", async () => {
+  it("produces at least some classified plateau insights, an alignment read, and a classified period verdict", async () => {
     const realRows = await loadSampleRows();
     const today = dayjs("2026-10-02");
 
     const workoutRows = extendSampleRows(realRows, today);
     const bodyCompRows = generateSampleBodyComp(workoutRows, today);
-    const experiments = generateSampleExperiments(workoutRows, today);
+    const periods = generateSampleTags(workoutRows, today).filter(hasVerdict);
 
     expect(bodyCompRows.length).toBeGreaterThan(0);
-    expect(experiments.length).toBeGreaterThan(0);
+    expect(periods.length).toBeGreaterThan(0);
 
     const plateauInsights = getPlateauInsights(workoutRows, bodyCompRows, today.toDate());
     const classifiedPlateaus = plateauInsights.filter((i) => i.classification !== "insufficient_data");
@@ -40,10 +40,14 @@ describe("sample demo data is full enough to drive the insights tabs", () => {
     const alignment = getAlignment(plateauInsights, bodyCompRows, today.toDate());
     expect(alignment.classification).not.toBe("insufficient_data");
 
-    const experimentInsights = experiments.map((experiment) =>
-      getExperimentInsight(experiment, workoutRows, bodyCompRows, today.toDate())
-    );
-    expect(experimentInsights.some((i) => i.classification !== "insufficient_data")).toBe(true);
+    const verdicts = periods.map((period) => getPeriodVerdict(period, workoutRows, bodyCompRows, today.toDate()));
+    expect(verdicts.some((i) => i.classification !== "insufficient_data")).toBe(true);
+    // The newer types (programming, cycle, nutrition, recovery) are what the demo adds; each should read as a verdict, not an empty state.
+    for (const type of ["programming", "cycle", "nutrition", "recovery"] as const) {
+      const v = verdicts.find((x) => x.period.type === type);
+      expect(v, type).toBeDefined();
+      expect(v!.classification, type).not.toBe("insufficient_data");
+    }
   });
 
   it("gives the Tags and Cycles views real tags and blocks, and the insights that read tags stay valid", async () => {

@@ -55,7 +55,7 @@ const MIN_SCANS_IN_WINDOW = 2;
  * improvement is +8.4% (clears it) — both comfortably past 3% without the
  * threshold being so loose it swallows real signal. Tune against the full
  * sample export if it proves too strict/loose in practice. Exported so
- * `experimentInsight.ts` applies the exact same threshold to its own
+ * `periodVerdict.ts` applies the exact same threshold to its own
  * before/after comparison rather than maintaining a second copy.
  */
 export const TREND_THRESHOLD = 0.03;
@@ -75,13 +75,13 @@ export interface InsightOptions {
   tags?: readonly ContextTag[];
 }
 
-/** Exported for reuse by `experimentInsight.ts`, which needs the same shape for its own before/after split. */
+/** Exported for reuse by `periodVerdict.ts`, which needs the same shape for its own before/after split. */
 export interface DatedValue {
   date: Dayjs;
   value: number;
 }
 
-/** Exported for reuse by `experimentInsight.ts` — see `DatedValue`. */
+/** Exported for reuse by `periodVerdict.ts` — see `DatedValue`. */
 export interface SubjectCandidate {
   subject: PlateauSubject;
   entries: DatedValue[];
@@ -148,7 +148,7 @@ function normalizeTitle(s: string): string {
   return (s ?? "").trim().toUpperCase();
 }
 
-/** Exported for reuse by `experimentInsight.ts`'s own before/after averaging. */
+/** Exported for reuse by `periodVerdict.ts`'s own before/after averaging. */
 export function mean(values: number[]): number {
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
@@ -170,7 +170,7 @@ interface LiftGroup {
  * match alone. Splits each lift by rx_or_scaled, since PlateauSubject.status
  * applies to lifts the same way it applies to benchmarks.
  *
- * Exported so `experimentInsight.ts` reuses this exact subject-building
+ * Exported so `periodVerdict.ts` reuses this exact subject-building
  * logic (its "don't reimplement the normalization/grouping rules" spec
  * requirement) instead of maintaining a second copy that could drift.
  */
@@ -226,7 +226,7 @@ export function buildLiftSubjects(
  * NANCY" entries that are materially different, heavier/harder workouts a
  * substring match would wrongly conflate with Grace/Nancy.
  *
- * Exported for reuse by `experimentInsight.ts` — see `buildLiftSubjects`.
+ * Exported for reuse by `periodVerdict.ts` — see `buildLiftSubjects`.
  */
 export function buildBenchmarkSubjects(workouts: { date: Dayjs; raw: SugarWodRow }[]): SubjectCandidate[] {
   const candidates: SubjectCandidate[] = [];
@@ -316,7 +316,7 @@ export function isBodyCompDeclining(bodyComp: PlateauBodyCompTrend): boolean {
  * clean "body comp is helping" story. Experiments needs a three-state read
  * (declining/improving/stable), which `isBodyCompDeclining`'s boolean alone
  * can't express, since "not declining" also covers a genuinely flat body
- * comp. Lives here rather than in `experimentInsight.ts` so both directions
+ * comp. Lives here rather than in `periodVerdict.ts` so both directions
  * of the same signal stay defined in one place, next to each other.
  */
 export function isBodyCompImproving(bodyComp: PlateauBodyCompTrend): boolean {

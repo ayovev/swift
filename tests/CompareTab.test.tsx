@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import dayjs from "dayjs";
 import { CompareTab } from "@/components/dashboard/CompareTab";
 import type { DateWindow } from "@/types/compare";
-import type { ExperimentInsight } from "@/types/experiment";
+import type { PeriodVerdict } from "@/types/verdict";
 import type { ContextTag } from "@/types/tag";
 import { liftRow, scanRow } from "./fixtures/rows";
 
@@ -20,9 +20,9 @@ const scans = [
 ];
 const B: DateWindow = { start: "2026-02-01", end: "2026-02-28" };
 
-function insight(id: string, overrides: Partial<ExperimentInsight> = {}): ExperimentInsight {
+function insight(id: string, overrides: Partial<PeriodVerdict> = {}): PeriodVerdict {
   return {
-    experiment: { id, date: "2026-02-01", label: "x" },
+    period: { id, type: "experiment", label: "x", startDate: "2026-02-01", endDate: null },
     classification: "improved",
     performanceSummary: { improvingCount: 2, decliningCount: 0, flatCount: 1, classifiedCount: 3 },
     bodyCompSummary: { leanMassDelta: 1, fatMassDelta: -1, bodyFatPctDelta: -0.4 },
@@ -38,7 +38,7 @@ function setup(props: Partial<Props> = {}) {
       workouts={workouts}
       scans={scans}
       tags={[]}
-      experimentInsights={new Map()}
+      verdicts={new Map()}
       bodyComp={{ status: "ready", rows: [] }}
       initialWindowB={B}
       initialTagId={null}
@@ -124,11 +124,23 @@ describe("CompareTab — saving a comparison", () => {
 
   it("saves under the type that was picked, from the things you changed only", () => {
     const { onAddTag } = setup();
-    expect(Array.from(screen.getByLabelText("Type").querySelectorAll("option")).map((o) => o.textContent)).toEqual([
-      "Experiment",
+    const select = screen.getByLabelText("Type");
+    expect(Array.from(select.querySelectorAll("optgroup")).map((g) => g.getAttribute("label"))).toEqual([
+      "Nutrition",
+      "Programming",
+      "Recovery",
+      "Something else",
+    ]);
+    expect(Array.from(select.querySelectorAll("option")).map((o) => o.textContent)).toEqual([
+      "Nutrition change",
       "Cut",
       "Bulk",
       "Maintain",
+      "Programming change",
+      "New cycle",
+      "Deload",
+      "Recovery change",
+      "Experiment",
       "Other",
     ]);
     fireEvent.change(screen.getByLabelText("Type"), { target: { value: "cut" } });
@@ -171,8 +183,19 @@ describe("CompareTab — saved ranges", () => {
     expect(screen.queryByRole("button", { name: 'Show "Lisbon"' })).not.toBeInTheDocument();
   });
 
+  it("lists periods of every type in something you changed, with their own type names", () => {
+    const at = (id: string, type: ContextTag["type"], label: string): ContextTag => ({ id, type, label, startDate: "2026-02-01", endDate: "2026-02-28" });
+    setup({
+      tags: [at("n", "nutrition", "Added creatine"), at("p", "programming", "Own programming"), at("r", "recovery", "Sleep"), at("i", "injury", "Wrist")],
+    });
+    expect(screen.getByText("Nutrition change · Feb 1, 2026 – Feb 28, 2026")).toBeInTheDocument();
+    expect(screen.getByText("Programming change · Feb 1, 2026 – Feb 28, 2026")).toBeInTheDocument();
+    expect(screen.getByText("Recovery change · Feb 1, 2026 – Feb 28, 2026")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: 'Show "Wrist"' })).not.toBeInTheDocument();
+  });
+
   it("lists each with its type, its dates and, for an experiment once both datasets are loaded, its classification", () => {
-    setup({ tags: [experiment, cut], experimentInsights: new Map([["a", insight("a", { classification: "mixed" })]]) });
+    setup({ tags: [experiment, cut], verdicts: new Map([["a", insight("a", { classification: "mixed" })]]) });
     expect(screen.getByText("Experiment · Feb 1, 2026 – Feb 28, 2026")).toBeInTheDocument();
     expect(screen.getByText("Cut · Jan 5, 2026 – Feb 20, 2026")).toBeInTheDocument();
     expect(screen.getByText("Mixed")).toBeInTheDocument();
@@ -182,7 +205,7 @@ describe("CompareTab — saved ranges", () => {
     setup({
       tags: [experiment],
       initialWindowB: null,
-      experimentInsights: new Map([["a", insight("a", { classification: "improved" })]]),
+      verdicts: new Map([["a", insight("a", { classification: "improved" })]]),
     });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' }));
     expect(screen.getByLabelText("Range starts")).toHaveValue("2026-02-01");
@@ -196,7 +219,7 @@ describe("CompareTab — saved ranges", () => {
   });
 
   it("opens straight onto a tag chosen on the Tags view", () => {
-    setup({ tags: [experiment], initialWindowB: null, initialTagId: "a", experimentInsights: new Map([["a", insight("a")]]) });
+    setup({ tags: [experiment], initialWindowB: null, initialTagId: "a", verdicts: new Map([["a", insight("a")]]) });
     expect(screen.getByLabelText("Range starts")).toHaveValue("2026-02-01");
     expect(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText(/Performance improved after this started/)).toBeInTheDocument();
@@ -213,7 +236,7 @@ describe("CompareTab — saved ranges", () => {
   it("shows the specific reason for an insufficient_data verdict, and no numbers", () => {
     setup({
       tags: [experiment],
-      experimentInsights: new Map([
+      verdicts: new Map([
         [
           "a",
           insight("a", {
@@ -229,8 +252,27 @@ describe("CompareTab — saved ranges", () => {
     expect(screen.queryByText("Compared")).not.toBeInTheDocument();
   });
 
+  it("shows a verdict for a period that isn't an experiment, with the cut note under a cut's", () => {
+    const nutrition: ContextTag = { id: "n", type: "nutrition", label: "Added creatine", startDate: "2026-02-01", endDate: "2026-02-28" };
+    const cutting: ContextTag = { ...cut, id: "k", startDate: "2026-02-01", endDate: "2026-02-28" };
+    setup({
+      tags: [nutrition, cutting],
+      initialWindowB: null,
+      verdicts: new Map([
+        ["n", insight("n", { classification: "improved" })],
+        ["k", insight("k", { classification: "declined" })],
+      ]),
+    });
+    fireEvent.click(screen.getByRole("button", { name: 'Show "Added creatine"' }));
+    expect(screen.getByText(/Performance improved after this started/)).toBeInTheDocument();
+    expect(screen.queryByText(/during a cut/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: 'Show "Spring cut"' }));
+    expect(screen.getByText("Performance declined after this started.")).toBeInTheDocument();
+    expect(screen.getByText("Lifts and lean mass often move differently during a cut.")).toBeInTheDocument();
+  });
+
   it("asks for an InBody export, and forwards a dropped file, when a verdict needs one", () => {
-    const { onBodyCompFile } = setup({ tags: [experiment], experimentInsights: null, bodyComp: { status: "idle" } });
+    const { onBodyCompFile } = setup({ tags: [experiment], verdicts: null, bodyComp: { status: "idle" } });
     // The list and the comparison work without InBody data; only the verdict waits on it.
     expect(screen.getByText("Started 5/3/1 cycle", { selector: "span" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Upload your InBody CSV export" })).not.toBeInTheDocument();
@@ -244,7 +286,7 @@ describe("CompareTab — saved ranges", () => {
   it("shows an error alert when the InBody upload failed", () => {
     setup({
       tags: [experiment],
-      experimentInsights: null,
+      verdicts: null,
       bodyComp: { status: "error", message: "That file is missing a date column." },
     });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' }));
@@ -253,7 +295,7 @@ describe("CompareTab — saved ranges", () => {
   });
 
   it("drops the experiment's verdict as soon as a date is typed", () => {
-    setup({ tags: [experiment], experimentInsights: new Map([["a", insight("a")]]) });
+    setup({ tags: [experiment], verdicts: new Map([["a", insight("a")]]) });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' }));
     expect(screen.getByText(/Performance improved after this started/)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Range ends"), { target: { value: "2026-02-27" } });

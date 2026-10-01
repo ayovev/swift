@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  hasVerdict,
+  mergeTagsById,
   validateTagList,
+  VERDICT_NOTE,
   acknowledgeTags,
   describeTag,
   overlappingTags,
   tagLabel,
   tagOverlaps,
 } from "@/lib/analytics/contextTags";
-import type { ContextTag } from "@/types/tag";
+import { TAG_TYPES, type ContextTag } from "@/types/tag";
 
 /** `undefined` in `over` removes the key, which is how "no label" is spelled under exactOptionalPropertyTypes. */
 const tag = (over: { [K in keyof ContextTag]?: ContextTag[K] | undefined } = {}): ContextTag => {
@@ -89,7 +92,27 @@ describe("acknowledgeTags", () => {
   });
 });
 
+describe("the newer types", () => {
+  it("name an unnamed period by its type, in plain words", () => {
+    expect(tagLabel(tag({ label: undefined, type: "cycle" }))).toBe("new cycle");
+    expect(tagLabel(tag({ label: undefined, type: "nutrition" }))).toBe("nutrition change");
+    expect(describeTag(tag({ label: undefined, type: "recovery", endDate: null }))).toBe("recovery change period (Mar 1, 2026 – ongoing)");
+    expect(describeTag(tag({ label: "Added creatine", type: "nutrition", endDate: null }))).toBe('"Added creatine" (nutrition change, Mar 1, 2026 – ongoing)');
+  });
+
+  it("have a note for a cut's verdict and for nothing else", () => {
+    expect(VERDICT_NOTE.cut).toBe("Lifts and lean mass often move differently during a cut.");
+    expect(Object.keys(VERDICT_NOTE)).toEqual(["cut"]);
+  });
+});
+
 describe("validateTagList", () => {
+  it("accepts every type there is", () => {
+    for (const type of TAG_TYPES) {
+      expect(validateTagList([tag({ type })])).toEqual({ status: "ok", tags: [tag({ type })] });
+    }
+  });
+
   const ok = (list: unknown) => validateTagList(list);
 
   it("accepts a valid list unchanged, including an open-ended one", () => {
@@ -118,5 +141,28 @@ describe("validateTagList", () => {
 
   it("drops unknown keys", () => {
     expect(ok([{ ...tag(), secret: "x" }])).toEqual({ status: "ok", tags: [tag()] });
+  });
+});
+
+describe("hasVerdict", () => {
+  it("gives a verdict to everything in something you changed, and to nothing that happened", () => {
+    const at = (type: ContextTag["type"]): ContextTag => ({ id: "x", type, startDate: "2024-05-01", endDate: null });
+    for (const type of ["experiment", "nutrition", "cut", "bulk", "maintain", "programming", "cycle", "deload", "recovery", "other"] as const) {
+      expect(hasVerdict(at(type))).toBe(true);
+    }
+    for (const type of ["injury", "travel"] as const) expect(hasVerdict(at(type))).toBe(false);
+  });
+});
+
+describe("mergeTagsById", () => {
+  const t = (id: string, label: string): ContextTag => ({ id, type: "other", label, startDate: "2024-01-01", endDate: null });
+
+  it("keeps existing tags in order and appends the incoming ones", () => {
+    expect(mergeTagsById([t("1", "a"), t("2", "b")], [t("3", "c")]).map((x) => x.id)).toEqual(["1", "2", "3"]);
+  });
+
+  it("lets the incoming tag win on a shared id", () => {
+    const merged = mergeTagsById([t("1", "old"), t("2", "b")], [t("1", "new")]);
+    expect(merged.map((x) => x.label)).toEqual(["b", "new"]);
   });
 });

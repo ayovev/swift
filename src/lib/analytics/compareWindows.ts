@@ -24,9 +24,9 @@ import type { ContextTag } from "@/types/tag";
 
 /**
  * "Select a range, see what changed": performance and body composition in
- * window B against window A. Generalises experiments — a saved comparison
- * becomes a tag of type "experiment" (window B → `startDate`/`endDate`), so
- * there is one data model, not two.
+ * window B against window A. Generalises the verdict — a saved comparison
+ * becomes a period (window B → `startDate`/`endDate`), so there is one data
+ * model, not two.
  *
  * Reuses the Plateau Detector's subject building unchanged (same lift-name
  * normalisation, same 1RM estimate, RX and Scaled never merged), so a lift
@@ -231,19 +231,19 @@ export function compareWindows(
 }
 
 /**
- * The Experiment fields a comparison maps onto: window B's span, and window
- * A's start as the experiment's `baselineStart`. Exact when A ends the day
- * before B starts (the default); an experiment's "before" side always runs
- * up to its start date, so a custom A that ends earlier gains the gap.
+ * The period fields a comparison maps onto: window B's span, and window A's
+ * start as the period's `baselineStart`. Exact when A ends the day before B
+ * starts (the default); a period's "before" side always runs up to its start
+ * date, so a custom A that ends earlier gains the gap.
  */
-export function windowsToExperimentFields(
+export function windowsToPeriodFields(
   windowA: DateWindow,
   windowB: DateWindow
-): { date: string; endDate: string; baselineStart: string } {
-  return { date: windowB.start, endDate: windowB.end, baselineStart: windowA.start };
+): { startDate: string; endDate: string; baselineStart: string } {
+  return { startDate: windowB.start, endDate: windowB.end, baselineStart: windowA.start };
 }
 
-/** Whether saving as an experiment reproduces window A exactly: A ends the day before B starts. */
+/** Whether saving as a period reproduces window A exactly: A ends the day before B starts. */
 export function windowAIsContiguous(windowA: DateWindow, windowB: DateWindow): boolean {
   return dayjs(windowA.end).add(1, "day").isSame(dayjs(windowB.start), "day");
 }

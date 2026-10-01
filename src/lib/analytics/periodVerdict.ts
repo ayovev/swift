@@ -16,25 +16,25 @@ import {
 } from "./plateauDetector";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/dashboard";
+import type { ContextTag } from "@/types/tag";
 import type {
-  Experiment,
-  ExperimentBodyCompSummary,
-  ExperimentClassification,
-  ExperimentInsight,
-  ExperimentPerformanceSummary,
-} from "@/types/experiment";
+  PeriodVerdict,
+  VerdictBodyCompSummary,
+  VerdictClassification,
+  VerdictPerformanceSummary,
+} from "@/types/verdict";
 
 /** Eligibility gate minimums (spec Step 1), applied independently to the before and after sides. */
 const MIN_CLASSIFIED_SUBJECTS = 3;
 const MIN_SCANS_PER_SIDE = 2;
 
-const NULL_BODY_COMP_SUMMARY: ExperimentBodyCompSummary = {
+const NULL_BODY_COMP_SUMMARY: VerdictBodyCompSummary = {
   leanMassDelta: null,
   fatMassDelta: null,
   bodyFatPctDelta: null,
 };
 
-const ZERO_PERFORMANCE_SUMMARY: ExperimentPerformanceSummary = {
+const ZERO_PERFORMANCE_SUMMARY: VerdictPerformanceSummary = {
   improvingCount: 0,
   decliningCount: 0,
   flatCount: 0,
@@ -47,9 +47,9 @@ interface SplitCandidate {
   after: SubjectCandidate["entries"];
 }
 
-function insufficient(experiment: Experiment, reason: string): ExperimentInsight {
+function insufficient(period: ContextTag, reason: string): PeriodVerdict {
   return {
-    experiment,
+    period,
     classification: "insufficient_data",
     reason,
     performanceSummary: ZERO_PERFORMANCE_SUMMARY,
@@ -60,7 +60,8 @@ function insufficient(experiment: Experiment, reason: string): ExperimentInsight
 /**
  * Pure function: re-anchors the same before/after performance-vs-body-comp
  * comparison the Plateau Detector (#1) and Alignment (#2) use around an
- * arbitrary experiment start date, instead of a recent/prior rolling window.
+ * arbitrary period start date, instead of a recent/prior rolling window.
+ * Takes the period itself (any type that `hasVerdict` accepts); only its dates are read.
  * Reuses #1's subject identification (`buildLiftSubjects`/
  * `buildBenchmarkSubjects`, `parseWorkoutDate`/`parseInBodyDate`,
  * `computeBodyCompTrend`, `isBodyCompDeclining`/`isBodyCompImproving`)
@@ -69,33 +70,33 @@ function insufficient(experiment: Experiment, reason: string): ExperimentInsight
  * classification, since #1's session-count recent/prior windowing has no
  * reason to land on either side of an arbitrary date.
  *
- * When `experiment.endDate` is set, the "after" side is bounded to
+ * When `period.endDate` is set, the "after" side is bounded to
  * [start, end] instead of running open-ended to `asOfDate` — a finished
- * experiment is compared against the period it actually ran, not against
+ * period is compared against the period it actually ran, not against
  * whatever the athlete did afterward. An unset `endDate`, or one that's
  * before the start date (which the UI shouldn't produce, but this stays
  * defensive about it rather than throwing), falls back to the open-ended
  * behavior unchanged.
  *
- * When `experiment.baselineStart` is set (before `date`), the "before" side is
- * [baselineStart, date) instead of all history before `date` — the earlier
+ * When `period.baselineStart` is set (before `startDate`), the "before" side is
+ * [baselineStart, startDate) instead of all history before `startDate` — the earlier
  * range a Compare was saved from — for both the lift/WOD entries and the
  * InBody scans. Unset, nothing changes.
  */
-export function getExperimentInsight(
-  experiment: Experiment,
+export function getPeriodVerdict(
+  period: ContextTag,
   workouts: SugarWodRow[],
   inbodyScans: InBodyRow[],
   asOfDate: Date,
   options: InsightOptions = {}
-): ExperimentInsight {
+): PeriodVerdict {
   const asOf = dayjs(asOfDate);
-  const start = dayjs(experiment.date);
-  const rawEnd = experiment.endDate ? dayjs(experiment.endDate) : null;
+  const start = dayjs(period.startDate);
+  const rawEnd = period.endDate ? dayjs(period.endDate) : null;
   const end = rawEnd && rawEnd.isValid() && !rawEnd.isBefore(start, "day") ? rawEnd : null;
   // Same defensiveness as `end`: a baselineStart that isn't strictly before the
   // start date can't describe an earlier range, so it falls back to all history.
-  const rawBaseline = experiment.baselineStart ? dayjs(experiment.baselineStart) : null;
+  const rawBaseline = period.baselineStart ? dayjs(period.baselineStart) : null;
   const baseline = rawBaseline && rawBaseline.isValid() && rawBaseline.isBefore(start, "day") ? rawBaseline : null;
   const isBefore = (d: dayjs.Dayjs) => d.isBefore(start, "day") && (!baseline || !d.isBefore(baseline, "day"));
   const beforeWhere = baseline ? "in the earlier range" : "before this date";
@@ -113,7 +114,7 @@ export function getExperimentInsight(
   // A subject only logged before, or only after, the start date can't show a
   // before/after change — split first, then only "classified" subjects (data
   // on both sides) enter the per-subject comparison below. "After" is also
-  // capped at `end` when the experiment has one.
+  // capped at `end` when the period has one.
   const splits: SplitCandidate[] = candidates.map((candidate) => ({
     candidate,
     before: candidate.entries.filter((e) => isBefore(e.date)),
@@ -126,9 +127,27 @@ export function getExperimentInsight(
 
   // Gate 1: enough subjects with data on both sides. When it fails, name the
   // thinner raw side (before-data count vs. after-data count) rather than a
-  // generic "not enough data" — an experiment started last week will almost
+  // generic "not enough data" — a period started last week will almost
   // always be thin on the "after" side, and that's worth saying explicitly.
   // A tie defaults to "after", the spec's own called-out common case.
+  // When both sides have enough subjects on their own, the shortfall is the overlap:
+  // the lifts logged before are not the ones logged after, so say that instead.
+  if (
+    classified.length < MIN_CLASSIFIED_SUBJECTS &&
+    subjectsWithBefore >= MIN_CLASSIFIED_SUBJECTS &&
+    subjectsWithAfter >= MIN_CLASSIFIED_SUBJECTS
+  ) {
+    const both = baseline ? "in the earlier range and after this date" : "before and after this date";
+    return insufficient(
+      period,
+      formatGateShortfall(
+        classified.length,
+        MIN_CLASSIFIED_SUBJECTS,
+        `lift/WOD logged both ${both}`,
+        `lifts/WODs logged both ${both}`
+      )
+    );
+  }
   if (classified.length < MIN_CLASSIFIED_SUBJECTS) {
     const thinSide = subjectsWithBefore < subjectsWithAfter ? "before" : "after";
     const reason =
@@ -145,7 +164,7 @@ export function getExperimentInsight(
             "lift/WOD with logged data after this date",
             "lifts/WODs with logged data after this date"
           );
-    return insufficient(experiment, reason);
+    return insufficient(period, reason);
   }
 
   const scansBefore = parsedScans.filter((s) => isBefore(s.date));
@@ -155,7 +174,7 @@ export function getExperimentInsight(
   // reason names exactly which side is short.
   if (scansBefore.length < MIN_SCANS_PER_SIDE) {
     return insufficient(
-      experiment,
+      period,
       formatGateShortfall(
         scansBefore.length,
         MIN_SCANS_PER_SIDE,
@@ -166,7 +185,7 @@ export function getExperimentInsight(
   }
   if (scansAfter.length < MIN_SCANS_PER_SIDE) {
     return insufficient(
-      experiment,
+      period,
       formatGateShortfall(
         scansAfter.length,
         MIN_SCANS_PER_SIDE,
@@ -190,7 +209,7 @@ export function getExperimentInsight(
     else flatCount++;
   }
 
-  const performanceSummary: ExperimentPerformanceSummary = {
+  const performanceSummary: VerdictPerformanceSummary = {
     improvingCount,
     decliningCount,
     flatCount,
@@ -198,12 +217,12 @@ export function getExperimentInsight(
   };
 
   // Nearest scan strictly before the start date vs. nearest on/after it (and,
-  // when the experiment has ended, on/before it too, per `scansAfter` above)
+  // when the period has ended, on/before it too, per `scansAfter` above)
   // — the tightest read of the transition itself, not the earliest/latest
   // scan in the athlete's whole history.
   const nearestBefore = scansBefore.reduce((a, b) => (b.date.isAfter(a.date) ? b : a));
   const nearestAfter = scansAfter.reduce((a, b) => (b.date.isBefore(a.date) ? b : a));
-  const bodyCompSummary: ExperimentBodyCompSummary = computeBodyCompTrend(
+  const bodyCompSummary: VerdictBodyCompSummary = computeBodyCompTrend(
     nearestBefore.raw,
     nearestAfter.raw,
     options.noiseBands ?? getBodyCompNoiseBands(parsedScans.map((s) => s.raw))
@@ -220,7 +239,7 @@ export function getExperimentInsight(
   // same spirit as the spec's own framing of `mixed` as an informative,
   // inconclusive result rather than a fallback error state.
   const half = classified.length / 2;
-  let classification: ExperimentClassification;
+  let classification: VerdictClassification;
   if (improvingCount > half && bodyCompState !== "declining") {
     classification = "improved";
   } else if (decliningCount > half && bodyCompState !== "improving") {
@@ -231,5 +250,5 @@ export function getExperimentInsight(
     classification = "mixed";
   }
 
-  return { experiment, classification, performanceSummary, bodyCompSummary };
+  return { period, classification, performanceSummary, bodyCompSummary };
 }

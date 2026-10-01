@@ -10,7 +10,7 @@
  * a real athlete's scans.
  *
  * The pre-existing thresholds (`TREND_THRESHOLD`, the MIN_* eligibility gates
- * in plateauDetector.ts / alignment.ts / experimentInsight.ts) stay where they
+ * in plateauDetector.ts / alignment.ts / periodVerdict.ts) stay where they
  * are: they are documented in place and moving them is out of Phase 1's scope.
  */
 

@@ -5,20 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { describeTag, tagLabel } from "@/lib/analytics/contextTags";
+import { describeTag, hasVerdict, tagLabel } from "@/lib/analytics/contextTags";
 import { capture } from "@/lib/posthog";
-import { TAG_GROUPS, type ContextTag, type TagType } from "@/types/tag";
-import type { ExperimentInsight } from "@/types/experiment";
+import { TAG_GROUPS, TAG_TYPE_LABEL, groupOfType, isChangeType, type ContextTag, type TagType } from "@/types/tag";
+import type { PeriodVerdict } from "@/types/verdict";
 import type { DateWindow } from "@/types/compare";
 import type { DataSource } from "@/App";
-import { ClassificationBadge } from "./ExperimentVerdict";
+import { VerdictBadge } from "./VerdictSummary";
+import { SegmentedControl } from "./SegmentedControl";
 import { formatDate } from "./charts/chartUtils";
 
 interface PeriodsTabProps {
   tags: ContextTag[];
   source: DataSource;
-  /** null until both a SugarWOD upload and an InBody upload are ready; an experiment's verdict waits on it. */
-  experimentInsights: Map<string, ExperimentInsight> | null;
+  /** null until both a SugarWOD upload and an InBody upload are ready; a period's verdict waits on it. */
+  verdicts: Map<string, PeriodVerdict> | null;
   /** Opens the Compare view on this tag's range. */
   onCompareTag: (tagId: string) => void;
   /** A range dragged out on a chart, to pre-fill the form. */
@@ -28,14 +29,20 @@ interface PeriodsTabProps {
   onDelete: (id: string) => void;
 }
 
-const TYPE_LABEL: Record<TagType, string> = {
-  experiment: "Experiment",
-  cut: "Cut",
-  bulk: "Bulk",
-  maintain: "Maintain",
-  injury: "Injury",
-  travel: "Travel",
-  other: "Other",
+/** What a name might look like for each type, as the placeholder. A hint, never a default. */
+const EXAMPLE_NAME: Record<TagType, string> = {
+  nutrition: "Added creatine",
+  cut: "Spring cut",
+  bulk: "Spring bulk",
+  maintain: "Maintenance block",
+  programming: "Switched to own programming",
+  cycle: "5/3/1, cycle 3",
+  deload: "Deload week",
+  recovery: "Started tracking sleep",
+  experiment: "Started 5/3/1 cycle",
+  other: "Something else I changed",
+  injury: "Shoulder tweak",
+  travel: "Two weeks abroad",
 };
 
 interface Draft {
@@ -72,22 +79,20 @@ function draftOf(tag: ContextTag): Draft {
   };
 }
 
-/** The types whose range can be compared with the stretch before it: the ones in "Something you changed". */
-const CHANGE_TYPES: readonly TagType[] = TAG_GROUPS[0]?.types ?? [];
-
 /**
  * Stretches of time the two exports can't see: a cut, an injury, a trip,
- * something you tried. Tags shade the time-series charts and are named in any
- * plateau or alignment read they overlap; they never change a number. An
- * experiment is a tag you've asked the app to judge: its row carries the
- * before/after verdict, and any tag in "Something you changed" can be opened
- * on the Compare view. Stored in the browser only; Settings → Backup saves
- * them with everything else.
+ * something you tried. Periods shade the time-series charts and are named in
+ * any plateau or alignment read they overlap; they never change a number. The
+ * form picks a kind first (something you changed, or something that happened),
+ * then a type grouped by domain. A period in "Something you changed" carries a
+ * before/after verdict on its row and can be opened on the Compare view.
+ * Stored in the browser only; Settings → Backup saves them with everything
+ * else.
  */
 export function PeriodsTab({
   tags,
   source,
-  experimentInsights,
+  verdicts,
   onCompareTag,
   initialWindow,
   onAdd,
@@ -98,6 +103,8 @@ export function PeriodsTab({
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }));
+  const group = groupOfType(draft.type);
+  const judged = isChangeType(draft.type);
   const endOk = draft.ongoing || (draft.endDate !== "" && draft.endDate >= draft.startDate);
   const baselineOk = draft.baselineStart === "" || draft.baselineStart < draft.startDate;
   const canSubmit = draft.startDate !== "" && endOk && baselineOk;
@@ -133,9 +140,9 @@ export function PeriodsTab({
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Mark a stretch of time — a cut, an injury, a trip, something you tried — so a plateau or
             alignment read that overlaps it says so. Periods shade the charts and are named where they
-            apply; they never change a number. Mark something you tried as an experiment to see
-            whether your lifts and body composition moved after it. You can also drag across a chart
-            and choose Save as a period.
+            apply; they never change a number. Mark something you changed — your food, your programming,
+            your sleep — to see whether your lifts and body composition moved after it. You can also
+            drag across a chart and choose Save as a period.
           </p>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Periods are stored in this browser only. Clearing site data or using Start over deletes
@@ -146,6 +153,18 @@ export function PeriodsTab({
           <form onSubmit={submit} className="flex flex-col gap-3" aria-label={editingId ? "Edit period" : "Add a period"}>
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1.5">
+                <span className="text-sm leading-none font-medium select-none">Kind</span>
+                <SegmentedControl
+                  ariaLabel="Kind of period"
+                  value={group.id}
+                  options={TAG_GROUPS.map((g) => ({ id: g.id, label: g.label }))}
+                  onChange={(id) => {
+                    const next = TAG_GROUPS.find((g) => g.id === id);
+                    if (next && next.id !== group.id) set("type", next.defaultType);
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
                 <Label htmlFor="period-type">Type</Label>
                 <select
                   id="period-type"
@@ -153,15 +172,20 @@ export function PeriodsTab({
                   onChange={(e) => set("type", e.target.value as TagType)}
                   className="h-9 rounded-md border border-input bg-background px-2 text-sm"
                 >
-                  {TAG_GROUPS.map((group) => (
-                    <optgroup key={group.label} label={group.label}>
-                      {group.types.map((t) => (
-                        <option key={t} value={t}>
-                          {TYPE_LABEL[t]}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
+                  {group.categories.map((category) => {
+                    const options = category.types.map((t) => (
+                      <option key={t} value={t}>
+                        {TAG_TYPE_LABEL[t]}
+                      </option>
+                    ));
+                    return category.label ? (
+                      <optgroup key={category.label} label={category.label}>
+                        {options}
+                      </optgroup>
+                    ) : (
+                      options
+                    );
+                  })}
                 </select>
               </div>
               <div className="flex flex-col gap-1.5">
@@ -184,7 +208,7 @@ export function PeriodsTab({
                 <input type="checkbox" checked={draft.ongoing} onChange={(e) => set("ongoing", e.target.checked)} />
                 Still going
               </label>
-              {draft.type === "experiment" ? (
+              {judged ? (
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="period-baseline">Compare against (optional)</Label>
                   <Input
@@ -199,20 +223,19 @@ export function PeriodsTab({
                 </div>
               ) : null}
             </div>
-            {draft.type === "experiment" ? (
+            {judged ? (
               <p id="period-baseline-hint" className="text-xs text-muted-foreground">
-                The before side starts here and runs up to the day before the experiment. Leave it empty to
+                The before side starts here and runs up to the day before this starts. Leave it empty to
                 compare against all earlier history.
-                {baselineOk ? "" : " This date has to be before the experiment starts."}
+                {baselineOk ? "" : " This date has to be before this starts."}
               </p>
             ) : null}
             <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-1 flex-col gap-1.5">
+              <div className="flex min-w-40 flex-1 flex-col gap-1.5">
                 <Label htmlFor="period-label">Name (optional)</Label>
-                <Input id="period-label" value={draft.label} onChange={(e) => set("label", e.target.value)} placeholder={draft.type === "experiment" ? "Started 5/3/1 cycle" : "Spring cut"}
-                maxLength={80} />
+                <Input id="period-label" value={draft.label} onChange={(e) => set("label", e.target.value)} placeholder={EXAMPLE_NAME[draft.type]} maxLength={80} />
               </div>
-              <div className="flex flex-[2] flex-col gap-1.5">
+              <div className="flex min-w-40 flex-[2] flex-col gap-1.5">
                 <Label htmlFor="period-note">Note (optional)</Label>
                 <Input id="period-note" value={draft.note} onChange={(e) => set("note", e.target.value)} maxLength={300} />
               </div>
@@ -251,7 +274,7 @@ export function PeriodsTab({
               <div>
                 <CardTitle className="text-base">{tagLabel(tag)}</CardTitle>
                 <p className="mt-1 text-xs text-muted-foreground">{describeTag(tag)}</p>
-                {tag.type === "experiment" ? (
+                {hasVerdict(tag) ? (
                   <p className="mt-1 text-xs text-muted-foreground">
                     Compared with{" "}
                     {tag.baselineStart
@@ -262,10 +285,10 @@ export function PeriodsTab({
                 {tag.note ? <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{tag.note}</p> : null}
               </div>
               <div className="flex items-center gap-1">
-                {tag.type === "experiment" && experimentInsights?.get(tag.id) ? (
-                  <ClassificationBadge classification={experimentInsights.get(tag.id)!.classification} />
+                {hasVerdict(tag) && verdicts?.get(tag.id) ? (
+                  <VerdictBadge classification={verdicts.get(tag.id)!.classification} />
                 ) : null}
-                {CHANGE_TYPES.includes(tag.type) ? (
+                {isChangeType(tag.type) ? (
                   <Button
                     type="button"
                     variant="outline"

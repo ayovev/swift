@@ -1,5 +1,6 @@
 import { validateTagList } from "@/lib/analytics/contextTags";
-import { experimentToTag, mergeTagsById } from "@/lib/analytics/experimentTags";
+import { mergeTagsById } from "@/lib/analytics/contextTags";
+import { experimentToTag } from "@/lib/analytics/experimentToTag";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";

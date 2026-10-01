@@ -23,7 +23,7 @@ import { parseWorkoutDate } from "./scanParsing";
 import type { Cycle, CycleBodyChange, CycleLiftChange, CycleReport } from "@/types/cycle";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
-import type { ContextTag, TagType } from "@/types/tag";
+import { CHANGE_TYPES, type ContextTag, type TagType } from "@/types/tag";
 
 /**
  * Turns history into a readable retrospective: what did each training block
@@ -46,7 +46,7 @@ import type { ContextTag, TagType } from "@/types/tag";
  * Pure: raw rows in, a value out.
  */
 
-const CYCLE_TAG_TYPES: readonly TagType[] = ["experiment", "bulk", "cut", "maintain", "other"];
+const CYCLE_TAG_TYPES: readonly TagType[] = CHANGE_TYPES;
 
 /** Tag types that add a "this block overlaps X" sentence to a report. */
 const CONTEXT_TAG_TYPES: readonly TagType[] = ["injury", "travel"];
