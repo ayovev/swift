@@ -11,6 +11,12 @@ Swift turns a SugarWOD training-history CSV into a dashboard you can read in
 a minute. It runs entirely in your browser: **[tryswift.io](https://tryswift.io)**.
 There is no account to make and no server to send your file to.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png">
+  <img alt="Swift's Overview page: totals for workouts logged, days trained and personal records, and a month-by-month attendance chart." src="docs/images/overview-light.png">
+</picture>
+
+
 ## What it shows
 
 - **Consistency and progress.** Workouts over time, lift and benchmark history,
@@ -29,6 +35,33 @@ There is no account to make and no server to send your file to.
 It is for one athlete looking at their own training. There are no coach views
 and no multi-athlete comparisons. Try it without a file using the sample data
 on the landing page.
+
+<table>
+  <tr>
+    <td width="50%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/breakdown-dark.png">
+  <img alt="The Strength page in the Breakdown section: share of workouts that train strength, month by month." src="docs/images/breakdown-light.png">
+</picture>
+
+</td>
+    <td width="50%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/progress-dark.png">
+  <img alt="The Progress page: a whole-athlete read of whether performance and body composition agree." src="docs/images/progress-light.png">
+</picture>
+
+</td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Breakdown: one of ten GPP domains</sub></td>
+    <td align="center"><sub>Progress: performance against body composition</sub></td>
+  </tr>
+</table>
+
+*Screenshots use the bundled sample data.*
 
 ## Privacy
 
