@@ -53,14 +53,14 @@ function Calendar({
       classNames={{
         months: "relative flex flex-col gap-4 sm:flex-row",
         month: "flex flex-col gap-3",
-        nav: "flex items-center justify-between",
+        nav: "absolute inset-x-0 top-0",
         button_previous: cn(
           buttonVariants({ variant: "outline", size: "icon-sm" }),
-          "absolute left-1 top-1 z-10"
+          "absolute left-1 top-0 z-10"
         ),
         button_next: cn(
           buttonVariants({ variant: "outline", size: "icon-sm" }),
-          "absolute right-1 top-1 z-10"
+          "absolute right-1 top-0 z-10"
         ),
         month_caption: "flex h-8 items-center justify-center text-sm font-medium",
         month_grid: "w-full border-collapse",

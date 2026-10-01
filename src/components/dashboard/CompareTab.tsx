@@ -23,6 +23,7 @@ import type { BodyCompState } from "./BodyCompTab";
 import { ComparisonTables } from "./ComparisonTables";
 import { CycleReportBody } from "./CycleReportBody";
 import { VerdictBadge, VerdictSummary } from "./VerdictSummary";
+import { DatePickerField } from "./DatePickerField";
 import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import { formatDate } from "./charts/chartUtils";
 
@@ -66,7 +67,7 @@ function DateField({ id, label, value, onChange }: { id: string; label: string; 
   return (
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type="date" value={value} max={today()} onChange={(e) => onChange(e.target.value)} className="h-9 w-44" />
+      <DatePickerField id={id} value={value} max={today()} onChange={onChange} />
     </div>
   );
 }

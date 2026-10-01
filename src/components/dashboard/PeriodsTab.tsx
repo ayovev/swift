@@ -12,6 +12,7 @@ import type { PeriodVerdict } from "@/types/verdict";
 import type { DateWindow } from "@/types/compare";
 import type { DataSource } from "@/App";
 import { VerdictBadge } from "./VerdictSummary";
+import { DatePickerField } from "./DatePickerField";
 import { SegmentedControl } from "./SegmentedControl";
 import { formatDate } from "./charts/chartUtils";
 
@@ -190,18 +191,16 @@ export function PeriodsTab({
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="period-start">Starts</Label>
-                <Input id="period-start" type="date" value={draft.startDate} onChange={(e) => set("startDate", e.target.value)} className="h-9 w-44" />
+                <DatePickerField id="period-start" value={draft.startDate} onChange={(v) => set("startDate", v)} />
               </div>
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="period-end">Ends</Label>
-                <Input
+                <DatePickerField
                   id="period-end"
-                  type="date"
                   value={draft.ongoing ? "" : draft.endDate}
                   disabled={draft.ongoing}
                   min={draft.startDate || undefined}
-                  onChange={(e) => set("endDate", e.target.value)}
-                  className="h-9 w-44"
+                  onChange={(v) => set("endDate", v)}
                 />
               </div>
               <label className="flex h-9 items-center gap-2 text-sm">
@@ -211,13 +210,12 @@ export function PeriodsTab({
               {judged ? (
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="period-baseline">Compare against (optional)</Label>
-                  <Input
+                  <DatePickerField
                     id="period-baseline"
-                    type="date"
                     value={draft.baselineStart}
                     max={draft.startDate ? dayjs(draft.startDate).subtract(1, "day").format("YYYY-MM-DD") : undefined}
-                    onChange={(e) => set("baselineStart", e.target.value)}
-                    className="h-9 w-44"
+                    onChange={(v) => set("baselineStart", v)}
+                    clearable
                     aria-describedby="period-baseline-hint"
                   />
                 </div>

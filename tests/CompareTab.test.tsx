@@ -6,6 +6,7 @@ import type { DateWindow } from "@/types/compare";
 import type { PeriodVerdict } from "@/types/verdict";
 import type { ContextTag } from "@/types/tag";
 import { liftRow, scanRow } from "./fixtures/rows";
+import { pickDate, shown } from "./fixtures/datePicker";
 
 const md = (iso: string) => dayjs(iso).format("MM/DD/YYYY");
 const workouts = [
@@ -74,15 +75,15 @@ describe("CompareTab — comparing a range", () => {
 
   it("re-runs when the dates are edited by keyboard", () => {
     setup();
-    fireEvent.change(screen.getByLabelText("Range starts"), { target: { value: "2026-02-10" } });
+    pickDate("Range starts", "2026-02-10");
     expect(screen.getByText(/no lift or benchmark has 2 logged entries in both windows/)).toBeInTheDocument();
   });
 
   it("lets the earlier range be edited", () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: "Choose the earlier range" }));
-    expect(screen.getByLabelText("Earlier range starts")).toHaveValue("2026-01-04");
-    fireEvent.change(screen.getByLabelText("Earlier range starts"), { target: { value: "2026-01-10" } });
+    expect(screen.getByLabelText("Earlier range starts")).toHaveTextContent(shown("2026-01-04"));
+    pickDate("Earlier range starts", "2026-01-10");
     expect(screen.getByText(/Jan 10, 2026 – Jan 31, 2026/)).toBeInTheDocument();
   });
 
@@ -98,8 +99,8 @@ describe("CompareTab — what the range did", () => {
     setup({ workouts, scans, initialWindowB: { start: "2026-02-01", end: "2026-02-05" } });
     expect(screen.getByText("In this range")).toBeInTheDocument();
     expect(screen.getByText(/needs 9 more days in this cycle \(has 5, needs 14\)/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Range starts"), { target: { value: "2026-01-01" } });
-    fireEvent.change(screen.getByLabelText("Range ends"), { target: { value: "2026-02-28" } });
+    pickDate("Range starts", "2026-01-01");
+    pickDate("Range ends", "2026-02-28");
     expect(screen.getByText(/Back Squat estimated 1RM rose 15% \(200 to 230\)/)).toBeInTheDocument();
   });
 });
@@ -151,7 +152,7 @@ describe("CompareTab — saving a comparison", () => {
   it("warns that an earlier range with a gap before the range will gain the gap when saved", () => {
     const { onAddTag } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Choose the earlier range" }));
-    fireEvent.change(screen.getByLabelText("Earlier range ends"), { target: { value: "2026-01-20" } });
+    pickDate("Earlier range ends", "2026-01-20");
     expect(screen.getByText(/the days between these two ranges will be included/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save as period" }));
     expect(onAddTag).toHaveBeenCalledWith(expect.objectContaining({ baselineStart: "2026-01-04" }));
@@ -208,8 +209,8 @@ describe("CompareTab — saved ranges", () => {
       verdicts: new Map([["a", insight("a", { classification: "improved" })]]),
     });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' }));
-    expect(screen.getByLabelText("Range starts")).toHaveValue("2026-02-01");
-    expect(screen.getByLabelText("Range ends")).toHaveValue("2026-02-28");
+    expect(screen.getByLabelText("Range starts")).toHaveTextContent(shown("2026-02-01"));
+    expect(screen.getByLabelText("Range ends")).toHaveTextContent(shown("2026-02-28"));
     expect(screen.getByText("All history before Feb 1, 2026", { exact: false })).toBeInTheDocument();
     expect(screen.getByText("Performance improved after this started, without body composition working against it.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' })).toHaveAttribute("aria-pressed", "true");
@@ -220,7 +221,7 @@ describe("CompareTab — saved ranges", () => {
 
   it("opens straight onto a tag chosen on the Tags view", () => {
     setup({ tags: [experiment], initialWindowB: null, initialTagId: "a", verdicts: new Map([["a", insight("a")]]) });
-    expect(screen.getByLabelText("Range starts")).toHaveValue("2026-02-01");
+    expect(screen.getByLabelText("Range starts")).toHaveTextContent(shown("2026-02-01"));
     expect(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText(/Performance improved after this started/)).toBeInTheDocument();
   });
@@ -230,7 +231,7 @@ describe("CompareTab — saved ranges", () => {
     setup({ tags: [withBaseline], initialWindowB: null });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Comparison"' }));
     expect(screen.getByText(/Compared with Jan 10, 2026 – Jan 31, 2026/)).toBeInTheDocument();
-    expect(screen.getByLabelText("Earlier range starts")).toHaveValue("2026-01-10");
+    expect(screen.getByLabelText("Earlier range starts")).toHaveTextContent(shown("2026-01-10"));
   });
 
   it("shows the specific reason for an insufficient_data verdict, and no numbers", () => {
@@ -298,7 +299,7 @@ describe("CompareTab — saved ranges", () => {
     setup({ tags: [experiment], verdicts: new Map([["a", insight("a")]]) });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' }));
     expect(screen.getByText(/Performance improved after this started/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Range ends"), { target: { value: "2026-02-27" } });
+    pickDate("Range ends", "2026-02-27");
     expect(screen.queryByText(/Performance improved after this started/)).not.toBeInTheDocument();
   });
 });
@@ -316,8 +317,8 @@ describe("CompareTab — a block's report", () => {
   it("shows the focus lifts and a lift table once the block is picked", () => {
     setup({ workouts: blockWorkouts, scans: blockScans, tags: [cut], initialWindowB: null });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Spring cut"' }));
-    expect(screen.getByLabelText("Range starts")).toHaveValue(day(0));
-    expect(screen.getByLabelText("Range ends")).toHaveValue(day(42));
+    expect(screen.getByLabelText("Range starts")).toHaveTextContent(shown(day(0)));
+    expect(screen.getByLabelText("Range ends")).toHaveTextContent(shown(day(42)));
     expect(screen.getByText("Spring cut", { selector: "[data-slot=card-title]" })).toBeInTheDocument();
     expect(screen.getByText(/Focus: Back Squat/)).toBeInTheDocument();
     expect(screen.getByText(/Back Squat estimated 1RM rose 15% \(200 to 230\)/)).toBeInTheDocument();
