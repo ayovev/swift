@@ -53,6 +53,20 @@ describe("getPeriodVerdict — eligibility gate, subject side", () => {
     expect(result.reason).toBe("needs 1 more lift/WOD with logged data after this date (has 2, needs 3)");
   });
 
+  it("names the overlap when each side has enough subjects but they are not the same ones", () => {
+    const workouts = [
+      liftRow("01/01/2024", "Snatch", 100),
+      liftRow("01/05/2024", "Clean", 150),
+      liftRow("01/10/2024", "Jerk", 120),
+      liftRow("07/01/2024", "Back Squat", 200),
+      liftRow("07/05/2024", "Deadlift", 250),
+      liftRow("07/10/2024", "Front Squat", 180),
+    ];
+    const result = getPeriodVerdict(period(), workouts, [], AS_OF);
+    expect(result.classification).toBe("insufficient_data");
+    expect(result.reason).toBe("needs 3 more lifts/WODs logged both before and after this date (has 0, needs 3)");
+  });
+
   it("a subject only logged on one side never counts toward the classified total", () => {
     const workouts = [
       liftRow("01/01/2024", "Snatch", 100),

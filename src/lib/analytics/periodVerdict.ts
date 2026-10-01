@@ -130,6 +130,24 @@ export function getPeriodVerdict(
   // generic "not enough data" — a period started last week will almost
   // always be thin on the "after" side, and that's worth saying explicitly.
   // A tie defaults to "after", the spec's own called-out common case.
+  // When both sides have enough subjects on their own, the shortfall is the overlap:
+  // the lifts logged before are not the ones logged after, so say that instead.
+  if (
+    classified.length < MIN_CLASSIFIED_SUBJECTS &&
+    subjectsWithBefore >= MIN_CLASSIFIED_SUBJECTS &&
+    subjectsWithAfter >= MIN_CLASSIFIED_SUBJECTS
+  ) {
+    const both = baseline ? "in the earlier range and after this date" : "before and after this date";
+    return insufficient(
+      period,
+      formatGateShortfall(
+        classified.length,
+        MIN_CLASSIFIED_SUBJECTS,
+        `lift/WOD logged both ${both}`,
+        `lifts/WODs logged both ${both}`
+      )
+    );
+  }
   if (classified.length < MIN_CLASSIFIED_SUBJECTS) {
     const thinSide = subjectsWithBefore < subjectsWithAfter ? "before" : "after";
     const reason =
