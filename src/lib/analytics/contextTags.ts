@@ -21,7 +21,7 @@ export function tagLabel(tag: ContextTag): string {
 export function describeTag(tag: ContextTag): string {
   const span = `${formatDay(tag.startDate)} – ${tag.endDate ? formatDay(tag.endDate) : "ongoing"}`;
   const name = tagLabel(tag);
-  return name === tag.type ? `${tag.type} tag (${span})` : `"${name}" (${tag.type}, ${span})`;
+  return name === tag.type ? `${tag.type} period (${span})` : `"${name}" (${tag.type}, ${span})`;
 }
 
 /** Whether the tag and the inclusive window share at least one day. An open-ended tag runs to the end of time. */
@@ -89,27 +89,27 @@ export type TagsParseResult = { status: "ok"; tags: ContextTag[] } | { status: "
  * are dropped.
  */
 export function validateTagList(list: unknown): TagsParseResult {
-  if (!Array.isArray(list)) return { status: "invalid", reason: "That file doesn't contain a list of tags." };
+  if (!Array.isArray(list)) return { status: "invalid", reason: "That file doesn't contain a list of periods." };
 
   const tags: ContextTag[] = [];
   const seen = new Set<string>();
   for (const [i, raw] of list.entries()) {
     const n = i + 1;
     const t = raw as Partial<Record<keyof ContextTag, unknown>> | null;
-    if (!t || typeof t !== "object") return { status: "invalid", reason: `Tag ${n} isn't an object.` };
-    if (typeof t.id !== "string" || t.id === "") return { status: "invalid", reason: `Tag ${n} has no id.` };
-    if (seen.has(t.id)) return { status: "invalid", reason: `Tag ${n} repeats an id used by an earlier tag.` };
-    if (!TAG_TYPES.includes(t.type as TagType)) return { status: "invalid", reason: `Tag ${n} has an unknown type.` };
-    if (!isIsoDay(t.startDate)) return { status: "invalid", reason: `Tag ${n} has no valid start date (YYYY-MM-DD).` };
+    if (!t || typeof t !== "object") return { status: "invalid", reason: `Period ${n} isn't an object.` };
+    if (typeof t.id !== "string" || t.id === "") return { status: "invalid", reason: `Period ${n} has no id.` };
+    if (seen.has(t.id)) return { status: "invalid", reason: `Period ${n} repeats an id used by an earlier period.` };
+    if (!TAG_TYPES.includes(t.type as TagType)) return { status: "invalid", reason: `Period ${n} has an unknown type.` };
+    if (!isIsoDay(t.startDate)) return { status: "invalid", reason: `Period ${n} has no valid start date (YYYY-MM-DD).` };
     if (t.endDate !== null && t.endDate !== undefined && !isIsoDay(t.endDate)) {
-      return { status: "invalid", reason: `Tag ${n} has an end date that isn't YYYY-MM-DD.` };
+      return { status: "invalid", reason: `Period ${n} has an end date that isn't YYYY-MM-DD.` };
     }
     const endDate = (t.endDate ?? null) as string | null;
-    if (endDate !== null && endDate < t.startDate) return { status: "invalid", reason: `Tag ${n} ends before it starts.` };
-    if (t.label !== undefined && typeof t.label !== "string") return { status: "invalid", reason: `Tag ${n} has a label that isn't text.` };
-    if (t.note !== undefined && typeof t.note !== "string") return { status: "invalid", reason: `Tag ${n} has a note that isn't text.` };
+    if (endDate !== null && endDate < t.startDate) return { status: "invalid", reason: `Period ${n} ends before it starts.` };
+    if (t.label !== undefined && typeof t.label !== "string") return { status: "invalid", reason: `Period ${n} has a label that isn't text.` };
+    if (t.note !== undefined && typeof t.note !== "string") return { status: "invalid", reason: `Period ${n} has a note that isn't text.` };
     if (t.baselineStart !== undefined && !isIsoDay(t.baselineStart)) {
-      return { status: "invalid", reason: `Tag ${n} has a compare-against start that isn't YYYY-MM-DD.` };
+      return { status: "invalid", reason: `Period ${n} has a compare-against start that isn't YYYY-MM-DD.` };
     }
     seen.add(t.id);
     tags.push({

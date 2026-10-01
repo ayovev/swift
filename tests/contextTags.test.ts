@@ -68,7 +68,7 @@ describe("naming", () => {
   it("falls back to the type when there is no label", () => {
     expect(tagLabel(tag({ label: undefined }))).toBe("cut");
     expect(tagLabel(tag({ label: "  " }))).toBe("cut");
-    expect(describeTag(tag({ label: undefined, endDate: null }))).toBe("cut tag (Mar 1, 2026 – ongoing)");
+    expect(describeTag(tag({ label: undefined, endDate: null }))).toBe("cut period (Mar 1, 2026 – ongoing)");
     expect(describeTag(tag())).toBe('"Spring cut" (cut, Mar 1, 2026 – Apr 30, 2026)');
   });
 });
@@ -103,12 +103,12 @@ describe("JSON export and import", () => {
   it.each([
     ["not json", "{", /isn't valid JSON/],
     ["no list", "{}", /doesn't contain a list/],
-    ["bad type", JSON.stringify([tag({ type: "nap" as never })]), /Tag 1 has an unknown type/],
-    ["bad date", JSON.stringify([tag({ startDate: "3/1/2026" })]), /Tag 1 has no valid start date/],
-    ["end before start", JSON.stringify([tag({ endDate: "2026-02-01" })]), /Tag 1 ends before it starts/],
-    ["duplicate id", JSON.stringify([tag(), tag()]), /Tag 2 repeats an id/],
-    ["no id", JSON.stringify([{ ...tag(), id: "" }]), /Tag 1 has no id/],
-    ["bad compare-against date", JSON.stringify([tag({ baselineStart: "Feb 1" })]), /Tag 1 has a compare-against start that isn't YYYY-MM-DD/],
+    ["bad type", JSON.stringify([tag({ type: "nap" as never })]), /Period 1 has an unknown type/],
+    ["bad date", JSON.stringify([tag({ startDate: "3/1/2026" })]), /Period 1 has no valid start date/],
+    ["end before start", JSON.stringify([tag({ endDate: "2026-02-01" })]), /Period 1 ends before it starts/],
+    ["duplicate id", JSON.stringify([tag(), tag()]), /Period 2 repeats an id/],
+    ["no id", JSON.stringify([{ ...tag(), id: "" }]), /Period 1 has no id/],
+    ["bad compare-against date", JSON.stringify([tag({ baselineStart: "Feb 1" })]), /Period 1 has a compare-against start that isn't YYYY-MM-DD/],
   ])("rejects %s with a sentence naming the problem", (_name, text, message) => {
     const r = parseTagsJson(text);
     expect(r.status).toBe("invalid");

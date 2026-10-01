@@ -12,7 +12,7 @@ import {
   BODY_COMP_TAB,
   LIFTS_TAB,
   OVERVIEW_TAB,
-  PERIODS_TAB,
+  COMPARE_TAB,
   WORKOUTS_TAB,
 } from "@/components/dashboard/tabs";
 import { DOMAIN_LIST } from "@/types/dashboard";
@@ -22,7 +22,7 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Progress, Compare and Tags", () => {
+  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Progress, Compare and Periods", () => {
     expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
   });
 });
@@ -41,7 +41,7 @@ describe("SECTIONS", () => {
     expect(sectionOf(gymnasticsTab.value)).toBe("Breakdown");
     expect(sectionOf(BODY_COMP_TAB)).toBe("Body");
     expect(sectionOf(LIFTS_TAB)).toBe("Insights");
-    expect(sectionOf(PERIODS_TAB)).toBe("Insights");
+    expect(sectionOf(COMPARE_TAB)).toBe("Insights");
   });
 });
 
@@ -53,7 +53,7 @@ describe("pageTitleOf", () => {
     expect(pageTitleOf(gymnasticsTab.value)).toBe(MODALITY_NAMES.G);
     expect(pageTitleOf(BODY_COMP_TAB)).toBe("Body composition");
     expect(pageTitleOf(OVERVIEW_TAB)).toBe("Overview");
-    expect(pageTitleOf(PERIODS_TAB)).toBe("Compare periods");
+    expect(pageTitleOf(COMPARE_TAB)).toBe("Compare periods");
     expect(pageTitleOf(LIFTS_TAB)).toBe("Progress");
   });
 });
@@ -106,7 +106,7 @@ describe("SubNav", () => {
     expect(within(nav).getAllByRole("button").map((b) => b.textContent)).toEqual([
       "Progress",
       "Compare",
-      "Tags",
+      "Periods",
     ]);
   });
 

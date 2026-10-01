@@ -10,8 +10,8 @@ import { DomainTab } from "./DomainTab";
 import { ModalityTab } from "./ModalityTab";
 import { OverviewTab } from "./OverviewTab";
 import { LiftsTab } from "./LiftsTab";
+import { CompareTab } from "./CompareTab";
 import { PeriodsTab } from "./PeriodsTab";
-import { TagsTab } from "./TagsTab";
 import { ChartInteractionProvider } from "./charts/chartInteraction";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import {
@@ -19,8 +19,8 @@ import {
   BODY_COMP_TAB,
   OVERVIEW_TAB,
   LIFTS_TAB,
+  COMPARE_TAB,
   PERIODS_TAB,
-  TAGS_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
 import { WorkoutsTab } from "./WorkoutsTab";
@@ -136,15 +136,15 @@ export function Dashboard({
       tags,
       onCompare: (window: DateWindow) => {
         setPendingWindow((p) => ({ window, tagId: null, nonce: (p?.nonce ?? 0) + 1 }));
-        setTab(PERIODS_TAB);
+        setTab(COMPARE_TAB);
         capture({ name: "interaction_used", props: { interaction: "compare_range_selected" } });
         capture({ name: "tab_viewed", props: { tab: "Compare", source } });
       },
       onTag: (window: DateWindow) => {
         setPendingWindow((p) => ({ window, tagId: null, nonce: (p?.nonce ?? 0) + 1 }));
-        setTab(TAGS_TAB);
+        setTab(PERIODS_TAB);
         capture({ name: "interaction_used", props: { interaction: "tag_range_selected" } });
-        capture({ name: "tab_viewed", props: { tab: "Tags", source } });
+        capture({ name: "tab_viewed", props: { tab: "Periods", source } });
       },
     }),
     [tags, source]
@@ -154,7 +154,7 @@ export function Dashboard({
   const onCompareTag = useCallback(
     (tagId: string) => {
       setPendingWindow((p) => ({ window: null, tagId, nonce: (p?.nonce ?? 0) + 1 }));
-      setTab(PERIODS_TAB);
+      setTab(COMPARE_TAB);
       capture({ name: "interaction_used", props: { interaction: "tag_compared" } });
       capture({ name: "tab_viewed", props: { tab: "Compare", source } });
     },
@@ -325,8 +325,8 @@ export function Dashboard({
             />
           </TabsContent>
 
-          <TabsContent value={PERIODS_TAB}>
-            <PeriodsTab
+          <TabsContent value={COMPARE_TAB}>
+            <CompareTab
               key={pendingWindow?.nonce ?? 0}
               workouts={workoutRows}
               scans={bodyComp.status === "ready" ? bodyComp.rows : []}
@@ -340,8 +340,8 @@ export function Dashboard({
             />
           </TabsContent>
 
-          <TabsContent value={TAGS_TAB}>
-            <TagsTab
+          <TabsContent value={PERIODS_TAB}>
+            <PeriodsTab
               key={pendingWindow?.nonce ?? 0}
               tags={tags}
               source={source}

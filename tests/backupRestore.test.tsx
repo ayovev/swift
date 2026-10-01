@@ -116,7 +116,7 @@ describe("backup restore from the landing page", () => {
   it("imports nothing when one dataset in the file is invalid", async () => {
     renderApp();
     await pickBackupWhenReady(backupFile({ workout: rowsA, tags: [{ nope: true }] }));
-    expect(await screen.findByRole("status")).toHaveTextContent(/nothing was restored.*list of context tags/i);
+    expect(await screen.findByRole("status")).toHaveTextContent(/nothing was restored.*list of periods/i);
     expect(await loadWorkoutRows()).toBeUndefined();
   });
 });
@@ -137,7 +137,7 @@ describe("backup restore from Settings", () => {
     const confirm = await screen.findByRole("alertdialog");
     expect(within(confirm).getByText(/workout log: 2 entries now, 1 in the backup/i)).toBeInTheDocument();
     // An older file's experiments arrive as tags, so they are counted against the one list of tags.
-    expect(within(confirm).getByText(/list of context tags: 1 entry now, 1 in the backup/i)).toBeInTheDocument();
+    expect(within(confirm).getByText(/list of periods: 1 entry now, 1 in the backup/i)).toBeInTheDocument();
     fireEvent.click(within(confirm).getByRole("button", { name: "Cancel" }));
 
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());

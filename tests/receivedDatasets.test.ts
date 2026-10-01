@@ -58,7 +58,7 @@ describe("planReceived", () => {
     expect(plan.skipped.map((s) => s.dataset)).toEqual(["workout", "experiments", "tags"]);
     expect(plan.skipped[0]!.reason).toMatch(/Row 1 of the workout log has an unreadable date/);
     expect(plan.skipped[1]!.reason).toMatch(/Experiment 1 has no valid start date/);
-    expect(plan.skipped[2]!.reason).toMatch(/Tag 1 has an unknown type/);
+    expect(plan.skipped[2]!.reason).toMatch(/Period 1 has an unknown type/);
     expect(calls).toEqual(["bodyComp"]);
     expect(planReceived({ tags: "nope" }, none, h).skipped.map((s) => s.dataset)).toEqual(["tags"]);
   });

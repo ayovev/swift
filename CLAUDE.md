@@ -143,7 +143,7 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   buckets are more numerous still).
 - **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
   Workouts, the ten GPP domains, the three modalities, Body Comp, and the Insights views
-  (Progress, Compare, Tags), grouped for navigation into
+  (Progress, Compare, Periods), grouped for navigation into
   four sections (see "Architecture: dashboard layout" below). The views that need an InBody export
   all share one empty state, `InBodyUploadPrompt.tsx`. A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
@@ -255,7 +255,7 @@ both-uploads gate for all three sections (one upload prompt), and a lift's plate
 strength attribution with the strength window named (`RS_WINDOW_DAYS`), because the plateau read
 windows by session count and the strength read by a fixed year and the two must not read as one.
 
-## Architecture: window comparison and context tags
+## Architecture: window comparison and periods
 
 `compareWindows.ts` (`compareWindows(workouts, scans, windowA, windowB, options)`) is "select a
 range, see what changed". It reuses the Plateau Detector's subject building unchanged and the
@@ -264,27 +264,27 @@ in *each* window or its row is `comparable: false` with a reason and **no number
 partial comparison); overlapping or inverted windows are `insufficient`. `defaultWindowA()` is
 the equal-length window immediately before B.
 
-- **One data model.** "Save as tag" writes window B to a tag's `startDate`/`endDate` and window A's
+- **One data model.** "Save as period" writes window B to a period's `startDate`/`endDate` and window A's
   start to its optional `baselineStart` (`windowsToExperimentFields`), typed `experiment` by default.
   `getExperimentInsight` then compares `[baselineStart, startDate)` against the experiment's own range,
   so the saved verdict is built on the earlier range the Compare table showed. An experiment with
-  no `baselineStart` (anything added directly on the Tags view without one) compares against all
+  no `baselineStart` (anything added directly on the Periods view without one) compares against all
   history before its start date. `baselineStart` must be strictly before the start date; otherwise it
   is ignored, the same defensiveness as an inverted `endDate`. An experiment's "before" side always
   runs up to its start date, so a custom window A that ends earlier than the day before window B
   gains the gap when saved; `PeriodsTab` says so (`windowAIsContiguous`).
 - **Dragging is a convenience, never the only way.** `charts/chartInteraction.tsx` gives a chart a
   drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`)
-  and shaded tag bands. A selection offers "Compare with the N days before" and "Tag this range";
-  every path also exists as date inputs on the Compare and Tags views. Wired into
+  and shaded tag bands. A selection offers "Compare with the N days before" and "Save as a period";
+  every path also exists as date inputs on the Compare and Periods views. Wired into
   `ConsistencyChart`, `BodyCompLineChart` and `RelativeStrengthChart`; `LiftChart` (a numeric-axis
   scatter) has neither bands nor drag.
 - **One view, not three.** The former Compare, Experiments and Cycles views are one Compare view (`PeriodsTab.tsx`; its page title reads "Compare periods")
   because they answer one question about a range and differ only in how the range was named. The
   range (window B, plus the earlier window A) is the only input: typed, dragged out on a chart, or
-  filled in from a saved tag in "Something you changed" (its dates and `baselineStart`; one list,
+  filled in from a saved period in "Something you changed" (its dates and `baselineStart`; one list,
   "Saved ranges", from `getCycles`, which now includes experiments), or opened from a row's Compare
-  button on the Tags view. Every range gets
+  button on the Periods view. Every range gets
   the same three things: a `getCycleReport` for it (`CycleReportBody`), the `compareWindows`
   tables (`ComparisonTables`), and, when the range came from a saved experiment, that experiment's
   `ExperimentVerdict`. Typing a date drops the saved-experiment framing, since the verdict no longer
@@ -293,14 +293,17 @@ the equal-length window immediately before B.
   the verdict card states which. Compare does **not** gate on InBody: the comparison and the report
   degrade on their own (body composition says why it can't be compared), and only the experiment
   verdict waits on both uploads, at which point it shows `InBodyUploadPrompt` in its place.
-- **Tags** (`types/tag.ts`, `contextTags.ts`, `storage/tagsStorage.ts`, key `"context-tags"`) are
+- **Periods** are user-authored labelled stretches of time. *Period* is the athlete-facing word; the code,
+  storage key and wire/backup name still say *tag* (`types/tag.ts`, `contextTags.ts`,
+  `storage/tagsStorage.ts`, key `"context-tags"`, dataset `"tags"`), because renaming those would need a
+  storage migration and a wire-format change for no benefit to the athlete. They are
   user-authored, persist only when `source === "upload"`, are wiped by Start over, and have
   JSON export/import (strict validation, merge by id), and sync between devices (see "Architecture:
   cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`, plus the sample
-  experiments from `generateSampleExperiments.ts` mapped to tags) so the Tags, Compare and chart-band
+  experiments from `generateSampleExperiments.ts` mapped to tags) so the Periods, Compare and chart-band
   views aren't empty; they are in memory only, never persisted or synced.
-- **One record for tags and experiments.** An experiment is a tag of type `experiment`: a period the
-  athlete has asked the app to judge. A tag is a labelled period; what the app derives from it follows
+- **One record for periods and experiments.** An experiment is a period of type `experiment`: one the
+  athlete has asked the app to judge. Every period is stored as a `ContextTag`; what the app derives from it follows
   its type, and `TAG_GROUPS` (`types/tag.ts`) is the one place the types are grouped, in the words the
   type picker shows: **Something you changed** (experiment, cut, bulk, maintain, other: things you
   chose, so "did it change anything?" is a fair question) and **Something that happened** (injury,
@@ -309,9 +312,9 @@ the equal-length window immediately before B.
   only `experiment` gets a before/after verdict (`getExperimentInsight`, through the
   `experimentTags.ts` adapter, so that pipeline is unchanged). Widening the verdict to cut, bulk and
   maintain is a deliberate non-decision: a decline during a cut is expected, so it needs its own copy.
-  `baselineStart` is optional on any tag so changing a tag's type never drops it. The Tags view is the
-  one list and one form; Compare's "Save as tag" writes the same record.
-- **Tags never change a result.** `getPlateauInsights`/`getAlignment` take `options.tags` and, when
+  `baselineStart` is optional on any tag so changing a tag's type never drops it. The Periods view is the
+  one list and one form; Compare's "Save as period" writes the same record.
+- **Periods never change a result.** `getPlateauInsights`/`getAlignment` take `options.tags` and, when
   a plateaued result's (or the alignment) window overlaps a cut or injury tag, add a `tagNotes`
   sentence naming the tag. With no tags, or none overlapping, the output is identical to the
   untagged one (the field is absent, not empty); `tests/insightTags.test.ts` pins that.
@@ -321,7 +324,7 @@ the equal-length window immediately before B.
 ## Architecture: cycle reports
 
 `cycleReport.ts` gives a retrospective per training block. **Cycles are user-defined only**:
-`getCycles()` turns tags of type bulk/cut/maintain/other into cycles (injury and travel are
+`getCycles()` turns periods (stored as tags) of type bulk/cut/maintain/other into cycles (injury and travel are
 context, not blocks) and `customCycle()` takes typed dates. Automatic segmentation by lift-exposure
 share is *not* built — the plan requires prototyping it on a multi-year history and reviewing it by
 eye first, and none is in the repo. `Cycle.source` keeps `"detected"` so adding it changes no type.
@@ -336,7 +339,7 @@ any range gets the same report (a typed range is the same as a block with no tag
 
 ## Open items: what is unvalidated or undecided
 
-The insight pipelines above (noise band, relative strength, compare, tags, cycles) were built
+The insight pipelines above (noise band, relative strength, compare, periods, cycles) were built
 against the bundled sample and synthetic InBody data. The repo holds no real InBody history, so
 **none of the `insightConfig.ts` thresholds has been checked against a real athlete.** Treat them
 as starting points and check them against real exports before trusting a number. Specifically:
@@ -358,8 +361,8 @@ as starting points and check them against real exports before trusting a number.
   per lift, as on Plateaus, which halves sessions for anyone who switches; merging load lifts is
   an open question. A title naming a different scheme than the athlete did will be mis-estimated;
   that is inherent to the export.
-- **Compare and Tags.** There is no touch dragging on charts (date inputs are the fallback).
-- **Sync.** Tags sync, but like everything in sync they are verified by unit tests and by hand on two
+- **Compare and Periods.** There is no touch dragging on charts (date inputs are the fallback).
+- **Sync.** Periods sync, but like everything in sync they are verified by unit tests and by hand on two
   devices, not by an automated two-device test. A joiner running an older cached build rejects a
   manifest naming a dataset it doesn't know (`tags`), so both devices need the current build; a
   refresh fixes it.
@@ -378,7 +381,7 @@ as starting points and check them against real exports before trusting a number.
   reviewed by eye on a multi-year history before committing to it. A lift can show a change with
   no attribution when too few scans fall inside its window, and a cycle report only looks inside
   the cycle (Compare is the before/after).
-- **Copy.** The tag sentences (cut, injury) and the cycle-summary phrases ("not explained by body
+- **Copy.** The period sentences (cut, injury) and the cycle-summary phrases ("not explained by body
   mass", "partly body mass") are first drafts; check them against the voice rules below.
 
 ## Architecture: Experiments
@@ -388,13 +391,13 @@ Detector and Alignment above — same before/after performance-vs-body-comp comp
 datasets required — but anchored to an athlete-logged date instead of a rolling recent/prior
 window.
 
-- **An experiment is a tag** of type `experiment` (see "One record for tags and experiments" above):
+- **An experiment is a tag** of type `experiment` (see "One record for periods and experiments" above):
   a `startDate` ("when I tried this"), a `label` ("what I tried"), an optional `endDate` and an
   optional `baselineStart` (where the "before" side starts; unset means all earlier history). It was
   once its own IndexedDB dataset (key `"experiments"`); it no longer is. `Experiment`
   (`src/types/experiment.ts`) survives as the shape `getExperimentInsight` takes and as what an older
   device or backup file still sends, with `experimentToTag`/`tagToExperiment` (`experimentTags.ts`) the
-  two seams between that shape and a tag. Added, edited and deleted on the Tags view, persisted like
+  two seams between that shape and a tag. Added, edited and deleted on the Periods view, persisted like
   every tag (only when `state.source === "upload"`, except what arrives by sync or restore).
 - **Migration** (`storage/legacyExperiments.ts`): on load, `App.tsx` moves anything still stored under
   `"experiments"` into the tags (a tag already holding the id wins), then removes the old key. It writes
@@ -421,7 +424,7 @@ window.
   out of whatever the real sample data shows.
 - Wired into `App.tsx` behind the same gate as Plateau Detector/Alignment — neither runs until
   both uploads are `"ready"` — as a map keyed by tag id, and rendered by `ExperimentVerdict.tsx`
-  when an experiment is picked on the Compare view and as a badge on its row on the Tags view, not
+  when an experiment is picked on the Compare view and as a badge on its row on the Periods view, not
   part of `Insights`/`buildInsights.ts`'s return shape.
 
 ## Architecture: cross-device sync
@@ -477,7 +480,7 @@ back to one.
   workout log moves `App` to its reveal screen, which unmounts the dashboard and this dialog with it.
   Backup restore uses the same plan.
 - **What syncs: the athlete's data, and only their data.** The workout log, the InBody history
-  and context tags (experiments are tags). Preferences and configuration deliberately do **not** sync: theme
+  and periods (stored as tags; experiments are periods of type `experiment`). Preferences and configuration deliberately do **not** sync: theme
   (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
   reasonably want different ones. PostHog's anonymous id in `localStorage` doesn't either — it is an
   analytics identifier. This is enforced at the wire, not by convention: `SyncDataset` has exactly
@@ -523,7 +526,7 @@ back to one.
 `src/lib/backup/` and `src/components/backup/` let an athlete download everything they have in
 the app as one JSON file and restore it later, after clearing the browser or on another computer.
 The workout and InBody CSVs are already their own backups; what only a backup file preserves is
-**context tags (experiments included)**. It reuses sync's validators and planner rather than growing its
+**periods (experiments included)**. It reuses sync's validators and planner rather than growing its
 own, so the two can't drift on what a valid row is.
 
 - **Format (v1)**: `{ format: "swift-backup", version, exportedAt, encoding: "plain", datasets }`, or
@@ -571,7 +574,7 @@ own, so the two can't drift on what a valid row is.
   Swift?"), the only place a new browser can reach. The landing page's dropzone and paste handler
   route a `.json` file (`looksLikeBackup`) to restore instead of the CSV parser, which would reject it. The labels are Backup/Restore, not Export/Import, because the athlete's
   goal is getting their data back, because "Import" suggests adding rather than replacing, and
-  because "Export" already means the SugarWOD CSV on the landing page. Tags keep their own
+  because "Export" already means the SugarWOD CSV on the landing page. Periods keep their own
   Export/Import (that one does merge). Sample data can't be backed up and has nothing to confirm on
   restore (it is never stored). Restore errors stay inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
   the `onSynced*` handlers. `handleSyncedTags` must not look at `state`: on the landing page
@@ -589,15 +592,15 @@ home. Read the header comments of the files named here before moving anything be
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains and three
   modalities — a classification of the same workouts, not separate data), Body (Body Comp) and
-  Insights (Progress, Compare, Tags). The views
+  Insights (Progress, Compare, Periods). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
   header — in line with them it read as one more tab. `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
-  `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress and Compare
-  views keep their earlier internal names (tab ids `lifts`/`periods`, `LiftsTab.tsx`/`PeriodsTab.tsx`);
-  only the labels and page titles changed.
+  `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress view
+  keeps its earlier internal names (tab id `lifts`, `LiftsTab.tsx`); only its label and page title changed.
+  Compare and Periods are named to match (`compare`/`CompareTab.tsx`, `periods`/`PeriodsTab.tsx`).
 - **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
   under the page title ("Showing all time, grouped by month"), next to the charts they change
   rather than in the global header. It sits in its own row under a thin rule (with "Stored in
@@ -639,7 +642,7 @@ added after the app initially held everything in memory only.
 - **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** /
   are thin typed wrappers, one key each (`"workout-rows"`, `"body-comp-rows"`, `"view-preferences"`,
   plus `tagsStorage.ts` with `"context-tags"` — see "Architecture: Experiments" and "window comparison
-  and context tags" above). `legacyExperiments.ts` is the one remaining reader of the retired
+  and periods" above). `legacyExperiments.ts` is the one remaining reader of the retired
   `"experiments"` key, a one-way migration into the tags. Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
   directly — a new dataset gets its own wrapper file, not a call site that reaches past it.
 - **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
@@ -692,7 +695,7 @@ added after the app initially held everything in memory only.
   calls it (in the Settings sheet) is now gated behind a confirmation `AlertDialog`
   (`src/components/ui/alert-dialog.tsx`) whenever `source === "upload"` — sample mode still
   resets in one click, since nothing persisted is at risk there. The dialog's copy names exactly
-  what gets deleted (workout log, body composition history, tags with experiments included) so this is the one
+  what gets deleted (workout log, body composition history, periods with experiments included) so this is the one
   place all of them are named together.
 - The theme preference remains on its own `localStorage` key (see Theming below), not this
   layer — it needs to be read synchronously before first paint to avoid a flash of the wrong

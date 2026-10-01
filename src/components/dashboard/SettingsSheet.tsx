@@ -376,7 +376,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
             <div className="flex items-center gap-4">
               <p className="grow text-[13px] leading-relaxed text-muted-foreground">
                 {upload
-                  ? "Deletes your workout log, body composition history and tags, experiments included, from this browser."
+                  ? "Deletes your workout log, body composition history and periods, experiments included, from this browser."
                   : "Leaves the sample and goes back to the upload screen."}
               </p>
               {upload ? (
@@ -391,7 +391,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
                       <AlertDialogTitle>Start over?</AlertDialogTitle>
                       <AlertDialogDescription>
                         This deletes your uploaded workout log, body composition history, and any
-                        tags you've added, experiments included. This can't be undone.
+                        periods you've added, experiments included. This can't be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
