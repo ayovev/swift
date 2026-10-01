@@ -183,6 +183,17 @@ describe("CompareTab — saved ranges", () => {
     expect(screen.queryByRole("button", { name: 'Show "Lisbon"' })).not.toBeInTheDocument();
   });
 
+  it("lists periods of every type in something you changed, with their own type names", () => {
+    const at = (id: string, type: ContextTag["type"], label: string): ContextTag => ({ id, type, label, startDate: "2026-02-01", endDate: "2026-02-28" });
+    setup({
+      tags: [at("n", "nutrition", "Added creatine"), at("p", "programming", "Own programming"), at("r", "recovery", "Sleep"), at("i", "injury", "Wrist")],
+    });
+    expect(screen.getByText("Nutrition change · Feb 1, 2026 – Feb 28, 2026")).toBeInTheDocument();
+    expect(screen.getByText("Programming change · Feb 1, 2026 – Feb 28, 2026")).toBeInTheDocument();
+    expect(screen.getByText("Recovery change · Feb 1, 2026 – Feb 28, 2026")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: 'Show "Wrist"' })).not.toBeInTheDocument();
+  });
+
   it("lists each with its type, its dates and, for an experiment once both datasets are loaded, its classification", () => {
     setup({ tags: [experiment, cut], experimentInsights: new Map([["a", insight("a", { classification: "mixed" })]]) });
     expect(screen.getByText("Experiment · Feb 1, 2026 – Feb 28, 2026")).toBeInTheDocument();

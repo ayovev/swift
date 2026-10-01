@@ -19,7 +19,7 @@ import { formatDate } from "./charts/chartUtils";
 interface PeriodsTabProps {
   tags: ContextTag[];
   source: DataSource;
-  /** null until both a SugarWOD upload and an InBody upload are ready; an experiment's verdict waits on it. */
+  /** null until both a SugarWOD upload and an InBody upload are ready; a period's verdict waits on it. */
   experimentInsights: Map<string, ExperimentInsight> | null;
   /** Opens the Compare view on this tag's range. */
   onCompareTag: (tagId: string) => void;
@@ -232,11 +232,11 @@ export function PeriodsTab({
               </p>
             ) : null}
             <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-1 flex-col gap-1.5">
+              <div className="flex min-w-40 flex-1 flex-col gap-1.5">
                 <Label htmlFor="period-label">Name (optional)</Label>
                 <Input id="period-label" value={draft.label} onChange={(e) => set("label", e.target.value)} placeholder={EXAMPLE_NAME[draft.type]} maxLength={80} />
               </div>
-              <div className="flex flex-[2] flex-col gap-1.5">
+              <div className="flex min-w-40 flex-[2] flex-col gap-1.5">
                 <Label htmlFor="period-note">Note (optional)</Label>
                 <Input id="period-note" value={draft.note} onChange={(e) => set("note", e.target.value)} maxLength={300} />
               </div>

@@ -54,7 +54,7 @@ function LiftCard({ lift }: { lift: LiftRelativeStrength }) {
         <CardTitle className="text-base">
           {lift.lift} ({lift.rxStatus})
         </CardTitle>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {lift.attribution ? <Badge variant={lift.attribution === "strength-driven" ? "default" : "secondary"}>{ATTRIBUTION_LABEL[lift.attribution]}</Badge> : null}
           <SegmentedControl
             ariaLabel={`${lift.lift} chart view`}

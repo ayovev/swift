@@ -181,6 +181,15 @@ describe("PeriodsTab", () => {
       expect(screen.getByText(/has to be before this starts/)).toBeInTheDocument();
     });
 
+    it("keeps the compare-against start when the type is changed to something that happened", () => {
+      const p = setup({ tags: [experiment] });
+      fireEvent.click(screen.getByRole("button", { name: "Edit Started 5/3/1" }));
+      fireEvent.click(screen.getByRole("button", { name: "Something that happened" }));
+      expect(screen.queryByLabelText("Compare against (optional)")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+      expect(p.onUpdate).toHaveBeenCalledWith({ ...experiment, type: "injury" });
+    });
+
     it("keeps the earlier-range start through an edit", () => {
       const p = setup({ tags: [experiment] });
       fireEvent.click(screen.getByRole("button", { name: "Edit Started 5/3/1" }));

@@ -272,26 +272,26 @@ the equal-length window immediately before B.
   history before its start date. `baselineStart` must be strictly before the start date; otherwise it
   is ignored, the same defensiveness as an inverted `endDate`. An experiment's "before" side always
   runs up to its start date, so a custom window A that ends earlier than the day before window B
-  gains the gap when saved; `PeriodsTab` says so (`windowAIsContiguous`).
+  gains the gap when saved; `CompareTab` says so (`windowAIsContiguous`).
 - **Dragging is a convenience, never the only way.** `charts/chartInteraction.tsx` gives a chart a
   drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`)
-  and shaded tag bands. A selection offers "Compare with the N days before" and "Save as a period";
+  and shaded period bands (`tagBandSpans`). A selection offers "Compare with the N days before" and "Save as a period";
   every path also exists as date inputs on the Compare and Periods views. Wired into
   `ConsistencyChart`, `BodyCompLineChart` and `RelativeStrengthChart`; `LiftChart` (a numeric-axis
   scatter) has neither bands nor drag.
-- **One view, not three.** The former Compare, Experiments and Cycles views are one Compare view (`PeriodsTab.tsx`; its page title reads "Compare periods")
+- **One view, not three.** The former Compare, Experiments and Cycles views are one Compare view (`CompareTab.tsx`; its page title reads "Compare periods")
   because they answer one question about a range and differ only in how the range was named. The
   range (window B, plus the earlier window A) is the only input: typed, dragged out on a chart, or
   filled in from a saved period in "Something you changed" (its dates and `baselineStart`; one list,
-  "Saved ranges", from `getCycles`, which covers every type in *Something you changed*), or opened from a row's Compare
+  "Saved periods", from `getCycles`, which covers every type in *Something you changed*), or opened from a row's Compare
   button on the Periods view. Every range gets
   the same three things: a `getCycleReport` for it (`CycleReportBody`), the `compareWindows`
-  tables (`ComparisonTables`), and, when the range came from a saved experiment, that experiment's
-  `ExperimentVerdict`. Typing a date drops the saved-experiment framing, since the verdict no longer
-  describes what is on screen. The experiment verdict compares against all history before the start
+  tables (`ComparisonTables`), and, when the range came from a saved period that has a verdict, that
+  period's `ExperimentVerdict`. Typing a date drops the saved-period framing, since the verdict no longer
+  describes what is on screen. The verdict compares against all history before the start
   date when there is no `baselineStart`, while the tables use the equal-length window before it;
   the verdict card states which. Compare does **not** gate on InBody: the comparison and the report
-  degrade on their own (body composition says why it can't be compared), and only the experiment
+  degrade on their own (body composition says why it can't be compared), and only a period's
   verdict waits on both uploads, at which point it shows `InBodyUploadPrompt` in its place.
 - **Periods** are user-authored labelled stretches of time. *Period* is the athlete-facing word; the code,
   storage key and wire/backup name still say *tag* (`types/tag.ts`, `contextTags.ts`,
@@ -351,9 +351,28 @@ any range gets the same report (a typed range is the same as a block with no tag
 ## Open items: what is unvalidated or undecided
 
 The insight pipelines above (noise band, relative strength, compare, periods, cycles) were built
-against the bundled sample and synthetic InBody data. The repo holds no real InBody history, so
-**none of the `insightConfig.ts` thresholds has been checked against a real athlete.** Treat them
-as starting points and check them against real exports before trusting a number. Specifically:
+against the bundled sample and synthetic InBody data. The repo holds no real InBody history, and
+**the `insightConfig.ts` thresholds have been checked against only one real athlete's export** (the
+next item). Treat them as starting points and check them against more real exports before trusting a
+number. Specifically:
+
+- **One real export** (about three and a half years of workouts and eight InBody scans, months apart;
+  run locally and never committed, so no figures here). What it showed, recorded and not yet acted on:
+  (1) every noise band fell to the `default` method, because no two scans were within a week and no
+  rolling window of scans fit the 12-week span, so at that scanning cadence the two measured methods
+  are unreachable and the defaults are the whole story; (2) the 365-day relative-strength window
+  qualified only a small share of lifts, and a two-year window qualified noticeably more, so
+  `RS_WINDOW_DAYS` is the first value to revisit; (3) the alignment window is the union of every
+  classified lift's window and can span years, while its copy says "right now", so either cap the
+  window or reword; (4) most plateau rows were "not enough data" (typically one or two logged entries
+  against the three required), which makes the table long: collapsing them, as the strength section
+  already does, would help.
+- **Period types.** The domains and types in `TAG_GROUPS` are a first draft, picked from how an
+  athlete names changes, not measured on real use; the catch-all in each domain is what covers the
+  gaps. The verdict sentence is the same for every type ("... after this started"), and only a cut
+  has its own note. Sample mode seeds only experiment, cut, bulk, maintain, injury and travel, so the
+  newer types are exercised by tests rather than by the demo. An older build rejects a period with a
+  type it doesn't know.
 
 - **Noise band.** On the synthetic sample the bands came from the `residual` method (weight
   ±2.9 lb, lean ±2.1, fat mass ±2.3, body fat ±1.3 points) and no existing output changed. The

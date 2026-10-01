@@ -1,5 +1,10 @@
 /**
- * Types for the Experiments feature (`src/lib/analytics/experimentInsight.ts`).
+ * Types for the before/after verdict (`src/lib/analytics/experimentInsight.ts`).
+ *
+ * `Experiment` is no longer a stored record: a period (`ContextTag`, `tag.ts`) is, and every
+ * period in "Something you changed" gets a verdict. `Experiment` is the shape
+ * `getExperimentInsight` takes, built from a period by `tagToExperiment`, and the shape an
+ * older device or backup file still sends (`experimentToTag`, `experimentTags.ts`).
  *
  * Same two deviations from the feature spec as `plateau.ts`/`alignment.ts`, for the same
  * reasons: `Experiment.date` is an ISO string ("YYYY-MM-DD"), not a `Date` object — matches
@@ -33,9 +38,6 @@ export interface Experiment {
    */
   baselineStart?: string;
 }
-
-/** Everything about an experiment except its id: what the add/edit form produces. */
-export type ExperimentFields = Omit<Experiment, "id">;
 
 export type ExperimentClassification = "improved" | "declined" | "no_change" | "mixed" | "insufficient_data";
 

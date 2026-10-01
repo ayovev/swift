@@ -35,7 +35,7 @@ export function ClassificationBadge({ classification }: { classification: Experi
 }
 
 /**
- * What a saved experiment's before/after comparison found: the classification,
+ * What a period's before/after comparison found: the classification,
  * one sentence saying what it means, and the counts and body-comp deltas behind
  * it. An `insufficient_data` verdict shows its own reason and no numbers.
  */
