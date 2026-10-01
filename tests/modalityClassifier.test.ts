@@ -156,6 +156,54 @@ describe("modality classifier — the substring traps", () => {
   });
 });
 
+describe("modality classifier — movement identity (measured on the sample export)", () => {
+  it('reads "clean & jerk" as one lift, not a Clean plus a Jerk', () => {
+    expect(labels("Clean & Jerk 3x2")).toEqual(["Clean & jerk"]);
+    expect(labels("CLEAN AND JERK")).toEqual(["Clean & jerk"]);
+  });
+
+  it("keeps hang power variants distinct from the plain power lift", () => {
+    expect(labels("EMOM", "1 hang power clean 1 hang power snatch")).toEqual([
+      "Hang power clean",
+      "Hang power snatch",
+    ]);
+  });
+
+  it("splits out ring muscle-ups, handstand walks and wall walks", () => {
+    expect(labels("GYM", "5 ring muscle-ups 20 ft handstand walk 9 wall walks")).toEqual([
+      "Ring muscle-ups",
+      "Handstand walk",
+      "Wall walks",
+    ]);
+  });
+
+  it("reads devils press as a devil press", () => {
+    expect(labels("PARTNER", "4 devils press")).toEqual(["Devil press"]);
+  });
+
+  it("does not read names and props as movements", () => {
+    expect(labels("TIRE SWING", "for time: 60 kb swings")).toEqual(["Kettlebell swing"]);
+    expect(labels("SWING STATE", "4 x amrap 3:00")).toEqual([]);
+    expect(labels("JERK DIP + 10 SEC RACK HOLD")).toEqual(["Jerk"]);
+    expect(labels("ACCESSORY", "elevated split squat (use bench) 3 sets")).toEqual(["Squat"]);
+    expect(labels("SLOW YOUR ROW!", "12:00 amrap")).toEqual([]);
+    expect(labels("THANKSGIVING", "last minute store run")).toEqual([]);
+  });
+
+  it("still reads the real versions of those movements", () => {
+    expect(labels("ring dips", "3 sets max ring dips")).toEqual(["Ring dips"]);
+    expect(labels("HEAVY BENCH", "bench press 5x5")).toEqual(["Bench press"]);
+    expect(labels("ROW", "400m row")).toEqual(["Row"]);
+  });
+
+  it("does not count equipment as a movement", () => {
+    // "db" and "kb" name the implement, not what was done with it. Counting
+    // them gave a db snatch two weightlifting movements.
+    expect(labels("SKILL", "1 db power clean 1 db power snatch")).toEqual(["Power clean", "Power snatch"]);
+    expect(labels("KB", "double kb oh carries")).toEqual(["Loaded carry"]);
+  });
+});
+
 describe("modality classifier — unclassified workouts", () => {
   it("marks a non-workout entry unclassified rather than zero-everything", () => {
     const result = classify("DAILY LAZY MACROS POINTS", "week 1 points, 7 possible per day");

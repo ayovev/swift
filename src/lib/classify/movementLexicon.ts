@@ -36,8 +36,9 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   // Monostructural / cardio. Note "row" and "ski" both need guarding:
   // "row" is a substring of "throw", and "ski" of "skill" — and SKILL WORK is
   // the single most common title in the validation export (89 occurrences).
-  { phrase: "run", modality: "M", label: "Run" },
-  { phrase: "row", modality: "M", label: "Row", exclude: ["throw", "ring row", "db row", "dumbbell row", "bent over row", "barbell row", "arrow", "narrow"] },
+  // "store run" is a title's errand, not a workout.
+  { phrase: "run", modality: "M", label: "Run", exclude: ["store run"] },
+  { phrase: "row", modality: "M", label: "Row", exclude: ["throw", "slow your row", "ring row", "db row", "dumbbell row", "bent over row", "barbell row", "arrow", "narrow"] },
   { phrase: "rower", modality: "M", label: "Row" },
   { phrase: "bike", modality: "M", label: "Bike" },
   { phrase: "assault bike", modality: "M", label: "Assault bike" },
@@ -65,10 +66,16 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { phrase: "clean", modality: "W", label: "Clean" },
   { phrase: "power clean", modality: "W", label: "Power clean" },
   { phrase: "hang clean", modality: "W", label: "Hang clean" },
+  { phrase: "hang power clean", modality: "W", label: "Hang power clean" },
+  { phrase: "hang power snatch", modality: "W", label: "Hang power snatch" },
+  { phrase: "goblet squat", modality: "W", label: "Goblet squat" },
   { phrase: "squat clean", modality: "W", label: "Squat clean" },
   { phrase: "clean pull", modality: "W", label: "Clean pull" },
   { phrase: "clean and jerk", modality: "W", label: "Clean & jerk" },
   { phrase: "c&j", modality: "W", label: "Clean & jerk" },
+  // SugarWOD titles use the ampersand about as often as "and"; without this the
+  // lift reads as a separate Clean and Jerk.
+  { phrase: "clean & jerk", modality: "W", label: "Clean & jerk" },
   { phrase: "jerk", modality: "W", label: "Jerk" },
   { phrase: "split jerk", modality: "W", label: "Split jerk" },
   { phrase: "push jerk", modality: "W", label: "Push jerk" },
@@ -86,7 +93,8 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { phrase: "shoulder press", modality: "W", label: "Shoulder press" },
   { phrase: "push press", modality: "W", label: "Push press" },
   { phrase: "bench press", modality: "W", label: "Bench press" },
-  { phrase: "bench", modality: "W", label: "Bench press" },
+  // "use bench" is a split squat's prop, not a press.
+  { phrase: "bench", modality: "W", label: "Bench press", exclude: ["use bench"] },
   { phrase: "shoulder-to-overhead", modality: "W", label: "Shoulder-to-overhead" },
   { phrase: "shoulder to overhead", modality: "W", label: "Shoulder-to-overhead" },
   { phrase: "lunge", modality: "W", label: "Lunge" },
@@ -96,15 +104,16 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { phrase: "clean pull to toes", modality: "W", label: "Clean pull" },
 
   // Dumbbell / kettlebell / odd object.
-  { phrase: "dumbbell", modality: "W", label: "Dumbbell work" },
-  { phrase: "db", modality: "W", label: "Dumbbell work", mode: "token" },
+  // No bare "dumbbell"/"db"/"kettlebell"/"kb" entries: they name the implement, not
+  // the movement, and counted as one, so a db snatch read as two W movements.
+  // Measured on the sample export: dropping them changed 104 rows' shares and
+  // left 2 rows (an implement-only title) unclassified.
   { phrase: "db row", modality: "W", label: "Dumbbell row" },
   { phrase: "dumbbell row", modality: "W", label: "Dumbbell row" },
-  { phrase: "kettlebell", modality: "W", label: "Kettlebell work" },
-  { phrase: "kb", modality: "W", label: "Kettlebell work", mode: "token" },
   { phrase: "kettlebell swing", modality: "W", label: "Kettlebell swing" },
   { phrase: "kb swing", modality: "W", label: "Kettlebell swing" },
-  { phrase: "swing", modality: "W", label: "Kettlebell swing" },
+  // Titles like "Tire Swing" and "Swing State" are names, not kettlebell work.
+  { phrase: "swing", modality: "W", label: "Kettlebell swing", exclude: ["tire swing", "swing state", "swing high"] },
   { phrase: "turkish get-up", modality: "W", label: "Turkish get-up" },
   { phrase: "wall ball", modality: "W", label: "Wall balls" },
   { phrase: "wall-ball", modality: "W", label: "Wall balls" },
@@ -120,6 +129,7 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { phrase: "step-over", modality: "W", label: "Box step-over" },
   { phrase: "step-up", modality: "W", label: "Box step-up" },
   { phrase: "devil press", modality: "W", label: "Devil press" },
+  { phrase: "devils press", modality: "W", label: "Devil press" },
 
   // ---------------------------------------------------------------- G ----
   { phrase: "pull-up", modality: "G", label: "Pull-ups" },
@@ -132,14 +142,22 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { phrase: "muscle-up", modality: "G", label: "Muscle-ups" },
   { phrase: "muscle up", modality: "G", label: "Muscle-ups" },
   { phrase: "bar muscle", modality: "G", label: "Bar muscle-ups" },
+  { phrase: "ring muscle", modality: "G", label: "Ring muscle-ups" },
   { phrase: "mu", modality: "G", label: "Muscle-ups", mode: "token" },
   { phrase: "push-up", modality: "G", label: "Push-ups" },
   { phrase: "push up", modality: "G", label: "Push-ups" },
   { phrase: "pushup", modality: "G", label: "Push-ups" },
   { phrase: "handstand", modality: "G", label: "Handstand work" },
+  { phrase: "handstand walk", modality: "G", label: "Handstand walk" },
+  { phrase: "handstand hold", modality: "G", label: "Handstand hold" },
+  { phrase: "wall walk", modality: "G", label: "Wall walks" },
+  { phrase: "pike push", modality: "G", label: "Pike push-ups" },
+  { phrase: "russian twist", modality: "G", label: "Russian twists" },
+  { phrase: "bear crawl", modality: "G", label: "Bear crawls" },
   { phrase: "handstand push-up", modality: "G", label: "Handstand push-ups" },
   { phrase: "hspu", modality: "G", label: "Handstand push-ups", mode: "token" },
-  { phrase: "dip", modality: "G", label: "Dips" },
+  // "jerk dip" and "dip position" are the lift's own phase, not the gymnastics dip.
+  { phrase: "dip", modality: "G", label: "Dips", exclude: ["jerk dip", "dip position"] },
   { phrase: "ring row", modality: "G", label: "Ring rows" },
   { phrase: "ring dip", modality: "G", label: "Ring dips" },
   { phrase: "toes-to-bar", modality: "G", label: "Toes-to-bar" },
@@ -161,6 +179,7 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { phrase: "l-sit", modality: "G", label: "L-sit" },
   { phrase: "plank", modality: "G", label: "Plank" },
   { phrase: "hollow", modality: "G", label: "Hollow hold" },
+  { phrase: "hollow rock", modality: "G", label: "Hollow rocks" },
   { phrase: "v-up", modality: "G", label: "V-ups" },
   { phrase: "bar hang", modality: "G", label: "Bar hang" },
   { phrase: "pull over", modality: "G", label: "Pull-overs" },
