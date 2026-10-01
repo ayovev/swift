@@ -46,7 +46,7 @@ import type { ContextTag, TagType } from "@/types/tag";
  * Pure: raw rows in, a value out.
  */
 
-const CYCLE_TAG_TYPES: readonly TagType[] = ["bulk", "cut", "maintain", "other"];
+const CYCLE_TAG_TYPES: readonly TagType[] = ["experiment", "bulk", "cut", "maintain", "other"];
 
 /** Tag types that add a "this block overlaps X" sentence to a report. */
 const CONTEXT_TAG_TYPES: readonly TagType[] = ["injury", "travel"];

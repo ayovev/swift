@@ -24,9 +24,9 @@ import type { ContextTag } from "@/types/tag";
 
 /**
  * "Select a range, see what changed": performance and body composition in
- * window B against window A. Generalises Experiments — a saved comparison
- * becomes an `Experiment` (window B → `date`/`endDate`), so there is one
- * data model, not two.
+ * window B against window A. Generalises experiments — a saved comparison
+ * becomes a tag of type "experiment" (window B → `startDate`/`endDate`), so
+ * there is one data model, not two.
  *
  * Reuses the Plateau Detector's subject building unchanged (same lift-name
  * normalisation, same 1RM estimate, RX and Scaled never merged), so a lift

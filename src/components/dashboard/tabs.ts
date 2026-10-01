@@ -35,8 +35,9 @@ export interface TabDescriptor {
  * present: the whole-athlete Alignment read, a plateau row per lift or
  * benchmark, and each lift's estimated 1RM per unit of body mass (see
  * LiftsTab), Compare, which sets any range against the one before it and is
- * also where saved experiments and training blocks live (see PeriodsTab), and
- * Tags, the athlete's own labelled stretches of time (see TagsTab).
+ * also where saved ranges (tags for something you changed) are opened (see
+ * PeriodsTab), and Tags, the athlete's own labelled stretches of time —
+ * experiments included — (see TagsTab).
  */
 export const ALL_TABS: TabDescriptor[] = [
   { value: OVERVIEW_TAB, label: "Overview", group: "Overview" },

@@ -10,7 +10,7 @@ import type { BodyCompState } from "./BodyCompTab";
  * loaded: what the view does (`children`, one sentence or two), an error if
  * the last upload failed, and the same dropzone Body Comp uses. One
  * component so the copy and the upload entry point can't drift apart between
- * Body Comp, Plateaus, Strength and Experiments.
+ * Body Comp, Progress and Compare.
  *
  * "Your files" is plural on purpose: by the time any dashboard view is
  * showing, a SugarWOD log is loaded as well, so both exports are in play.

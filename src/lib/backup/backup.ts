@@ -5,10 +5,13 @@
  * dataset is validated afterwards by the same validators sync uses
  * (planTransfer.ts), so the two can't drift on what a valid row is.
  *
- * Which datasets: exactly the four sync carries, and only the athlete's data
- * (never theme, grouping or date range). `BackupDatasets` is keyed by
- * `SyncDataset`, so adding a fifth persisted dataset fails to compile here
- * until backup is updated, the same rule sync already has.
+ * Which datasets: the ones sync carries, and only the athlete's data (never
+ * theme, grouping or date range). `BackupDatasets` is keyed by `SyncDataset`,
+ * so adding a new persisted dataset fails to compile here until backup is
+ * updated, the same rule sync already has. A backup is written with the
+ * workout log, InBody history and tags (an experiment is a tag of type
+ * "experiment"); a file made before that has an `experiments` section, which
+ * is still read and is folded into the tags on restore (receivedDatasets.ts).
  *
  * Encryption is optional. `encoding` says how the body is stored: "plain"
  * keeps `datasets` readable, "aes-256-gcm" replaces it with ciphertext of the

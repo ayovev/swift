@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import dayjs from "dayjs";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,13 +8,20 @@ import { Label } from "@/components/ui/label";
 import { describeTag, parseTagsJson, serializeTags, tagLabel } from "@/lib/analytics/contextTags";
 import { downloadTextFile } from "@/lib/download";
 import { capture } from "@/lib/posthog";
-import { TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
+import { TAG_GROUPS, type ContextTag, type TagType } from "@/types/tag";
+import type { ExperimentInsight } from "@/types/experiment";
 import type { DateWindow } from "@/types/compare";
 import type { DataSource } from "@/App";
+import { ClassificationBadge } from "./ExperimentVerdict";
+import { formatDate } from "./charts/chartUtils";
 
 interface TagsTabProps {
   tags: ContextTag[];
   source: DataSource;
+  /** null until both a SugarWOD upload and an InBody upload are ready; an experiment's verdict waits on it. */
+  experimentInsights: Map<string, ExperimentInsight> | null;
+  /** Opens the Compare view on this tag's range. */
+  onCompareTag: (tagId: string) => void;
   /** A range dragged out on a chart, to pre-fill the form. */
   initialWindow: DateWindow | null;
   onAdd: (tag: Omit<ContextTag, "id">) => void;
@@ -24,6 +32,7 @@ interface TagsTabProps {
 }
 
 const TYPE_LABEL: Record<TagType, string> = {
+  experiment: "Experiment",
   cut: "Cut",
   bulk: "Bulk",
   maintain: "Maintain",
@@ -39,10 +48,19 @@ interface Draft {
   endDate: string;
   ongoing: boolean;
   note: string;
+  baselineStart: string;
 }
 
 function emptyDraft(window: DateWindow | null): Draft {
-  return { type: "cut", label: "", startDate: window?.start ?? "", endDate: window?.end ?? "", ongoing: false, note: "" };
+  return {
+    type: "experiment",
+    label: "",
+    startDate: window?.start ?? "",
+    endDate: window?.end ?? "",
+    ongoing: false,
+    note: "",
+    baselineStart: "",
+  };
 }
 
 function draftOf(tag: ContextTag): Draft {
@@ -53,16 +71,33 @@ function draftOf(tag: ContextTag): Draft {
     endDate: tag.endDate ?? "",
     ongoing: tag.endDate === null,
     note: tag.note ?? "",
+    baselineStart: tag.baselineStart ?? "",
   };
 }
 
+/** The types whose range can be compared with the stretch before it: the ones in "Something you changed". */
+const CHANGE_TYPES: readonly TagType[] = TAG_GROUPS[0]?.types ?? [];
+
 /**
- * Stretches of time the two exports can't see: a cut, an injury, a trip.
- * Tags shade the time-series charts and are named in any plateau or
- * alignment read they overlap; they never change a number. Stored in the
- * browser only, so the export and import here are the backup.
+ * Stretches of time the two exports can't see: a cut, an injury, a trip,
+ * something you tried. Tags shade the time-series charts and are named in any
+ * plateau or alignment read they overlap; they never change a number. An
+ * experiment is a tag you've asked the app to judge: its row carries the
+ * before/after verdict, and any tag in "Something you changed" can be opened
+ * on the Compare view. Stored in the browser only, so the export and import
+ * here are the backup.
  */
-export function TagsTab({ tags, source, initialWindow, onAdd, onUpdate, onDelete, onReplace }: TagsTabProps) {
+export function TagsTab({
+  tags,
+  source,
+  experimentInsights,
+  onCompareTag,
+  initialWindow,
+  onAdd,
+  onUpdate,
+  onDelete,
+  onReplace,
+}: TagsTabProps) {
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(initialWindow));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
@@ -70,7 +105,8 @@ export function TagsTab({ tags, source, initialWindow, onAdd, onUpdate, onDelete
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }));
   const endOk = draft.ongoing || (draft.endDate !== "" && draft.endDate >= draft.startDate);
-  const canSubmit = draft.startDate !== "" && endOk;
+  const baselineOk = draft.baselineStart === "" || draft.baselineStart < draft.startDate;
+  const canSubmit = draft.startDate !== "" && endOk && baselineOk;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +117,7 @@ export function TagsTab({ tags, source, initialWindow, onAdd, onUpdate, onDelete
       startDate: draft.startDate,
       endDate: draft.ongoing ? null : draft.endDate,
       ...(draft.note.trim() ? { note: draft.note.trim() } : {}),
+      ...(draft.baselineStart ? { baselineStart: draft.baselineStart } : {}),
     };
     if (editingId) {
       onUpdate({ id: editingId, ...fields });
@@ -118,9 +155,11 @@ export function TagsTab({ tags, source, initialWindow, onAdd, onUpdate, onDelete
       <Card>
         <CardContent className="flex flex-col gap-4">
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Mark a stretch of time — a cut, an injury, a trip — so a plateau or alignment read that
-            overlaps it says so. Tags shade the charts and are named where they apply; they never
-            change a number. You can also drag across a chart and choose Tag this range.
+            Mark a stretch of time — a cut, an injury, a trip, something you tried — so a plateau or
+            alignment read that overlaps it says so. Tags shade the charts and are named where they
+            apply; they never change a number. Mark something you tried as an experiment to see
+            whether your lifts and body composition moved after it. You can also drag across a chart
+            and choose Tag this range.
           </p>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Tags are stored in this browser only. Clearing site data or using Start over deletes
@@ -138,10 +177,14 @@ export function TagsTab({ tags, source, initialWindow, onAdd, onUpdate, onDelete
                   onChange={(e) => set("type", e.target.value as TagType)}
                   className="h-9 rounded-md border border-input bg-background px-2 text-sm"
                 >
-                  {TAG_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {TYPE_LABEL[t]}
-                    </option>
+                  {TAG_GROUPS.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.types.map((t) => (
+                        <option key={t} value={t}>
+                          {TYPE_LABEL[t]}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </div>
@@ -165,11 +208,33 @@ export function TagsTab({ tags, source, initialWindow, onAdd, onUpdate, onDelete
                 <input type="checkbox" checked={draft.ongoing} onChange={(e) => set("ongoing", e.target.checked)} />
                 Still going
               </label>
+              {draft.type === "experiment" ? (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="tag-baseline">Compare against (optional)</Label>
+                  <Input
+                    id="tag-baseline"
+                    type="date"
+                    value={draft.baselineStart}
+                    max={draft.startDate ? dayjs(draft.startDate).subtract(1, "day").format("YYYY-MM-DD") : undefined}
+                    onChange={(e) => set("baselineStart", e.target.value)}
+                    className="h-9 w-44"
+                    aria-describedby="tag-baseline-hint"
+                  />
+                </div>
+              ) : null}
             </div>
+            {draft.type === "experiment" ? (
+              <p id="tag-baseline-hint" className="text-xs text-muted-foreground">
+                The before side starts here and runs up to the day before the experiment. Leave it empty to
+                compare against all earlier history.
+                {baselineOk ? "" : " This date has to be before the experiment starts."}
+              </p>
+            ) : null}
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex flex-1 flex-col gap-1.5">
                 <Label htmlFor="tag-label">Name (optional)</Label>
-                <Input id="tag-label" value={draft.label} onChange={(e) => set("label", e.target.value)} placeholder="Spring cut" maxLength={80} />
+                <Input id="tag-label" value={draft.label} onChange={(e) => set("label", e.target.value)} placeholder={draft.type === "experiment" ? "Started 5/3/1 cycle" : "Spring cut"}
+                maxLength={80} />
               </div>
               <div className="flex flex-[2] flex-col gap-1.5">
                 <Label htmlFor="tag-note">Note (optional)</Label>
@@ -210,9 +275,32 @@ export function TagsTab({ tags, source, initialWindow, onAdd, onUpdate, onDelete
               <div>
                 <CardTitle className="text-base">{tagLabel(tag)}</CardTitle>
                 <p className="mt-1 text-xs text-muted-foreground">{describeTag(tag)}</p>
+                {tag.type === "experiment" ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Compared with{" "}
+                    {tag.baselineStart
+                      ? `${formatDate(tag.baselineStart)} – ${formatDate(dayjs(tag.startDate).subtract(1, "day").format("YYYY-MM-DD"))}`
+                      : `all history before ${formatDate(tag.startDate)}`}
+                  </p>
+                ) : null}
                 {tag.note ? <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{tag.note}</p> : null}
               </div>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
+                {tag.type === "experiment" && experimentInsights?.get(tag.id) ? (
+                  <ClassificationBadge classification={experimentInsights.get(tag.id)!.classification} />
+                ) : null}
+                {CHANGE_TYPES.includes(tag.type) ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    aria-label={`Compare ${tagLabel(tag)}`}
+                    onClick={() => onCompareTag(tag.id)}
+                  >
+                    Compare
+                  </Button>
+                ) : null}
                 <Button
                   variant="ghost"
                   size="icon-sm"

@@ -18,7 +18,7 @@ dayjs.extend(customParseFormat);
  * that each generator produces schema-valid output (see their own test
  * files), but that feeding the real bundled sample export through the full
  * demo-mode pipeline — extendSampleRows, then the two new generators —
- * gives the Plateau Detector, Alignment, and Experiments tabs something
+ * gives the Progress, Compare and Tags views something
  * real to show, not their empty/insufficient_data states across the board.
  */
 describe("sample demo data is full enough to drive the insights tabs", () => {

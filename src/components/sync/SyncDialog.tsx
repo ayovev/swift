@@ -8,7 +8,6 @@ import { DATASET_LABEL } from "@/lib/sync/datasetLabels";
 import { planTransfer, type TransferPlan } from "@/lib/sync/planTransfer";
 import type { SkippedDataset } from "@/lib/sync/receivedDatasets";
 import type { OutgoingDataset, SyncFailureReason } from "@/lib/sync/syncSession";
-import type { Experiment } from "@/types/experiment";
 import type { InBodyRow } from "@/types/inbody";
 import type { ContextTag } from "@/types/tag";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -25,11 +24,9 @@ export interface SyncDialogProps {
   /** Joiner role only: existing local counts, so a conflicting dataset can be confirmed before overwriting. `null` means nothing local to conflict with. */
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
-  existingExperimentsCount: number | null;
   existingTagsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
-  onSyncedExperiments: (experiments: Experiment[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
 }
 
@@ -59,7 +56,7 @@ function captureJoinerSuccess(received: Partial<Record<SyncDataset, unknown>>) {
     name: "sync_succeeded",
     props: {
       role: "joiner",
-      rows: bucketRowCount(count(received.workout) || count(received.bodyComp) || count(received.experiments)),
+      rows: bucketRowCount(count(received.workout) || count(received.bodyComp) || count(received.tags)),
     },
   });
 }
@@ -70,7 +67,7 @@ function captureJoinerSuccess(received: Partial<Record<SyncDataset, unknown>>) {
  * and — once a joiner's transfer finishes — treats it as all or nothing:
  * any rejected dataset means none is applied, and anything that would
  * overwrite local data is confirmed once for the whole transfer before
- * onSyncedWorkoutData/onSyncedBodyCompData/onSyncedExperiments/onSyncedTags
+ * onSyncedWorkoutData/onSyncedBodyCompData/onSyncedTags
  * are called (planTransfer.ts). See CLAUDE.md's "Architecture: app state and local
  * persistence" for why those handlers are unconditional writers: this
  * dialog is what gates them.
@@ -82,11 +79,9 @@ export function SyncDialog({
   outgoing,
   existingWorkoutCount,
   existingBodyCompCount,
-  existingExperimentsCount,
   existingTagsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
-  onSyncedExperiments,
   onSyncedTags,
 }: SyncDialogProps) {
   const [received, setReceived] = useState<Partial<Record<SyncDataset, unknown>>>({});
@@ -170,13 +165,11 @@ export function SyncDialog({
       {
         workout: existingWorkoutCount,
         bodyComp: existingBodyCompCount,
-        experiments: existingExperimentsCount,
         tags: existingTagsCount,
       },
       {
         workout: onSyncedWorkoutData,
         bodyComp: onSyncedBodyCompData,
-        experiments: onSyncedExperiments,
         tags: onSyncedTags,
       },
       unreadable
@@ -204,11 +197,9 @@ export function SyncDialog({
     unreadable,
     existingWorkoutCount,
     existingBodyCompCount,
-    existingExperimentsCount,
     existingTagsCount,
     onSyncedWorkoutData,
     onSyncedBodyCompData,
-    onSyncedExperiments,
     onSyncedTags,
     onOpenChange,
   ]);

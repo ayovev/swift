@@ -7,8 +7,9 @@ import type { SugarWodRow } from "@/types/sugarwod";
 /**
  * Generates a couple of plausible logged Experiments to pair with the
  * SugarWOD + InBody demo data (`extendSample.ts`, `generateSampleBodyComp.ts`),
- * so a first-time visitor sees the Experiments tab actually populated instead
- * of its empty "no experiments logged yet" state. See `App.tsx`'s `run()`,
+ * so a first-time visitor sees experiment tags, and their verdicts, actually
+ * populated instead of empty states. Each is mapped to a tag of type
+ * "experiment" in `App.tsx`. See `App.tsx`'s `run()`,
  * the only caller.
  *
  * Dates are placed at fixed offsets from the athlete's own first logged

@@ -108,6 +108,9 @@ export function validateTagList(list: unknown): TagsParseResult {
     if (endDate !== null && endDate < t.startDate) return { status: "invalid", reason: `Tag ${n} ends before it starts.` };
     if (t.label !== undefined && typeof t.label !== "string") return { status: "invalid", reason: `Tag ${n} has a label that isn't text.` };
     if (t.note !== undefined && typeof t.note !== "string") return { status: "invalid", reason: `Tag ${n} has a note that isn't text.` };
+    if (t.baselineStart !== undefined && !isIsoDay(t.baselineStart)) {
+      return { status: "invalid", reason: `Tag ${n} has a compare-against start that isn't YYYY-MM-DD.` };
+    }
     seen.add(t.id);
     tags.push({
       id: t.id,
@@ -116,6 +119,7 @@ export function validateTagList(list: unknown): TagsParseResult {
       startDate: t.startDate,
       endDate,
       ...(typeof t.note === "string" && t.note !== "" ? { note: t.note } : {}),
+      ...(typeof t.baselineStart === "string" ? { baselineStart: t.baselineStart } : {}),
     });
   }
   return { status: "ok", tags };

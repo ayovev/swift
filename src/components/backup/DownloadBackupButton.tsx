@@ -4,14 +4,12 @@ import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
 import { backupFilename, serializeBackup, serializeEncryptedBackup } from "@/lib/backup/backup";
 import { downloadTextFile } from "@/lib/download";
 import { capture } from "@/lib/posthog";
-import type { Experiment } from "@/types/experiment";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
 
 interface DownloadBackupButtonProps {
   workoutRows: SugarWodRow[];
   bodyComp: BodyCompState;
-  experiments: Experiment[];
   tags: ContextTag[];
   /** When set, the file is encrypted under it. Held only for the length of the click. */
   passphrase?: string | undefined;
@@ -30,7 +28,6 @@ interface DownloadBackupButtonProps {
 export function DownloadBackupButton({
   workoutRows,
   bodyComp,
-  experiments,
   tags,
   passphrase,
   onDownloaded,
@@ -45,7 +42,6 @@ export function DownloadBackupButton({
       const datasets = {
         workout: workoutRows,
         bodyComp: bodyComp.status === "ready" ? bodyComp.rows : [],
-        experiments,
         tags,
       };
       const text =

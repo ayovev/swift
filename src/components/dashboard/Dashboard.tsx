@@ -34,7 +34,7 @@ import type { Insights } from "@/lib/analytics/buildInsights";
 import type { RelativeStrengthResult } from "@/lib/analytics/relativeStrength";
 import type { AlignmentResult } from "@/types/alignment";
 import type { DateWindow } from "@/types/compare";
-import type { Experiment, ExperimentFields, ExperimentInsight } from "@/types/experiment";
+import type { ExperimentInsight } from "@/types/experiment";
 import type { ContextTag } from "@/types/tag";
 import type { PlateauInsight } from "@/types/plateau";
 import type { InBodyRow } from "@/types/inbody";
@@ -56,7 +56,6 @@ interface DashboardProps {
   onBodyCompFile: (file: File) => void;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
-  onSyncedExperiments: (experiments: Experiment[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
   plateauInsights: PlateauInsight[] | null;
   alignment: AlignmentResult | null;
@@ -66,11 +65,7 @@ interface DashboardProps {
   onUpdateTag: (tag: ContextTag) => void;
   onDeleteTag: (id: string) => void;
   onReplaceTags: (tags: ContextTag[]) => void;
-  experiments: Experiment[];
   experimentInsights: Map<string, ExperimentInsight> | null;
-  onAddExperiment: (fields: ExperimentFields) => void;
-  onUpdateExperiment: (id: string, fields: ExperimentFields) => void;
-  onDeleteExperiment: (id: string) => void;
 }
 
 export function Dashboard({
@@ -88,7 +83,6 @@ export function Dashboard({
   onBodyCompFile,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
-  onSyncedExperiments,
   onSyncedTags,
   plateauInsights,
   alignment,
@@ -98,16 +92,12 @@ export function Dashboard({
   onUpdateTag,
   onDeleteTag,
   onReplaceTags,
-  experiments,
   experimentInsights,
-  onAddExperiment,
-  onUpdateExperiment,
-  onDeleteExperiment,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   // A range dragged out on a chart, waiting for the Compare or Tags view to
   // pick it up. `nonce` re-keys that view so a second drag replaces the first.
-  const [pendingWindow, setPendingWindow] = useState<{ window: DateWindow; nonce: number } | null>(null);
+  const [pendingWindow, setPendingWindow] = useState<{ window: DateWindow | null; tagId: string | null; nonce: number } | null>(null);
   const { summary } = insights.dashboard;
   // Insights views read the whole history, never the selected range (see App.tsx).
   const usesRange = sectionOf(tab) !== "Insights";
@@ -128,14 +118,11 @@ export function Dashboard({
     if (bodyComp.status === "ready") {
       outgoing.push({ dataset: "bodyComp", json: JSON.stringify(bodyComp.rows) });
     }
-    if (experiments.length > 0) {
-      outgoing.push({ dataset: "experiments", json: JSON.stringify(experiments) });
-    }
     if (tags.length > 0) {
       outgoing.push({ dataset: "tags", json: JSON.stringify(tags) });
     }
     return outgoing;
-  }, [workoutRows, bodyComp, experiments, tags]);
+  }, [workoutRows, bodyComp, tags]);
 
   // Widening the range out from under an active daily view (via the date
   // picker, not this control) would otherwise leave a chart stuck rendering
@@ -148,19 +135,30 @@ export function Dashboard({
     () => ({
       tags,
       onCompare: (window: DateWindow) => {
-        setPendingWindow((p) => ({ window, nonce: (p?.nonce ?? 0) + 1 }));
+        setPendingWindow((p) => ({ window, tagId: null, nonce: (p?.nonce ?? 0) + 1 }));
         setTab(PERIODS_TAB);
         capture({ name: "interaction_used", props: { interaction: "compare_range_selected" } });
         capture({ name: "tab_viewed", props: { tab: "Compare", source } });
       },
       onTag: (window: DateWindow) => {
-        setPendingWindow((p) => ({ window, nonce: (p?.nonce ?? 0) + 1 }));
+        setPendingWindow((p) => ({ window, tagId: null, nonce: (p?.nonce ?? 0) + 1 }));
         setTab(TAGS_TAB);
         capture({ name: "interaction_used", props: { interaction: "tag_range_selected" } });
         capture({ name: "tab_viewed", props: { tab: "Tags", source } });
       },
     }),
     [tags, source]
+  );
+
+  // From a row on the Tags view: open Compare with that tag's range filled in.
+  const onCompareTag = useCallback(
+    (tagId: string) => {
+      setPendingWindow((p) => ({ window: null, tagId, nonce: (p?.nonce ?? 0) + 1 }));
+      setTab(PERIODS_TAB);
+      capture({ name: "interaction_used", props: { interaction: "tag_compared" } });
+      capture({ name: "tab_viewed", props: { tab: "Compare", source } });
+    },
+    [source]
   );
 
   const onTabChange = useCallback(
@@ -225,12 +223,10 @@ export function Dashboard({
               onWorkoutFile={onWorkoutFile}
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
-              experiments={experiments}
               tags={tags}
               syncOutgoing={syncOutgoing}
               onSyncedWorkoutData={onSyncedWorkoutData}
               onSyncedBodyCompData={onSyncedBodyCompData}
-              onSyncedExperiments={onSyncedExperiments}
               onSyncedTags={onSyncedTags}
               onReset={onReset}
             />
@@ -335,14 +331,12 @@ export function Dashboard({
               workouts={workoutRows}
               scans={bodyComp.status === "ready" ? bodyComp.rows : []}
               tags={tags}
-              experiments={experiments}
               experimentInsights={experimentInsights}
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
               initialWindowB={pendingWindow?.window ?? null}
-              onAddExperiment={onAddExperiment}
-              onUpdateExperiment={onUpdateExperiment}
-              onDeleteExperiment={onDeleteExperiment}
+              initialTagId={pendingWindow?.tagId ?? null}
+              onAddTag={onAddTag}
             />
           </TabsContent>
 
@@ -351,6 +345,8 @@ export function Dashboard({
               key={pendingWindow?.nonce ?? 0}
               tags={tags}
               source={source}
+              experimentInsights={experimentInsights}
+              onCompareTag={onCompareTag}
               initialWindow={pendingWindow?.window ?? null}
               onAdd={onAddTag}
               onUpdate={onUpdateTag}

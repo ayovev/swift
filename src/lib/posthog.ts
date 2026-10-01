@@ -39,7 +39,8 @@ export type SyncRole = "host" | "joiner";
 export type InteractionName =
   | "strength_view_toggled"
   | "compare_range_selected"
-  | "compare_saved_as_experiment"
+  | "compare_saved_as_tag"
+  | "tag_compared"
   | "tag_range_selected"
   | "tag_created"
   | "tag_edited"

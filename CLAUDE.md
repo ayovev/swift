@@ -264,16 +264,15 @@ in *each* window or its row is `comparable: false` with a reason and **no number
 partial comparison); overlapping or inverted windows are `insufficient`. `defaultWindowA()` is
 the equal-length window immediately before B.
 
-- **One data model.** "Save as experiment" writes window B to an `Experiment`'s `date`/`endDate`
-  and window A's start to its optional `baselineStart` (`windowsToExperimentFields`).
-  `getExperimentInsight` then compares `[baselineStart, date)` against the experiment's own range,
+- **One data model.** "Save as tag" writes window B to a tag's `startDate`/`endDate` and window A's
+  start to its optional `baselineStart` (`windowsToExperimentFields`), typed `experiment` by default.
+  `getExperimentInsight` then compares `[baselineStart, startDate)` against the experiment's own range,
   so the saved verdict is built on the earlier range the Compare table showed. An experiment with
-  no `baselineStart` (everything made before the field existed, and anything added directly)
-  compares against all history before its start date, exactly as before. `baselineStart` must be
-  strictly before `date`; otherwise it is ignored, the same defensiveness as an inverted `endDate`.
-  An experiment's "before" side always runs up to its start date, so a custom window A that ends
-  earlier than the day before window B gains the gap when saved; `PeriodsTab` says so
-  (`windowAIsContiguous`).
+  no `baselineStart` (anything added directly on the Tags view without one) compares against all
+  history before its start date. `baselineStart` must be strictly before the start date; otherwise it
+  is ignored, the same defensiveness as an inverted `endDate`. An experiment's "before" side always
+  runs up to its start date, so a custom window A that ends earlier than the day before window B
+  gains the gap when saved; `PeriodsTab` says so (`windowAIsContiguous`).
 - **Dragging is a convenience, never the only way.** `charts/chartInteraction.tsx` gives a chart a
   drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`)
   and shaded tag bands. A selection offers "Compare with the N days before" and "Tag this range";
@@ -283,7 +282,9 @@ the equal-length window immediately before B.
 - **One view, not three.** The former Compare, Experiments and Cycles views are one Compare view (`PeriodsTab.tsx`; its page title reads "Compare periods")
   because they answer one question about a range and differ only in how the range was named. The
   range (window B, plus the earlier window A) is the only input: typed, dragged out on a chart, or
-  filled in from a saved experiment (its dates and `baselineStart`) or a block tag. Every range gets
+  filled in from a saved tag in "Something you changed" (its dates and `baselineStart`; one list,
+  "Saved ranges", from `getCycles`, which now includes experiments), or opened from a row's Compare
+  button on the Tags view. Every range gets
   the same three things: a `getCycleReport` for it (`CycleReportBody`), the `compareWindows`
   tables (`ComparisonTables`), and, when the range came from a saved experiment, that experiment's
   `ExperimentVerdict`. Typing a date drops the saved-experiment framing, since the verdict no longer
@@ -295,8 +296,21 @@ the equal-length window immediately before B.
 - **Tags** (`types/tag.ts`, `contextTags.ts`, `storage/tagsStorage.ts`, key `"context-tags"`) are
   user-authored, persist only when `source === "upload"`, are wiped by Start over, and have
   JSON export/import (strict validation, merge by id), and sync between devices (see "Architecture:
-  cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`) so the Tags, Cycles
-  and chart-band views aren't empty; they are in memory only, never persisted or synced.
+  cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`, plus the sample
+  experiments from `generateSampleExperiments.ts` mapped to tags) so the Tags, Compare and chart-band
+  views aren't empty; they are in memory only, never persisted or synced.
+- **One record for tags and experiments.** An experiment is a tag of type `experiment`: a period the
+  athlete has asked the app to judge. A tag is a labelled period; what the app derives from it follows
+  its type, and `TAG_GROUPS` (`types/tag.ts`) is the one place the types are grouped, in the words the
+  type picker shows: **Something you changed** (experiment, cut, bulk, maintain, other: things you
+  chose, so "did it change anything?" is a fair question) and **Something that happened** (injury,
+  travel: context only). Every tag shades charts; cut and injury are named where they overlap a
+  result; the first group are also training blocks (`CYCLE_TAG_TYPES`) and can be opened on Compare;
+  only `experiment` gets a before/after verdict (`getExperimentInsight`, through the
+  `experimentTags.ts` adapter, so that pipeline is unchanged). Widening the verdict to cut, bulk and
+  maintain is a deliberate non-decision: a decline during a cut is expected, so it needs its own copy.
+  `baselineStart` is optional on any tag so changing a tag's type never drops it. The Tags view is the
+  one list and one form; Compare's "Save as tag" writes the same record.
 - **Tags never change a result.** `getPlateauInsights`/`getAlignment` take `options.tags` and, when
   a plateaued result's (or the alignment) window overlaps a cut or injury tag, add a `tagNotes`
   sentence naming the tag. With no tags, or none overlapping, the output is identical to the
@@ -344,7 +358,7 @@ as starting points and check them against real exports before trusting a number.
   per lift, as on Plateaus, which halves sessions for anyone who switches; merging load lifts is
   an open question. A title naming a different scheme than the athlete did will be mis-estimated;
   that is inherent to the export.
-- **Compare and Experiments.** There is no touch dragging on charts (date inputs are the fallback).
+- **Compare and Tags.** There is no touch dragging on charts (date inputs are the fallback).
 - **Sync.** Tags sync, but like everything in sync they are verified by unit tests and by hand on two
   devices, not by an automated two-device test. A joiner running an older cached build rejects a
   manifest naming a dataset it doesn't know (`tags`), so both devices need the current build; a
@@ -374,16 +388,20 @@ Detector and Alignment above — same before/after performance-vs-body-comp comp
 datasets required — but anchored to an athlete-logged date instead of a rolling recent/prior
 window.
 
-- **`Experiment`** (`src/types/experiment.ts`) is user-authored, not derived from either upload:
-  a `date` ("when I tried this"), a free-text `label` ("what I tried"), an optional `endDate` and
-  an optional `baselineStart` (where the "before" side starts; unset means all earlier history). It's its own
-  IndexedDB-backed dataset (`src/lib/storage/experimentsStorage.ts`, key `"experiments"`, same
-  thin-wrapper pattern as `workoutStorage.ts`/`bodyCompStorage.ts`) — added, edited and deleted from the
-  Experiments list on the Compare view (`PeriodsTab.tsx`; the same `ExperimentForm` adds and edits — an edit keeps
-  the `id`, and clearing the end date makes it ongoing again), persisted only when `state.source === "upload"` in
-  `App.tsx`, same sample-mode exclusion as everything else logged while browsing demo data. Experiments
-  that arrive by sync or backup restore are different: they are uploads by definition, so
-  `handleSyncedExperiments` always persists them (see "Write points" below).
+- **An experiment is a tag** of type `experiment` (see "One record for tags and experiments" above):
+  a `startDate` ("when I tried this"), a `label` ("what I tried"), an optional `endDate` and an
+  optional `baselineStart` (where the "before" side starts; unset means all earlier history). It was
+  once its own IndexedDB dataset (key `"experiments"`); it no longer is. `Experiment`
+  (`src/types/experiment.ts`) survives as the shape `getExperimentInsight` takes and as what an older
+  device or backup file still sends, with `experimentToTag`/`tagToExperiment` (`experimentTags.ts`) the
+  two seams between that shape and a tag. Added, edited and deleted on the Tags view, persisted like
+  every tag (only when `state.source === "upload"`, except what arrives by sync or restore).
+- **Migration** (`storage/legacyExperiments.ts`): on load, `App.tsx` moves anything still stored under
+  `"experiments"` into the tags (a tag already holding the id wins), then removes the old key. It writes
+  the merged tags first and **reads them back before deleting**, because `idbSet` swallows its own
+  failures and a write that didn't land would otherwise look like success and lose the experiments. It
+  is safe to run on every load and to run twice, and a stored list that doesn't validate is left alone.
+  `tests/legacyExperiments.test.ts` pins each of those.
 - **`getExperimentInsight(experiment, workouts, inbodyScans, asOfDate)`** reuses #1's subject
   identification and body-comp-trend helpers unchanged (`buildLiftSubjects`/
   `buildBenchmarkSubjects`, `parseWorkoutDate`/`parseInBodyDate`, `computeBodyCompTrend`,
@@ -396,14 +414,15 @@ window.
 - Classification is `improved`/`declined`/`no_change`/`mixed`/`insufficient_data` — `mixed` is a
   strict-majority miss (no more than half of classified subjects agree), the same "informative,
   not an error state" treatment Plateau Detector/Alignment give their own ambiguous cases.
-- Sample mode seeds a couple of plausible experiments (`src/lib/sample/generateSampleExperiments.ts`)
-  at fixed month-offsets from the athlete's first logged workout (never hardcoded calendar dates),
-  chosen only when they leave enough history on both sides to pass the eligibility gate above —
-  the classification itself is never biased toward a rosy outcome; it falls out of whatever the
-  real sample data shows.
+- Sample mode seeds a couple of plausible experiments (`src/lib/sample/generateSampleExperiments.ts`,
+  mapped to tags in `App.tsx`) at fixed month-offsets from the athlete's first logged workout (never
+  hardcoded calendar dates), chosen only when they leave enough history on both sides to pass the
+  eligibility gate above — the classification itself is never biased toward a rosy outcome; it falls
+  out of whatever the real sample data shows.
 - Wired into `App.tsx` behind the same gate as Plateau Detector/Alignment — neither runs until
-  both uploads are `"ready"` — and rendered by `ExperimentVerdict.tsx` when an experiment is picked on the Compare view, not part of
-  `Insights`/`buildInsights.ts`'s return shape.
+  both uploads are `"ready"` — as a map keyed by tag id, and rendered by `ExperimentVerdict.tsx`
+  when an experiment is picked on the Compare view and as a badge on its row on the Tags view, not
+  part of `Insights`/`buildInsights.ts`'s return shape.
 
 ## Architecture: cross-device sync
 
@@ -438,8 +457,9 @@ back to one.
   and adding one was scoped out of this feature — see `webrtcTransport.ts`'s header comment.
   Those two paths are verified manually, across two real devices, before any change here ships.
 - **The wire protocol**, once connected: the host sends one small manifest naming which
-  datasets it's about to send — some subset of `["workout", "bodyComp", "experiments", "tags"]`,
-  never assumed, since a device might not have InBody data, experiments or tags — then for each
+  datasets it's about to send — some subset of `["workout", "bodyComp", "tags"]` (experiments travel
+  inside `tags`; `"experiments"` is still a name on the wire, but receive-only, see below), never
+  assumed, since a device might not have InBody data or tags — then for each
   dataset in order, `chunkPayload()`'s header followed by its chunks; once every dataset is sent,
   the host closes the channel. The joiner feeds every message after the manifest into a fresh
   `Reassembler` per dataset until each reports done.
@@ -456,18 +476,22 @@ back to one.
   queues every write and `flush()` applies them with the workout log last, because applying the
   workout log moves `App` to its reveal screen, which unmounts the dashboard and this dialog with it.
   Backup restore uses the same plan.
-- **What syncs: the athlete's data, and only their data.** The workout log, the InBody history,
-  experiments and context tags. Preferences and configuration deliberately do **not** sync: theme
+- **What syncs: the athlete's data, and only their data.** The workout log, the InBody history
+  and context tags (experiments are tags). Preferences and configuration deliberately do **not** sync: theme
   (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
   reasonably want different ones. PostHog's anonymous id in `localStorage` doesn't either — it is an
   analytics identifier. This is enforced at the wire, not by convention: `SyncDataset` has exactly
-  four members and `decodeHeader` rejects any other name (`tests/chunking.test.ts` pins that
-  `preferences` and `theme` are rejected). **A new persisted dataset that is the athlete's data must
+  four members and `decodeHeader` rejects any other name. The fourth, `experiments`, is **receive-only**:
+  an older device (or an older backup file) still sends experiments as their own list, and
+  `planReceived` validates them (`validateExperiments`) and folds them into the tags that arrive with
+  them, so there is one tags conflict and one handler; nothing sends the name any more, and an older
+  build that receives tags containing the `experiment` type rejects that dataset as an unknown type (`tests/chunking.test.ts` pins that
+  `preferences` and `theme` are rejected, `tests/receivedDatasets.test.ts` that old experiments convert). **A new persisted dataset that is the athlete's data must
   be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a
   case in `planReceived`, an `onSynced*` handler in `App.tsx`), which also adds it to backup, since
   `BackupDatasets` is keyed by `SyncDataset`; a new preference or setting must not.
   **Everything that arrives is validated before anything is written**, to the shape its own parser
-  produces (`validateReceived.ts` for the workout log, InBody history and experiments,
+  produces (`validateReceived.ts` for the workout log, InBody history and legacy experiments,
   `validateTagList` for tags). Validation is all-or-nothing for the whole transfer: one bad row rejects
   its dataset with a reason naming the row, and then nothing at all is applied, the local copy is
   left exactly as it was, and a rejected dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
@@ -477,7 +501,7 @@ back to one.
   the transfer as `sync_failed` with the fixed reason `invalid_data`. Datasets that were fine are
   not applied either.
 - **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` (and
-  `handleSyncedExperiments`/`handleSyncedTags`) — all are
+  `handleSyncedTags`) — all are
   unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
   `SyncDialog` is what gates the call, not the handler. Synced data always carries
   `source: "upload"` (sync's entry points in the dashboard's Settings sheet, `SettingsSheet.tsx`,
@@ -499,15 +523,17 @@ back to one.
 `src/lib/backup/` and `src/components/backup/` let an athlete download everything they have in
 the app as one JSON file and restore it later, after clearing the browser or on another computer.
 The workout and InBody CSVs are already their own backups; what only a backup file preserves is
-**experiments and context tags**. It reuses sync's validators and planner rather than growing its
+**context tags (experiments included)**. It reuses sync's validators and planner rather than growing its
 own, so the two can't drift on what a valid row is.
 
 - **Format (v1)**: `{ format: "swift-backup", version, exportedAt, encoding: "plain", datasets }`, or
   for an encrypted one `encoding: "aes-256-gcm"` with `kdf`, `iv` and `ciphertext` in place of
   `datasets`. `datasets` (or the decrypted plaintext) holds the same bare arrays sync puts on the wire,
   keyed by `SyncDataset`. Athlete data
-  only: never theme, grouping or date range. Empty `experiments`/`tags` are omitted from the file, so a
-  backup only ever replaces, never tells a restore to clear something. Unknown dataset keys are
+  only: never theme, grouping or date range. Empty datasets are omitted from the file, so a
+  backup only ever replaces, never tells a restore to clear something. A file is written with
+  `workout`, `bodyComp` and `tags`; one made before experiments were tags has an `experiments`
+  section, which is still read and folded into the tags on restore. Unknown dataset keys are
   ignored; a newer `version` or unknown `encoding` is refused with "made by a newer version".
 - **Encryption is optional and off by default** (`encryption.ts`, `passphrase.ts`). PBKDF2-HMAC-SHA-256
   (`KDF_ITERATIONS` = 600,000, OWASP's floor for it) into an AES-256-GCM key, a fresh random 16-byte salt
@@ -548,7 +574,7 @@ own, so the two can't drift on what a valid row is.
   because "Export" already means the SugarWOD CSV on the landing page. Tags keep their own
   Export/Import (that one does merge). Sample data can't be backed up and has nothing to confirm on
   restore (it is never stored). Restore errors stay inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
-  the `onSynced*` handlers. `handleSyncedExperiments` must not look at `state`: on the landing page
+  the `onSynced*` handlers. `handleSyncedTags` must not look at `state`: on the landing page
   it is still the previous screen, which used to make received experiments vanish on reload.
 - **Analytics**: `interaction_used` with `backup_exported`/`backup_imported` (the event names predate the Download/Restore labels and stay as
   they are: a closed vocabulary, not copy), nothing else: no
@@ -611,13 +637,15 @@ added after the app initially held everything in memory only.
   `readStored`/`writeStored` in `src/lib/theme/useTheme.ts` — persistence is a convenience,
   never a requirement, so a blocked or disabled database must not break the app.
 - **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** /
-  **`experimentsStorage.ts`** are thin typed wrappers, one key each (`"workout-rows"`,
-  `"body-comp-rows"`, `"view-preferences"`, `"experiments"`, plus `tagsStorage.ts` with `"context-tags"`
-  — see "Architecture: Experiments" and "window comparison and context tags" above). Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
+  are thin typed wrappers, one key each (`"workout-rows"`, `"body-comp-rows"`, `"view-preferences"`,
+  plus `tagsStorage.ts` with `"context-tags"` — see "Architecture: Experiments" and "window comparison
+  and context tags" above). `legacyExperiments.ts` is the one remaining reader of the retired
+  `"experiments"` key, a one-way migration into the tags. Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
   directly — a new dataset gets its own wrapper file, not a call site that reaches past it.
 - **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
-  existing loading UI — no new component) and a mount-only effect loads all five datasets
-  (workout rows, body-comp rows, view preferences, experiments, tags) from storage in parallel before
+  existing loading UI — no new component) and a mount-only effect loads all four datasets
+  (workout rows, body-comp rows, view preferences, tags; any old experiments are migrated into the tags
+  first) from storage in parallel before
   deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
   bundled sample file is deliberately never cached, so demo mode never leaves anything behind. A
@@ -643,7 +671,7 @@ added after the app initially held everything in memory only.
   picking the same file twice still fires a change event), but without `UploadDropzone`'s
   drag-and-drop box, since this is a small utility action rather than the first-upload call to
   action. Both call the exact same `handleFile`/`handleBodyCompFile` handlers a first upload
-  uses, so a re-upload fully replaces only its own dataset — `experiments` and the other dataset
+  uses, so a re-upload fully replaces only its own dataset — `tags` and the other dataset
   are untouched, exactly as they already were before these controls existed; no new
   data-merging logic needed.
 - **What's actually stored isn't the date range** — it's the *preset id* (`DateRangePreset`,
@@ -664,8 +692,8 @@ added after the app initially held everything in memory only.
   calls it (in the Settings sheet) is now gated behind a confirmation `AlertDialog`
   (`src/components/ui/alert-dialog.tsx`) whenever `source === "upload"` — sample mode still
   resets in one click, since nothing persisted is at risk there. The dialog's copy names exactly
-  what gets deleted (workout log, body composition history, experiments, context tags) so this is the one
-  place all three are named together.
+  what gets deleted (workout log, body composition history, tags with experiments included) so this is the one
+  place all of them are named together.
 - The theme preference remains on its own `localStorage` key (see Theming below), not this
   layer — it needs to be read synchronously before first paint to avoid a flash of the wrong
   mode, which IndexedDB's async API can't do.

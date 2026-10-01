@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import dayjs from "dayjs";
 import { PeriodsTab } from "@/components/dashboard/PeriodsTab";
 import type { DateWindow } from "@/types/compare";
-import type { Experiment, ExperimentInsight } from "@/types/experiment";
+import type { ExperimentInsight } from "@/types/experiment";
 import type { ContextTag } from "@/types/tag";
 import { liftRow, scanRow } from "./fixtures/rows";
 
@@ -20,8 +20,9 @@ const scans = [
 ];
 const B: DateWindow = { start: "2026-02-01", end: "2026-02-28" };
 
-function insight(overrides: Partial<ExperimentInsight> & { experiment: Experiment }): ExperimentInsight {
+function insight(id: string, overrides: Partial<ExperimentInsight> = {}): ExperimentInsight {
   return {
+    experiment: { id, date: "2026-02-01", label: "x" },
     classification: "improved",
     performanceSummary: { improvingCount: 2, decliningCount: 0, flatCount: 1, classifiedCount: 3 },
     bodyCompSummary: { leanMassDelta: 1, fatMassDelta: -1, bodyFatPctDelta: -0.4 },
@@ -31,21 +32,16 @@ function insight(overrides: Partial<ExperimentInsight> & { experiment: Experimen
 
 type Props = React.ComponentProps<typeof PeriodsTab>;
 function setup(props: Partial<Props> = {}) {
-  const handlers = {
-    onAddExperiment: vi.fn(),
-    onUpdateExperiment: vi.fn(),
-    onDeleteExperiment: vi.fn(),
-    onBodyCompFile: vi.fn(),
-  };
+  const handlers = { onAddTag: vi.fn(), onBodyCompFile: vi.fn() };
   render(
     <PeriodsTab
       workouts={workouts}
       scans={scans}
       tags={[]}
-      experiments={[]}
       experimentInsights={new Map()}
       bodyComp={{ status: "ready", rows: [] }}
       initialWindowB={B}
+      initialTagId={null}
       {...handlers}
       {...props}
     />
@@ -109,62 +105,84 @@ describe("PeriodsTab — what the range did", () => {
 });
 
 describe("PeriodsTab — saving a comparison", () => {
-  it("saves the range and the earlier range as an experiment", () => {
-    const { onAddExperiment } = setup();
+  it("saves the range and the earlier range as an experiment by default", () => {
+    const { onAddTag } = setup();
+    expect(screen.getByLabelText("Type")).toHaveValue("experiment");
     expect(screen.getByText(/compared with the earlier\s+range shown above/)).toBeInTheDocument();
     expect(screen.queryByText(/the days between these two ranges/)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "New program" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save as experiment" }));
-    expect(onAddExperiment).toHaveBeenCalledWith({
+    fireEvent.click(screen.getByRole("button", { name: "Save as tag" }));
+    expect(onAddTag).toHaveBeenCalledWith({
+      type: "experiment",
       label: "New program",
-      date: "2026-02-01",
+      startDate: "2026-02-01",
       endDate: "2026-02-28",
       baselineStart: "2026-01-04",
     });
-    expect(screen.getByRole("button", { name: "Saved as experiment" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Saved as tag" })).toBeDisabled();
+  });
+
+  it("saves under the type that was picked, from the things you changed only", () => {
+    const { onAddTag } = setup();
+    expect(Array.from(screen.getByLabelText("Type").querySelectorAll("option")).map((o) => o.textContent)).toEqual([
+      "Experiment",
+      "Cut",
+      "Bulk",
+      "Maintain",
+      "Other",
+    ]);
+    fireEvent.change(screen.getByLabelText("Type"), { target: { value: "cut" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save as tag" }));
+    expect(onAddTag).toHaveBeenCalledWith(expect.objectContaining({ type: "cut", label: "Comparison, Feb 1, 2026 – Feb 28, 2026" }));
   });
 
   it("warns that an earlier range with a gap before the range will gain the gap when saved", () => {
-    const { onAddExperiment } = setup();
+    const { onAddTag } = setup();
     fireEvent.click(screen.getByRole("button", { name: "Choose the earlier range" }));
     fireEvent.change(screen.getByLabelText("Earlier range ends"), { target: { value: "2026-01-20" } });
     expect(screen.getByText(/the days between these two ranges will be included/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Save as experiment" }));
-    expect(onAddExperiment).toHaveBeenCalledWith(expect.objectContaining({ baselineStart: "2026-01-04" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save as tag" }));
+    expect(onAddTag).toHaveBeenCalledWith(expect.objectContaining({ baselineStart: "2026-01-04" }));
   });
 });
 
-describe("PeriodsTab — saved experiments", () => {
-  const experiments: Experiment[] = [
-    { id: "a", date: "2026-02-01", endDate: "2026-02-28", label: "Started 5/3/1 cycle" },
-    { id: "b", date: "2025-08-15", endDate: "2025-10-01", label: "Switched to own programming" },
-  ];
+describe("PeriodsTab — saved ranges", () => {
+  const experiment: ContextTag = {
+    id: "a",
+    type: "experiment",
+    label: "Started 5/3/1 cycle",
+    startDate: "2026-02-01",
+    endDate: "2026-02-28",
+  };
+  const cut: ContextTag = { id: "c", type: "cut", label: "Spring cut", startDate: "2026-01-05", endDate: "2026-02-20" };
 
-  it("says so when none have been logged", () => {
+  it("says so when there are none", () => {
     setup();
-    expect(screen.getByText("No experiments logged yet.")).toBeInTheDocument();
+    expect(screen.getByText(/No saved ranges yet/)).toBeInTheDocument();
   });
 
-  it("lists each with its dates and, once both datasets are loaded, its classification", () => {
-    setup({
-      experiments,
-      experimentInsights: new Map([
-        ["a", insight({ experiment: experiments[0]!, classification: "improved" })],
-        ["b", insight({ experiment: experiments[1]!, classification: "mixed" })],
-      ]),
-    });
-    expect(screen.getByText("Started 5/3/1 cycle")).toBeInTheDocument();
-    expect(screen.getByText("Started Feb 1, 2026 · Ended Feb 28, 2026")).toBeInTheDocument();
-    expect(screen.getByText("Improved")).toBeInTheDocument();
-    expect(screen.getByText("Started Aug 15, 2025 · Ended Oct 1, 2025")).toBeInTheDocument();
+  it("lists tags for something you changed, not injury or travel", () => {
+    const injury: ContextTag = { id: "i", type: "injury", label: "Wrist", startDate: "2026-02-01", endDate: "2026-02-10" };
+    const trip: ContextTag = { id: "t", type: "travel", label: "Lisbon", startDate: "2026-02-10", endDate: "2026-02-14" };
+    setup({ tags: [experiment, cut, injury, trip] });
+    expect(screen.getByText("Started 5/3/1 cycle", { selector: "span" })).toBeInTheDocument();
+    expect(screen.getByText("Spring cut", { selector: "span" })).toBeInTheDocument();
+    expect(screen.queryByText("Wrist")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: 'Show "Lisbon"' })).not.toBeInTheDocument();
+  });
+
+  it("lists each with its type, its dates and, for an experiment once both datasets are loaded, its classification", () => {
+    setup({ tags: [experiment, cut], experimentInsights: new Map([["a", insight("a", { classification: "mixed" })]]) });
+    expect(screen.getByText("Experiment · Feb 1, 2026 – Feb 28, 2026")).toBeInTheDocument();
+    expect(screen.getByText("Cut · Jan 5, 2026 – Feb 20, 2026")).toBeInTheDocument();
     expect(screen.getByText("Mixed")).toBeInTheDocument();
   });
 
   it("fills the range in from an experiment and shows its verdict, compared with all earlier history", () => {
     setup({
-      experiments,
+      tags: [experiment],
       initialWindowB: null,
-      experimentInsights: new Map([["a", insight({ experiment: experiments[0]!, classification: "improved" })]]),
+      experimentInsights: new Map([["a", insight("a", { classification: "improved" })]]),
     });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' }));
     expect(screen.getByLabelText("Range starts")).toHaveValue("2026-02-01");
@@ -177,23 +195,28 @@ describe("PeriodsTab — saved experiments", () => {
     expect(screen.getByText("In this range")).toBeInTheDocument();
   });
 
+  it("opens straight onto a tag chosen on the Tags view", () => {
+    setup({ tags: [experiment], initialWindowB: null, initialTagId: "a", experimentInsights: new Map([["a", insight("a")]]) });
+    expect(screen.getByLabelText("Range starts")).toHaveValue("2026-02-01");
+    expect(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/Performance improved after this started/)).toBeInTheDocument();
+  });
+
   it("uses a saved comparison's own earlier range", () => {
-    const withBaseline: Experiment = { id: "c", date: "2026-02-01", endDate: "2026-02-28", baselineStart: "2026-01-10", label: "Comparison" };
-    setup({ experiments: [withBaseline], initialWindowB: null });
-    expect(screen.getByText(/Compared with Jan 10, 2026 – Jan 31, 2026/)).toBeInTheDocument();
+    const withBaseline: ContextTag = { ...experiment, id: "c2", label: "Comparison", baselineStart: "2026-01-10" };
+    setup({ tags: [withBaseline], initialWindowB: null });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Comparison"' }));
-    expect(screen.getAllByText(/Jan 10, 2026 – Jan 31, 2026/).length).toBeGreaterThan(1);
+    expect(screen.getByText(/Compared with Jan 10, 2026 – Jan 31, 2026/)).toBeInTheDocument();
     expect(screen.getByLabelText("Earlier range starts")).toHaveValue("2026-01-10");
   });
 
   it("shows the specific reason for an insufficient_data verdict, and no numbers", () => {
     setup({
-      experiments: [experiments[0]!],
+      tags: [experiment],
       experimentInsights: new Map([
         [
           "a",
-          insight({
-            experiment: experiments[0]!,
+          insight("a", {
             classification: "insufficient_data",
             reason: "needs 2 more lifts/WODs with logged data after this date (has 1, needs 3)",
           }),
@@ -207,13 +230,9 @@ describe("PeriodsTab — saved experiments", () => {
   });
 
   it("asks for an InBody export, and forwards a dropped file, when a verdict needs one", () => {
-    const { onBodyCompFile } = setup({
-      experiments: [experiments[0]!],
-      experimentInsights: null,
-      bodyComp: { status: "idle" },
-    });
+    const { onBodyCompFile } = setup({ tags: [experiment], experimentInsights: null, bodyComp: { status: "idle" } });
     // The list and the comparison work without InBody data; only the verdict waits on it.
-    expect(screen.getByText("Started 5/3/1 cycle")).toBeInTheDocument();
+    expect(screen.getByText("Started 5/3/1 cycle", { selector: "span" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Upload your InBody CSV export" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' }));
     const dropzone = screen.getByRole("button", { name: "Upload your InBody CSV export" });
@@ -224,7 +243,7 @@ describe("PeriodsTab — saved experiments", () => {
 
   it("shows an error alert when the InBody upload failed", () => {
     setup({
-      experiments: [experiments[0]!],
+      tags: [experiment],
       experimentInsights: null,
       bodyComp: { status: "error", message: "That file is missing a date column." },
     });
@@ -234,140 +253,15 @@ describe("PeriodsTab — saved experiments", () => {
   });
 
   it("drops the experiment's verdict as soon as a date is typed", () => {
-    setup({
-      experiments,
-      experimentInsights: new Map([["a", insight({ experiment: experiments[0]!, classification: "improved" })]]),
-    });
+    setup({ tags: [experiment], experimentInsights: new Map([["a", insight("a")]]) });
     fireEvent.click(screen.getByRole("button", { name: 'Show "Started 5/3/1 cycle"' }));
     expect(screen.getByText(/Performance improved after this started/)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Range ends"), { target: { value: "2026-02-27" } });
     expect(screen.queryByText(/Performance improved after this started/)).not.toBeInTheDocument();
   });
-
-  it("calls onDeleteExperiment with the right id", () => {
-    const { onDeleteExperiment } = setup({ experiments });
-    fireEvent.click(screen.getByRole("button", { name: 'Delete "Switched to own programming"' }));
-    expect(onDeleteExperiment).toHaveBeenCalledWith("b");
-  });
 });
 
-describe("PeriodsTab — adding an experiment", () => {
-  it("keeps the submit button disabled until both a date and a label are set", () => {
-    setup();
-    const submit = screen.getByRole("button", { name: "Add experiment" });
-    expect(submit).toBeDisabled();
-    fireEvent.change(screen.getByPlaceholderText("Started 5/3/1 cycle"), { target: { value: "Switched to own programming" } });
-    expect(submit).toBeDisabled();
-  });
-
-  it("submits with the picked start date and no end date when 'Ended' is left as 'Still ongoing'", () => {
-    const { onAddExperiment } = setup();
-    expect(screen.getByRole("button", { name: "Ended (optional)" })).toHaveTextContent("Still ongoing");
-    fireEvent.click(screen.getByRole("button", { name: "Started" }));
-    fireEvent.click(screen.getByRole("button", { name: /September 5th, 2026/ }));
-    fireEvent.change(screen.getByPlaceholderText("Started 5/3/1 cycle"), { target: { value: "Started 5/3/1 cycle" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add experiment" }));
-    expect(onAddExperiment).toHaveBeenCalledWith({ label: "Started 5/3/1 cycle", date: "2026-09-05" });
-  });
-
-  it("submits with both dates once an end date is also picked, and resets both fields after", () => {
-    const { onAddExperiment } = setup();
-    fireEvent.click(screen.getByRole("button", { name: "Started" }));
-    fireEvent.click(screen.getByRole("button", { name: /September 5th, 2026/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Ended (optional)" }));
-    fireEvent.click(screen.getByRole("button", { name: /September 10th, 2026/ }));
-    expect(screen.getByRole("button", { name: /Ended \(optional\)/ })).toHaveTextContent("Sep 10, 2026");
-    fireEvent.change(screen.getByPlaceholderText("Started 5/3/1 cycle"), { target: { value: "Tried a cut" } });
-    fireEvent.click(screen.getByRole("button", { name: "Add experiment" }));
-    expect(onAddExperiment).toHaveBeenCalledWith({ label: "Tried a cut", date: "2026-09-05", endDate: "2026-09-10" });
-    expect(screen.getByRole("button", { name: "Ended (optional)" })).toHaveTextContent("Still ongoing");
-  });
-
-  it("clears a picked end date via the 'Clear' button without touching the start date", () => {
-    setup();
-    fireEvent.click(screen.getByRole("button", { name: "Ended (optional)" }));
-    fireEvent.click(screen.getByRole("button", { name: /September 10th, 2026/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
-    expect(screen.getByRole("button", { name: /Ended \(optional\)/ })).toHaveTextContent("Still ongoing");
-    expect(screen.getByRole("button", { name: "Started" })).toHaveTextContent("Pick a date");
-  });
-});
-
-describe("PeriodsTab — editing an experiment", () => {
-  const experiments: Experiment[] = [
-    { id: "a", date: "2024-05-01", endDate: "2024-07-01", label: "Started 5/3/1 cycle" },
-    { id: "b", date: "2024-08-15", label: "Switched to own programming" },
-  ];
-  const editForm = () => within(screen.getByRole("button", { name: "Save changes" }).closest("form")!);
-
-  it("opens the form filled in with the experiment's label and dates", () => {
-    setup({ experiments });
-    fireEvent.click(screen.getByRole("button", { name: 'Edit "Started 5/3/1 cycle"' }));
-    expect(screen.getByDisplayValue("Started 5/3/1 cycle")).toBeInTheDocument();
-    expect(editForm().getByRole("button", { name: "Started" })).toHaveTextContent("May 1, 2024");
-    expect(editForm().getByRole("button", { name: /^Ended/ })).toHaveTextContent("Jul 1, 2024");
-    expect(screen.getByRole("button", { name: "Save changes" })).toBeEnabled();
-  });
-
-  it("saves a new label under the same id and keeps the dates", () => {
-    const { onUpdateExperiment } = setup({ experiments });
-    fireEvent.click(screen.getByRole("button", { name: 'Edit "Switched to own programming"' }));
-    fireEvent.change(screen.getByDisplayValue("Switched to own programming"), { target: { value: "Own programming, 4 days a week" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(onUpdateExperiment).toHaveBeenCalledWith("b", { label: "Own programming, 4 days a week", date: "2024-08-15" });
-    expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument();
-  });
-
-  it("makes an ended experiment ongoing again when its end date is cleared", () => {
-    const { onUpdateExperiment } = setup({ experiments });
-    fireEvent.click(screen.getByRole("button", { name: 'Edit "Started 5/3/1 cycle"' }));
-    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(onUpdateExperiment).toHaveBeenCalledWith("a", { label: "Started 5/3/1 cycle", date: "2024-05-01" });
-  });
-
-  it("shows a saved comparison's earlier range in the list and keeps it through an edit", () => {
-    const withBaseline: Experiment[] = [{ id: "c", date: "2024-05-01", endDate: "2024-06-01", baselineStart: "2024-04-01", label: "Comparison" }];
-    const { onUpdateExperiment } = setup({ experiments: withBaseline });
-    expect(screen.getByText(/Compared with Apr 1, 2024 – Apr 30, 2024/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: 'Edit "Comparison"' }));
-    fireEvent.change(screen.getByDisplayValue("Comparison"), { target: { value: "Renamed" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(onUpdateExperiment).toHaveBeenCalledWith("c", {
-      label: "Renamed",
-      date: "2024-05-01",
-      endDate: "2024-06-01",
-      baselineStart: "2024-04-01",
-    });
-  });
-
-  it("goes back to all earlier history when the earlier range is cleared", () => {
-    const withBaseline: Experiment[] = [{ id: "c", date: "2024-05-01", baselineStart: "2024-04-01", label: "Comparison" }];
-    const { onUpdateExperiment } = setup({ experiments: withBaseline });
-    fireEvent.click(screen.getByRole("button", { name: 'Edit "Comparison"' }));
-    fireEvent.click(screen.getByRole("button", { name: "All history" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    expect(onUpdateExperiment).toHaveBeenCalledWith("c", { label: "Comparison", date: "2024-05-01" });
-  });
-
-  it("will not save an empty label", () => {
-    setup({ experiments });
-    fireEvent.click(screen.getByRole("button", { name: 'Edit "Started 5/3/1 cycle"' }));
-    fireEvent.change(screen.getByDisplayValue("Started 5/3/1 cycle"), { target: { value: "  " } });
-    expect(screen.getByRole("button", { name: "Save changes" })).toBeDisabled();
-  });
-
-  it("cancel closes the form without saving", () => {
-    const { onUpdateExperiment } = setup({ experiments });
-    fireEvent.click(screen.getByRole("button", { name: 'Edit "Started 5/3/1 cycle"' }));
-    fireEvent.change(screen.getByDisplayValue("Started 5/3/1 cycle"), { target: { value: "Something else" } });
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(onUpdateExperiment).not.toHaveBeenCalled();
-    expect(screen.getByText("Started 5/3/1 cycle")).toBeInTheDocument();
-  });
-});
-
-describe("PeriodsTab — training blocks", () => {
+describe("PeriodsTab — a block's report", () => {
   const day = (n: number) => dayjs("2026-03-01").add(n, "day").format("YYYY-MM-DD");
   const blockWorkouts = [200, 205, 212, 218, 224, 230].map((v, i) => liftRow(md(day(i * 7)), "Back Squat", v));
   const blockScans = [
@@ -377,19 +271,8 @@ describe("PeriodsTab — training blocks", () => {
   ];
   const cut: ContextTag = { id: "c", type: "cut", label: "Spring cut", startDate: day(0), endDate: day(42) };
 
-  it("points to the Tags view when there are no blocks", () => {
-    setup();
-    expect(screen.getByText(/No blocks yet/)).toBeInTheDocument();
-  });
-
-  it("ignores injury and travel tags as blocks", () => {
-    setup({ tags: [{ ...cut, type: "injury" }] });
-    expect(screen.getByText(/No blocks yet/)).toBeInTheDocument();
-  });
-
-  it("lists each block tag, and shows its report with focus lifts and a lift table once picked", () => {
+  it("shows the focus lifts and a lift table once the block is picked", () => {
     setup({ workouts: blockWorkouts, scans: blockScans, tags: [cut], initialWindowB: null });
-    expect(screen.getByText("Spring cut", { selector: "span" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: 'Show "Spring cut"' }));
     expect(screen.getByLabelText("Range starts")).toHaveValue(day(0));
     expect(screen.getByLabelText("Range ends")).toHaveValue(day(42));

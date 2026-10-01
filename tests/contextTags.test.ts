@@ -108,10 +108,16 @@ describe("JSON export and import", () => {
     ["end before start", JSON.stringify([tag({ endDate: "2026-02-01" })]), /Tag 1 ends before it starts/],
     ["duplicate id", JSON.stringify([tag(), tag()]), /Tag 2 repeats an id/],
     ["no id", JSON.stringify([{ ...tag(), id: "" }]), /Tag 1 has no id/],
+    ["bad compare-against date", JSON.stringify([tag({ baselineStart: "Feb 1" })]), /Tag 1 has a compare-against start that isn't YYYY-MM-DD/],
   ])("rejects %s with a sentence naming the problem", (_name, text, message) => {
     const r = parseTagsJson(text);
     expect(r.status).toBe("invalid");
     expect(r.status === "invalid" && r.reason).toMatch(message);
+  });
+
+  it("round-trips an experiment with its compare-against start", () => {
+    const experiment = tag({ type: "experiment", label: "Started 5/3/1", baselineStart: "2026-02-01" });
+    expect(parseTagsJson(serializeTags([experiment]))).toEqual({ status: "ok", tags: [experiment] });
   });
 
   it("drops unknown keys", () => {
