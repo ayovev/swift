@@ -31,6 +31,7 @@ describe("PeriodsTab", () => {
 
   it("adds a dated tag; an open-ended one has a null end date", () => {
     const p = setup();
+    fireEvent.click(screen.getByRole("button", { name: "Something that happened" }));
     fireEvent.change(screen.getByLabelText("Type"), { target: { value: "injury" } });
     fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-05-01" } });
     expect(screen.getByRole("button", { name: "Add period" })).toBeDisabled();
@@ -77,18 +78,57 @@ describe("PeriodsTab", () => {
     expect(screen.getByText(/Periods added while sample data is showing are not stored/)).toBeInTheDocument();
   });
 
-  it("groups the type picker into what you changed and what happened", () => {
-    setup();
-    const select = screen.getByLabelText("Type");
-    const groups = Array.from(select.querySelectorAll("optgroup")).map((g) => [
-      g.getAttribute("label"),
-      Array.from(g.querySelectorAll("option")).map((o) => o.textContent),
-    ]);
-    expect(groups).toEqual([
-      ["Something you changed", ["Experiment", "Cut", "Bulk", "Maintain", "Other"]],
-      ["Something that happened", ["Injury", "Travel"]],
-    ]);
-    expect(select).toHaveValue("experiment");
+  describe("the type picker", () => {
+    const optionsOf = (select: HTMLElement) =>
+      Array.from(select.querySelectorAll("optgroup")).map((g) => [
+        g.getAttribute("label"),
+        Array.from(g.querySelectorAll("option")).map((o) => o.textContent),
+      ]);
+
+    it("starts on something you changed, grouped by domain, each with a catch-all", () => {
+      setup();
+      expect(screen.getByRole("button", { name: "Something you changed" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: "Something that happened" })).toHaveAttribute("aria-pressed", "false");
+      const select = screen.getByLabelText("Type");
+      expect(optionsOf(select)).toEqual([
+        ["Nutrition", ["Nutrition change", "Cut", "Bulk", "Maintain"]],
+        ["Programming", ["Programming change", "New cycle", "Deload"]],
+        ["Recovery", ["Recovery change"]],
+        ["Something else", ["Experiment", "Other"]],
+      ]);
+      expect(select).toHaveValue("experiment");
+    });
+
+    it("switches to something that happened, which has only injury and travel and no domains", () => {
+      setup();
+      fireEvent.click(screen.getByRole("button", { name: "Something that happened" }));
+      const select = screen.getByLabelText("Type");
+      expect(select.querySelectorAll("optgroup")).toHaveLength(0);
+      expect(Array.from(select.querySelectorAll("option")).map((o) => o.textContent)).toEqual(["Injury", "Travel"]);
+      expect(select).toHaveValue("injury");
+      fireEvent.click(screen.getByRole("button", { name: "Something you changed" }));
+      expect(screen.getByLabelText("Type")).toHaveValue("experiment");
+    });
+
+    it("keeps the type when the kind it already belongs to is clicked again", () => {
+      setup();
+      fireEvent.change(screen.getByLabelText("Type"), { target: { value: "deload" } });
+      fireEvent.click(screen.getByRole("button", { name: "Something you changed" }));
+      expect(screen.getByLabelText("Type")).toHaveValue("deload");
+    });
+
+    it("saves a nutrition change, a new cycle and a recovery change as what they are", () => {
+      const p = setup();
+      fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-05-01" } });
+      fireEvent.click(screen.getByLabelText("Still going"));
+      for (const type of ["nutrition", "cycle", "recovery"]) {
+        fireEvent.change(screen.getByLabelText("Type"), { target: { value: type } });
+        fireEvent.click(screen.getByRole("button", { name: "Add period" }));
+        expect(p.onAdd).toHaveBeenLastCalledWith(expect.objectContaining({ type, startDate: "2026-05-01", endDate: null }));
+        fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-05-01" } });
+        fireEvent.click(screen.getByLabelText("Still going"));
+      }
+    });
   });
 
   describe("experiments", () => {
@@ -107,10 +147,12 @@ describe("PeriodsTab", () => {
       bodyCompSummary: { leanMassDelta: 1, fatMassDelta: -1, bodyFatPctDelta: -0.4 },
     });
 
-    it("offers a compare-against date for an experiment only", () => {
+    it("offers a compare-against date for anything you changed, and not for something that happened", () => {
       setup();
       expect(screen.getByLabelText("Compare against (optional)")).toBeInTheDocument();
-      fireEvent.change(screen.getByLabelText("Type"), { target: { value: "injury" } });
+      fireEvent.change(screen.getByLabelText("Type"), { target: { value: "cut" } });
+      expect(screen.getByLabelText("Compare against (optional)")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Something that happened" }));
       expect(screen.queryByLabelText("Compare against (optional)")).not.toBeInTheDocument();
     });
 
@@ -130,13 +172,13 @@ describe("PeriodsTab", () => {
       });
     });
 
-    it("will not save an earlier range that doesn't start before the experiment", () => {
+    it("will not save an earlier range that doesn't start before the period", () => {
       setup();
       fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-04-01" } });
       fireEvent.click(screen.getByLabelText("Still going"));
       fireEvent.change(screen.getByLabelText("Compare against (optional)"), { target: { value: "2026-04-01" } });
       expect(screen.getByRole("button", { name: "Add period" })).toBeDisabled();
-      expect(screen.getByText(/has to be before the experiment starts/)).toBeInTheDocument();
+      expect(screen.getByText(/has to be before this starts/)).toBeInTheDocument();
     });
 
     it("keeps the earlier-range start through an edit", () => {
@@ -183,9 +225,17 @@ describe("PeriodsTab", () => {
       expect(screen.getByText("Improved")).toBeInTheDocument();
     });
 
-    it("gives no verdict to a tag that isn't an experiment", () => {
+    it("shows the verdict on any period in something you changed, not only an experiment", () => {
       setup({ tags: [tag], experimentInsights: new Map([["a", insight("improved")]]) });
+      expect(screen.getByText("Improved")).toBeInTheDocument();
+      expect(screen.getByText("Compared with all history before Mar 1, 2026")).toBeInTheDocument();
+    });
+
+    it("gives no verdict to something that happened", () => {
+      const injury: ContextTag = { id: "i", type: "injury", label: "Wrist", startDate: "2026-05-01", endDate: "2026-05-20" };
+      setup({ tags: [injury], experimentInsights: new Map([["i", insight("improved")]]) });
       expect(screen.queryByText("Improved")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Compared with/)).not.toBeInTheDocument();
     });
   });
 

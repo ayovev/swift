@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { experimentToTag, isExperimentTag, mergeTagsById, tagToExperiment } from "@/lib/analytics/experimentTags";
+import { experimentToTag, hasVerdict, mergeTagsById, tagToExperiment } from "@/lib/analytics/experimentTags";
 import type { Experiment } from "@/types/experiment";
 import type { ContextTag } from "@/types/tag";
 
@@ -29,9 +29,12 @@ describe("experimentToTag / tagToExperiment", () => {
     expect(tagToExperiment(tag).label).toBe("experiment");
   });
 
-  it("recognises experiment tags and no others", () => {
-    expect(isExperimentTag(experimentToTag(open))).toBe(true);
-    expect(isExperimentTag({ id: "x", type: "cut", startDate: "2024-05-01", endDate: null })).toBe(false);
+  it("gives a verdict to everything in something you changed, and to nothing that happened", () => {
+    const at = (type: ContextTag["type"]): ContextTag => ({ id: "x", type, startDate: "2024-05-01", endDate: null });
+    for (const type of ["experiment", "nutrition", "cut", "bulk", "maintain", "programming", "cycle", "deload", "recovery", "other"] as const) {
+      expect(hasVerdict(at(type))).toBe(true);
+    }
+    for (const type of ["injury", "travel"] as const) expect(hasVerdict(at(type))).toBe(false);
   });
 });
 

@@ -124,11 +124,23 @@ describe("CompareTab — saving a comparison", () => {
 
   it("saves under the type that was picked, from the things you changed only", () => {
     const { onAddTag } = setup();
-    expect(Array.from(screen.getByLabelText("Type").querySelectorAll("option")).map((o) => o.textContent)).toEqual([
-      "Experiment",
+    const select = screen.getByLabelText("Type");
+    expect(Array.from(select.querySelectorAll("optgroup")).map((g) => g.getAttribute("label"))).toEqual([
+      "Nutrition",
+      "Programming",
+      "Recovery",
+      "Something else",
+    ]);
+    expect(Array.from(select.querySelectorAll("option")).map((o) => o.textContent)).toEqual([
+      "Nutrition change",
       "Cut",
       "Bulk",
       "Maintain",
+      "Programming change",
+      "New cycle",
+      "Deload",
+      "Recovery change",
+      "Experiment",
       "Other",
     ]);
     fireEvent.change(screen.getByLabelText("Type"), { target: { value: "cut" } });
@@ -227,6 +239,25 @@ describe("CompareTab — saved ranges", () => {
     expect(screen.getByText("needs 2 more lifts/WODs with logged data after this date (has 1, needs 3)")).toBeInTheDocument();
     expect(screen.queryByText("Improving")).not.toBeInTheDocument();
     expect(screen.queryByText("Compared")).not.toBeInTheDocument();
+  });
+
+  it("shows a verdict for a period that isn't an experiment, with the cut note under a cut's", () => {
+    const nutrition: ContextTag = { id: "n", type: "nutrition", label: "Added creatine", startDate: "2026-02-01", endDate: "2026-02-28" };
+    const cutting: ContextTag = { ...cut, id: "k", startDate: "2026-02-01", endDate: "2026-02-28" };
+    setup({
+      tags: [nutrition, cutting],
+      initialWindowB: null,
+      experimentInsights: new Map([
+        ["n", insight("n", { classification: "improved" })],
+        ["k", insight("k", { classification: "declined" })],
+      ]),
+    });
+    fireEvent.click(screen.getByRole("button", { name: 'Show "Added creatine"' }));
+    expect(screen.getByText(/Performance improved after this started/)).toBeInTheDocument();
+    expect(screen.queryByText(/during a cut/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: 'Show "Spring cut"' }));
+    expect(screen.getByText("Performance declined after this started.")).toBeInTheDocument();
+    expect(screen.getByText("Lifts and lean mass often move differently during a cut.")).toBeInTheDocument();
   });
 
   it("asks for an InBody export, and forwards a dropped file, when a verdict needs one", () => {

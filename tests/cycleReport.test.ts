@@ -38,6 +38,20 @@ describe("getCycles", () => {
     expect(cycles[0]).toMatchObject({ start: day(0), end: day(42), tagId: "cut" });
   });
 
+  it("makes a cycle from every kind of period in something you changed, and none from something that happened", () => {
+    const at = (id: string, type: ContextTag["type"], offset: number): ContextTag => ({
+      id,
+      type,
+      label: id,
+      startDate: day(offset),
+      endDate: day(offset + 20),
+    });
+    const kinds = ["experiment", "nutrition", "cut", "bulk", "maintain", "programming", "cycle", "deload", "recovery", "other"] as const;
+    const changed = kinds.map((type, i) => at(type, type, i * 30));
+    const cycles = getCycles(workouts, [...changed, at("hurt", "injury", 400), at("away", "travel", 450)], { asOfDate: AS_OF });
+    expect(cycles.map((c) => c.label)).toEqual([...kinds]);
+  });
+
   it("runs an open-ended tag to the as-of date and skips one that would end before it starts", () => {
     const open: ContextTag = { id: "o", type: "maintain", startDate: "2026-08-01", endDate: null };
     const bad: ContextTag = { id: "x", type: "cut", startDate: "2026-08-10", endDate: "2026-08-01" };

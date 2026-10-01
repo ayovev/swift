@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   validateTagList,
+  VERDICT_NOTE,
   acknowledgeTags,
   describeTag,
   overlappingTags,
   tagLabel,
   tagOverlaps,
 } from "@/lib/analytics/contextTags";
-import type { ContextTag } from "@/types/tag";
+import { TAG_TYPES, type ContextTag } from "@/types/tag";
 
 /** `undefined` in `over` removes the key, which is how "no label" is spelled under exactOptionalPropertyTypes. */
 const tag = (over: { [K in keyof ContextTag]?: ContextTag[K] | undefined } = {}): ContextTag => {
@@ -89,7 +90,27 @@ describe("acknowledgeTags", () => {
   });
 });
 
+describe("the newer types", () => {
+  it("name an unnamed period by its type, in plain words", () => {
+    expect(tagLabel(tag({ label: undefined, type: "cycle" }))).toBe("new cycle");
+    expect(tagLabel(tag({ label: undefined, type: "nutrition" }))).toBe("nutrition change");
+    expect(describeTag(tag({ label: undefined, type: "recovery", endDate: null }))).toBe("recovery change period (Mar 1, 2026 – ongoing)");
+    expect(describeTag(tag({ label: "Added creatine", type: "nutrition", endDate: null }))).toBe('"Added creatine" (nutrition change, Mar 1, 2026 – ongoing)');
+  });
+
+  it("have a note for a cut's verdict and for nothing else", () => {
+    expect(VERDICT_NOTE.cut).toBe("Lifts and lean mass often move differently during a cut.");
+    expect(Object.keys(VERDICT_NOTE)).toEqual(["cut"]);
+  });
+});
+
 describe("validateTagList", () => {
+  it("accepts every type there is", () => {
+    for (const type of TAG_TYPES) {
+      expect(validateTagList([tag({ type })])).toEqual({ status: "ok", tags: [tag({ type })] });
+    }
+  });
+
   const ok = (list: unknown) => validateTagList(list);
 
   it("accepts a valid list unchanged, including an open-ended one", () => {

@@ -1,5 +1,5 @@
 import type { Experiment } from "@/types/experiment";
-import type { ContextTag } from "@/types/tag";
+import { isChangeType, type ContextTag } from "@/types/tag";
 import { tagLabel } from "./contextTags";
 
 /**
@@ -33,7 +33,11 @@ export function tagToExperiment(tag: ContextTag): Experiment {
   };
 }
 
-export const isExperimentTag = (tag: ContextTag): boolean => tag.type === "experiment";
+/**
+ * Whether a period gets a before/after verdict: every type in "Something you
+ * changed", not only "experiment". Injury and travel are context and never do.
+ */
+export const hasVerdict = (tag: ContextTag): boolean => isChangeType(tag.type);
 
 /** `incoming` wins on a shared id; everything else is kept, in order. */
 export function mergeTagsById(existing: readonly ContextTag[], incoming: readonly ContextTag[]): ContextTag[] {

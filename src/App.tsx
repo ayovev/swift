@@ -7,7 +7,7 @@ import { getAlignment } from "@/lib/analytics/alignment";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
 import { getExperimentInsight } from "@/lib/analytics/experimentInsight";
-import { experimentToTag, isExperimentTag, tagToExperiment } from "@/lib/analytics/experimentTags";
+import { experimentToTag, hasVerdict, tagToExperiment } from "@/lib/analytics/experimentTags";
 import type { Granularity } from "@/lib/analytics/granularity";
 import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
 import { getRelativeStrength } from "@/lib/analytics/relativeStrength";
@@ -201,7 +201,7 @@ export default function App() {
       state.status === "ready" && bodyComp.status === "ready"
         ? new Map<string, ExperimentInsight>(
             tags
-              .filter(isExperimentTag)
+              .filter(hasVerdict)
               .map((t) => [t.id, getExperimentInsight(tagToExperiment(t), state.rows, bodyComp.rows, new Date())])
           )
         : null,

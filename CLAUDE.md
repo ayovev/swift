@@ -283,7 +283,7 @@ the equal-length window immediately before B.
   because they answer one question about a range and differ only in how the range was named. The
   range (window B, plus the earlier window A) is the only input: typed, dragged out on a chart, or
   filled in from a saved period in "Something you changed" (its dates and `baselineStart`; one list,
-  "Saved ranges", from `getCycles`, which now includes experiments), or opened from a row's Compare
+  "Saved ranges", from `getCycles`, which covers every type in *Something you changed*), or opened from a row's Compare
   button on the Periods view. Every range gets
   the same three things: a `getCycleReport` for it (`CycleReportBody`), the `compareWindows`
   tables (`ComparisonTables`), and, when the range came from a saved experiment, that experiment's
@@ -303,18 +303,28 @@ the equal-length window immediately before B.
   cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`, plus the sample
   experiments from `generateSampleExperiments.ts` mapped to tags) so the Periods, Compare and chart-band
   views aren't empty; they are in memory only, never persisted or synced.
-- **One record for periods and experiments.** An experiment is a period of type `experiment`: one the
-  athlete has asked the app to judge. Every period is stored as a `ContextTag`; what the app derives from it follows
-  its type, and `TAG_GROUPS` (`types/tag.ts`) is the one place the types are grouped, in the words the
-  type picker shows: **Something you changed** (experiment, cut, bulk, maintain, other: things you
-  chose, so "did it change anything?" is a fair question) and **Something that happened** (injury,
-  travel: context only). Every tag shades charts; cut and injury are named where they overlap a
-  result; the first group are also training blocks (`CYCLE_TAG_TYPES`) and can be opened on Compare;
-  only `experiment` gets a before/after verdict (`getExperimentInsight`, through the
-  `experimentTags.ts` adapter, so that pipeline is unchanged). Widening the verdict to cut, bulk and
-  maintain is a deliberate non-decision: a decline during a cut is expected, so it needs its own copy.
-  `baselineStart` is optional on any tag so changing a tag's type never drops it. The Periods view is the
-  one list and one form; Compare's "Save as period" writes the same record.
+- **One record for periods and experiments.** An experiment is a period of type `experiment`: something
+  the athlete tried. Every period is stored as a `ContextTag`; what the app derives from it follows its
+  type, and `TAG_GROUPS` (`types/tag.ts`) is the one place that is decided, in the words the type picker
+  shows. **Something you changed** is split into domains, each with a generic catch-all so an unsure
+  athlete can pick it and put the detail in the name: *Nutrition* (nutrition change, cut, bulk, maintain),
+  *Programming* (programming change, new cycle, deload), *Recovery* (recovery change) and *Something
+  else* (experiment, other). **Something that happened** is injury and travel: context only. A type
+  implies its domain, so no extra field is stored; adding a type is a new id in `TagType`,
+  `TAG_TYPE_LABEL` and `TAG_GROUPS`, never a migration (`tests/tagTypes.test.ts` pins that each type
+  sits in exactly one place). The behaviour is **group-driven, not per type**: every period shades
+  charts; cut and injury are named where they overlap a result; every type in *Something you changed*
+  (`CHANGE_TYPES`, `isChangeType`) is a training block (`CYCLE_TAG_TYPES`), can be opened on Compare, and
+  gets a before/after verdict (`hasVerdict` → `getExperimentInsight`, through the `experimentTags.ts`
+  adapter, so that pipeline is unchanged). The reason the verdict is not limited to `experiment`: with
+  catch-alls per domain, "Nutrition change" getting a verdict while "Cut" does not would look arbitrary,
+  and "did my lifts hold while body composition improved during the cut?" is the question an athlete asks.
+  A decline during a cut is expected, so a cut's verdict shows `VERDICT_NOTE.cut` under it (the same
+  sentence a cut overlapping a plateau already gets) rather than reading as a grade. Injury and travel
+  never get a verdict. `baselineStart` is optional on any period so changing a type never drops it. The
+  Periods view is the one list and one form (a kind choice, then a type grouped by domain; native
+  controls only, since `<select>` can nest just one level); Compare's "Save as period" writes the same
+  record, offering the types in *Something you changed*.
 - **Periods never change a result.** `getPlateauInsights`/`getAlignment` take `options.tags` and, when
   a plateaued result's (or the alignment) window overlaps a cut or injury tag, add a `tagNotes`
   sentence naming the tag. With no tags, or none overlapping, the output is identical to the
@@ -325,8 +335,8 @@ the equal-length window immediately before B.
 ## Architecture: cycle reports
 
 `cycleReport.ts` gives a retrospective per training block. **Cycles are user-defined only**:
-`getCycles()` turns periods (stored as tags) of type bulk/cut/maintain/other into cycles (injury and travel are
-context, not blocks) and `customCycle()` takes typed dates. Automatic segmentation by lift-exposure
+`getCycles()` turns periods (stored as tags) of every type in *Something you changed* (`CHANGE_TYPES`) into cycles
+(injury and travel are context, not blocks) and `customCycle()` takes typed dates. Automatic segmentation by lift-exposure
 share is *not* built — the plan requires prototyping it on a multi-year history and reviewing it by
 eye first, and none is in the repo. `Cycle.source` keeps `"detected"` so adding it changes no type.
 
@@ -424,8 +434,8 @@ window.
   eligibility gate above — the classification itself is never biased toward a rosy outcome; it falls
   out of whatever the real sample data shows.
 - Wired into `App.tsx` behind the same gate as Plateau Detector/Alignment — neither runs until
-  both uploads are `"ready"` — as a map keyed by tag id, and rendered by `ExperimentVerdict.tsx`
-  when an experiment is picked on the Compare view and as a badge on its row on the Periods view, not
+  both uploads are `"ready"` — as a map keyed by tag id for every period with a verdict (`hasVerdict`), and rendered by
+  `ExperimentVerdict.tsx` when one is picked on the Compare view and as a badge on its row on the Periods view, not
   part of `Insights`/`buildInsights.ts`'s return shape.
 
 ## Architecture: cross-device sync

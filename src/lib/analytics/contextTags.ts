@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { formatDay } from "./formatting";
 import { isIsoDay } from "./scanParsing";
-import { TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
+import { TAG_TYPE_LABEL, TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
 
 /**
  * Pure helpers over the athlete's context tags: overlap tests, the one
@@ -13,16 +13,17 @@ import { TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
  * output is byte-for-byte what it was before tags existed.
  */
 
-/** The tag's own name, or its type when it has none. */
+/** The tag's own name, or its type ("cut", "new cycle") when it has none. */
 export function tagLabel(tag: ContextTag): string {
-  return tag.label?.trim() ? tag.label.trim() : tag.type;
+  return tag.label?.trim() ? tag.label.trim() : TAG_TYPE_LABEL[tag.type].toLowerCase();
 }
 
 /** `"Spring cut" (cut, Mar 1, 2026 – ongoing)` */
 export function describeTag(tag: ContextTag): string {
   const span = `${formatDay(tag.startDate)} – ${tag.endDate ? formatDay(tag.endDate) : "ongoing"}`;
   const name = tagLabel(tag);
-  return name === tag.type ? `${tag.type} period (${span})` : `"${name}" (${tag.type}, ${span})`;
+  const type = TAG_TYPE_LABEL[tag.type].toLowerCase();
+  return name === type ? `${type} period (${span})` : `"${name}" (${type}, ${span})`;
 }
 
 /** Whether the tag and the inclusive window share at least one day. An open-ended tag runs to the end of time. */
@@ -45,6 +46,15 @@ export function overlappingTags(
     .filter((t) => (!types || types.includes(t.type)) && tagOverlaps(t, windowStart, windowEnd))
     .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
 }
+
+/**
+ * A sentence shown under an experiment-style verdict for the types where a
+ * decline is expected, so a verdict reads in context rather than as a grade.
+ * Same wording `acknowledgeTags` uses for a cut overlapping a plateau.
+ */
+export const VERDICT_NOTE: Partial<Record<TagType, string>> = {
+  cut: "Lifts and lean mass often move differently during a cut.",
+};
 
 /** Tag types an insight acknowledges by name in its explanation. */
 const ACKNOWLEDGED_TYPES: readonly TagType[] = ["cut", "injury"];
