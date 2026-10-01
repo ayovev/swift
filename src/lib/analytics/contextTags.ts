@@ -5,7 +5,8 @@ import { TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
 
 /**
  * Pure helpers over the athlete's context tags: overlap tests, the one
- * sentence an insight uses to acknowledge a tag, and JSON export/import.
+ * sentence an insight uses to acknowledge a tag, and the validation that
+ * sync and backup restore run on a received list.
  *
  * Tags never change a classification or a number. An insight that overlaps a
  * tag adds a sentence naming it; with no tags (or none overlapping) its
@@ -67,23 +68,13 @@ export function acknowledgeTags(
   );
 }
 
-// ── JSON export / import ────────────────────────────────────────────────
-
-export interface TagsFile {
-  swiftTags: 1;
-  tags: ContextTag[];
-}
-
-export function serializeTags(tags: readonly ContextTag[]): string {
-  const file: TagsFile = { swiftTags: 1, tags: [...tags] };
-  return JSON.stringify(file, null, 2);
-}
+// ── Validation ──────────────────────────────────────────────────────────
 
 export type TagsParseResult = { status: "ok"; tags: ContextTag[] } | { status: "invalid"; reason: string };
 
 
 /**
- * Validates a list of tags — from an imported file or from another device.
+ * Validates a list of tags — from a backup file or from another device.
  * Strict on purpose: a hand-edited or wrong list is rejected with a sentence
  * saying which entry is wrong, rather than half-imported. Unknown extra keys
  * are dropped.
@@ -123,17 +114,6 @@ export function validateTagList(list: unknown): TagsParseResult {
     });
   }
   return { status: "ok", tags };
-}
-
-/** Reads a tags file back in: `{ swiftTags: 1, tags: [...] }` or a bare array. */
-export function parseTagsJson(text: string): TagsParseResult {
-  let data: unknown;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    return { status: "invalid", reason: "That file isn't valid JSON." };
-  }
-  return validateTagList(Array.isArray(data) ? data : (data as Partial<TagsFile> | null)?.tags);
 }
 
 // ── Chart bands ─────────────────────────────────────────────────────────

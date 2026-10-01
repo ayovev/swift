@@ -364,7 +364,6 @@ export default function App() {
   // every change, except in sample mode (see handleBodyCompFile's comment
   // above: a tag added or deleted while sample data is loaded must not leave
   // anything in IndexedDB for a later real session to stumble on).
-  // `replaceTags` is what an import calls.
   const commitTags = useCallback(
     (update: (prev: ContextTag[]) => ContextTag[]) => {
       setTags((prev) => {
@@ -378,7 +377,6 @@ export default function App() {
   const addTag = useCallback((tag: Omit<ContextTag, "id">) => commitTags((prev) => [...prev, { ...tag, id: crypto.randomUUID() }]), [commitTags]);
   const updateTag = useCallback((tag: ContextTag) => commitTags((prev) => prev.map((t) => (t.id === tag.id ? tag : t))), [commitTags]);
   const deleteTag = useCallback((id: string) => commitTags((prev) => prev.filter((t) => t.id !== id)), [commitTags]);
-  const replaceTags = useCallback((incoming: ContextTag[]) => commitTags(() => incoming), [commitTags]);
 
   // Sync's tags handler, alongside the two above: an unconditional writer,
   // gated by SyncDialog. An experiment arrives as a tag (or, from an older
@@ -449,7 +447,6 @@ export default function App() {
         onAddTag={addTag}
         onUpdateTag={updateTag}
         onDeleteTag={deleteTag}
-        onReplaceTags={replaceTags}
         experimentInsights={experimentInsights}
       />
     );

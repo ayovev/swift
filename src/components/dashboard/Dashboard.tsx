@@ -64,7 +64,6 @@ interface DashboardProps {
   onAddTag: (tag: Omit<ContextTag, "id">) => void;
   onUpdateTag: (tag: ContextTag) => void;
   onDeleteTag: (id: string) => void;
-  onReplaceTags: (tags: ContextTag[]) => void;
   experimentInsights: Map<string, ExperimentInsight> | null;
 }
 
@@ -91,7 +90,6 @@ export function Dashboard({
   onAddTag,
   onUpdateTag,
   onDeleteTag,
-  onReplaceTags,
   experimentInsights,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
@@ -351,7 +349,6 @@ export function Dashboard({
               onAdd={onAddTag}
               onUpdate={onUpdateTag}
               onDelete={onDeleteTag}
-              onReplace={onReplaceTags}
             />
           </TabsContent>
         </Tabs>

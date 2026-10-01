@@ -44,8 +44,6 @@ export type InteractionName =
   | "tag_range_selected"
   | "tag_created"
   | "tag_edited"
-  | "tags_exported"
-  | "tags_imported"
   | "backup_exported"
   | "backup_imported";
 

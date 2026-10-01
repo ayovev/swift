@@ -1,12 +1,11 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import dayjs from "dayjs";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { describeTag, parseTagsJson, serializeTags, tagLabel } from "@/lib/analytics/contextTags";
-import { downloadTextFile } from "@/lib/download";
+import { describeTag, tagLabel } from "@/lib/analytics/contextTags";
 import { capture } from "@/lib/posthog";
 import { TAG_GROUPS, type ContextTag, type TagType } from "@/types/tag";
 import type { ExperimentInsight } from "@/types/experiment";
@@ -27,8 +26,6 @@ interface PeriodsTabProps {
   onAdd: (tag: Omit<ContextTag, "id">) => void;
   onUpdate: (tag: ContextTag) => void;
   onDelete: (id: string) => void;
-  /** Called with the merged list after an import. */
-  onReplace: (tags: ContextTag[]) => void;
 }
 
 const TYPE_LABEL: Record<TagType, string> = {
@@ -84,8 +81,8 @@ const CHANGE_TYPES: readonly TagType[] = TAG_GROUPS[0]?.types ?? [];
  * plateau or alignment read they overlap; they never change a number. An
  * experiment is a tag you've asked the app to judge: its row carries the
  * before/after verdict, and any tag in "Something you changed" can be opened
- * on the Compare view. Stored in the browser only, so the export and import
- * here are the backup.
+ * on the Compare view. Stored in the browser only; Settings → Backup saves
+ * them with everything else.
  */
 export function PeriodsTab({
   tags,
@@ -96,12 +93,9 @@ export function PeriodsTab({
   onAdd,
   onUpdate,
   onDelete,
-  onReplace,
 }: PeriodsTabProps) {
   const [draft, setDraft] = useState<Draft>(() => emptyDraft(initialWindow));
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [importMessage, setImportMessage] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }));
   const endOk = draft.ongoing || (draft.endDate !== "" && draft.endDate >= draft.startDate);
@@ -130,24 +124,6 @@ export function PeriodsTab({
     setDraft(emptyDraft(null));
   };
 
-  const exportTags = () => {
-    downloadTextFile("swift-periods.json", serializeTags(tags));
-    capture({ name: "interaction_used", props: { interaction: "tags_exported" } });
-  };
-
-  const importTags = async (file: File) => {
-    const result = parseTagsJson(await file.text());
-    if (result.status === "invalid") {
-      setImportMessage(`Nothing was imported. ${result.reason}`);
-      return;
-    }
-    const incoming = new Map(result.tags.map((t) => [t.id, t]));
-    const kept = tags.filter((t) => !incoming.has(t.id));
-    onReplace([...kept, ...result.tags]);
-    setImportMessage(`Imported ${result.tags.length} ${result.tags.length === 1 ? "period" : "periods"}. Periods you already had were updated.`);
-    capture({ name: "interaction_used", props: { interaction: "tags_imported" } });
-  };
-
   const sorted = [...tags].sort((a, b) => b.startDate.localeCompare(a.startDate));
 
   return (
@@ -163,7 +139,7 @@ export function PeriodsTab({
           </p>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Periods are stored in this browser only. Clearing site data or using Start over deletes
-            them, so export a copy if you want to keep them.
+            them. Download a backup from Settings to keep a copy.
             {source === "sample" ? " Periods added while sample data is showing are not stored." : ""}
           </p>
 
@@ -321,36 +297,6 @@ export function PeriodsTab({
           </Card>
         ))
       )}
-
-      <Card>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" variant="outline" size="sm" onClick={exportTags} disabled={tags.length === 0}>
-              Export periods
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-              Import periods
-            </Button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/json,.json"
-              className="sr-only"
-              aria-label="Import periods from a JSON file"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = "";
-                if (file) void importTags(file);
-              }}
-            />
-          </div>
-          {importMessage ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              {importMessage}
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
     </div>
   );
 }

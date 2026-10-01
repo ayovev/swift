@@ -298,7 +298,8 @@ the equal-length window immediately before B.
   `storage/tagsStorage.ts`, key `"context-tags"`, dataset `"tags"`), because renaming those would need a
   storage migration and a wire-format change for no benefit to the athlete. They are
   user-authored, persist only when `source === "upload"`, are wiped by Start over, and have
-  JSON export/import (strict validation, merge by id), and sync between devices (see "Architecture:
+  have no export or import of their own (the full backup, below, is the only file route, so there is one
+  way to get data out and back in), and sync between devices (see "Architecture:
   cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`, plus the sample
   experiments from `generateSampleExperiments.ts` mapped to tags) so the Periods, Compare and chart-band
   views aren't empty; they are in memory only, never persisted or synced.
@@ -574,8 +575,9 @@ own, so the two can't drift on what a valid row is.
   Swift?"), the only place a new browser can reach. The landing page's dropzone and paste handler
   route a `.json` file (`looksLikeBackup`) to restore instead of the CSV parser, which would reject it. The labels are Backup/Restore, not Export/Import, because the athlete's
   goal is getting their data back, because "Import" suggests adding rather than replacing, and
-  because "Export" already means the SugarWOD CSV on the landing page. Periods keep their own
-  Export/Import (that one does merge). Sample data can't be backed up and has nothing to confirm on
+  because "Export" already means the SugarWOD CSV on the landing page. Periods have no separate
+  export or import: they travel in the backup like everything else, which is all-or-nothing and replaces
+  rather than merges. Sample data can't be backed up and has nothing to confirm on
   restore (it is never stored). Restore errors stay inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
   the `onSynced*` handlers. `handleSyncedTags` must not look at `state`: on the landing page
   it is still the previous screen, which used to make received experiments vanish on reload.

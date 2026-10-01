@@ -1,7 +1,6 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PeriodsTab } from "@/components/dashboard/PeriodsTab";
-import { serializeTags } from "@/lib/analytics/contextTags";
 import type { ExperimentInsight } from "@/types/experiment";
 import type { ContextTag } from "@/types/tag";
 
@@ -17,7 +16,6 @@ function setup(over: Partial<React.ComponentProps<typeof PeriodsTab>> = {}) {
     onAdd: vi.fn(),
     onUpdate: vi.fn(),
     onDelete: vi.fn(),
-    onReplace: vi.fn(),
     ...over,
   };
   render(<PeriodsTab {...props} />);
@@ -66,21 +64,12 @@ describe("PeriodsTab", () => {
     expect(p.onDelete).toHaveBeenCalledWith("a");
   });
 
-  it("imports a tags file, merging by id, and reports what happened", async () => {
-    const p = setup({ tags: [tag] });
-    const incoming: ContextTag = { id: "b", type: "travel", startDate: "2026-06-01", endDate: "2026-06-05" };
-    const file = new File([serializeTags([incoming])], "tags.json", { type: "application/json" });
-    fireEvent.change(screen.getByLabelText("Import periods from a JSON file"), { target: { files: [file] } });
-    await waitFor(() => expect(p.onReplace).toHaveBeenCalledWith([tag, incoming]));
-    expect(await screen.findByRole("status")).toHaveTextContent("Imported 1 period.");
-  });
-
-  it("rejects a bad file without importing anything", async () => {
-    const p = setup();
-    const file = new File(["{"], "tags.json", { type: "application/json" });
-    fireEvent.change(screen.getByLabelText("Import periods from a JSON file"), { target: { files: [file] } });
-    expect(await screen.findByRole("status")).toHaveTextContent("Nothing was imported. That file isn't valid JSON.");
-    expect(p.onReplace).not.toHaveBeenCalled();
+  it("offers no export or import of its own: backup in Settings covers periods", () => {
+    setup({ tags: [tag] });
+    expect(screen.queryByRole("button", { name: /export periods/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /import periods/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/import periods from a json file/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Download a backup from Settings to keep a copy/)).toBeInTheDocument();
   });
 
   it("warns that tags added over sample data are not stored", () => {
@@ -176,7 +165,6 @@ describe("PeriodsTab", () => {
           onAdd={vi.fn()}
           onUpdate={vi.fn()}
           onDelete={vi.fn()}
-          onReplace={vi.fn()}
         />
       );
       expect(screen.queryByText("Improved")).not.toBeInTheDocument();
@@ -190,7 +178,6 @@ describe("PeriodsTab", () => {
           onAdd={vi.fn()}
           onUpdate={vi.fn()}
           onDelete={vi.fn()}
-          onReplace={vi.fn()}
         />
       );
       expect(screen.getByText("Improved")).toBeInTheDocument();
