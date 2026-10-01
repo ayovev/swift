@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { PeriodsTab } from "@/components/dashboard/PeriodsTab";
 import type { PeriodVerdict } from "@/types/verdict";
 import type { ContextTag } from "@/types/tag";
+import { pickDate, shown } from "./fixtures/datePicker";
 
 const tag: ContextTag = { id: "a", type: "cut", label: "Spring cut", startDate: "2026-03-01", endDate: null };
 
@@ -33,7 +34,7 @@ describe("PeriodsTab", () => {
     const p = setup();
     fireEvent.click(screen.getByRole("button", { name: "Something that happened" }));
     fireEvent.change(screen.getByLabelText("Type"), { target: { value: "injury" } });
-    fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-05-01" } });
+    pickDate("Starts", "2026-05-01");
     expect(screen.getByRole("button", { name: "Add period" })).toBeDisabled();
     fireEvent.click(screen.getByLabelText("Still going"));
     fireEvent.change(screen.getByLabelText("Name (optional)"), { target: { value: "Wrist" } });
@@ -43,15 +44,15 @@ describe("PeriodsTab", () => {
 
   it("will not add a tag that ends before it starts", () => {
     setup();
-    fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-05-10" } });
-    fireEvent.change(screen.getByLabelText("Ends"), { target: { value: "2026-05-01" } });
+    pickDate("Starts", "2026-05-10");
+    pickDate("Ends", "2026-05-01");
     expect(screen.getByRole("button", { name: "Add period" })).toBeDisabled();
   });
 
   it("pre-fills the range dragged on a chart", () => {
     setup({ initialWindow: { start: "2026-02-01", end: "2026-03-31" } });
-    expect(screen.getByLabelText("Starts")).toHaveValue("2026-02-01");
-    expect(screen.getByLabelText("Ends")).toHaveValue("2026-03-31");
+    expect(screen.getByLabelText("Starts")).toHaveTextContent(shown("2026-02-01"));
+    expect(screen.getByLabelText("Ends")).toHaveTextContent(shown("2026-03-31"));
   });
 
   it("edits and deletes an existing tag", () => {
@@ -119,13 +120,13 @@ describe("PeriodsTab", () => {
 
     it("saves a nutrition change, a new cycle and a recovery change as what they are", () => {
       const p = setup();
-      fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-05-01" } });
+      pickDate("Starts", "2026-05-01");
       fireEvent.click(screen.getByLabelText("Still going"));
       for (const type of ["nutrition", "cycle", "recovery"]) {
         fireEvent.change(screen.getByLabelText("Type"), { target: { value: type } });
         fireEvent.click(screen.getByRole("button", { name: "Add period" }));
         expect(p.onAdd).toHaveBeenLastCalledWith(expect.objectContaining({ type, startDate: "2026-05-01", endDate: null }));
-        fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-05-01" } });
+        pickDate("Starts", "2026-05-01");
         fireEvent.click(screen.getByLabelText("Still going"));
       }
     });
@@ -158,9 +159,9 @@ describe("PeriodsTab", () => {
 
     it("adds an experiment with its earlier-range start", () => {
       const p = setup();
-      fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-04-01" } });
+      pickDate("Starts", "2026-04-01");
       fireEvent.click(screen.getByLabelText("Still going"));
-      fireEvent.change(screen.getByLabelText("Compare against (optional)"), { target: { value: "2026-03-01" } });
+      pickDate("Compare against (optional)", "2026-03-01");
       fireEvent.change(screen.getByLabelText("Name (optional)"), { target: { value: "Started 5/3/1" } });
       fireEvent.click(screen.getByRole("button", { name: "Add period" }));
       expect(p.onAdd).toHaveBeenCalledWith({
@@ -174,9 +175,11 @@ describe("PeriodsTab", () => {
 
     it("will not save an earlier range that doesn't start before the period", () => {
       setup();
-      fireEvent.change(screen.getByLabelText("Starts"), { target: { value: "2026-04-01" } });
+      pickDate("Starts", "2026-04-01");
       fireEvent.click(screen.getByLabelText("Still going"));
-      fireEvent.change(screen.getByLabelText("Compare against (optional)"), { target: { value: "2026-04-01" } });
+      pickDate("Compare against (optional)", "2026-03-15");
+      // The calendar won't offer a baseline on or after the start, so the only way here is moving the start back.
+      pickDate("Starts", "2026-03-01");
       expect(screen.getByRole("button", { name: "Add period" })).toBeDisabled();
       expect(screen.getByText(/has to be before this starts/)).toBeInTheDocument();
     });
@@ -193,7 +196,7 @@ describe("PeriodsTab", () => {
     it("keeps the earlier-range start through an edit", () => {
       const p = setup({ tags: [experiment] });
       fireEvent.click(screen.getByRole("button", { name: "Edit Started 5/3/1" }));
-      expect(screen.getByLabelText("Compare against (optional)")).toHaveValue("2026-03-01");
+      expect(screen.getByLabelText("Compare against (optional)")).toHaveTextContent(shown("2026-03-01"));
       fireEvent.change(screen.getByLabelText("Name (optional)"), { target: { value: "Renamed" } });
       fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
       expect(p.onUpdate).toHaveBeenCalledWith({ ...experiment, label: "Renamed" });
