@@ -9,21 +9,20 @@ import {
   compareWindows,
   defaultWindowA,
   windowAIsContiguous,
-  windowsToExperimentFields,
+  windowsToPeriodFields,
 } from "@/lib/analytics/compareWindows";
-import { VERDICT_NOTE, tagLabel } from "@/lib/analytics/contextTags";
-import { hasVerdict } from "@/lib/analytics/experimentTags";
+import { VERDICT_NOTE, hasVerdict, tagLabel } from "@/lib/analytics/contextTags";
 import { customCycle, getCycleReport, getCycles } from "@/lib/analytics/cycleReport";
 import { capture } from "@/lib/posthog";
 import type { DateWindow } from "@/types/compare";
-import type { ExperimentInsight } from "@/types/experiment";
+import type { PeriodVerdict } from "@/types/verdict";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { TAG_GROUPS, TAG_TYPE_LABEL, type ContextTag, type TagType } from "@/types/tag";
 import type { BodyCompState } from "./BodyCompTab";
 import { ComparisonTables } from "./ComparisonTables";
 import { CycleReportBody } from "./CycleReportBody";
-import { ClassificationBadge, ExperimentVerdict } from "./ExperimentVerdict";
+import { VerdictBadge, VerdictSummary } from "./VerdictSummary";
 import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import { formatDate } from "./charts/chartUtils";
 
@@ -33,7 +32,7 @@ interface CompareTabProps {
   scans: InBodyRow[];
   tags: ContextTag[];
   /** Keyed by tag id, for the periods that have a verdict (the ones in "Something you changed"). null until both a SugarWOD upload and an InBody upload are ready, same gate as LiftsTab. */
-  experimentInsights: Map<string, ExperimentInsight> | null;
+  verdicts: Map<string, PeriodVerdict> | null;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
   /** Window B from a drag on a chart, if that's how the athlete got here. */
@@ -84,7 +83,7 @@ export function CompareTab({
   workouts,
   scans,
   tags,
-  experimentInsights,
+  verdicts,
   bodyComp,
   onBodyCompFile,
   initialWindowB,
@@ -150,11 +149,11 @@ export function CompareTab({
 
   const suggested = windowsValid ? `${formatDate(b.start)} – ${formatDate(b.end)}` : "";
   const save = () => {
-    const fields = windowsToExperimentFields(a, b);
+    const fields = windowsToPeriodFields(a, b);
     onAddTag({
       type: saveType,
       label: (name.trim() || `Comparison, ${suggested}`).slice(0, 80),
-      startDate: fields.date,
+      startDate: fields.startDate,
       endDate: fields.endDate,
       baselineStart: fields.baselineStart,
     });
@@ -203,7 +202,7 @@ export function CompareTab({
       </Card>
 
       {selectedJudged ? (
-        experimentInsights ? (
+        verdicts ? (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">{tagLabel(selectedJudged)}</CardTitle>
@@ -215,8 +214,8 @@ export function CompareTab({
               </p>
             </CardHeader>
             <CardContent>
-              {experimentInsights.get(selectedJudged.id) ? (
-                <ExperimentVerdict insight={experimentInsights.get(selectedJudged.id)!} />
+              {verdicts.get(selectedJudged.id) ? (
+                <VerdictSummary insight={verdicts.get(selectedJudged.id)!} />
               ) : null}
               {VERDICT_NOTE[selectedJudged.type] ? (
                 <p className="mt-3 text-xs text-muted-foreground">{VERDICT_NOTE[selectedJudged.type]}</p>
@@ -323,7 +322,7 @@ export function CompareTab({
           ) : (
             <ul className="flex flex-col divide-y divide-border border-t border-border">
               {blocks.map(({ cycle, tag }) => {
-                const insight = tag && hasVerdict(tag) ? experimentInsights?.get(tag.id) : undefined;
+                const insight = tag && hasVerdict(tag) ? verdicts?.get(tag.id) : undefined;
                 return (
                   <li key={cycle.tagId ?? `${cycle.start}:${cycle.end}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div className="flex min-w-0 flex-col gap-1">
@@ -334,7 +333,7 @@ export function CompareTab({
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      {insight ? <ClassificationBadge classification={insight.classification} /> : null}
+                      {insight ? <VerdictBadge classification={insight.classification} /> : null}
                       <Button
                         type="button"
                         variant="outline"

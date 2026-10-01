@@ -1,4 +1,5 @@
-import { experimentToTag, mergeTagsById } from "@/lib/analytics/experimentTags";
+import { mergeTagsById } from "@/lib/analytics/contextTags";
+import { experimentToTag } from "@/lib/analytics/experimentToTag";
 import { validateExperiments } from "@/lib/sync/validateReceived";
 import type { ContextTag } from "@/types/tag";
 import { idbDelete, idbGet } from "./idbStore";

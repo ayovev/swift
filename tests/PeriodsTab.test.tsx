@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PeriodsTab } from "@/components/dashboard/PeriodsTab";
-import type { ExperimentInsight } from "@/types/experiment";
+import type { PeriodVerdict } from "@/types/verdict";
 import type { ContextTag } from "@/types/tag";
 
 const tag: ContextTag = { id: "a", type: "cut", label: "Spring cut", startDate: "2026-03-01", endDate: null };
@@ -10,7 +10,7 @@ function setup(over: Partial<React.ComponentProps<typeof PeriodsTab>> = {}) {
   const props = {
     tags: [] as ContextTag[],
     source: "upload" as const,
-    experimentInsights: null,
+    verdicts: null,
     onCompareTag: vi.fn(),
     initialWindow: null,
     onAdd: vi.fn(),
@@ -140,8 +140,8 @@ describe("PeriodsTab", () => {
       endDate: null,
       baselineStart: "2026-03-01",
     };
-    const insight = (classification: ExperimentInsight["classification"]): ExperimentInsight => ({
-      experiment: { id: "x", date: "2026-04-01", label: "Started 5/3/1" },
+    const insight = (classification: PeriodVerdict["classification"]): PeriodVerdict => ({
+      period: { id: "x", type: "experiment", label: "Started 5/3/1", startDate: "2026-04-01", endDate: null },
       classification,
       performanceSummary: { improvingCount: 2, decliningCount: 0, flatCount: 1, classifiedCount: 3 },
       bodyCompSummary: { leanMassDelta: 1, fatMassDelta: -1, bodyFatPctDelta: -0.4 },
@@ -210,7 +210,7 @@ describe("PeriodsTab", () => {
         <PeriodsTab
           tags={[experiment]}
           source="upload"
-          experimentInsights={null}
+          verdicts={null}
           onCompareTag={vi.fn()}
           initialWindow={null}
           onAdd={vi.fn()}
@@ -223,7 +223,7 @@ describe("PeriodsTab", () => {
         <PeriodsTab
           tags={[experiment]}
           source="upload"
-          experimentInsights={new Map([["x", insight("improved")]])}
+          verdicts={new Map([["x", insight("improved")]])}
           onCompareTag={vi.fn()}
           initialWindow={null}
           onAdd={vi.fn()}
@@ -235,14 +235,14 @@ describe("PeriodsTab", () => {
     });
 
     it("shows the verdict on any period in something you changed, not only an experiment", () => {
-      setup({ tags: [tag], experimentInsights: new Map([["a", insight("improved")]]) });
+      setup({ tags: [tag], verdicts: new Map([["a", insight("improved")]]) });
       expect(screen.getByText("Improved")).toBeInTheDocument();
       expect(screen.getByText("Compared with all history before Mar 1, 2026")).toBeInTheDocument();
     });
 
     it("gives no verdict to something that happened", () => {
       const injury: ContextTag = { id: "i", type: "injury", label: "Wrist", startDate: "2026-05-01", endDate: "2026-05-20" };
-      setup({ tags: [injury], experimentInsights: new Map([["i", insight("improved")]]) });
+      setup({ tags: [injury], verdicts: new Map([["i", insight("improved")]]) });
       expect(screen.queryByText("Improved")).not.toBeInTheDocument();
       expect(screen.queryByText(/Compared with/)).not.toBeInTheDocument();
     });

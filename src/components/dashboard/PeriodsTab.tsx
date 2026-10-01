@@ -5,14 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { describeTag, tagLabel } from "@/lib/analytics/contextTags";
-import { hasVerdict } from "@/lib/analytics/experimentTags";
+import { describeTag, hasVerdict, tagLabel } from "@/lib/analytics/contextTags";
 import { capture } from "@/lib/posthog";
 import { TAG_GROUPS, TAG_TYPE_LABEL, groupOfType, isChangeType, type ContextTag, type TagType } from "@/types/tag";
-import type { ExperimentInsight } from "@/types/experiment";
+import type { PeriodVerdict } from "@/types/verdict";
 import type { DateWindow } from "@/types/compare";
 import type { DataSource } from "@/App";
-import { ClassificationBadge } from "./ExperimentVerdict";
+import { VerdictBadge } from "./VerdictSummary";
 import { SegmentedControl } from "./SegmentedControl";
 import { formatDate } from "./charts/chartUtils";
 
@@ -20,7 +19,7 @@ interface PeriodsTabProps {
   tags: ContextTag[];
   source: DataSource;
   /** null until both a SugarWOD upload and an InBody upload are ready; a period's verdict waits on it. */
-  experimentInsights: Map<string, ExperimentInsight> | null;
+  verdicts: Map<string, PeriodVerdict> | null;
   /** Opens the Compare view on this tag's range. */
   onCompareTag: (tagId: string) => void;
   /** A range dragged out on a chart, to pre-fill the form. */
@@ -93,7 +92,7 @@ function draftOf(tag: ContextTag): Draft {
 export function PeriodsTab({
   tags,
   source,
-  experimentInsights,
+  verdicts,
   onCompareTag,
   initialWindow,
   onAdd,
@@ -286,8 +285,8 @@ export function PeriodsTab({
                 {tag.note ? <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{tag.note}</p> : null}
               </div>
               <div className="flex items-center gap-1">
-                {hasVerdict(tag) && experimentInsights?.get(tag.id) ? (
-                  <ClassificationBadge classification={experimentInsights.get(tag.id)!.classification} />
+                {hasVerdict(tag) && verdicts?.get(tag.id) ? (
+                  <VerdictBadge classification={verdicts.get(tag.id)!.classification} />
                 ) : null}
                 {isChangeType(tag.type) ? (
                   <Button

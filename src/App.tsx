@@ -6,8 +6,8 @@ import { Landing } from "@/components/landing/Landing";
 import { getAlignment } from "@/lib/analytics/alignment";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
-import { getExperimentInsight } from "@/lib/analytics/experimentInsight";
-import { experimentToTag, hasVerdict, tagToExperiment } from "@/lib/analytics/experimentTags";
+import { getPeriodVerdict } from "@/lib/analytics/periodVerdict";
+import { hasVerdict } from "@/lib/analytics/contextTags";
 import type { Granularity } from "@/lib/analytics/granularity";
 import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
 import { getRelativeStrength } from "@/lib/analytics/relativeStrength";
@@ -16,7 +16,6 @@ import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
 import { extendSampleRows } from "@/lib/sample/extendSample";
 import { generateSampleBodyComp } from "@/lib/sample/generateSampleBodyComp";
-import { generateSampleExperiments } from "@/lib/sample/generateSampleExperiments";
 import { generateSampleTags } from "@/lib/sample/generateSampleTags";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { migrateLegacyExperiments } from "@/lib/storage/legacyExperiments";
@@ -24,7 +23,7 @@ import { loadTags, saveTags } from "@/lib/storage/tagsStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
-import type { ExperimentInsight } from "@/types/experiment";
+import type { PeriodVerdict } from "@/types/verdict";
 import type { InBodyRow } from "@/types/inbody";
 import type { ContextTag } from "@/types/tag";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -196,13 +195,13 @@ export default function App() {
   // Same gate as plateauInsights: needs both datasets. Each experiment (a tag
   // of type "experiment") is analyzed independently (no cross-experiment view
   // in v1), so this is a map keyed by tag id rather than a single derived value.
-  const experimentInsights = useMemo(
+  const verdicts = useMemo(
     () =>
       state.status === "ready" && bodyComp.status === "ready"
-        ? new Map<string, ExperimentInsight>(
+        ? new Map<string, PeriodVerdict>(
             tags
               .filter(hasVerdict)
-              .map((t) => [t.id, getExperimentInsight(tagToExperiment(t), state.rows, bodyComp.rows, new Date())])
+              .map((t) => [t.id, getPeriodVerdict(t, state.rows, bodyComp.rows, new Date())])
           )
         : null,
     [state, bodyComp, tags]
@@ -246,7 +245,7 @@ export default function App() {
       const generatedBodyComp = generateSampleBodyComp(rows);
       setBodyComp((prev) => (prev.status === "ready" ? prev : { status: "ready", rows: generatedBodyComp }));
       // Sample experiments are tags of type "experiment", like real ones.
-      const generatedTags = [...generateSampleTags(rows), ...generateSampleExperiments(rows).map(experimentToTag)];
+      const generatedTags = generateSampleTags(rows);
       setTags((prev) => (prev.length > 0 ? prev : generatedTags));
     }
     setState({
@@ -447,7 +446,7 @@ export default function App() {
         onAddTag={addTag}
         onUpdateTag={updateTag}
         onDeleteTag={deleteTag}
-        experimentInsights={experimentInsights}
+        verdicts={verdicts}
       />
     );
   }

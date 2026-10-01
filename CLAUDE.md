@@ -265,8 +265,8 @@ partial comparison); overlapping or inverted windows are `insufficient`. `defaul
 the equal-length window immediately before B.
 
 - **One data model.** "Save as period" writes window B to a period's `startDate`/`endDate` and window A's
-  start to its optional `baselineStart` (`windowsToExperimentFields`), typed `experiment` by default.
-  `getExperimentInsight` then compares `[baselineStart, startDate)` against the experiment's own range,
+  start to its optional `baselineStart` (`windowsToPeriodFields`), typed `experiment` by default.
+  `getPeriodVerdict` then compares `[baselineStart, startDate)` against the experiment's own range,
   so the saved verdict is built on the earlier range the Compare table showed. An experiment with
   no `baselineStart` (anything added directly on the Periods view without one) compares against all
   history before its start date. `baselineStart` must be strictly before the start date; otherwise it
@@ -287,7 +287,7 @@ the equal-length window immediately before B.
   button on the Periods view. Every range gets
   the same three things: a `getCycleReport` for it (`CycleReportBody`), the `compareWindows`
   tables (`ComparisonTables`), and, when the range came from a saved period that has a verdict, that
-  period's `ExperimentVerdict`. Typing a date drops the saved-period framing, since the verdict no longer
+  period's `VerdictSummary`. Typing a date drops the saved-period framing, since the verdict no longer
   describes what is on screen. The verdict compares against all history before the start
   date when there is no `baselineStart`, while the tables use the equal-length window before it;
   the verdict card states which. Compare does **not** gate on InBody: the comparison and the report
@@ -300,8 +300,8 @@ the equal-length window immediately before B.
   user-authored, persist only when `source === "upload"`, are wiped by Start over, and have
   have no export or import of their own (the full backup, below, is the only file route, so there is one
   way to get data out and back in), and sync between devices (see "Architecture:
-  cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`, plus the sample
-  experiments from `generateSampleExperiments.ts` mapped to tags) so the Periods, Compare and chart-band
+  cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`, one slot per domain of
+  *Something you changed*, so the demo shows verdicts of every kind) so the Periods, Compare and chart-band
   views aren't empty; they are in memory only, never persisted or synced.
 - **One record for periods and experiments.** An experiment is a period of type `experiment`: something
   the athlete tried. Every period is stored as a `ContextTag`; what the app derives from it follows its
@@ -315,8 +315,7 @@ the equal-length window immediately before B.
   sits in exactly one place). The behaviour is **group-driven, not per type**: every period shades
   charts; cut and injury are named where they overlap a result; every type in *Something you changed*
   (`CHANGE_TYPES`, `isChangeType`) is a training block (`CYCLE_TAG_TYPES`), can be opened on Compare, and
-  gets a before/after verdict (`hasVerdict` → `getExperimentInsight`, through the `experimentTags.ts`
-  adapter, so that pipeline is unchanged). The reason the verdict is not limited to `experiment`: with
+  gets a before/after verdict (`hasVerdict` → `getPeriodVerdict`, which takes the period itself). The reason the verdict is not limited to `experiment`: with
   catch-alls per domain, "Nutrition change" getting a verdict while "Cut" does not would look arbitrary,
   and "did my lifts hold while body composition improved during the cut?" is the question an athlete asks.
   A decline during a cut is expected, so a cut's verdict shows `VERDICT_NOTE.cut` under it (the same
@@ -370,8 +369,8 @@ number. Specifically:
 - **Period types.** The domains and types in `TAG_GROUPS` are a first draft, picked from how an
   athlete names changes, not measured on real use; the catch-all in each domain is what covers the
   gaps. The verdict sentence is the same for every type ("... after this started"), and only a cut
-  has its own note. Sample mode seeds only experiment, cut, bulk, maintain, injury and travel, so the
-  newer types are exercised by tests rather than by the demo. An older build rejects a period with a
+  has its own note. Sample mode seeds a period of every type except experiment, deload and other
+  (`tests/sampleDataFullness.test.ts` pins that the newer ones reach a verdict). An older build rejects a period with a
   type it doesn't know.
 
 - **Noise band.** On the synthetic sample the bands came from the `residual` method (weight
@@ -414,9 +413,9 @@ number. Specifically:
 - **Copy.** The period sentences (cut, injury) and the cycle-summary phrases ("not explained by body
   mass", "partly body mass") are first drafts; check them against the voice rules below.
 
-## Architecture: Experiments
+## Architecture: Period verdicts
 
-`src/lib/analytics/experimentInsight.ts` is a third pipeline in the same family as Plateau
+`src/lib/analytics/periodVerdict.ts` is a third pipeline in the same family as Plateau
 Detector and Alignment above — same before/after performance-vs-body-comp comparison, same two
 datasets required — but anchored to an athlete-logged date instead of a rolling recent/prior
 window.
@@ -425,9 +424,9 @@ window.
   a `startDate` ("when I tried this"), a `label` ("what I tried"), an optional `endDate` and an
   optional `baselineStart` (where the "before" side starts; unset means all earlier history). It was
   once its own IndexedDB dataset (key `"experiments"`); it no longer is. `Experiment`
-  (`src/types/experiment.ts`) survives as the shape `getExperimentInsight` takes and as what an older
-  device or backup file still sends, with `experimentToTag`/`tagToExperiment` (`experimentTags.ts`) the
-  two seams between that shape and a tag. Added, edited and deleted on the Periods view, persisted like
+  (`src/types/experiment.ts`) survives only as what an older device or backup file still sends, and
+  `experimentToTag` (`experimentToTag.ts`) is the one place it becomes a period. The verdict types are in
+  `types/verdict.ts`. Added, edited and deleted on the Periods view, persisted like
   every tag (only when `state.source === "upload"`, except what arrives by sync or restore).
 - **Migration** (`storage/legacyExperiments.ts`): on load, `App.tsx` moves anything still stored under
   `"experiments"` into the tags (a tag already holding the id wins), then removes the old key. It writes
@@ -435,26 +434,25 @@ window.
   failures and a write that didn't land would otherwise look like success and lose the experiments. It
   is safe to run on every load and to run twice, and a stored list that doesn't validate is left alone.
   `tests/legacyExperiments.test.ts` pins each of those.
-- **`getExperimentInsight(experiment, workouts, inbodyScans, asOfDate)`** reuses #1's subject
+- **`getPeriodVerdict(period, workouts, inbodyScans, asOfDate)`** reuses #1's subject
   identification and body-comp-trend helpers unchanged (`buildLiftSubjects`/
   `buildBenchmarkSubjects`, `parseWorkoutDate`/`parseInBodyDate`, `computeBodyCompTrend`,
   `isBodyCompDeclining`/`isBodyCompImproving`) — the normalization rules must not drift between
-  the three pipelines — but computes its own before/after split around the experiment's own
-  `date`, since #1's session-count windowing has no reason to land on either side of a date an
+  the three pipelines — but computes its own before/after split around the period's own
+  `startDate`, since #1's session-count windowing has no reason to land on either side of a date an
   athlete picked. Its eligibility gate (≥3 subjects with data on both sides, ≥2 InBody scans on
   each side) is checked independently per side, so `insufficient_data`'s `reason` names exactly
   which side is thin — same `formatGateShortfall()` convention as #1/#2.
 - Classification is `improved`/`declined`/`no_change`/`mixed`/`insufficient_data` — `mixed` is a
   strict-majority miss (no more than half of classified subjects agree), the same "informative,
   not an error state" treatment Plateau Detector/Alignment give their own ambiguous cases.
-- Sample mode seeds a couple of plausible experiments (`src/lib/sample/generateSampleExperiments.ts`,
-  mapped to tags in `App.tsx`) at fixed month-offsets from the athlete's first logged workout (never
+- Sample mode seeds periods (`src/lib/sample/generateSampleTags.ts`) at fixed month-offsets from the athlete's first logged workout (never
   hardcoded calendar dates), chosen only when they leave enough history on both sides to pass the
   eligibility gate above — the classification itself is never biased toward a rosy outcome; it falls
   out of whatever the real sample data shows.
 - Wired into `App.tsx` behind the same gate as Plateau Detector/Alignment — neither runs until
   both uploads are `"ready"` — as a map keyed by tag id for every period with a verdict (`hasVerdict`), and rendered by
-  `ExperimentVerdict.tsx` when one is picked on the Compare view and as a badge on its row on the Periods view, not
+  `VerdictSummary.tsx` when one is picked on the Compare view and as a badge on its row on the Periods view, not
   part of `Insights`/`buildInsights.ts`'s return shape.
 
 ## Architecture: cross-device sync

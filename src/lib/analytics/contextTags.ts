@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { formatDay } from "./formatting";
 import { isIsoDay } from "./scanParsing";
-import { TAG_TYPE_LABEL, TAG_TYPES, type ContextTag, type TagType } from "@/types/tag";
+import { TAG_TYPE_LABEL, TAG_TYPES, isChangeType, type ContextTag, type TagType } from "@/types/tag";
 
 /**
  * Pure helpers over the athlete's context tags: overlap tests, the one
@@ -12,6 +12,19 @@ import { TAG_TYPE_LABEL, TAG_TYPES, type ContextTag, type TagType } from "@/type
  * tag adds a sentence naming it; with no tags (or none overlapping) its
  * output is byte-for-byte what it was before tags existed.
  */
+
+/**
+ * Whether a period gets a before/after verdict (`getPeriodVerdict`): every type
+ * in "Something you changed", not only "experiment". Injury and travel are
+ * context and never do.
+ */
+export const hasVerdict = (tag: ContextTag): boolean => isChangeType(tag.type);
+
+/** `incoming` wins on a shared id; everything else is kept, in order. */
+export function mergeTagsById(existing: readonly ContextTag[], incoming: readonly ContextTag[]): ContextTag[] {
+  const replaced = new Set(incoming.map((t) => t.id));
+  return [...existing.filter((t) => !replaced.has(t.id)), ...incoming];
+}
 
 /** The tag's own name, or its type ("cut", "new cycle") when it has none. */
 export function tagLabel(tag: ContextTag): string {

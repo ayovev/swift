@@ -34,7 +34,7 @@ import type { Insights } from "@/lib/analytics/buildInsights";
 import type { RelativeStrengthResult } from "@/lib/analytics/relativeStrength";
 import type { AlignmentResult } from "@/types/alignment";
 import type { DateWindow } from "@/types/compare";
-import type { ExperimentInsight } from "@/types/experiment";
+import type { PeriodVerdict } from "@/types/verdict";
 import type { ContextTag } from "@/types/tag";
 import type { PlateauInsight } from "@/types/plateau";
 import type { InBodyRow } from "@/types/inbody";
@@ -64,7 +64,7 @@ interface DashboardProps {
   onAddTag: (tag: Omit<ContextTag, "id">) => void;
   onUpdateTag: (tag: ContextTag) => void;
   onDeleteTag: (id: string) => void;
-  experimentInsights: Map<string, ExperimentInsight> | null;
+  verdicts: Map<string, PeriodVerdict> | null;
 }
 
 export function Dashboard({
@@ -90,7 +90,7 @@ export function Dashboard({
   onAddTag,
   onUpdateTag,
   onDeleteTag,
-  experimentInsights,
+  verdicts,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   // A range dragged out on a chart, waiting for the Compare or Tags view to
@@ -329,7 +329,7 @@ export function Dashboard({
               workouts={workoutRows}
               scans={bodyComp.status === "ready" ? bodyComp.rows : []}
               tags={tags}
-              experimentInsights={experimentInsights}
+              verdicts={verdicts}
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
               initialWindowB={pendingWindow?.window ?? null}
@@ -343,7 +343,7 @@ export function Dashboard({
               key={pendingWindow?.nonce ?? 0}
               tags={tags}
               source={source}
-              experimentInsights={experimentInsights}
+              verdicts={verdicts}
               onCompareTag={onCompareTag}
               initialWindow={pendingWindow?.window ?? null}
               onAdd={onAddTag}
