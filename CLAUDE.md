@@ -189,6 +189,15 @@ movement uses the id; labels are display text and may be reworded. `movementFami
 ("Clean" = clean, power clean, hang clean, ...) as a deliberate list, never a prefix match, so a new
 lexicon entry cannot silently join a family. `parseRows()` runs `findMovements` once per row into
 `ParsedRow.movements`, and `buildModalityData` classifies from that rather than re-reading the text.
+**`barbell_lift` outranks the text.** It is the one column that names a movement as data, so
+`findRowMovements()` (`classifyModality.ts`) reads it first through the same lexicon (aliases and spellings
+resolve to the same ids, no separate table) and those hits come first, tagged `source: "barbell_lift"`. The text is
+still searched for other movements, but a family's *generic* bare word (`MovementFamily.generic`: "squat",
+"clean", "snatch", ...) is dropped when the typed lift is a more specific member of that family, so a front squat
+session is not also a vague squat. Rows with no recognised typed lift behave exactly as before. Measured on the
+sample: 279 of 1,209 rows have the field, 25 rows' identities changed and no modality split moved (all typed lifts
+are W). Known and left alone: a `% of snatch` reference in a description still reads as a snatch (about 70 rows
+in the export name a lift only as a percentage base); fixing that is a lexicon `exclude` decision of its own.
 Bare equipment words (`db`, `kb`, `dumbbell`, `kettlebell`) are deliberately **not** lexicon entries: they name the
 implement, not the movement, and counting them inflated W.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyModality, findMovements } from "@/lib/classify/classifyModality";
+import { classifyModality, classifyMovements, findMovements, findRowMovements } from "@/lib/classify/classifyModality";
 import { classifiableText } from "@/lib/classify/matcher";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
 import { familiesOf, hasFamily, hasMovement, MOVEMENT_FAMILIES } from "@/lib/classify/movementFamilies";
@@ -320,6 +320,58 @@ describe("movement ids and families", () => {
   it("computes each row's movements once, in parseRows", async () => {
     const parsed = parseRows(await loadSampleRows());
     expect(parsed.length).toBeGreaterThan(1000);
-    for (const row of parsed) expect(row.movements).toEqual(findMovements(row.text));
+    for (const row of parsed) expect(row.movements).toEqual(findRowMovements(row.raw));
+  });
+});
+
+describe("barbell_lift takes priority over the text", () => {
+  const row = (title: string, description: string, barbell_lift: string) =>
+    findRowMovements({ title, description, barbell_lift });
+  const ids = (hits: { id: string }[]) => hits.map((h) => h.id);
+
+  it("marks typed hits as coming from the lift field", () => {
+    const hits = row("Back Squat 5x5", "Back Squat5-5-5-5-5", "Back Squat");
+    expect(hits.map((h) => [h.id, h.source])).toEqual([["back-squat", "barbell_lift"]]);
+  });
+
+  it("drops the generic bare word when the typed lift is a specific member of its family", () => {
+    // "squat" in the description would otherwise be a second, vaguer movement.
+    expect(ids(row("Front Squat 4x5", "4x5 front squat, then a few squats", "Front Squat"))).toEqual(["front-squat"]);
+    expect(ids(row("Power Clean 1x1", "power clean, build to a clean", "Power Clean"))).toEqual(["power-clean"]);
+  });
+
+  it("keeps other movements the text names, after the typed lift", () => {
+    expect(ids(row("Skill Work", "1 front squat 5 pull-ups", "Back Squat"))).toEqual(["back-squat", "front-squat", "pull-ups"]);
+  });
+
+  it("does not let a percentage-of reference redefine a different typed lift", () => {
+    // Known: "% of snatch" still adds a snatch; the field says what the session was.
+    const hits = row("Snatch Grip Deadlift 4x3", "4x3 @ 100% of Snatch", "Snatch Grip Deadlift");
+    expect(hits[0]).toMatchObject({ id: "snatch-grip-deadlift", source: "barbell_lift" });
+  });
+
+  it("resolves lifts the bare words would misread", () => {
+    expect(ids(row("Snatch Balance 5x3", "Snatch Balance", "Snatch Balance"))).toEqual(["snatch-balance"]);
+    expect(ids(row("Muscle Snatch 5x2", "Muscle Snatch", "Muscle Snatch"))).toEqual(["muscle-snatch"]);
+    expect(ids(row("Back Pause Squat", "Back Pause Squat 4x1", "Back Pause Squat"))).toEqual(["back-squat"]);
+  });
+
+  it("falls back to the text when the field is empty or not recognised", () => {
+    const text = (t: string, d: string) => findMovements(classifiableText({ title: t, description: d }));
+    expect(row("FRAN", "21-15-9 thrusters pull-ups", "")).toEqual(text("FRAN", "21-15-9 thrusters pull-ups"));
+    expect(ids(row("FRAN", "thrusters", "Some Unknown Lift"))).toEqual(["thruster"]);
+  });
+
+  it("does not move any row's modality split on the sample export", async () => {
+    // Every lift SugarWOD types is weightlifting and the hits it displaces are
+    // weightlifting too, so priority changes identities, never the M/W/G split.
+    const parsed = parseRows(await loadSampleRows());
+    let typed = 0;
+    for (const r of parsed) {
+      expect(classifyMovements(r.movements).split, r.raw.title).toEqual(classifyModality(r.text).split);
+      if (r.movements.some((m) => m.source === "barbell_lift")) typed++;
+    }
+    // Roughly a quarter of the export names a lift in the typed field.
+    expect(typed).toBeGreaterThan(250);
   });
 });

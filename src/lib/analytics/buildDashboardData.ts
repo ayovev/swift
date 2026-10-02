@@ -1,6 +1,6 @@
 import dayjs, { type Dayjs } from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { findMovements } from "@/lib/classify/classifyModality";
+import { findRowMovements } from "@/lib/classify/classifyModality";
 import { classifyWithReasons } from "@/lib/classify/domainKeywords";
 import { classifiableText } from "@/lib/classify/matcher";
 import { parseRepMax } from "./repMax";
@@ -103,7 +103,7 @@ export function parseRows(rows: SugarWodRow[], granularity: Granularity = "month
       text,
       domainHits,
       domains: new Set(Object.keys(domainHits) as Domain[]),
-      movements: findMovements(text),
+      movements: findRowMovements(raw),
       bucket: bucketKey(dateParsed, granularity),
     });
   }

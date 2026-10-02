@@ -20,15 +20,21 @@ export interface MovementFamily {
   /** Shown to the athlete. */
   label: string;
   members: readonly string[];
+  /**
+   * The bare-word member ("squat", "clean"), for families where that word is
+   * what noise produces. When SugarWOD's own `barbell_lift` names a more
+   * specific lift in the family, the generic hit from the text is dropped.
+   */
+  generic?: string;
 }
 
 export const MOVEMENT_FAMILIES: readonly MovementFamily[] = [
-  { id: "clean", label: "Clean", members: ["clean", "power-clean", "hang-clean", "hang-power-clean", "squat-clean", "clean-pull", "clean-and-jerk"] },
-  { id: "snatch", label: "Snatch", members: ["snatch", "power-snatch", "hang-snatch", "hang-power-snatch", "squat-snatch", "snatch-pull"] },
-  { id: "jerk", label: "Jerk", members: ["jerk", "split-jerk", "push-jerk", "clean-and-jerk"] },
-  { id: "squat", label: "Squat", members: ["squat", "back-squat", "front-squat", "overhead-squat", "goblet-squat"] },
-  { id: "press", label: "Press", members: ["press", "shoulder-press", "push-press"] },
-  { id: "deadlift", label: "Deadlift", members: ["deadlift", "sumo-deadlift"] },
+  { id: "clean", label: "Clean", members: ["clean", "power-clean", "hang-clean", "hang-power-clean", "squat-clean", "clean-pull", "clean-and-jerk", "power-clean-and-jerk"], generic: "clean" },
+  { id: "snatch", label: "Snatch", members: ["snatch", "power-snatch", "hang-snatch", "hang-power-snatch", "squat-snatch", "snatch-pull", "muscle-snatch", "snatch-balance"], generic: "snatch" },
+  { id: "jerk", label: "Jerk", members: ["jerk", "split-jerk", "push-jerk", "clean-and-jerk", "power-clean-and-jerk"], generic: "jerk" },
+  { id: "squat", label: "Squat", members: ["squat", "back-squat", "front-squat", "overhead-squat", "goblet-squat"], generic: "squat" },
+  { id: "press", label: "Press", members: ["press", "shoulder-press", "push-press"], generic: "press" },
+  { id: "deadlift", label: "Deadlift", members: ["deadlift", "sumo-deadlift", "snatch-grip-deadlift"], generic: "deadlift" },
   { id: "pull-up", label: "Pull-up", members: ["pull-ups", "chest-to-bar", "chin-ups"] },
   { id: "muscle-up", label: "Muscle-up", members: ["muscle-ups", "bar-muscle-ups", "ring-muscle-ups"] },
   { id: "push-up", label: "Push-up", members: ["push-ups", "pike-push-ups"] },

@@ -17,7 +17,7 @@ export function buildMovementData(parsedRows: readonly ParsedRow[]): MovementDat
     date: row.dateParsed.format("YY-MM-DD"),
     title: row.raw.title,
     bucket: row.bucket,
-    movements: row.movements.map((m) => ({ id: m.id, label: m.label, phrase: m.phrase })),
+    movements: row.movements.map((m) => ({ id: m.id, label: m.label, phrase: m.phrase, source: m.source })),
   }));
   return { workouts, buckets: [...new Set(workouts.map((w) => w.bucket))].sort() };
 }

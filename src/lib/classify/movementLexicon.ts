@@ -68,6 +68,15 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "snatch", phrase: "snatch", modality: "W", label: "Snatch" },
   { id: "power-snatch", phrase: "power snatch", modality: "W", label: "Power snatch" },
   { id: "hang-snatch", phrase: "hang snatch", modality: "W", label: "Hang snatch" },
+  // Named lifts SugarWOD types in `barbell_lift`. Without these the generic word inside them
+  // (snatch in "snatch grip deadlift", snatch in "snatch balance") read as the wrong lift.
+  { id: "muscle-snatch", phrase: "muscle snatch", modality: "W", label: "Muscle snatch" },
+  { id: "snatch-balance", phrase: "snatch balance", modality: "W", label: "Snatch balance" },
+  { id: "snatch-grip-deadlift", phrase: "snatch grip deadlift", modality: "W", label: "Snatch grip deadlift" },
+  { id: "power-clean-and-jerk", phrase: "power clean & jerk", modality: "W", label: "Power clean & jerk" },
+  { id: "power-clean-and-jerk", phrase: "power clean and jerk", modality: "W", label: "Power clean & jerk" },
+  { id: "back-squat", phrase: "back pause squat", modality: "W", label: "Back squat" },
+  { id: "front-squat", phrase: "front pause squat", modality: "W", label: "Front squat" },
   { id: "squat-snatch", phrase: "squat snatch", modality: "W", label: "Squat snatch" },
   { id: "snatch-pull", phrase: "snatch pull", modality: "W", label: "Snatch pull" },
   { id: "clean", phrase: "clean", modality: "W", label: "Clean" },

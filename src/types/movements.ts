@@ -9,7 +9,7 @@ export interface MovementWorkout {
   /** The row's aggregation bucket key (see granularity.ts). */
   bucket: string;
   /** Distinct movements found in the workout, in the order they were written. */
-  movements: { id: string; label: string; phrase: string }[];
+  movements: { id: string; label: string; phrase: string; source: "barbell_lift" | "text" }[];
 }
 
 export interface MovementData {

@@ -50,6 +50,8 @@ export interface MovementHit {
   /** Display name, e.g. "Power clean". */
   label: string;
   modality: Modality;
+  /** Where the hit came from: SugarWOD's typed `barbell_lift` field, or the free text. */
+  source: "barbell_lift" | "text";
 }
 
 export interface ModalityClassification {

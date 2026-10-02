@@ -1,4 +1,5 @@
-import { findAllMatches, type MatchRange } from "./matcher";
+import { classifiableText, findAllMatches, type MatchRange } from "./matcher";
+import { MOVEMENT_FAMILIES } from "./movementFamilies";
 import { LEXICON_BY_SPECIFICITY, type MovementEntry } from "./movementLexicon";
 import { MODALITY_LIST } from "@/types/modality";
 import type {
@@ -47,7 +48,7 @@ export function findMovements(text: string): MovementHit[] {
       if (existing === undefined || start < existing.at) {
         byId.set(entry.id, {
           at: start,
-          hit: { id: entry.id, phrase: entry.phrase, label: entry.label, modality: entry.modality },
+          hit: { id: entry.id, phrase: entry.phrase, label: entry.label, modality: entry.modality, source: "text" },
         });
       }
     }
@@ -56,6 +57,45 @@ export function findMovements(text: string): MovementHit[] {
   // Report in the order the movements appear in the workout text — that reads
   // as the workout was written, rather than as the lexicon happens to be sorted.
   return [...byId.values()].sort((a, b) => a.at - b.at).map((v) => v.hit);
+}
+
+/**
+ * The movements for one logged workout, with SugarWOD's own typed
+ * `barbell_lift` field taking priority over the free text.
+ *
+ * `barbell_lift` is the one place the export names a movement as data rather
+ * than prose, so when it names a lift we read it first (through the same
+ * lexicon, so every alias and spelling resolves to the same id) and those hits
+ * are authoritative. The text is still searched, because a complex or a WOD
+ * names other movements the field does not, but it may not contradict the
+ * field: a generic bare word from the text ("squat" from "(full squat)", or in
+ * a front squat session's description) is dropped when the typed lift is a
+ * more specific member of that word's family. Anything else the text found is
+ * kept after the typed hits.
+ *
+ * A row with no `barbell_lift`, or one the lexicon does not recognise, falls
+ * back to the text alone, exactly as before.
+ */
+export function findRowMovements(fields: {
+  title?: string | null;
+  description?: string | null;
+  barbell_lift?: string | null;
+}): MovementHit[] {
+  const fromText = findMovements(classifiableText(fields));
+  const typed = findMovements((fields.barbell_lift ?? "").toLowerCase()).map(
+    (hit): MovementHit => ({ ...hit, source: "barbell_lift" })
+  );
+  if (typed.length === 0) return fromText;
+
+  const typedIds = new Set(typed.map((h) => h.id));
+  const dropGeneric = new Set<string>();
+  for (const family of MOVEMENT_FAMILIES) {
+    if (family.generic === undefined) continue;
+    if (typed.some((h) => h.id !== family.generic && family.members.includes(h.id))) {
+      dropGeneric.add(family.generic);
+    }
+  }
+  return [...typed, ...fromText.filter((h) => !typedIds.has(h.id) && !dropGeneric.has(h.id))];
 }
 
 /**

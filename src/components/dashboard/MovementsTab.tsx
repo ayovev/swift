@@ -132,7 +132,7 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
               date: workout.date,
               title: workout.title,
               reason: matched.map((m) => m.label).join(", "),
-              detail: `matched on ${matched.map((m) => `"${m.phrase}"`).join(", ")}`,
+              detail: `matched on ${matched.map((m) => (m.source === "barbell_lift" ? `"${m.phrase}" (lift field)` : `"${m.phrase}"`)).join(", ")}`,
             }))}
             emptyMessage={`No workouts in this range involved ${name.toLowerCase()}.`}
           />
