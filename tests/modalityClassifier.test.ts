@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { classifyModality, findMovements } from "@/lib/classify/classifyModality";
 import { classifiableText } from "@/lib/classify/matcher";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
+import { familiesOf, hasFamily, hasMovement, MOVEMENT_FAMILIES } from "@/lib/classify/movementFamilies";
+import { parseRows } from "@/lib/analytics/buildDashboardData";
+import { loadSampleRows } from "./fixtures/sampleRows";
 import { MODALITY_LIST, type ModalitySplit } from "@/types/modality";
 
 /** Classify from raw workout fields, the way the pipeline does. */
@@ -256,5 +259,67 @@ describe("movement lexicon — integrity", () => {
   it("covers all three modalities", () => {
     const covered = new Set(MOVEMENT_LEXICON.map((e) => e.modality));
     expect([...covered].sort()).toEqual([...MODALITY_LIST].sort());
+  });
+});
+
+describe("movement ids and families", () => {
+  const ids = new Set(MOVEMENT_LEXICON.map((e) => e.id));
+
+  it("gives every id kebab-case form", () => {
+    for (const e of MOVEMENT_LEXICON) expect(e.id, e.phrase).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+  });
+
+  it("keeps one label and one modality per id, so aliases cannot drift apart", () => {
+    const seen = new Map<string, { label: string; modality: string }>();
+    for (const e of MOVEMENT_LEXICON) {
+      const prior = seen.get(e.id);
+      if (prior) expect({ label: e.label, modality: e.modality }, e.phrase).toEqual(prior);
+      else seen.set(e.id, { label: e.label, modality: e.modality });
+    }
+  });
+
+  it("keeps one id per label", () => {
+    const byLabel = new Map<string, string>();
+    for (const e of MOVEMENT_LEXICON) {
+      expect(byLabel.get(e.label) ?? e.id, e.label).toBe(e.id);
+      byLabel.set(e.label, e.id);
+    }
+  });
+
+  it("carries the id on every hit", () => {
+    expect(findMovements("t2b and ttb and toes to bar").map((h) => h.id)).toEqual(["toes-to-bar"]);
+  });
+
+  it("only names real movement ids in families, and none with a single member", () => {
+    for (const f of MOVEMENT_FAMILIES) {
+      expect(f.members.length, f.id).toBeGreaterThan(1);
+      for (const m of f.members) expect(ids.has(m), `${f.id}: ${m}`).toBe(true);
+    }
+    expect(new Set(MOVEMENT_FAMILIES.map((f) => f.id)).size).toBe(MOVEMENT_FAMILIES.length);
+  });
+
+  it("includes every variant when a family is chosen", () => {
+    const hit = (text: string) => findMovements(text);
+    expect(hasFamily(hit("5 hang power clean"), "clean")).toBe(true);
+    expect(hasFamily(hit("squat clean thruster"), "clean")).toBe(true);
+    expect(hasFamily(hit("bar muscle-ups"), "muscle-up")).toBe(true);
+    expect(hasFamily(hit("back squat"), "clean")).toBe(false);
+    expect(hasMovement(hit("hang power clean"), "clean")).toBe(false);
+  });
+
+  it("puts clean & jerk in both the clean and jerk families", () => {
+    expect(familiesOf("clean-and-jerk").sort()).toEqual(["clean", "jerk"]);
+    expect(familiesOf("run")).toEqual(["run"]);
+    expect(familiesOf("burpees")).toEqual([]);
+  });
+
+  it("keeps loaded and bodyweight squats apart", () => {
+    expect(hasFamily(findMovements("50 air squats"), "squat")).toBe(false);
+  });
+
+  it("computes each row's movements once, in parseRows", async () => {
+    const parsed = parseRows(await loadSampleRows());
+    expect(parsed.length).toBeGreaterThan(1000);
+    for (const row of parsed) expect(row.movements).toEqual(findMovements(row.text));
   });
 });

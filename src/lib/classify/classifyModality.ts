@@ -35,19 +35,19 @@ function overlaps(start: number, end: number, claimed: readonly MatchRange[]): b
  */
 export function findMovements(text: string): MovementHit[] {
   const claimed: MatchRange[] = [];
-  /** label -> hit, so two phrases for the same movement don't double-count. */
-  const byLabel = new Map<string, { hit: MovementHit; at: number }>();
+  /** id -> hit, so two phrases for the same movement don't double-count. */
+  const byId = new Map<string, { hit: MovementHit; at: number }>();
 
   for (const entry of LEXICON_BY_SPECIFICITY) {
     for (const [start, end] of findAllMatches(text, entry)) {
       if (overlaps(start, end, claimed)) continue;
       claimed.push([start, end]);
 
-      const existing = byLabel.get(entry.label);
+      const existing = byId.get(entry.id);
       if (existing === undefined || start < existing.at) {
-        byLabel.set(entry.label, {
+        byId.set(entry.id, {
           at: start,
-          hit: { phrase: entry.phrase, label: entry.label, modality: entry.modality },
+          hit: { id: entry.id, phrase: entry.phrase, label: entry.label, modality: entry.modality },
         });
       }
     }
@@ -55,7 +55,7 @@ export function findMovements(text: string): MovementHit[] {
 
   // Report in the order the movements appear in the workout text — that reads
   // as the workout was written, rather than as the lexicon happens to be sorted.
-  return [...byLabel.values()].sort((a, b) => a.at - b.at).map((v) => v.hit);
+  return [...byId.values()].sort((a, b) => a.at - b.at).map((v) => v.hit);
 }
 
 /**
@@ -108,8 +108,14 @@ export function sharesTo100(weights: Record<Modality, number>, total: number): M
  * @param text lowercased title + description + barbell_lift.
  */
 export function classifyModality(text: string): ModalityClassification {
-  const movements = findMovements(text);
+  return classifyMovements(findMovements(text));
+}
 
+/**
+ * The same classification from movements already found, so the pipeline can
+ * run `findMovements` once per row (in `parseRows`) and share the result.
+ */
+export function classifyMovements(movements: MovementHit[]): ModalityClassification {
   if (movements.length === 0) {
     // Nothing recognised. Reported as unclassified and excluded from every
     // average, rather than counted as a workout that was 0% of everything.

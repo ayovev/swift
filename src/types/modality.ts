@@ -43,6 +43,8 @@ export interface ModalitySplit {
 
 /** One recognised movement and the modality it contributed to. */
 export interface MovementHit {
+  /** Stable movement id (see MovementEntry.id), e.g. "power-clean". */
+  id: string;
   /** The lexicon phrase that matched, e.g. "power clean". */
   phrase: string;
   /** Display name, e.g. "Power clean". */

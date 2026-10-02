@@ -1,10 +1,12 @@
 import dayjs, { type Dayjs } from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { findMovements } from "@/lib/classify/classifyModality";
 import { classifyWithReasons } from "@/lib/classify/domainKeywords";
 import { classifiableText } from "@/lib/classify/matcher";
 import { parseRepMax } from "./repMax";
 import { bucketKey, type Granularity } from "./granularity";
 import { DOMAIN_LIST } from "@/types/dashboard";
+import type { MovementHit } from "@/types/modality";
 import type {
   BenchmarkEntry,
   BucketCount,
@@ -72,6 +74,8 @@ export interface ParsedRow {
   text: string;
   domainHits: Partial<Record<Domain, string>>;
   domains: Set<Domain>;
+  /** Distinct movements named in `text`, found once here and shared by the modality and movement views. */
+  movements: MovementHit[];
   /** The row's aggregation bucket key, shaped by the selected granularity (default "YYYY-MM"). */
   bucket: string;
 }
@@ -99,6 +103,7 @@ export function parseRows(rows: SugarWodRow[], granularity: Granularity = "month
       text,
       domainHits,
       domains: new Set(Object.keys(domainHits) as Domain[]),
+      movements: findMovements(text),
       bucket: bucketKey(dateParsed, granularity),
     });
   }

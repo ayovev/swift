@@ -176,6 +176,16 @@ times it is named. Workouts where nothing is recognised are marked `classified: 
 every modality's share down); the count is surfaced as `unclassified_count` so the UI can
 caveat it honestly.
 
+Movements have **stable ids**, not just labels: every `MOVEMENT_LEXICON` entry carries an `id`
+(kebab-case, shared by all aliases of one movement, one label and one modality per id — pinned in
+`tests/modalityClassifier.test.ts`), and `MovementHit` carries it. Anything that stores or filters by
+movement uses the id; labels are display text and may be reworded. `movementFamilies.ts` groups ids
+("Clean" = clean, power clean, hang clean, ...) as a deliberate list, never a prefix match, so a new
+lexicon entry cannot silently join a family. `parseRows()` runs `findMovements` once per row into
+`ParsedRow.movements`, and `buildModalityData` classifies from that rather than re-reading the text.
+Bare equipment words (`db`, `kb`, `dumbbell`, `kettlebell`) are deliberately **not** lexicon entries: they name the
+implement, not the movement, and counting them inflated W.
+
 Order *is* significant in `DOMAIN_KEYWORDS` (`domainKeywords.ts`): the keyword reported as
 "matched on" in the drill-down is whichever is checked first and hits. Reordering a list
 changes what the UI says a workout matched on — and the parity fixture records it — even
