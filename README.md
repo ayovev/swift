@@ -1,24 +1,106 @@
 # Swift
 
-[![CI](https://github.com/ayovev/swift/actions/workflows/ci.yml/badge.svg)](https://github.com/ayovev/swift/actions/workflows/ci.yml)
+*The workout ends. The work doesn't.*
 
-Swift turns a SugarWOD training-history CSV export into an interactive dashboard. You drop in the CSV your gym's training log gives you, and Swift reads back what years of workouts actually add up to: how consistently you showed up month over month, how your named lifts progressed, your history on named benchmark workouts, a timeline of logged PRs, how your training emphasis is spread across the ten CrossFit general physical skills (the GPP domains), and the proportional mix of metabolic conditioning, weightlifting and gymnastics work in your log. Add an InBody body-composition export alongside it, and Swift also flags which lifts and benchmarks have plateaued — and whether that's happening alongside a change in body composition or on its own — plus a whole-athlete read on whether your performance and body composition are currently telling a consistent story. Body-composition changes are only counted when they are bigger than ordinary scan-to-scan variation, which Swift estimates from your own scan history. It is for an individual athlete who already has a SugarWOD export and wants to see the shape of their own training — there are no coach views, no multi-athlete comparisons, and nothing to set up.
+[![CI](https://github.com/ayovev/swift/actions/workflows/ci.yml/badge.svg)](https://github.com/ayovev/swift/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
+![No backend](https://img.shields.io/badge/backend-none-brightgreen)
+
+Swift turns a SugarWOD training-history CSV into a dashboard you can read in
+a minute. It runs entirely in your browser: **[tryswift.io](https://tryswift.io)**.
+There is no account to make and no server to send your file to.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png">
+  <img alt="Swift's Overview page: totals for workouts logged, days trained and personal records, and a month-by-month attendance chart." src="docs/images/overview-light.png">
+</picture>
+
+
+## What it shows
+
+- **Consistency and progress.** Workouts over time, lift and benchmark history,
+  and a timeline of PRs.
+- **What your training is made of.** A breakdown across the ten CrossFit
+  general physical skills (the GPP domains), and the proportional mix of
+  metabolic conditioning, weightlifting and gymnastics (M/W/G) in your log.
+- **Body composition, if you add it.** Upload an InBody export and Swift flags
+  which lifts have plateaued and whether body composition is moving alongside
+  them. It only counts a change that is bigger than normal scan-to-scan
+  variation, estimated from your own scans.
+- **Before and after.** Select a range, or mark a stretch like a cut or a new
+  program, and compare lifts, benchmarks and body composition against what came
+  before.
+
+It is for one athlete looking at their own training. There are no coach views
+and no multi-athlete comparisons. Try it without a file using the sample data
+on the landing page.
+
+<table>
+  <tr>
+    <td width="50%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/breakdown-dark.png">
+  <img alt="The Strength page in the Breakdown section: share of workouts that train strength, month by month." src="docs/images/breakdown-light.png">
+</picture>
+
+</td>
+    <td width="50%">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/progress-dark.png">
+  <img alt="The Progress page: a whole-athlete read of whether performance and body composition agree." src="docs/images/progress-light.png">
+</picture>
+
+</td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Breakdown: one of ten GPP domains</sub></td>
+    <td align="center"><sub>Progress: performance against body composition</sub></td>
+  </tr>
+</table>
+
+*Screenshots use the bundled sample data.*
 
 ## Privacy
 
-Nothing you upload leaves your browser.
+Your file never leaves your browser. There is no account and no server.
 
-Swift has no backend, no database, and no accounts. The CSV is read through the browser's File API, parsed with PapaParse, classified, and aggregated entirely in the page you have open. There is no server to receive it — nothing you upload is ever sent anywhere.
+| | |
+| --- | --- |
+| **Stays in your browser** | Your workout log, InBody history, periods, and your view settings, cached in the browser's own IndexedDB so a reload doesn't need a re-upload. **Start over** in Settings deletes all of it. |
+| **Can leave your browser** | Anonymous usage events (page opened, upload succeeded, tab viewed) with fixed names and coarse buckets, and only when an analytics key is configured. Connection setup for device sync touches a public STUN server. |
+| **Never leaves your browser** | Workout text, movement names, notes, filenames, exact row counts, body-composition values, or any identifier for you. |
 
-Your data does stick around locally, though: Swift caches your uploaded rows — SugarWOD and, if you add it, InBody — in the browser's own IndexedDB storage so closing the tab and coming back doesn't force a re-upload. Your selected date range and chart granularity are cached alongside it, so the dashboard reopens the way you left it. That cache never leaves your browser — it's not transmitted or synced anywhere. You can bring in a fresh export any time without losing anything else: the dashboard's **Settings** has a **Replace file** for each dataset that swaps in a new CSV for just that one. **Start over** is the one control that clears everything at once — your uploaded rows, body composition history, and anything else you've logged — so it asks you to confirm first, once there's real data loaded (sample mode still resets in a single click, since nothing persisted is at risk). You can also just clear your browser's site data yourself. The bundled sample export is never cached this way, so trying it out never leaves anything behind. Clearing site data would lose what's cached, so Settings also has a file backup you can download and restore (see **Backing up** under [Getting your data in](#getting-your-data-in)).
+The full account, including how device sync works without a server, is in
+[docs/privacy.md](docs/privacy.md).
 
-Want your data on a second device — a phone alongside your laptop — without re-uploading the CSV there too? **Send to a device** / **Receive from a device** (in the dashboard's **Settings**; the landing page also offers **Sync from another device**) connect your two browsers directly to each other over WebRTC, with a QR code standing in for a signaling server: one device shows a code, the other scans it, and the data flows straight between them. Nothing passes through any server Swift controls — only connection setup (never your workout data) briefly touches a public STUN server, the same as any peer-to-peer video call. Your data comes across: the workout log, body composition history, periods, experiments included. Settings stay on each device — accent, light/dark mode, grouping and date range aren't synced. If the joining device already has data, you're asked once to confirm before anything is replaced. A sync is all or nothing: every dataset comes across or none does, and if any part of what arrives is unusable nothing is applied. Both devices need the current version of the app.
+### Check it yourself
 
-The app does send anonymous product-usage events to PostHog (page opened, upload attempted / succeeded / failed, sample data used, sync attempted / succeeded / failed, tab viewed, a few named interactions such as a backup downloaded or restored, theme changed, date range changed, granularity changed) when a PostHog key is configured. Those payloads carry only fixed strings and coarse buckets — never workout text, filenames, row counts, device identifiers, or any identifier. `src/lib/posthog.ts` types the entire event surface deliberately narrowly so it stays that way, and `tests/analytics.test.ts`/`tests/syncAnalytics.test.ts` assert it.
+You don't have to take that on trust. Swift is open source and the claim is
+small enough to verify.
+
+- **In your browser.** Open DevTools, go to the Network tab, and upload a file.
+  The only requests are the app's own files and, if analytics is on, small usage
+  events. None of them contain your data.
+- **In the code.** There is no backend directory and no API layer. The three
+  things that touch the network are the sample-file download in `src/App.tsx`
+  (from our own origin), the analytics client in `src/lib/posthog.ts`, and the
+  STUN lookup in `src/lib/sync/webrtcTransport.ts`.
+- **In the types.** `SwiftEvent` in `src/lib/posthog.ts` is the entire analytics
+  surface, written as a narrow union rather than a free-form object, so adding
+  free-form content to an event is a type error.
+- **In the tests.** `tests/analytics.test.ts` rebuilds real workout titles from
+  the sample export and fails if any of them shows up in an event payload.
+  `tests/syncAnalytics.test.ts` does the same for sync.
+- **On your own copy.** Fork it, leave `VITE_PUBLIC_POSTHOG_KEY` empty, and
+  Swift sends no analytics at all. It builds to static files you can host
+  anywhere.
 
 ## Quick start
 
-Requires Node and npm. Use npm — not yarn or pnpm.
+Requires Node and npm. Use npm, not yarn or pnpm.
 
 ```sh
 npm install
@@ -38,120 +120,33 @@ npm run typecheck  # tsc -b --noEmit
 
 `.env.example` has an empty `VITE_PUBLIC_POSTHOG_KEY`. Leave it empty: analytics is optional and no-ops cleanly without a key, so the app runs normally. `.env` is gitignored; `.env.example` is committed with no real value in it.
 
+
 ## Getting your data in
 
-**Your own export.** In SugarWOD, open your training log and choose **Export Workouts**. That gives you a CSV. Drop it on Swift's upload area, or pick it with the file picker.
+In SugarWOD, open your training log and choose **Export Workouts**, then drop
+the CSV on Swift's upload area. Swift expects SugarWOD's own export columns
+(`date`, `title`, `description`, `best_result_raw`, `best_result_display`,
+`score_type`, `barbell_lift`, `rx_or_scaled`, `pr`) and says in plain language
+which one is missing if a file doesn't fit.
 
-Swift expects SugarWOD's own export schema — the columns `date`, `title`, `description`, `best_result_raw`, `best_result_display`, `score_type`, `barbell_lift`, `rx_or_scaled`, `pr`. If a file is missing columns, is empty, isn't really a CSV, or has no readable dates, you get a plain-language message saying which, rather than a parser error.
+An InBody scan-history export is a separate, optional upload. It unlocks the
+body-composition view and the Insights views that compare it with your lifts.
 
-**Sample data.** The landing page has an "Or try it with sample data" option that loads a bundled real export and renders the full dashboard with no upload. Sample mode keeps a one-line strip at the top of the dashboard the whole time so it is never mistaken for your own results — "Sample data · Use your own", where **Use your own** takes you straight back to the upload screen.
+[docs/guide.md](docs/guide.md) covers the rest: replacing a file, backing up and
+restoring (with optional passphrase encryption), syncing to a second device, and
+how Periods work.
 
-**Body composition, optionally.** Swift also accepts an InBody scan-history export — a separate upload, entirely optional, with its own view under the dashboard's **Body** section. It expects InBody's own export columns (`date`, `Weight(lb)`, and whichever body-composition metrics your InBody tier reports); only `date` and weight are required, so a slimmer export still works. Uploading it also unlocks more of the views under **Insights**: **Progress**, which opens with a whole-athlete read of whether performance and body composition point the same direction, then checks whether each lift or named benchmark has stalled and, if so, whether body composition is a plausible contributor, and divides each lift's estimated one-rep max by your bodyweight and lean mass to separate a stronger lift from a heavier athlete; and **Compare**, which sets any range — dragged out on a chart, typed in, or filled in from a saved period — against the equal-length stretch before it, reports what the range did to volume, lifts and body composition, and can save it as a period. **Periods** are labelled stretches of time you add yourself, in two kinds: something you changed and something that happened (an injury, a trip). What you changed is grouped by area: nutrition (a nutrition change, a cut, a bulk, maintaining), programming (a programming change, a new cycle, a deload), recovery, or something else (an experiment, other). Pick the general one for an area if you're unsure and put the detail in the name. For anything you changed, Swift compares your lifts, benchmarks and body composition after the date you started against all earlier history or, for one saved from a comparison, against the earlier range you chose, and shows a verdict; it can also be opened on **Compare** to see what that stretch did.
+## Documentation
 
-**Finding your way around.** The dashboard has four sections in its header: **Training** (Overview and your workout list), **Breakdown** (the ten GPP domains and the three modalities), **Body** (body composition) and **Insights** (Progress, Compare and Periods). The date range and grouping sit under each page's title, as a sentence you can click — "Showing all time, grouped by month." Periods — labelled stretches like a cut or an injury — are stored in this browser, sync with your other devices, and are included in the backup in **Settings**. Everything else — replacing a file, syncing with another device, accent colour and dark mode, and Start over — is in **Settings**.
+- [Using Swift](docs/guide.md): data in, backups, sync, periods
+- [Privacy: the details](docs/privacy.md)
+- [Architecture](docs/architecture.md): how the code is organised
+- [How classification works](docs/classification.md): the GPP and M/W/G logic
+- [Testing](docs/testing.md)
+- [Contributing](CONTRIBUTING.md) and [Security](SECURITY.md)
 
-**Updating your data.** Got a fresher export? You don't need to start over. Open **Settings** in the dashboard header: **Replace file** next to your workout log swaps in a new SugarWOD CSV, and the one next to body composition does the same for your InBody history (it's also on the Body Comp view). Each replaces only that one dataset — your other upload and anything else you've logged stay put.
-
-**Backing up.** Clearing your browser's site data, or moving to a new computer, would otherwise lose everything stored here, including your periods (experiments included), which exist nowhere else. **Settings → Backup → Download** saves one file holding your workout log, body composition history and periods, experiments included (not your accent, mode, grouping or date range). **Restore** (in Settings, and on the landing page for a fresh browser, where **Restore from a backup** or simply dropping the file on the upload area brings it back). It replaces each dataset the file contains after you confirm, and nothing is restored if any part of the file is unusable. By default the file is plaintext and contains your full training and body composition history, so keep it somewhere private. To protect it, tick **Protect with a passphrase** under Download (at least 8 characters, entered twice): the file is then encrypted in your browser with AES-256-GCM, and Restore asks for the passphrase. Swift can't recover a forgotten passphrase, since there's no account and no server, so a password manager is a good home for it. An encrypted file still shows its export time and rough size, but nothing about what is inside. It never leaves your browser unless you move it yourself.
-
-**Syncing from another device.** Already uploaded your data on one device and want it on another, instead of exporting and uploading the CSV again? The landing page's **Sync from another device** (and, once you have your own data loaded, **Send to a device** / **Receive from a device** in the dashboard's **Settings**) walks you through a two-QR pairing: the device with your data shows a code, your other device scans it and shows a code back, and once that's scanned too, your data transfers directly between the two browsers. It's all or nothing, with one confirmation if anything would be replaced. See [Privacy](#privacy) for how that stays server-free.
-
-## Architecture
-
-Data flows through four stages, entirely in the browser: **parse** (`src/lib/csv`) turns your CSV into typed rows and rejects anything malformed with a plain-language error; **classify** (`src/lib/classify`) tags each workout against the ten GPP domains and splits it proportionally across the three CrossFit modalities; **analytics** (`src/lib/analytics`) buckets classified rows by your chosen time granularity and builds everything the charts need; and the **dashboard** (`src/components/dashboard`) renders it. `buildInsights.ts` is the single entry point tying the last three stages together, so classification only ever runs once per upload even though several charts read the result.
-
-**Local persistence** (`src/lib/storage`) sits alongside this pipeline rather than inside it. Your uploaded SugarWOD rows, and separately any InBody body-composition export, are cached in the browser's own IndexedDB the moment they're parsed, so reopening the app restores your dashboard instead of asking you to re-upload. It's a plain key/value cache — one browser-local database, cleared in full by **Start over** (which now asks you to confirm before it does, once there's real data to lose) — with no query engine and no schema beyond "one key per dataset." Sample data is deliberately excluded from it, so demo mode never leaves anything behind.
-
-**A second, independent pipeline** compares your SugarWOD log against your InBody history: `src/lib/analytics/plateauDetector.ts` classifies each lift and named benchmark as improving, plateaued, or not-yet-enough-history by comparing recent performance to InBody scans over the same window; `src/lib/analytics/alignment.ts` rolls those per-lift reads up into one whole-athlete read of whether performance and body composition currently agree. Both are pure functions over the same two already-parsed datasets — no extra parsing, no new persistence — and both require an InBody upload to run at all.
-
-**Cross-device sync** (`src/lib/sync`) is a third, self-contained piece: two browsers negotiate a WebRTC connection directly, with the SDP handshake exchanged via displayed/scanned QR codes instead of a signaling server, then transfer a dataset peer-to-peer once connected. `webrtcTransport.ts` is the only file that touches real WebRTC APIs and `src/components/sync/QrDisplay.tsx`/`QrScanner.tsx` the only ones that touch a QR library or the camera — everything else (wire framing, pairing-code encoding, the pairing/transfer state machine) is plain, WebRTC-free logic, which is what lets it be unit-tested with a fake in-memory transport even though the browser test environment has no real WebRTC or camera support.
-
-## Project structure
-
-```
-src/lib/csv/         CSV parsing and validation (PapaParse), with plain-language errors
-src/lib/classify/    the two classifiers and the shared text matcher they both use
-src/lib/analytics/   turns classified rows into everything the charts and tabs need
-src/lib/theme/       the accent-colour system: OKLCH ramp derivation and contrast maths
-src/lib/storage/     IndexedDB-backed local persistence for uploaded rows and view preferences
-src/lib/sync/        cross-device sync engine: WebRTC transport, QR pairing codes, wire framing,
-                     and the all-or-nothing transfer plan shared with backup restore
-src/lib/backup/      the backup file: format, serialising and reading it
-src/components/      landing page, dashboard, sync UI, charts, theme controls, shadcn/ui primitives
-src/types/           the SugarWOD row shape, and the domain/modality data contracts
-tests/               vitest suites, plus fixtures including the Python reference output
-public/sample/       the bundled sample export that powers demo mode
-scripts/             dev-only: regenerates the parity fixture (not part of the build)
-```
-
-- **`src/lib/classify`** — `matcher.ts` is the single text-matching engine; `domainKeywords.ts` holds the GPP keyword rules; `movementLexicon.ts` and `classifyModality.ts` hold the M/W/G movement vocabulary and the proportional split.
-- **`src/lib/analytics`** — `buildInsights.ts` is the entry point: rows are parsed and classified once, then `buildDashboardData.ts` (GPP domains, lifts, benchmarks, PRs, monthly counts) and `buildModalityData.ts` (M/W/G aggregates) both read the same parsed rows.
-- **`src/lib/theme`** — the base UI is black and white in matching light and dark modes; a single user-chosen accent colour is derived into a full 50–950 shade ramp so it holds contrast in both modes.
-- **`src/lib/storage`** — one IndexedDB database, one key per uploaded dataset plus one for the selected date range/granularity; wraps the raw API so the rest of the app only ever calls typed save/load/clear functions.
-- **`src/lib/sync`** — `chunking.ts` (wire framing), `pairingCode.ts` (SDP ↔ QR-code encoding), `syncSession.ts` (the pairing/transfer state machine), `webrtcTransport.ts` (the real `RTCPeerConnection` implementation, and the only file that touches it), `planTransfer.ts` (the all-or-nothing plan that decides what a received transfer applies; backup restore uses it too).
-- **`src/lib/backup`** — `backup.ts` reads and writes the backup file (a versioned envelope around the same datasets sync carries), `encryption.ts` does the optional passphrase encryption with Web Crypto, and `passphrase.ts` holds the passphrase rules. It is pure; the Download and Restore controls live in `src/components/backup/`.
-- **`src/components`** — `landing/` for the upload path and explainer, `dashboard/` for the dashboard shell (`SectionNav.tsx` for the four sections and their views, `ScopeLine.tsx` for the date range and grouping, `SettingsSheet.tsx` for files, backup, sync, appearance and Start over) and every view inside it — Overview, the ten per-domain and three per-modality views, the independent Body Comp view, and the Insights views (Progress, Compare, Periods) that compare the SugarWOD and InBody datasets together, all sharing one InBody-upload empty state (`InBodyUploadPrompt.tsx`) — `backup/` for the backup download button and restore hook, `sync/` for the QR-pairing dialog and its host/joiner views, `ui/` for the shadcn/ui primitives the rest builds on.
-
-Stack: Vite, React, TypeScript, Tailwind CSS, shadcn/ui, Recharts, PapaParse, dayjs, WebRTC (native browser API). No plain `.js`/`.jsx` source files.
-
-## How classification works
-
-Both classifiers read the same input: the workout's `title`, `description` and `barbell_lift` fields concatenated and lowercased. That is all they see. There is no lookup table of known workouts and no model — it is keyword and phrase matching over free text.
-
-Matching is plain substring containment by default, not word-boundary matching. This is deliberate: SugarWOD descriptions frequently concatenate lines with no separator at all (`21-15-9DeadliftsPull-ups-200m run after each round`), so the character before a genuine movement name is often a letter, and a boundary rule would silently drop real matches. The cost is the occasional false positive, which a small measured exclusion list handles surgically (`carry` inside `carryover`, `press` inside `pressure`). Very short abbreviations like `du` or `kb` opt into a stricter token mode instead.
-
-Substring matching also gets most inflections for free — `run` finds `runs` and `running`, `press` finds `presses`. The one case it cannot reach is where the stem itself changes, so the matcher additionally searches the English consonant-plus-`y` → `i` form of every keyword: `carry` finds `carries` and `carried`, `heavy` finds `heavier` and `heaviest`. That is a rule in one place rather than plural spellings scattered through the keyword lists, so it holds for exports this project has never seen.
-
-**The ten GPP domains** — Cardiovascular/Respiratory Endurance, Stamina, Strength, Flexibility, Power, Speed, Coordination, Agility, Balance, Accuracy — each have a keyword list, and a workout hits a domain if any of that domain's keywords appear in its text. **Domains are not mutually exclusive**: most workouts hit several, which is the point. Because of that overlap, a single month's domain percentages sum to well over 100%, so the normalized stacked chart divides by total tags rather than total workouts. Swift keeps the specific keyword that triggered each match and shows it in the per-domain drill-down, so you can always check the reasoning. Keyword order within each list matters — the first keyword that hits is the one reported to you.
-
-**The M/W/G modality mix** is proportional rather than a single label, and it follows canonical CrossFit semantics:
-
-- **M — Metabolic conditioning**: monostructural work only. Running, rowing, biking, skiing, jumping rope. Not "anything that makes you breathe hard".
-- **W — Weightlifting**: an external load moved by you. Barbell, dumbbell, kettlebell, odd objects.
-- **G — Gymnastics**: your own bodyweight moved through space.
-
-Each distinct movement named in a workout contributes equal weight to its modality, and a movement counts once however many times it appears. So Fran (thrusters and pull-ups) is 50% weightlifting / 50% gymnastics / 0% cardio — punishing metabolically, but with nothing monostructural in it. The three shares are rounded by largest remainder so they always sum to exactly 100. Movement phrases are claimed longest-first, so `power clean` beats bare `clean`, `air squat` (G) beats bare `squat` (W), and `ring row` (G) beats bare `row` (M) — adding a movement to the lexicon never requires re-tuning the order of anything else. Workouts where no movement is recognised at all are reported as unclassified and excluded from every average rather than counted as zeroes, and the dashboard footer says how many those were.
-
-**This is a heuristic, not ground truth.** It is automated inference over free text your gym wrote, so a workout can land somewhere surprising if things are named unusually. Flexibility in particular reads low for almost everyone, because mobility work rarely gets logged as its own entry — not because nobody stretches. Every tab shows what it matched on so you can judge for yourself.
-
-## Testing
-
-```sh
-npm test
-```
-
-Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather than the UI — there are no end-to-end browser tests. Broadly:
-
-- `matcher.test.ts` — the shared matching engine: substring vs. token mode, exclusions, glued-together text.
-- `domainClassifier.test.ts` — each of the ten GPP domains, multi-domain workouts, which keyword gets reported, the measured false-positive corrections, and known limitations pinned deliberately so they change visibly rather than silently.
-- `modalityClassifier.test.ts` / `buildModalityData.test.ts` — single- and multi-modality splits, the rounding invariant, aggregation, drill-down lists, and behaviour against the real sample export.
-- `buildDashboardData.parity.test.ts` — the GPP pipeline compared row by row against the output of the original validated Python reference implementation, committed as a fixture in `tests/fixtures/`. Structural output is compared exactly; every intentional divergence is enumerated in the test itself, so any unintended change fails. Those divergences are a rounding-mode difference, a few substring false positives the reference got wrong, and the inflected forms it missed. Read that file for the current specifics.
-- `parseCsv.test.ts` — the failure paths and their plain-language messages.
-- `themeContrast.test.ts` — every accent swatch holds adequate contrast in both light and dark mode.
-- `analytics.test.ts` — analytics stays off without a key, and no event payload can carry workout content.
-- `plateauDetector.test.ts` — the plateau eligibility gates (entry count, InBody-scan count) and their `reason` messages, the improving/plateaued classification, and windowing behaviour against real sample data.
-- `bodyCompNoise.test.ts` — the InBody noise band: the paired-scans, rolling-median and default methods, the fallback ladder between them, and the within-noise flags the three insights read.
-- `relativeStrength.test.ts` — e1RM series, lift-name variants, body-comp matching (exact, interpolated, nearest, unmatched, never extrapolated), the attribution table, and the eligibility gates.
-- `tagTypes.test.ts` — the period types: every type in exactly one kind and one area, a catch-all in each area, and that exactly the types in "something you changed" are the ones judged by a verdict.
-- `compareWindows.test.ts`, `contextTags.test.ts`, `insightTags.test.ts`, `chartInteraction.test.tsx`, `CompareTab.test.tsx`, `PeriodsTab.test.tsx` — window comparison (no partial numbers, noise gating, RX/Scaled), period overlap/open-ended/out-of-range, periods leaving results unchanged and only adding notes that name them, drag selection, and the Compare and Periods views (range filled from a saved period, saving a range as a period, the grouped type picker, experiments with their earlier-range start and verdict).
-- `cycleReport.test.ts` — cycles from periods, focus lifts, the report built from relative strength and the noise band, insufficient states, and a summary that describes without judging.
-- `alignment.test.ts` — the whole-athlete rollup: its own eligibility gate, the four-way aligned/tension classification table, and null-delta handling when an InBody field is unmeasured.
-- `parseInBodyCsv.test.ts` — InBody's own required-columns/empty/malformed-date failure paths.
-- `idbStore.test.ts` — the generic IndexedDB primitives: get/set/delete/clear round trips, isolated per test with a `fake-indexeddb` polyfill since jsdom has no native IndexedDB.
-- `workoutStorage.test.ts` / `bodyCompStorage.test.ts` / `viewPreferencesStorage.test.ts` — save/load/clear round trips for each persisted dataset, using real parsed rows.
-- `App.test.tsx` — the app shell end to end: restoring persisted data (including the selected date range and granularity) on mount, persisting a fresh upload, persisting range/granularity changes across a remount, "Start over" requiring confirmation before it clears storage (and only for real uploaded data — sample mode still resets in one click), the Settings sheet's workout "Replace file" control replacing the workout log without disturbing anything else, Insights views stating that the date range doesn't apply to them, and sample mode being announced by exactly one full-width strip above the header.
-- `domainDefinitions.test.tsx` — every GPP domain page shows CrossFit's definition of that skill under its heading, separately from the app's own description, and no other view gets a subtitle.
-- `sectionNav.test.tsx` — every view lands in exactly one of the four sections, sections open on their first view, and Breakdown shows all ten domains and three modalities at once as two groups, each headed by its label above the tabs.
-- `backup.test.ts`, `backupEncryption.test.ts`, `passphrase.test.ts`, `planTransfer.test.ts`, `backupRestore.test.tsx`, `backupPassphrase.test.tsx`, `legacyExperiments.test.ts`, `experimentToTag.test.ts` — the backup file's format and rejections, the plan that applies the workout log last, and download/restore end to end, including encrypted backups (tampering, wrong passphrase, the passphrase prompt and the download form) and (landing-page restore, including a backup dropped or pasted on the upload area, persisting every dataset, older backups and stored lists whose experiments are folded into the tags, confirmation and Cancel from Settings).
-- `settingsSheet.test.tsx` — the Settings sheet's five groups, sync enabled on uploaded data and disabled (with the reason) on sample data, accent/mode changes, and sample-mode Start over resetting without a confirmation.
-- `BodyCompTab.test.tsx` — the empty-state upload dropzone and the ready-state "Replace file" control both forward a newly picked file to the same handler.
-- `validateReceived.test.ts` / `receivedDatasets.test.ts` / `SyncDialog.test.tsx` — what a joiner does with what arrives: every dataset validated before anything is written (the real sample exports accepted, all-or-nothing rejection with a reason naming the row), one confirmation for the whole transfer, all-or-nothing application (one rejected or damaged dataset means nothing is applied, and it is reported instead of silently skipped), and damaged payloads survived.
-- `generateSampleTags.test.ts` — the seeded demo periods: anchored to the first logged workout, ordered blocks, valid under the same validation sync and backup restore use.
-- `chunking.test.ts` / `pairingCode.test.ts` — cross-device sync's wire framing (chunk/reassemble round trips, corrupted/truncated data) and QR pairing-code encoding (round trips, oversized-SDP trimming, malformed input), both pure logic with no WebRTC involved.
-- `fakeSyncTransport.test.ts` / `syncSession.test.ts` — the pairing/transfer state machine driven end to end through a fake in-memory transport standing in for a real `RTCDataChannel`: the full host-to-joiner handshake, multi-dataset transfers, and every failure path (invalid pairing code, a peer disconnecting mid-transfer, an unsupported browser). Real two-device WebRTC/ICE negotiation and camera-based QR scanning aren't covered here — see [Architecture](#architecture) — and are verified manually instead.
-- `syncAnalytics.test.ts` — the sync event payloads carry only a role and a closed-vocabulary reason, never a device identifier, session token, or SDP fragment.
-
-`scripts/generate_parity_fixture.py` regenerated the Python reference fixture once, against the proof-of-concept implementation. It is dev-only and never bundled; the committed fixture means the test suite needs no Python.
+Stack: Vite, React, TypeScript, Tailwind CSS, shadcn/ui, Recharts, PapaParse,
+dayjs, and the browser's native WebRTC and Web Crypto.
 
 ## Known limitations
 
@@ -166,3 +161,10 @@ detection; and dragging on a chart is mouse-only, with date inputs as the altern
 ## Deployment
 
 Static SPA on Vercel. `vercel.json` is already configured — `npm run build`, output in `dist`, with a catch-all rewrite to `index.html`. There is no backend to deploy or operate. If PostHog is wanted in production, set `VITE_PUBLIC_POSTHOG_KEY` (and optionally `VITE_PUBLIC_POSTHOG_HOST`) as build-time environment variables; without them the deployed app simply runs without analytics.
+
+## License
+
+[MIT](LICENSE). Fork it, read it, run your own copy.
+
+Swift is an independent project and is not affiliated with or endorsed by
+SugarWOD, InBody or CrossFit.

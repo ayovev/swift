@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in Swift doesn't work or looks wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste your CSV, screenshots of your own training data, or anything from your workout log.** If the bug depends on your data, describe the shape of it instead: which columns, and what the text looks like (for example "a description with no line breaks, containing 'carryover'").
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, and what you saw.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: dropdown
+    id: data
+    attributes:
+      label: Data you were using
+      options:
+        - The bundled sample data
+        - My own SugarWOD export
+        - My own SugarWOD and InBody exports
+        - A restored backup
+        - Synced from another device
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Safari 19 on iOS, Chrome 140 on Windows
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Console errors are useful. Leave out anything from your data.

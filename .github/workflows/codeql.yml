@@ -1,0 +1,38 @@
+name: CodeQL
+
+# Static analysis of the TypeScript source. Unlike ci.yml this does use
+# `pull_request`: it is the check that should also run on a PR from a fork, and
+# it only reads the code, so nothing here needs a secret. The weekly run catches
+# newly published queries against code that hasn't changed.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Upload results to the repo's code-scanning alerts.
+      security-events: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          # Interpreted language: nothing to build, so no autobuild step.
+          build-mode: none
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
