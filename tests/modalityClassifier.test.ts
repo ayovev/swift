@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { classifyModality, findMovements } from "@/lib/classify/classifyModality";
+import { classifyModality, classifyMovements, findMovements, findRowMovements } from "@/lib/classify/classifyModality";
 import { classifiableText } from "@/lib/classify/matcher";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
+import { familiesOf, hasFamily, hasMovement, MOVEMENT_FAMILIES } from "@/lib/classify/movementFamilies";
+import { parseRows } from "@/lib/analytics/buildDashboardData";
+import { loadSampleRows } from "./fixtures/sampleRows";
 import { MODALITY_LIST, type ModalitySplit } from "@/types/modality";
 
 /** Classify from raw workout fields, the way the pipeline does. */
@@ -156,6 +159,54 @@ describe("modality classifier — the substring traps", () => {
   });
 });
 
+describe("modality classifier — movement identity (measured on the sample export)", () => {
+  it('reads "clean & jerk" as one lift, not a Clean plus a Jerk', () => {
+    expect(labels("Clean & Jerk 3x2")).toEqual(["Clean & jerk"]);
+    expect(labels("CLEAN AND JERK")).toEqual(["Clean & jerk"]);
+  });
+
+  it("keeps hang power variants distinct from the plain power lift", () => {
+    expect(labels("EMOM", "1 hang power clean 1 hang power snatch")).toEqual([
+      "Hang power clean",
+      "Hang power snatch",
+    ]);
+  });
+
+  it("splits out ring muscle-ups, handstand walks and wall walks", () => {
+    expect(labels("GYM", "5 ring muscle-ups 20 ft handstand walk 9 wall walks")).toEqual([
+      "Ring muscle-ups",
+      "Handstand walk",
+      "Wall walks",
+    ]);
+  });
+
+  it("reads devils press as a devil press", () => {
+    expect(labels("PARTNER", "4 devils press")).toEqual(["Devil press"]);
+  });
+
+  it("does not read names and props as movements", () => {
+    expect(labels("TIRE SWING", "for time: 60 kb swings")).toEqual(["Kettlebell swing"]);
+    expect(labels("SWING STATE", "4 x amrap 3:00")).toEqual([]);
+    expect(labels("JERK DIP + 10 SEC RACK HOLD")).toEqual(["Jerk"]);
+    expect(labels("ACCESSORY", "elevated split squat (use bench) 3 sets")).toEqual(["Squat"]);
+    expect(labels("SLOW YOUR ROW!", "12:00 amrap")).toEqual([]);
+    expect(labels("THANKSGIVING", "last minute store run")).toEqual([]);
+  });
+
+  it("still reads the real versions of those movements", () => {
+    expect(labels("ring dips", "3 sets max ring dips")).toEqual(["Ring dips"]);
+    expect(labels("HEAVY BENCH", "bench press 5x5")).toEqual(["Bench press"]);
+    expect(labels("ROW", "400m row")).toEqual(["Row"]);
+  });
+
+  it("does not count equipment as a movement", () => {
+    // "db" and "kb" name the implement, not what was done with it. Counting
+    // them gave a db snatch two weightlifting movements.
+    expect(labels("SKILL", "1 db power clean 1 db power snatch")).toEqual(["Power clean", "Power snatch"]);
+    expect(labels("KB", "double kb oh carries")).toEqual(["Loaded carry"]);
+  });
+});
+
 describe("modality classifier — unclassified workouts", () => {
   it("marks a non-workout entry unclassified rather than zero-everything", () => {
     const result = classify("DAILY LAZY MACROS POINTS", "week 1 points, 7 possible per day");
@@ -208,5 +259,119 @@ describe("movement lexicon — integrity", () => {
   it("covers all three modalities", () => {
     const covered = new Set(MOVEMENT_LEXICON.map((e) => e.modality));
     expect([...covered].sort()).toEqual([...MODALITY_LIST].sort());
+  });
+});
+
+describe("movement ids and families", () => {
+  const ids = new Set(MOVEMENT_LEXICON.map((e) => e.id));
+
+  it("gives every id kebab-case form", () => {
+    for (const e of MOVEMENT_LEXICON) expect(e.id, e.phrase).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+  });
+
+  it("keeps one label and one modality per id, so aliases cannot drift apart", () => {
+    const seen = new Map<string, { label: string; modality: string }>();
+    for (const e of MOVEMENT_LEXICON) {
+      const prior = seen.get(e.id);
+      if (prior) expect({ label: e.label, modality: e.modality }, e.phrase).toEqual(prior);
+      else seen.set(e.id, { label: e.label, modality: e.modality });
+    }
+  });
+
+  it("keeps one id per label", () => {
+    const byLabel = new Map<string, string>();
+    for (const e of MOVEMENT_LEXICON) {
+      expect(byLabel.get(e.label) ?? e.id, e.label).toBe(e.id);
+      byLabel.set(e.label, e.id);
+    }
+  });
+
+  it("carries the id on every hit", () => {
+    expect(findMovements("t2b and ttb and toes to bar").map((h) => h.id)).toEqual(["toes-to-bar"]);
+  });
+
+  it("only names real movement ids in families, and none with a single member", () => {
+    for (const f of MOVEMENT_FAMILIES) {
+      expect(f.members.length, f.id).toBeGreaterThan(1);
+      for (const m of f.members) expect(ids.has(m), `${f.id}: ${m}`).toBe(true);
+    }
+    expect(new Set(MOVEMENT_FAMILIES.map((f) => f.id)).size).toBe(MOVEMENT_FAMILIES.length);
+  });
+
+  it("includes every variant when a family is chosen", () => {
+    const hit = (text: string) => findMovements(text);
+    expect(hasFamily(hit("5 hang power clean"), "clean")).toBe(true);
+    expect(hasFamily(hit("squat clean thruster"), "clean")).toBe(true);
+    expect(hasFamily(hit("bar muscle-ups"), "muscle-up")).toBe(true);
+    expect(hasFamily(hit("back squat"), "clean")).toBe(false);
+    expect(hasMovement(hit("hang power clean"), "clean")).toBe(false);
+  });
+
+  it("puts clean & jerk in both the clean and jerk families", () => {
+    expect(familiesOf("clean-and-jerk").sort()).toEqual(["clean", "jerk"]);
+    expect(familiesOf("run")).toEqual(["run"]);
+    expect(familiesOf("burpees")).toEqual([]);
+  });
+
+  it("keeps loaded and bodyweight squats apart", () => {
+    expect(hasFamily(findMovements("50 air squats"), "squat")).toBe(false);
+  });
+
+  it("computes each row's movements once, in parseRows", async () => {
+    const parsed = parseRows(await loadSampleRows());
+    expect(parsed.length).toBeGreaterThan(1000);
+    for (const row of parsed) expect(row.movements).toEqual(findRowMovements(row.raw));
+  });
+});
+
+describe("barbell_lift takes priority over the text", () => {
+  const row = (title: string, description: string, barbell_lift: string) =>
+    findRowMovements({ title, description, barbell_lift });
+  const ids = (hits: { id: string }[]) => hits.map((h) => h.id);
+
+  it("marks typed hits as coming from the lift field", () => {
+    const hits = row("Back Squat 5x5", "Back Squat5-5-5-5-5", "Back Squat");
+    expect(hits.map((h) => [h.id, h.source])).toEqual([["back-squat", "barbell_lift"]]);
+  });
+
+  it("drops the generic bare word when the typed lift is a specific member of its family", () => {
+    // "squat" in the description would otherwise be a second, vaguer movement.
+    expect(ids(row("Front Squat 4x5", "4x5 front squat, then a few squats", "Front Squat"))).toEqual(["front-squat"]);
+    expect(ids(row("Power Clean 1x1", "power clean, build to a clean", "Power Clean"))).toEqual(["power-clean"]);
+  });
+
+  it("keeps other movements the text names, after the typed lift", () => {
+    expect(ids(row("Skill Work", "1 front squat 5 pull-ups", "Back Squat"))).toEqual(["back-squat", "front-squat", "pull-ups"]);
+  });
+
+  it("does not let a percentage-of reference redefine a different typed lift", () => {
+    // Known: "% of snatch" still adds a snatch; the field says what the session was.
+    const hits = row("Snatch Grip Deadlift 4x3", "4x3 @ 100% of Snatch", "Snatch Grip Deadlift");
+    expect(hits[0]).toMatchObject({ id: "snatch-grip-deadlift", source: "barbell_lift" });
+  });
+
+  it("resolves lifts the bare words would misread", () => {
+    expect(ids(row("Snatch Balance 5x3", "Snatch Balance", "Snatch Balance"))).toEqual(["snatch-balance"]);
+    expect(ids(row("Muscle Snatch 5x2", "Muscle Snatch", "Muscle Snatch"))).toEqual(["muscle-snatch"]);
+    expect(ids(row("Back Pause Squat", "Back Pause Squat 4x1", "Back Pause Squat"))).toEqual(["back-squat"]);
+  });
+
+  it("falls back to the text when the field is empty or not recognised", () => {
+    const text = (t: string, d: string) => findMovements(classifiableText({ title: t, description: d }));
+    expect(row("FRAN", "21-15-9 thrusters pull-ups", "")).toEqual(text("FRAN", "21-15-9 thrusters pull-ups"));
+    expect(ids(row("FRAN", "thrusters", "Some Unknown Lift"))).toEqual(["thruster"]);
+  });
+
+  it("does not move any row's modality split on the sample export", async () => {
+    // Every lift SugarWOD types is weightlifting and the hits it displaces are
+    // weightlifting too, so priority changes identities, never the M/W/G split.
+    const parsed = parseRows(await loadSampleRows());
+    let typed = 0;
+    for (const r of parsed) {
+      expect(classifyMovements(r.movements).split, r.raw.title).toEqual(classifyModality(r.text).split);
+      if (r.movements.some((m) => m.source === "barbell_lift")) typed++;
+    }
+    // Roughly a quarter of the export names a lift in the typed field.
+    expect(typed).toBeGreaterThan(250);
   });
 });

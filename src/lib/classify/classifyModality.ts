@@ -1,4 +1,5 @@
-import { findAllMatches, type MatchRange } from "./matcher";
+import { classifiableText, findAllMatches, type MatchRange } from "./matcher";
+import { MOVEMENT_FAMILIES } from "./movementFamilies";
 import { LEXICON_BY_SPECIFICITY, type MovementEntry } from "./movementLexicon";
 import { MODALITY_LIST } from "@/types/modality";
 import type {
@@ -35,19 +36,19 @@ function overlaps(start: number, end: number, claimed: readonly MatchRange[]): b
  */
 export function findMovements(text: string): MovementHit[] {
   const claimed: MatchRange[] = [];
-  /** label -> hit, so two phrases for the same movement don't double-count. */
-  const byLabel = new Map<string, { hit: MovementHit; at: number }>();
+  /** id -> hit, so two phrases for the same movement don't double-count. */
+  const byId = new Map<string, { hit: MovementHit; at: number }>();
 
   for (const entry of LEXICON_BY_SPECIFICITY) {
     for (const [start, end] of findAllMatches(text, entry)) {
       if (overlaps(start, end, claimed)) continue;
       claimed.push([start, end]);
 
-      const existing = byLabel.get(entry.label);
+      const existing = byId.get(entry.id);
       if (existing === undefined || start < existing.at) {
-        byLabel.set(entry.label, {
+        byId.set(entry.id, {
           at: start,
-          hit: { phrase: entry.phrase, label: entry.label, modality: entry.modality },
+          hit: { id: entry.id, phrase: entry.phrase, label: entry.label, modality: entry.modality, source: "text" },
         });
       }
     }
@@ -55,7 +56,46 @@ export function findMovements(text: string): MovementHit[] {
 
   // Report in the order the movements appear in the workout text — that reads
   // as the workout was written, rather than as the lexicon happens to be sorted.
-  return [...byLabel.values()].sort((a, b) => a.at - b.at).map((v) => v.hit);
+  return [...byId.values()].sort((a, b) => a.at - b.at).map((v) => v.hit);
+}
+
+/**
+ * The movements for one logged workout, with SugarWOD's own typed
+ * `barbell_lift` field taking priority over the free text.
+ *
+ * `barbell_lift` is the one place the export names a movement as data rather
+ * than prose, so when it names a lift we read it first (through the same
+ * lexicon, so every alias and spelling resolves to the same id) and those hits
+ * are authoritative. The text is still searched, because a complex or a WOD
+ * names other movements the field does not, but it may not contradict the
+ * field: a generic bare word from the text ("squat" from "(full squat)", or in
+ * a front squat session's description) is dropped when the typed lift is a
+ * more specific member of that word's family. Anything else the text found is
+ * kept after the typed hits.
+ *
+ * A row with no `barbell_lift`, or one the lexicon does not recognise, falls
+ * back to the text alone, exactly as before.
+ */
+export function findRowMovements(fields: {
+  title?: string | null;
+  description?: string | null;
+  barbell_lift?: string | null;
+}): MovementHit[] {
+  const fromText = findMovements(classifiableText(fields));
+  const typed = findMovements((fields.barbell_lift ?? "").toLowerCase()).map(
+    (hit): MovementHit => ({ ...hit, source: "barbell_lift" })
+  );
+  if (typed.length === 0) return fromText;
+
+  const typedIds = new Set(typed.map((h) => h.id));
+  const dropGeneric = new Set<string>();
+  for (const family of MOVEMENT_FAMILIES) {
+    if (family.generic === undefined) continue;
+    if (typed.some((h) => h.id !== family.generic && family.members.includes(h.id))) {
+      dropGeneric.add(family.generic);
+    }
+  }
+  return [...typed, ...fromText.filter((h) => !typedIds.has(h.id) && !dropGeneric.has(h.id))];
 }
 
 /**
@@ -108,8 +148,14 @@ export function sharesTo100(weights: Record<Modality, number>, total: number): M
  * @param text lowercased title + description + barbell_lift.
  */
 export function classifyModality(text: string): ModalityClassification {
-  const movements = findMovements(text);
+  return classifyMovements(findMovements(text));
+}
 
+/**
+ * The same classification from movements already found, so the pipeline can
+ * run `findMovements` once per row (in `parseRows`) and share the result.
+ */
+export function classifyMovements(movements: MovementHit[]): ModalityClassification {
   if (movements.length === 0) {
     // Nothing recognised. Reported as unclassified and excluded from every
     // average, rather than counted as a workout that was 0% of everything.

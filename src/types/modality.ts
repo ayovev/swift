@@ -43,11 +43,15 @@ export interface ModalitySplit {
 
 /** One recognised movement and the modality it contributed to. */
 export interface MovementHit {
+  /** Stable movement id (see MovementEntry.id), e.g. "power-clean". */
+  id: string;
   /** The lexicon phrase that matched, e.g. "power clean". */
   phrase: string;
   /** Display name, e.g. "Power clean". */
   label: string;
   modality: Modality;
+  /** Where the hit came from: SugarWOD's typed `barbell_lift` field, or the free text. */
+  source: "barbell_lift" | "text";
 }
 
 export interface ModalityClassification {

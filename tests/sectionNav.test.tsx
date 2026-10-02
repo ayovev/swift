@@ -11,6 +11,7 @@ import {
   ALL_TABS,
   BODY_COMP_TAB,
   LIFTS_TAB,
+  MOVEMENTS_TAB,
   OVERVIEW_TAB,
   COMPARE_TAB,
   WORKOUTS_TAB,
@@ -22,8 +23,8 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, GPP domain, modality, Body Comp, Progress, Compare and Periods", () => {
-    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
+  it("has one entry per Overview, Workouts, GPP domain, modality, Movements, Body Comp, Progress, Compare and Periods", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1 + 1);
   });
 });
 
@@ -39,6 +40,7 @@ describe("SECTIONS", () => {
     expect(sectionOf(WORKOUTS_TAB)).toBe("Training");
     expect(sectionOf(strengthTab.value)).toBe("Breakdown");
     expect(sectionOf(gymnasticsTab.value)).toBe("Breakdown");
+    expect(sectionOf(MOVEMENTS_TAB)).toBe("Breakdown");
     expect(sectionOf(BODY_COMP_TAB)).toBe("Body");
     expect(sectionOf(LIFTS_TAB)).toBe("Insights");
     expect(sectionOf(COMPARE_TAB)).toBe("Insights");
