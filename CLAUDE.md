@@ -644,13 +644,14 @@ home. Read the header comments of the files named here before moving anything be
 
 - **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header, at its true
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
-  onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains and three
-  modalities — a classification of the same workouts, not separate data), Body (Body Comp) and
+  onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains, three
+  modalities and Movements — a classification of the same workouts, not separate data), Body (Body Comp) and
   Insights (Progress, Compare, Periods). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
-  header — in line with them it read as one more tab. `tabs.ts` stays the flat identity list
+  header — in line with them it read as one more tab. Movements is a group of one, so it has no
+  header of its own (it would only repeat the tab's name). `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
   `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress view
   keeps its earlier internal names (tab id `lifts`, `LiftsTab.tsx`); only its label and page title changed.
