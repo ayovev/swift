@@ -141,8 +141,8 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
-  Workouts, the ten GPP domains, the three modalities, Body Comp, and the Insights views
+- **components**: `Dashboard.tsx` renders 20 views (`tabs.ts` → `ALL_TABS`): Overview,
+  Workouts, the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
   (Progress, Compare, Periods), grouped for navigation into
   four sections (see "Architecture: dashboard layout" below). The views that need an InBody export
   all share one empty state, `InBodyUploadPrompt.tsx`. A
@@ -152,6 +152,12 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   the same always-present treatment (see "Architecture: Plateau Detector and Alignment" below).
   `buildModalityData`'s output shape deliberately mirrors `buildDashboardData`'s so those two
   components stay near-identical; keep that symmetry.
+
+The **Movements** view (`MovementsTab.tsx`, under Breakdown) lists what the lexicon can recognise: families
+(`movementFamilies.ts`, every variant counts) and single movements, picked by id. It reads
+`Insights.movements` (`buildMovementData.ts`), a thin reduction of the same `ParsedRow.movements`
+`buildModalityData` uses, so nothing is classified twice. The workout list shows the phrase that matched,
+because the matcher is a heuristic. Its one analytics event is the value-free `movement_selected`.
 
 Two things that look like the same idea but are not — don't unify them:
 

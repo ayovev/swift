@@ -7,6 +7,7 @@ export const BODY_COMP_TAB = "body-comp";
 export const LIFTS_TAB = "lifts";
 export const COMPARE_TAB = "compare";
 export const PERIODS_TAB = "periods";
+export const MOVEMENTS_TAB = "movements";
 
 export interface TabDescriptor {
   value: string;
@@ -16,6 +17,7 @@ export interface TabDescriptor {
     | "Workouts"
     | "Domains"
     | "Modalities"
+    | "Movements"
     | "Body composition"
     | "Progress"
     | "Periods"
@@ -28,8 +30,9 @@ export interface TabDescriptor {
  * identity of each view (its value and short label), which analytics
  * (`tab_viewed`) and the tab content in Dashboard.tsx key off.
  *
- * All 19 tabs: Overview, the running Workouts list, ten GPP domains, three
- * modalities, Body Comp — built from a wholly separate InBody upload,
+ * All 20 tabs: Overview, the running Workouts list, ten GPP domains, three
+ * modalities, Movements (any one movement, or a family of them, across the
+ * log; see MovementsTab), Body Comp — built from a wholly separate InBody upload,
  * always present in the nav even before any InBody data is loaded (see
  * BodyCompTab) — Progress, which needs both datasets and is likewise always
  * present: the whole-athlete Alignment read, a plateau row per lift or
@@ -52,6 +55,7 @@ export const ALL_TABS: TabDescriptor[] = [
     label: MODALITY_SHORT_LABELS[m],
     group: "Modalities" as const,
   })),
+  { value: MOVEMENTS_TAB, label: "Movements", group: "Movements" },
   { value: BODY_COMP_TAB, label: "Body Comp", group: "Body composition" },
   { value: LIFTS_TAB, label: "Progress", group: "Progress" },
   { value: COMPARE_TAB, label: "Compare", group: "Compare" },

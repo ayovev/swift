@@ -2,6 +2,7 @@ import {
   ALL_TABS,
   BODY_COMP_TAB,
   LIFTS_TAB,
+  MOVEMENTS_TAB,
   OVERVIEW_TAB,
   COMPARE_TAB,
   PERIODS_TAB,
@@ -20,9 +21,9 @@ interface SubGroup {
 }
 
 /**
- * Nineteen views, grouped the way an athlete actually moves between them:
+ * Twenty views, grouped the way an athlete actually moves between them:
  * what I did (Training), what it was made of (Breakdown — the ten GPP
- * domains and three modalities, which are a *classification* of the same
+ * domains, three modalities and the movements themselves, which are a *classification* of the same
  * workouts rather than separate data), what my body did (Body), and what
  * the two datasets say together (Insights — Progress, Compare and
  * Periods: how lifts and body composition moved, over which stretches, and the
@@ -40,6 +41,7 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
     groups: [
       { label: "Domains", values: ALL_TABS.filter((t) => t.group === "Domains").map((t) => t.value) },
       { label: "Modalities", values: ALL_TABS.filter((t) => t.group === "Modalities").map((t) => t.value) },
+      { values: [MOVEMENTS_TAB] },
     ],
   },
   { id: "Body", groups: [{ values: [BODY_COMP_TAB] }] },

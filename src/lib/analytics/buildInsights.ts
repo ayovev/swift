@@ -1,22 +1,25 @@
 import { buildFromParsedRows, parseRows } from "./buildDashboardData";
 import { buildModalityData } from "./buildModalityData";
+import { buildMovementData } from "./buildMovementData";
 import { filterParsedRowsByRange, getDateBounds, type DateRange } from "./dateRange";
 import type { Granularity } from "./granularity";
 import type { DashboardData } from "@/types/dashboard";
 import type { ModalityData } from "@/types/modality";
+import type { MovementData } from "@/types/movements";
 import type { SugarWodRow } from "@/types/sugarwod";
 
 export interface Insights {
   dashboard: DashboardData;
   modality: ModalityData;
+  movements: MovementData;
   /** The full, unfiltered span of the uploaded log — independent of `range`. */
   dateBounds: DateRange | null;
 }
 
 /**
  * The whole client-side pipeline: parsed CSV rows in, everything the dashboard
- * renders out. Rows are parsed and classified ONCE and shared by both
- * aggregators — at ~1,200 rows, parsing twice is the difference between
+ * renders out. Rows are parsed and classified ONCE and shared by every
+ * aggregator — at ~1,200 rows, parsing twice is the difference between
  * comfortably inside the 5-second budget and not.
  *
  * `range` filters the shared `ParsedRow[]` once, after parsing, before either
@@ -39,6 +42,7 @@ export function buildInsights(
   return {
     dashboard: buildFromParsedRows(filtered),
     modality: buildModalityData(filtered),
+    movements: buildMovementData(filtered),
     dateBounds,
   };
 }
