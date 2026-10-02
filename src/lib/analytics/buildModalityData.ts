@@ -1,4 +1,4 @@
-import { classifyModality, movementsFor, sharesTo100 } from "@/lib/classify/classifyModality";
+import { classifyMovements, movementsFor, sharesTo100 } from "@/lib/classify/classifyModality";
 import { MODALITY_LIST } from "@/types/modality";
 import type { ParsedRow } from "./buildDashboardData";
 import type {
@@ -42,7 +42,7 @@ interface ClassifiedRow {
 export function buildModalityData(parsedRows: readonly ParsedRow[]): ModalityData {
   const all: ClassifiedRow[] = parsedRows.map((row) => ({
     row,
-    modality: classifyModality(row.text),
+    modality: classifyMovements(row.movements),
   }));
 
   const classified = all.filter((r) => r.modality.classified);

@@ -141,8 +141,8 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
-  Workouts, the ten GPP domains, the three modalities, Body Comp, and the Insights views
+- **components**: `Dashboard.tsx` renders 20 views (`tabs.ts` → `ALL_TABS`): Overview,
+  Workouts, the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
   (Progress, Compare, Periods), grouped for navigation into
   four sections (see "Architecture: dashboard layout" below). The views that need an InBody export
   all share one empty state, `InBodyUploadPrompt.tsx`. A
@@ -152,6 +152,12 @@ a broadening rule must land only on genuine inflections, and it will move the pa
   the same always-present treatment (see "Architecture: Plateau Detector and Alignment" below).
   `buildModalityData`'s output shape deliberately mirrors `buildDashboardData`'s so those two
   components stay near-identical; keep that symmetry.
+
+The **Movements** view (`MovementsTab.tsx`, under Breakdown) lists what the lexicon can recognise: families
+(`movementFamilies.ts`, every variant counts) and single movements, picked by id. It reads
+`Insights.movements` (`buildMovementData.ts`), a thin reduction of the same `ParsedRow.movements`
+`buildModalityData` uses, so nothing is classified twice. The workout list shows the phrase that matched,
+because the matcher is a heuristic. Its one analytics event is the value-free `movement_selected`.
 
 Two things that look like the same idea but are not — don't unify them:
 
@@ -175,6 +181,25 @@ times it is named. Workouts where nothing is recognised are marked `classified: 
 **excluded from every average**, not counted as zeroes (otherwise a logged non-workout drags
 every modality's share down); the count is surfaced as `unclassified_count` so the UI can
 caveat it honestly.
+
+Movements have **stable ids**, not just labels: every `MOVEMENT_LEXICON` entry carries an `id`
+(kebab-case, shared by all aliases of one movement, one label and one modality per id — pinned in
+`tests/modalityClassifier.test.ts`), and `MovementHit` carries it. Anything that stores or filters by
+movement uses the id; labels are display text and may be reworded. `movementFamilies.ts` groups ids
+("Clean" = clean, power clean, hang clean, ...) as a deliberate list, never a prefix match, so a new
+lexicon entry cannot silently join a family. `parseRows()` runs `findMovements` once per row into
+`ParsedRow.movements`, and `buildModalityData` classifies from that rather than re-reading the text.
+**`barbell_lift` outranks the text.** It is the one column that names a movement as data, so
+`findRowMovements()` (`classifyModality.ts`) reads it first through the same lexicon (aliases and spellings
+resolve to the same ids, no separate table) and those hits come first, tagged `source: "barbell_lift"`. The text is
+still searched for other movements, but a family's *generic* bare word (`MovementFamily.generic`: "squat",
+"clean", "snatch", ...) is dropped when the typed lift is a more specific member of that family, so a front squat
+session is not also a vague squat. Rows with no recognised typed lift behave exactly as before. Measured on the
+sample: 279 of 1,209 rows have the field, 25 rows' identities changed and no modality split moved (all typed lifts
+are W). Known and left alone: a `% of snatch` reference in a description still reads as a snatch (about 70 rows
+in the export name a lift only as a percentage base); fixing that is a lexicon `exclude` decision of its own.
+Bare equipment words (`db`, `kb`, `dumbbell`, `kettlebell`) are deliberately **not** lexicon entries: they name the
+implement, not the movement, and counting them inflated W.
 
 Order *is* significant in `DOMAIN_KEYWORDS` (`domainKeywords.ts`): the keyword reported as
 "matched on" in the drill-down is whichever is checked first and hits. Reordering a list
@@ -619,13 +644,14 @@ home. Read the header comments of the files named here before moving anything be
 
 - **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header, at its true
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
-  onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains and three
-  modalities — a classification of the same workouts, not separate data), Body (Body Comp) and
+  onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains, three
+  modalities and Movements — a classification of the same workouts, not separate data), Body (Body Comp) and
   Insights (Progress, Compare, Periods). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
-  header — in line with them it read as one more tab. `tabs.ts` stays the flat identity list
+  header — in line with them it read as one more tab. Movements is a group of one, so it has no
+  header of its own (it would only repeat the tab's name). `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
   `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress view
   keeps its earlier internal names (tab id `lifts`, `LiftsTab.tsx`); only its label and page title changed.

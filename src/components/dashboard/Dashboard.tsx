@@ -8,6 +8,7 @@ import { SettingsSheet } from "./SettingsSheet";
 import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
 import { DomainTab } from "./DomainTab";
 import { ModalityTab } from "./ModalityTab";
+import { MovementsTab } from "./MovementsTab";
 import { OverviewTab } from "./OverviewTab";
 import { LiftsTab } from "./LiftsTab";
 import { CompareTab } from "./CompareTab";
@@ -17,6 +18,7 @@ import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import {
   ALL_TABS,
   BODY_COMP_TAB,
+  MOVEMENTS_TAB,
   OVERVIEW_TAB,
   LIFTS_TAB,
   COMPARE_TAB,
@@ -303,6 +305,10 @@ export function Dashboard({
               <ModalityTab modality={modality} data={insights.modality} granularity={granularity} />
             </TabsContent>
           ))}
+
+          <TabsContent value={MOVEMENTS_TAB}>
+            <MovementsTab data={insights.movements} granularity={granularity} />
+          </TabsContent>
 
           <TabsContent value={BODY_COMP_TAB}>
             <BodyCompTab
