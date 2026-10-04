@@ -20,7 +20,7 @@
  * framing unit" holds without extra bookkeeping.
  */
 
-import { Reassembler, SyncFramingError, chunkPayload, type SyncDataset } from "./chunking";
+import { MAX_CHUNK_BYTES, Reassembler, SyncFramingError, chunkPayload, type SyncDataset } from "./chunking";
 import { PairingCodeError, decodePairingPayload, encodePairingPayload } from "./pairingCode";
 import {
   IceGatheringTimeoutError,
@@ -30,8 +30,6 @@ import {
 } from "./peerConnection";
 import type { SyncTransport } from "./syncTransport";
 
-// Stays comfortably under the ~16KB cross-browser RTCDataChannel message cap.
-const MAX_CHUNK_BYTES = 15000;
 
 /**
  * Closed vocabulary shared with `posthog.ts`'s `sync_failed` event. Only
@@ -250,6 +248,8 @@ export class SyncSession {
     });
 
     transport.onMessage((bytes) => {
+      // A failed session keeps its transport callback; ignore whatever the sender still pushes.
+      if (this.#state.status === "failed" || this.#state.status === "done") return;
       if (!haveManifest) {
         let manifest: Manifest;
         try {

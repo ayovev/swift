@@ -125,9 +125,9 @@ a broadening rule must land only on genuine inflections, and it will move the pa
 
 `vercel.json` sends a CSP (`connect-src` limited to our origin and PostHog, so the "data never leaves the
 browser" promise is also enforced by the browser), `frame-ancestors 'none'`, nosniff, HSTS and a
-Permissions-Policy that allows only the camera (QR sync). The one inline script (theme, `index.html`) is
+Permissions-Policy that grants the camera to our own origin (QR sync) and turns off microphone, geolocation and payment (features it doesn't name keep browser defaults). The one inline script (theme, `index.html`) is
 allowed by hash; `tests/securityHeaders.test.ts` fails if the script changes without the hash. A new
-third-party host or inline script needs the CSP updated in the same change. `posthog.ts` pins PostHog's
+third-party host or inline script needs the CSP updated in the same change. `posthog.ts` pins the PostHog host to the US endpoints the CSP allows, and pins PostHog's
 remote-config features (exception capture, dead clicks, heatmaps, surveys) off in code.
 
 ## Architecture: classify → analytics → components

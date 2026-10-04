@@ -24,6 +24,12 @@ const SYNC_DATASETS: readonly SyncDataset[] = ["workout", "bodyComp", "experimen
  */
 export const MAX_DATASET_BYTES = 64 * 1024 * 1024;
 
+/** Payload bytes per data-channel message; stays under the ~16KB cross-browser cap. */
+export const MAX_CHUNK_BYTES = 15000;
+
+/** Real senders need ceil(MAX_DATASET_BYTES / MAX_CHUNK_BYTES) = 4,474 frames at most; this leaves room for smaller chunks. */
+export const MAX_FRAMES_PER_DATASET = 16_384;
+
 export interface FrameHeader {
   dataset: SyncDataset;
   byteLength: number;
@@ -91,6 +97,16 @@ function decodeHeader(bytes: Uint8Array): FrameHeader {
   if (byteLength > MAX_DATASET_BYTES) {
     throw new SyncFramingError("Header declares more data than Swift accepts.");
   }
+  // A frame holds at most MAX_CHUNK_BYTES and at least one byte, so the count has
+  // to sit between those. The absolute ceiling is what stops a peer from making us
+  // keep millions of tiny frames inside the byte cap.
+  if (
+    chunkCount > MAX_FRAMES_PER_DATASET ||
+    chunkCount > byteLength ||
+    chunkCount < Math.ceil(byteLength / MAX_CHUNK_BYTES)
+  ) {
+    throw new SyncFramingError("Header's chunkCount doesn't match its byteLength.");
+  }
 
   return { dataset: dataset as SyncDataset, byteLength, chunkCount };
 }
@@ -126,13 +142,15 @@ export class Reassembler {
         : { done: false };
     }
 
-    this.#chunks.push(bytes);
-    this.#receivedBytes += bytes.byteLength;
-    if (this.#receivedBytes > this.#header.byteLength) {
+    // Reject an overrun before keeping the chunk, so a sender that keeps going
+    // after a failure can't grow #chunks.
+    if (this.#receivedBytes + bytes.byteLength > this.#header.byteLength) {
       throw new SyncFramingError(
         `Expected ${this.#header.byteLength} bytes but received more.`
       );
     }
+    this.#chunks.push(bytes);
+    this.#receivedBytes += bytes.byteLength;
 
     if (this.#chunks.length < this.#header.chunkCount) {
       return { done: false };

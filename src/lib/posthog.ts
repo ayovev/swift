@@ -78,6 +78,8 @@ type SwiftEvent =
       props: { granularity: "daily" | "weekly" | "monthly" | "quarterly" | "yearly" };
     };
 
+const POSTHOG_HOST = "https://us.i.posthog.com";
+
 let enabled = false;
 
 /**
@@ -90,7 +92,8 @@ export function initAnalytics(): void {
   if (!key) return;
 
   posthog.init(key, {
-    api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+    // Pinned, not configurable: vercel.json's connect-src allows exactly this host.
+    api_host: POSTHOG_HOST,
     // No accounts, so never create a person profile.
     person_profiles: "never",
     // We send our own page view once, rather than on every SPA route change.
