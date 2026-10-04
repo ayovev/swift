@@ -11,7 +11,6 @@ const mocked = vi.mocked(posthog);
 async function loadAnalytics(key: string) {
   vi.resetModules();
   vi.stubEnv("VITE_PUBLIC_POSTHOG_KEY", key);
-  vi.stubEnv("VITE_PUBLIC_POSTHOG_HOST", "https://example.invalid");
   return import("@/lib/posthog");
 }
 

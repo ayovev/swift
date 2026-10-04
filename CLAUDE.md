@@ -121,6 +121,15 @@ fixes this export and nothing else. `movementLexicon.ts` deliberately has **no**
 entry for this reason. Whatever the engine grows, measure it against the sample export first:
 a broadening rule must land only on genuine inflections, and it will move the parity diff.
 
+## Deployment headers
+
+`vercel.json` sends a CSP (`connect-src` limited to our origin and PostHog, so the "data never leaves the
+browser" promise is also enforced by the browser), `frame-ancestors 'none'`, nosniff, HSTS and a
+Permissions-Policy that grants the camera to our own origin (QR sync) and turns off microphone, geolocation and payment (features it doesn't name keep browser defaults). The one inline script (theme, `index.html`) is
+allowed by hash; `tests/securityHeaders.test.ts` fails if the script changes without the hash. A new
+third-party host or inline script needs the CSP updated in the same change. `posthog.ts` pins the PostHog host to the US endpoints the CSP allows, and pins PostHog's
+remote-config features (exception capture, dead clicks, heatmaps, surveys) off in code.
+
 ## Architecture: classify → analytics → components
 
 `src/lib/classify` → `src/lib/analytics` → `src/components/dashboard`.
