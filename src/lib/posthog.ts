@@ -100,6 +100,18 @@ export function initAnalytics(): void {
     // exactly the workout content this must never capture.
     disable_session_recording: true,
     autocapture: false,
+    // PostHog's project-level remote config can switch these on without a code
+    // change here. Each would read the screen or error text (workout titles,
+    // CSV parse messages), so pin them off in code rather than trusting the
+    // dashboard setting.
+    capture_dead_clicks: false,
+    capture_heatmaps: false,
+    capture_exceptions: false,
+    capture_performance: false,
+    disable_surveys: true,
+    disable_conversations: true,
+    disable_web_experiments: true,
+    advanced_disable_flags: true,
     persistence: "localStorage",
   });
   enabled = true;
