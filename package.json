@@ -4,6 +4,15 @@
   "version": "0.1.0",
   "type": "module",
   "description": "SugarWOD training-insights dashboard — all processing client-side.",
+  "license": "MIT",
+  "homepage": "https://tryswift.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ayovev/swift.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ayovev/swift/issues"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

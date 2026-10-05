@@ -6,7 +6,8 @@ dashboard: consistency over time, lift/benchmark progression, PRs, a breakdown a
 TypeScript 7, Tailwind v4, shadcn/ui, Recharts, Vitest. Deployed as a static SPA on Vercel.
 
 This file covers *how* the code works and which parts must not be "improved". `README.md`
-covers what the product is and how to run it. Between them they are now the whole written
+covers what the product is and how to run it, and `docs/` holds the longer reference
+(guide, privacy, architecture, classification, testing). Between them they are now the whole written
 record: the original v1 requirements document has been retired, so where a behaviour is
 deliberate, the reason lives in a comment or a test next to it rather than in a spec
 elsewhere. Keep it that way — if you change something load-bearing, move its reason with it.

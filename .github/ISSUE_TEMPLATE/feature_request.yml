@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest something Swift should do
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Swift runs entirely in the browser with no backend, and training data never leaves it. A request that needs a server, an account, or sending workout data anywhere won't fit. Everything else is welcome.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to see or do
+      description: Describe the question you want your training log to answer.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+      description: Optional. A rough idea of how it could work.
