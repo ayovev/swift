@@ -88,6 +88,11 @@ small enough to verify.
   things that touch the network are the sample-file download in `src/App.tsx`
   (from our own origin), the analytics client in `src/lib/posthog.ts`, and the
   STUN lookup in `src/lib/sync/webrtcTransport.ts`.
+- **In the headers.** `vercel.json` sets a Content-Security-Policy on the live
+  site. Its `connect-src` allows requests only to the app's own origin and
+  PostHog, so the page can't make a fetch or XHR call to anywhere else. (WebRTC
+  device sync is separate: it connects browser to browser, and only the STUN
+  lookup leaves for a public server.)
 - **In the types.** `SwiftEvent` in `src/lib/posthog.ts` is the entire analytics
   surface, written as a narrow union rather than a free-form object, so adding
   free-form content to an event is a type error.
