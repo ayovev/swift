@@ -78,6 +78,8 @@ type SwiftEvent =
       props: { granularity: "daily" | "weekly" | "monthly" | "quarterly" | "yearly" };
     };
 
+const POSTHOG_HOST = "https://us.i.posthog.com";
+
 let enabled = false;
 
 /**
@@ -90,7 +92,8 @@ export function initAnalytics(): void {
   if (!key) return;
 
   posthog.init(key, {
-    api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+    // Pinned, not configurable: vercel.json's connect-src allows exactly this host.
+    api_host: POSTHOG_HOST,
     // No accounts, so never create a person profile.
     person_profiles: "never",
     // We send our own page view once, rather than on every SPA route change.
@@ -100,6 +103,18 @@ export function initAnalytics(): void {
     // exactly the workout content this must never capture.
     disable_session_recording: true,
     autocapture: false,
+    // PostHog's project-level remote config can switch these on without a code
+    // change here. Each would read the screen or error text (workout titles,
+    // CSV parse messages), so pin them off in code rather than trusting the
+    // dashboard setting.
+    capture_dead_clicks: false,
+    capture_heatmaps: false,
+    capture_exceptions: false,
+    capture_performance: false,
+    disable_surveys: true,
+    disable_conversations: true,
+    disable_web_experiments: true,
+    advanced_disable_flags: true,
     persistence: "localStorage",
   });
   enabled = true;

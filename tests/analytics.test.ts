@@ -12,7 +12,6 @@ const mocked = vi.mocked(posthog);
 async function loadAnalytics(key: string) {
   vi.resetModules();
   vi.stubEnv("VITE_PUBLIC_POSTHOG_KEY", key);
-  vi.stubEnv("VITE_PUBLIC_POSTHOG_HOST", "https://example.invalid");
   return import("@/lib/posthog");
 }
 
@@ -54,6 +53,16 @@ describe("analytics — privacy-preserving configuration", () => {
       disable_session_recording: true,
       autocapture: false,
       capture_pageview: false,
+      // Remote config could otherwise switch these on and read screen or error text.
+      capture_dead_clicks: false,
+      capture_heatmaps: false,
+      capture_exceptions: false,
+      capture_performance: false,
+      disable_surveys: true,
+      disable_conversations: true,
+      disable_web_experiments: true,
+      advanced_disable_flags: true,
+      api_host: "https://us.i.posthog.com",
     });
   });
 
