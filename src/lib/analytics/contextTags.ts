@@ -174,3 +174,26 @@ export function tagBandSpans(tags: readonly ContextTag[], axis: readonly AxisSpa
   }
   return out;
 }
+
+export interface LanedBand extends TagBandSpan {
+  /** 0 is the top row; a band overlapping an earlier one sits in a lower row. */
+  lane: number;
+}
+
+/**
+ * Packs bands into the fewest rows in which none overlap on the axis, so a
+ * timeline of periods can show each one's own start and end. Greedy by start
+ * position: each band takes the first row whose last band has already ended.
+ * Output order is the input order; only `lane` is added.
+ */
+export function assignLanes(bands: readonly TagBandSpan[]): LanedBand[] {
+  const laneEnds: number[] = [];
+  const laneOf = new Map<TagBandSpan, number>();
+  for (const b of [...bands].sort((a, c) => a.first - c.first || a.last - c.last)) {
+    let lane = laneEnds.findIndex((end) => end < b.first);
+    if (lane === -1) lane = laneEnds.length;
+    laneEnds[lane] = b.last;
+    laneOf.set(b, lane);
+  }
+  return bands.map((b) => ({ ...b, lane: laneOf.get(b)! }));
+}

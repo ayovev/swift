@@ -93,6 +93,13 @@ export const PCT_AXIS_WIDTH = 48;
 export const NUM_AXIS_WIDTH = 52;
 
 /**
+ * The margin every time-series chart passes to Recharts. Shared because the
+ * period track under a chart (PeriodTrack) lines itself up with the plot area
+ * from this and the y-axis width; change one and the track drifts off its bars.
+ */
+export const CHART_MARGIN = { top: 8, right: 8, bottom: 0, left: 0 } as const;
+
+/**
  * The target tick count for every axis in the app, numeric or time — one
  * shared constant so every chart reads as the same "density" of gridlines
  * rather than each picking its own. It's a target, not a guarantee:
