@@ -86,4 +86,25 @@ describe("useChartInteraction", () => {
     );
     expect(screen.getByText(/Shaded: Winter cut/)).toBeInTheDocument();
   });
+
+  it("lists the periods overlapping a hovered position for the tooltip, and nothing for a clear one", () => {
+    const cut: ContextTag = { id: "a", type: "cut", label: "Winter cut", startDate: "2026-02-10", endDate: "2026-03-05" };
+    const trip: ContextTag = { id: "b", type: "travel", label: "Trip", startDate: "2026-03-01", endDate: "2026-03-10" };
+    function Tip({ at }: { at: string }) {
+      return <>{useChartInteraction(months).tooltipFooter(at)}</>;
+    }
+    const withTags = (at: string) => (
+      <ChartInteractionProvider value={{ ...value, tags: [cut, trip] }}>
+        <Tip at={at} />
+      </ChartInteractionProvider>
+    );
+    const { container, rerender } = render(withTags("Mar"));
+    expect(screen.getByText(/Winter cut/)).toBeInTheDocument();
+    expect(screen.getByText(/Trip/)).toBeInTheDocument();
+    rerender(withTags("Feb"));
+    expect(screen.getByText(/Winter cut/)).toBeInTheDocument();
+    expect(screen.queryByText(/Trip/)).not.toBeInTheDocument();
+    rerender(withTags("Jan"));
+    expect(container).toBeEmptyDOMElement();
+  });
 });

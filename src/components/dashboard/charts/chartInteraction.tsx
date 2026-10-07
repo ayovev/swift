@@ -55,6 +55,9 @@ export function selectionWindow(xs: readonly ChartXSpan[], a: number, b: number)
   return lo && hi ? { start: lo.start, end: hi.end } : null;
 }
 
+/** Past this, the tooltip says how many more instead of growing taller than the chart. */
+const MAX_TOOLTIP_PERIODS = 4;
+
 const indexOf = (s: MouseState): number | null => {
   const i = Number(s.activeTooltipIndex);
   return s.activeTooltipIndex == null || Number.isNaN(i) ? null : i;
@@ -71,6 +74,8 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
   handlers: Partial<Handlers>;
   overlays: ReactNode;
   footer: ReactNode;
+  /** For a tooltip's `renderFooter`: the periods overlapping the hovered x-position. */
+  tooltipFooter: (label: unknown) => ReactNode;
 } {
   const ctx = useContext(Ctx);
   const [anchor, setAnchor] = useState<number | null>(null);
@@ -88,7 +93,35 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
 
   const bands = useMemo(() => (ctx ? tagBandSpans(ctx.tags, xs) : []), [ctx, xs]);
 
-  if (!ctx) return { handlers: {}, overlays: null, footer: null };
+  const periodsByLabel = useMemo(() => {
+    const m = new Map<string, ContextTag[]>();
+    for (const b of bands) {
+      for (let i = b.first; i <= b.last; i++) {
+        const label = xs[i]!.label;
+        m.set(label, [...(m.get(label) ?? []), b.tag]);
+      }
+    }
+    return m;
+  }, [bands, xs]);
+
+  if (!ctx) return { handlers: {}, overlays: null, footer: null, tooltipFooter: () => null };
+
+  const tooltipFooter = (label: unknown): ReactNode => {
+    const tags = typeof label === "string" ? periodsByLabel.get(label) : undefined;
+    if (!tags?.length) return null;
+    const shown = tags.slice(0, MAX_TOOLTIP_PERIODS);
+    return (
+      <div className="mt-0.5 grid max-w-64 gap-1 border-t border-border/50 pt-1.5">
+        <div className="text-muted-foreground">Periods</div>
+        {shown.map((t) => (
+          <div key={t.id}>{describeTag(t)}</div>
+        ))}
+        {tags.length > shown.length ? (
+          <div className="text-muted-foreground">+{tags.length - shown.length} more</div>
+        ) : null}
+      </div>
+    );
+  };
 
   const live = anchor !== null && current !== null && anchor !== current ? { from: Math.min(anchor, current), to: Math.max(anchor, current) } : null;
   const shown = live ?? (committed ? { from: committed.from, to: committed.to } : null);
@@ -173,5 +206,5 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
       </div>
     ) : null;
 
-  return { handlers, overlays, footer };
+  return { handlers, overlays, footer, tooltipFooter };
 }
