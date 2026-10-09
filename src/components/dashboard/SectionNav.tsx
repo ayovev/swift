@@ -131,7 +131,9 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
   return (
     <nav
       aria-label={`${section.id} views`}
-      className="flex items-end gap-10 overflow-x-auto border-b border-border"
+      // overflow-x-auto makes the y axis scroll too; the tabs' -mb-px overhangs the
+      // bottom edge by 1px, which is what made this row scroll vertically.
+      className="flex items-end gap-10 overflow-x-auto overflow-y-hidden border-b border-border"
     >
       {section.groups.map((g, i) => (
         // A labelled group puts its label *above* its tabs, as a header —
