@@ -7,8 +7,7 @@
  * One record covers what used to be two. An experiment is a tag of type
  * "experiment": something the athlete tried. What the app derives from a tag
  * follows its type, and the grouping below (`TAG_GROUPS`) is the one place that
- * is decided: every tag shades the charts; cut and injury are named where they
- * overlap a result; every type in "Something you changed" is also a training
+ * is decided: cut and injury are named where they overlap a result; every type in "Something you changed" is also a training
  * block, can be opened on Compare, and gets a before/after verdict; injury and
  * travel are context only.
  *

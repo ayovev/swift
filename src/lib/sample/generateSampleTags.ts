@@ -6,7 +6,7 @@ import type { ContextTag, TagType } from "@/types/tag";
 /**
  * Generates a handful of plausible context tags to go with the SugarWOD +
  * InBody demo data (`extendSample.ts`, `generateSampleBodyComp.ts`), so a
- * first-time visitor sees the Periods view, the shaded chart bands, Compare
+ * first-time visitor sees the Periods view, Compare
  * and its verdicts and a tag note or two on Plateaus instead of empty states. See
  * `App.tsx`'s `finishSuccessfulLoad`, the only caller. Never persisted, never
  * synced: sample mode leaves nothing behind (CLAUDE.md, hard constraint 1).
