@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildBodyCompData } from "@/lib/analytics/buildBodyCompData";
+import dayjs from "dayjs";
+import { buildBodyCompData, filterInBodyRowsByRange } from "@/lib/analytics/buildBodyCompData";
 import { loadSampleInBodyRows } from "./fixtures/sampleInBodyRows";
-import { inbodyRow } from "./fixtures/rows";
+import { inbodyRow, scanRow } from "./fixtures/rows";
 
 describe("buildBodyCompData", () => {
   it("buckets the sample export monthly by default, oldest first", async () => {
@@ -63,5 +64,32 @@ describe("buildBodyCompData", () => {
     expect(data.points).toHaveLength(1);
     expect(data.points[0]?.bucket).toBe("2026");
     expect(data.points[0]?.weight).toBe(181);
+  });
+});
+
+describe("filterInBodyRowsByRange", () => {
+  const rows = [
+    scanRow("2025-12-31"),
+    scanRow("2026-01-01", {}, "000000"),
+    scanRow("2026-03-15"),
+    scanRow("2026-06-30", {}, "235959"),
+    scanRow("2026-07-01"),
+  ];
+  const range = { start: dayjs("2026-01-01"), end: dayjs("2026-06-30") };
+
+  it("keeps scans inside the range, inclusive of both end days whatever the time", () => {
+    expect(filterInBodyRowsByRange(rows, range).map((r) => r.date.slice(0, 8))).toEqual([
+      "20260101",
+      "20260315",
+      "20260630",
+    ]);
+  });
+
+  it("is a no-op for a null range", () => {
+    expect(filterInBodyRowsByRange(rows, null)).toEqual(rows);
+  });
+
+  it("drops a row whose date doesn't parse once a range is set", () => {
+    expect(filterInBodyRowsByRange([inbodyRow({ date: "garbage" })], range)).toEqual([]);
   });
 });

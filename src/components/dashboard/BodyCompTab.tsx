@@ -5,7 +5,8 @@ import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import { BodyCompLineChart } from "./charts/BodyCompLineChart";
 import { ConsistencyChart } from "./charts/ConsistencyChart";
 import { FilePickerButton } from "./FilePickerButton";
-import { buildBodyCompData } from "@/lib/analytics/buildBodyCompData";
+import { buildBodyCompData, filterInBodyRowsByRange } from "@/lib/analytics/buildBodyCompData";
+import type { DateRange } from "@/lib/analytics/dateRange";
 import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
 import type { BodyCompPoint } from "@/types/bodyComp";
 import type { BucketCount, DashboardData } from "@/types/dashboard";
@@ -20,6 +21,8 @@ export type BodyCompState =
 interface BodyCompTabProps {
   state: BodyCompState;
   granularity: Granularity;
+  /** The dashboard's selected date range; scans outside it are left out. `null` is all time. */
+  range: DateRange | null;
   onFile: (file: File) => void;
   /**
    * The SugarWOD dashboard data, used only to look up how many days were
@@ -63,10 +66,13 @@ function InBodySourceMark() {
  * it reads `dashboard.days_buckets` for the same bucket keys the scan data
  * already uses, never a specific InBody row against a specific workout row.
  */
-export function BodyCompTab({ state, granularity, onFile, dashboard }: BodyCompTabProps) {
+export function BodyCompTab({ state, granularity, range, onFile, dashboard }: BodyCompTabProps) {
   const data = useMemo(
-    () => (state.status === "ready" ? buildBodyCompData(state.rows, granularity) : null),
-    [state, granularity]
+    () =>
+      state.status === "ready"
+        ? buildBodyCompData(filterInBodyRowsByRange(state.rows, range), granularity)
+        : null,
+    [state, granularity, range]
   );
 
   if (!data) {
@@ -146,7 +152,9 @@ export function BodyCompTab({ state, granularity, onFile, dashboard }: BodyCompT
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Not enough scans yet to chart a trend — add a few more InBody exports over time.
+              {range
+                ? "Fewer than two scans fall in this date range. Widen the range to chart a trend."
+                : "Not enough scans yet to chart a trend — add a few more InBody exports over time."}
             </p>
           )}
         </CardContent>
