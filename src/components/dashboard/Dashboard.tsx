@@ -133,7 +133,6 @@ export function Dashboard({
 
   const chartInteraction = useMemo(
     () => ({
-      tags,
       onCompare: (window: DateWindow) => {
         setPendingWindow((p) => ({ window, tagId: null, nonce: (p?.nonce ?? 0) + 1 }));
         setTab(COMPARE_TAB);
@@ -147,7 +146,7 @@ export function Dashboard({
         capture({ name: "tab_viewed", props: { tab: "Periods", source } });
       },
     }),
-    [tags, source]
+    [source]
   );
 
   // From a row on the Tags view: open Compare with that tag's range filled in.

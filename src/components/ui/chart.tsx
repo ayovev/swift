@@ -154,11 +154,8 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-  renderFooter,
 }: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
   React.ComponentProps<"div"> & {
-    /** Extra content under the series rows, given the hovered x value. */
-    renderFooter?: (label: unknown) => React.ReactNode
     hideLabel?: boolean
     hideIndicator?: boolean
     indicator?: "line" | "dot" | "dashed"
@@ -293,7 +290,6 @@ function ChartTooltipContent({
             )
           })}
       </div>
-      {renderFooter?.(label)}
     </div>
   )
 }

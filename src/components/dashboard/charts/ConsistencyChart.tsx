@@ -89,7 +89,6 @@ export function ConsistencyChart({
 
   return (
     <>
-    {interaction.picker}
     <ChartContainer config={config} className={className} role="img" aria-label={ariaLabel}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} {...interaction.handlers}>
         {interaction.overlays}
@@ -109,7 +108,7 @@ export function ConsistencyChart({
           interval={0} // see niceAxisTicks() in chartUtils.ts for why
           {...AXIS_PROPS}
         />
-        <ChartTooltip content={<ChartTooltipContent renderFooter={interaction.tooltipFooter} />} />
+        <ChartTooltip content={<ChartTooltipContent />} />
         <Bar
           dataKey="count"
           fill="var(--primary)"

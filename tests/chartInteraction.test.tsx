@@ -1,8 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { tagBandSpans } from "@/lib/analytics/contextTags";
 import { ChartInteractionProvider, selectionWindow, useChartInteraction, type ChartXSpan } from "@/components/dashboard/charts/chartInteraction";
-import type { ContextTag } from "@/types/tag";
 
 const months: ChartXSpan[] = [
   { label: "Jan", start: "2026-01-01", end: "2026-01-31" },
@@ -22,19 +20,6 @@ describe("selectionWindow", () => {
   });
 });
 
-describe("tagBandSpans", () => {
-  const tag = (over: Partial<ContextTag>): ContextTag => ({ id: "t", type: "cut", startDate: "2026-02-10", endDate: "2026-03-05", ...over });
-  it("covers exactly the positions the tag touches", () => {
-    expect(tagBandSpans([tag({})], months)).toMatchObject([{ first: 1, last: 2 }]);
-  });
-  it("runs an open-ended tag to the end of the axis", () => {
-    expect(tagBandSpans([tag({ endDate: null })], months)).toMatchObject([{ first: 1, last: 3 }]);
-  });
-  it("drops a tag outside the plotted range", () => {
-    expect(tagBandSpans([tag({ startDate: "2025-01-01", endDate: "2025-02-01" })], months)).toEqual([]);
-  });
-});
-
 function Probe({ xs }: { xs: ChartXSpan[] }) {
   const i = useChartInteraction(xs);
   return (
@@ -42,14 +27,13 @@ function Probe({ xs }: { xs: ChartXSpan[] }) {
       <button onClick={() => i.handlers.onMouseDown?.({ activeTooltipIndex: 0 })}>down0</button>
       <button onClick={() => i.handlers.onMouseMove?.({ activeTooltipIndex: 2 })}>move2</button>
       <button onClick={() => i.handlers.onMouseUp?.()}>up</button>
-      {i.picker}
       {i.footer}
     </div>
   );
 }
 
 describe("useChartInteraction", () => {
-  const value = { tags: [] as ContextTag[], onCompare: vi.fn(), onTag: vi.fn() };
+  const value = { onCompare: vi.fn(), onTag: vi.fn() };
 
   it("offers nothing without a provider", () => {
     render(<Probe xs={months} />);
@@ -76,52 +60,5 @@ describe("useChartInteraction", () => {
     expect(value.onTag).toHaveBeenCalledWith({ start: "2026-01-01", end: "2026-03-31" });
     fireEvent.click(screen.getByRole("button", { name: "Clear" }));
     expect(screen.queryByRole("group", { name: "Selected range" })).not.toBeInTheDocument();
-  });
-
-  it("offers a picker of the periods on the plotted range, with nothing highlighted until one is chosen", () => {
-    const tag: ContextTag = { id: "t", type: "cut", label: "Winter cut", startDate: "2026-02-10", endDate: null };
-    render(
-      <ChartInteractionProvider value={{ ...value, tags: [tag] }}>
-        <Probe xs={months} />
-      </ChartInteractionProvider>
-    );
-    const select = screen.getByRole("combobox", { name: /Highlight a period/ });
-    expect(select).toHaveValue("");
-    expect(screen.getByRole("option", { name: /Winter cut/ })).toBeInTheDocument();
-    fireEvent.change(select, { target: { value: "t" } });
-    expect(select).toHaveValue("t");
-    fireEvent.change(select, { target: { value: "" } });
-    expect(select).toHaveValue("");
-  });
-
-  it("shows no picker when no period is on the plotted range", () => {
-    const tag: ContextTag = { id: "t", type: "cut", startDate: "2025-01-01", endDate: "2025-02-01" };
-    render(
-      <ChartInteractionProvider value={{ ...value, tags: [tag] }}>
-        <Probe xs={months} />
-      </ChartInteractionProvider>
-    );
-    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
-  });
-
-  it("lists the periods overlapping a hovered position for the tooltip, and nothing for a clear one", () => {
-    const cut: ContextTag = { id: "a", type: "cut", label: "Winter cut", startDate: "2026-02-10", endDate: "2026-03-05" };
-    const trip: ContextTag = { id: "b", type: "travel", label: "Trip", startDate: "2026-03-01", endDate: "2026-03-10" };
-    function Tip({ at }: { at: string }) {
-      return <>{useChartInteraction(months).tooltipFooter(at)}</>;
-    }
-    const withTags = (at: string) => (
-      <ChartInteractionProvider value={{ ...value, tags: [cut, trip] }}>
-        <Tip at={at} />
-      </ChartInteractionProvider>
-    );
-    const { container, rerender } = render(withTags("Mar"));
-    expect(screen.getByText(/Winter cut/)).toBeInTheDocument();
-    expect(screen.getByText(/Trip/)).toBeInTheDocument();
-    rerender(withTags("Feb"));
-    expect(screen.getByText(/Winter cut/)).toBeInTheDocument();
-    expect(screen.queryByText(/Trip/)).not.toBeInTheDocument();
-    rerender(withTags("Jan"));
-    expect(container).toBeEmptyDOMElement();
   });
 });

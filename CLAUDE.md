@@ -309,11 +309,13 @@ the equal-length window immediately before B.
   runs up to its start date, so a custom window A that ends earlier than the day before window B
   gains the gap when saved; `CompareTab` says so (`windowAIsContiguous`).
 - **Dragging is a convenience, never the only way.** `charts/chartInteraction.tsx` gives a chart a
-  drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`)
-  and shaded period bands (`tagBandSpans`). A selection offers "Compare with the N days before" and "Save as a period";
+  drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`).
+  **Periods are deliberately not drawn on charts for now**: shaded bands, a timeline track, a
+  highlight picker and a tooltip section were each tried and removed while what a period stores
+  and where it shows is undecided (they are in git history). A selection offers "Compare with the N days before" and "Save as a period";
   every path also exists as date inputs on the Compare and Periods views. Wired into
   `ConsistencyChart`, `BodyCompLineChart` and `RelativeStrengthChart`; `LiftChart` (a numeric-axis
-  scatter) has neither bands nor drag.
+  scatter) has no drag.
 - **One view, not three.** The former Compare, Experiments and Cycles views are one Compare view (`CompareTab.tsx`; its page title reads "Compare periods")
   because they answer one question about a range and differ only in how the range was named. The
   range (window B, plus the earlier window A) is the only input: typed, dragged out on a chart, or
@@ -336,7 +338,7 @@ the equal-length window immediately before B.
   have no export or import of their own (the full backup, below, is the only file route, so there is one
   way to get data out and back in), and sync between devices (see "Architecture:
   cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`, one slot per domain of
-  *Something you changed*, so the demo shows verdicts of every kind) so the Periods, Compare and chart-band
+  *Something you changed*, so the demo shows verdicts of every kind) so the Periods and Compare
   views aren't empty; they are in memory only, never persisted or synced.
 - **One record for periods and experiments.** An experiment is a period of type `experiment`: something
   the athlete tried. Every period is stored as a `ContextTag`; what the app derives from it follows its
@@ -347,8 +349,7 @@ the equal-length window immediately before B.
   else* (experiment, other). **Something that happened** is injury and travel: context only. A type
   implies its domain, so no extra field is stored; adding a type is a new id in `TagType`,
   `TAG_TYPE_LABEL` and `TAG_GROUPS`, never a migration (`tests/tagTypes.test.ts` pins that each type
-  sits in exactly one place). The behaviour is **group-driven, not per type**: every period shades
-  charts; cut and injury are named where they overlap a result; every type in *Something you changed*
+  sits in exactly one place). The behaviour is **group-driven, not per type**: cut and injury are named where they overlap a result; every type in *Something you changed*
   (`CHANGE_TYPES`, `isChangeType`) is a training block (`CYCLE_TAG_TYPES`), can be opened on Compare, and
   gets a before/after verdict (`hasVerdict` → `getPeriodVerdict`, which takes the period itself). The reason the verdict is not limited to `experiment`: with
   catch-alls per domain, "Nutrition change" getting a verdict while "Cut" does not would look arbitrary,

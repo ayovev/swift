@@ -138,39 +138,3 @@ export function validateTagList(list: unknown): TagsParseResult {
   }
   return { status: "ok", tags };
 }
-
-// ── Chart bands ─────────────────────────────────────────────────────────
-
-export interface AxisSpan {
-  /** Inclusive calendar span the x-position stands for (a bucket, or a single day). */
-  start: string;
-  end: string;
-}
-
-export interface TagBandSpan {
-  tag: ContextTag;
-  /** Indexes into the axis: the first and last x-position the tag touches. */
-  first: number;
-  last: number;
-}
-
-/**
- * Where each tag falls on a time axis, as index ranges into `axis`. A tag
- * outside the plotted range produces no band. Not clipped or stretched: a
- * band covers exactly the x-positions whose span it overlaps.
- */
-export function tagBandSpans(tags: readonly ContextTag[], axis: readonly AxisSpan[]): TagBandSpan[] {
-  const out: TagBandSpan[] = [];
-  for (const tag of tags) {
-    let first = -1;
-    let last = -1;
-    axis.forEach((x, i) => {
-      if (tagOverlaps(tag, x.start, x.end)) {
-        if (first === -1) first = i;
-        last = i;
-      }
-    });
-    if (first !== -1) out.push({ tag, first, last });
-  }
-  return out;
-}
