@@ -1,6 +1,6 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, CHART_MARGIN, NUM_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
+import { AXIS_PROPS, NUM_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
 import { useChartInteraction } from "./chartInteraction";
 import {
   bucketRange,
@@ -38,8 +38,7 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
     rows.flatMap((r) => {
       const range = bucketRange(r.bucket, granularity);
       return range ? [{ label: r.label, ...range }] : [];
-    }),
-    "points"
+    })
   );
 
   if (rows.length < 2) return null;
@@ -66,7 +65,7 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
         role="img"
         aria-label={`${seriesLabel} over time, ${granularityLabel(granularity).toLowerCase()} by ${granularityLabel(granularity).toLowerCase()}, latest ${latest.toFixed(1)}${unit}`}
       >
-        <LineChart data={rows} margin={CHART_MARGIN} {...interaction.handlers}>
+        <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} {...interaction.handlers}>
           {interaction.overlays}
           <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis
@@ -110,7 +109,6 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
           />
         </LineChart>
       </ChartContainer>
-      {interaction.track}
       {interaction.footer}
     </div>
   );

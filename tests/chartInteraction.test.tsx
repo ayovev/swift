@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { assignLanes, tagBandSpans } from "@/lib/analytics/contextTags";
+import { tagBandSpans } from "@/lib/analytics/contextTags";
 import { ChartInteractionProvider, selectionWindow, useChartInteraction, type ChartXSpan } from "@/components/dashboard/charts/chartInteraction";
 import type { ContextTag } from "@/types/tag";
 
@@ -35,24 +35,6 @@ describe("tagBandSpans", () => {
   });
 });
 
-describe("assignLanes", () => {
-  const band = (id: string, first: number, last: number) => ({
-    tag: { id, type: "cut", startDate: "2026-01-01", endDate: null } as ContextTag,
-    first,
-    last,
-  });
-  it("keeps periods that do not overlap in one row", () => {
-    expect(assignLanes([band("a", 0, 1), band("b", 2, 3)]).map((b) => b.lane)).toEqual([0, 0]);
-  });
-  it("moves an overlapping period to the next row and reuses a freed one", () => {
-    const out = assignLanes([band("a", 0, 3), band("b", 1, 2), band("c", 3, 5)]);
-    expect(out.map((b) => [b.tag.id, b.lane])).toEqual([["a", 0], ["b", 1], ["c", 1]]);
-  });
-  it("treats periods sharing a position as overlapping", () => {
-    expect(assignLanes([band("a", 0, 1), band("b", 1, 2)]).map((b) => b.lane)).toEqual([0, 1]);
-  });
-});
-
 function Probe({ xs }: { xs: ChartXSpan[] }) {
   const i = useChartInteraction(xs);
   return (
@@ -60,7 +42,6 @@ function Probe({ xs }: { xs: ChartXSpan[] }) {
       <button onClick={() => i.handlers.onMouseDown?.({ activeTooltipIndex: 0 })}>down0</button>
       <button onClick={() => i.handlers.onMouseMove?.({ activeTooltipIndex: 2 })}>move2</button>
       <button onClick={() => i.handlers.onMouseUp?.()}>up</button>
-      {i.track}
       {i.footer}
     </div>
   );
@@ -96,30 +77,14 @@ describe("useChartInteraction", () => {
     expect(screen.queryByRole("group", { name: "Selected range" })).not.toBeInTheDocument();
   });
 
-  it("draws each period as a bar in a track under the chart, and pins its details on click", () => {
+  it("names shaded tags below the chart", () => {
     const tag: ContextTag = { id: "t", type: "cut", label: "Winter cut", startDate: "2026-02-10", endDate: null };
     render(
       <ChartInteractionProvider value={{ ...value, tags: [tag] }}>
         <Probe xs={months} />
       </ChartInteractionProvider>
     );
-    const bar = screen.getByRole("button", { name: /Winter cut/ });
-    expect(bar).toHaveTextContent("Winter cut");
-    expect(screen.queryByText(/ongoing/, { selector: "p" })).not.toBeInTheDocument();
-    fireEvent.click(bar);
-    expect(screen.getByText(/ongoing/, { selector: "p" })).toBeInTheDocument();
-    fireEvent.click(bar);
-    expect(screen.queryByText(/ongoing/, { selector: "p" })).not.toBeInTheDocument();
-  });
-
-  it("shows no track when no period is on the plotted range", () => {
-    const tag: ContextTag = { id: "t", type: "cut", startDate: "2025-01-01", endDate: "2025-02-01" };
-    render(
-      <ChartInteractionProvider value={{ ...value, tags: [tag] }}>
-        <Probe xs={months} />
-      </ChartInteractionProvider>
-    );
-    expect(screen.queryByTestId("period-track")).not.toBeInTheDocument();
+    expect(screen.getByText(/Shaded: Winter cut/)).toBeInTheDocument();
   });
 
   it("lists the periods overlapping a hovered position for the tooltip, and nothing for a clear one", () => {

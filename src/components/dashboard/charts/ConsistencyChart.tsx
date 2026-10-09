@@ -8,7 +8,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { AXIS_PROPS, AXIS_TICK_COUNT, CHART_MARGIN, NUM_AXIS_WIDTH, mergeBucketCounts, niceAxisTicks } from "./chartUtils";
+import { AXIS_PROPS, AXIS_TICK_COUNT, NUM_AXIS_WIDTH, mergeBucketCounts, niceAxisTicks } from "./chartUtils";
 import { useChartInteraction } from "./chartInteraction";
 import {
   bucketRange,
@@ -90,7 +90,7 @@ export function ConsistencyChart({
   return (
     <>
     <ChartContainer config={config} className={className} role="img" aria-label={ariaLabel}>
-      <BarChart data={data} margin={CHART_MARGIN} {...interaction.handlers}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} {...interaction.handlers}>
         {interaction.overlays}
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis
@@ -128,7 +128,6 @@ export function ConsistencyChart({
         {dual ? <ChartLegend content={<ChartLegendContent onActiveKeyChange={setActiveKey} />} /> : null}
       </BarChart>
     </ChartContainer>
-    {interaction.track}
     {interaction.footer}
     </>
   );
