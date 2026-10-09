@@ -90,7 +90,7 @@ export function WorkoutList({
           />
         </div>
 
-        <div className="overflow-hidden rounded-lg border border-border">
+        <div className="overflow-x-auto overflow-y-hidden rounded-lg border border-border">
           <table className="w-full text-sm">
             <caption className="sr-only">
               Workouts classified here, with the {reasonLabel} value for each
@@ -114,7 +114,7 @@ export function WorkoutList({
                       <span className="ml-2 text-xs text-muted-foreground tabular">{row.detail}</span>
                     ) : null}
                   </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="whitespace-nowrap px-3 py-2 text-right">
                     <Badge variant="secondary" className="font-normal">
                       {row.reason}
                     </Badge>

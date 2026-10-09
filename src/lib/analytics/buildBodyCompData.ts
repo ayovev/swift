@@ -2,6 +2,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import type { InBodyRow } from "@/types/inbody";
 import type { BodyCompData, BodyCompPoint } from "@/types/bodyComp";
+import type { DateRange } from "./dateRange";
 import { bucketKey, type Granularity } from "./granularity";
 
 dayjs.extend(customParseFormat);
@@ -27,6 +28,28 @@ function averageMetric(rows: InBodyRow[], key: keyof InBodyRow): number | null {
   const values = rows.map((r) => parseMetric(r[key])).filter((n): n is number => n !== null);
   if (values.length === 0) return null;
   return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+}
+
+/**
+ * The scans inside the dashboard's selected date range, so Body Comp follows
+ * the same range as every other view instead of charting the whole history
+ * beside a filtered training log. Inclusive on both ends at day granularity,
+ * like `filterParsedRowsByRange`; `null` is a no-op. A row whose date doesn't
+ * parse is dropped when a range is set, since it can't be placed inside it.
+ */
+export function filterInBodyRowsByRange(
+  rows: readonly InBodyRow[],
+  range: DateRange | null
+): InBodyRow[] {
+  if (!range) return [...rows];
+  return rows.filter((r) => {
+    const date = parseInBodyDate(r.date ?? "");
+    return (
+      date.isValid() &&
+      !date.isBefore(range.start, "day") &&
+      !date.isAfter(range.end, "day")
+    );
+  });
 }
 
 /**

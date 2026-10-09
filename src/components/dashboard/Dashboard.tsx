@@ -314,6 +314,7 @@ export function Dashboard({
             <BodyCompTab
               state={bodyComp}
               granularity={granularity}
+              range={range}
               onFile={onBodyCompFile}
               dashboard={insights.dashboard}
             />
