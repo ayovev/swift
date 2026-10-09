@@ -89,6 +89,7 @@ export function ConsistencyChart({
 
   return (
     <>
+    {interaction.picker}
     <ChartContainer config={config} className={className} role="img" aria-label={ariaLabel}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} {...interaction.handlers}>
         {interaction.overlays}

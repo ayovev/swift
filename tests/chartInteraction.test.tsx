@@ -42,6 +42,7 @@ function Probe({ xs }: { xs: ChartXSpan[] }) {
       <button onClick={() => i.handlers.onMouseDown?.({ activeTooltipIndex: 0 })}>down0</button>
       <button onClick={() => i.handlers.onMouseMove?.({ activeTooltipIndex: 2 })}>move2</button>
       <button onClick={() => i.handlers.onMouseUp?.()}>up</button>
+      {i.picker}
       {i.footer}
     </div>
   );
@@ -77,14 +78,30 @@ describe("useChartInteraction", () => {
     expect(screen.queryByRole("group", { name: "Selected range" })).not.toBeInTheDocument();
   });
 
-  it("names shaded tags below the chart", () => {
+  it("offers a picker of the periods on the plotted range, with nothing highlighted until one is chosen", () => {
     const tag: ContextTag = { id: "t", type: "cut", label: "Winter cut", startDate: "2026-02-10", endDate: null };
     render(
       <ChartInteractionProvider value={{ ...value, tags: [tag] }}>
         <Probe xs={months} />
       </ChartInteractionProvider>
     );
-    expect(screen.getByText(/Shaded: Winter cut/)).toBeInTheDocument();
+    const select = screen.getByRole("combobox", { name: /Highlight a period/ });
+    expect(select).toHaveValue("");
+    expect(screen.getByRole("option", { name: /Winter cut/ })).toBeInTheDocument();
+    fireEvent.change(select, { target: { value: "t" } });
+    expect(select).toHaveValue("t");
+    fireEvent.change(select, { target: { value: "" } });
+    expect(select).toHaveValue("");
+  });
+
+  it("shows no picker when no period is on the plotted range", () => {
+    const tag: ContextTag = { id: "t", type: "cut", startDate: "2025-01-01", endDate: "2025-02-01" };
+    render(
+      <ChartInteractionProvider value={{ ...value, tags: [tag] }}>
+        <Probe xs={months} />
+      </ChartInteractionProvider>
+    );
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
 
   it("lists the periods overlapping a hovered position for the tooltip, and nothing for a clear one", () => {

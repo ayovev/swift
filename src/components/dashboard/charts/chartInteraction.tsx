@@ -8,8 +8,8 @@ import type { ContextTag } from "@/types/tag";
 import { formatDate } from "./chartUtils";
 
 /**
- * What every time-series chart can do beyond drawing: shade the athlete's
- * context tags, and let a drag across the chart pick a date range to compare
+ * What every time-series chart can do beyond drawing: highlight one of the
+ * athlete's context tags (and list those at a hovered position in its tooltip), and let a drag across the chart pick a date range to compare
  * or tag. Provided once by Dashboard so a chart needs no props threaded down
  * through six tab components; a chart rendered without a provider (a unit
  * test, say) is just a chart.
@@ -73,6 +73,8 @@ interface Handlers {
 export function useChartInteraction(xs: readonly ChartXSpan[]): {
   handlers: Partial<Handlers>;
   overlays: ReactNode;
+  /** Chooses which period to shade. Render above a chart; null when no period is on the plotted range. */
+  picker: ReactNode;
   footer: ReactNode;
   /** For a tooltip's `renderFooter`: the periods overlapping the hovered x-position. */
   tooltipFooter: (label: unknown) => ReactNode;
@@ -80,6 +82,7 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
   const ctx = useContext(Ctx);
   const [anchor, setAnchor] = useState<number | null>(null);
   const [current, setCurrent] = useState<number | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [committed, setCommitted] = useState<{ window: DateWindow; from: number; to: number } | null>(null);
 
   const commit = () => {
@@ -104,7 +107,7 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
     return m;
   }, [bands, xs]);
 
-  if (!ctx) return { handlers: {}, overlays: null, footer: null, tooltipFooter: () => null };
+  if (!ctx) return { handlers: {}, overlays: null, picker: null, footer: null, tooltipFooter: () => null };
 
   const tooltipFooter = (label: unknown): ReactNode => {
     const tags = typeof label === "string" ? periodsByLabel.get(label) : undefined;
@@ -122,6 +125,29 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
       </div>
     );
   };
+
+  // Nothing is shaded until the athlete picks a period: several at once overlap
+  // into one wash, and the tooltip already names every period at a position.
+  const highlighted = bands.find((b) => b.tag.id === highlightedId) ?? null;
+
+  const picker =
+    bands.length > 0 ? (
+      <label className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+        Highlight a period
+        <select
+          value={highlighted?.tag.id ?? ""}
+          onChange={(e) => setHighlightedId(e.target.value || null)}
+          className="h-7 max-w-64 min-w-0 rounded-md border border-input bg-background px-2 text-xs text-foreground"
+        >
+          <option value="">None</option>
+          {bands.map((b) => (
+            <option key={b.tag.id} value={b.tag.id}>
+              {describeTag(b.tag)}
+            </option>
+          ))}
+        </select>
+      </label>
+    ) : null;
 
   const live = anchor !== null && current !== null && anchor !== current ? { from: Math.min(anchor, current), to: Math.max(anchor, current) } : null;
   const shown = live ?? (committed ? { from: committed.from, to: committed.to } : null);
@@ -147,17 +173,17 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
 
   const overlays = (
     <>
-      {bands.map((b) => (
+      {highlighted ? (
         <ReferenceArea
-          key={b.tag.id}
-          x1={xs[b.first]!.label}
-          x2={xs[b.last]!.label}
+          x1={xs[highlighted.first]!.label}
+          x2={xs[highlighted.last]!.label}
           fill="var(--muted-foreground)"
-          fillOpacity={0.14}
+          fillOpacity={0.18}
           stroke="none"
           ifOverflow="hidden"
+          label={{ value: tagLabel(highlighted.tag), position: "insideTop", fontSize: 11, fill: "var(--muted-foreground)" }}
         />
-      ))}
+      ) : null}
       {shown ? (
         <ReferenceArea
           x1={xs[shown.from]!.label}
@@ -173,14 +199,8 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
   );
 
   const footer =
-    committed || bands.length > 0 ? (
+    committed ? (
       <div className="mt-2 flex flex-col gap-1.5 text-xs text-muted-foreground">
-        {bands.length > 0 ? (
-          <p>
-            Shaded: {bands.map((b) => tagLabel(b.tag)).filter((v, i, a) => a.indexOf(v) === i).join(", ")}.{" "}
-            <span className="sr-only">{bands.map((b) => describeTag(b.tag)).join("; ")}</span>
-          </p>
-        ) : null}
         {committed ? (
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Selected range">
             <span className="tabular">
@@ -206,5 +226,5 @@ export function useChartInteraction(xs: readonly ChartXSpan[]): {
       </div>
     ) : null;
 
-  return { handlers, overlays, footer, tooltipFooter };
+  return { handlers, overlays, picker, footer, tooltipFooter };
 }
