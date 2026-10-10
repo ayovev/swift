@@ -131,7 +131,7 @@ describe("getCycleReport", () => {
   });
 
   it("is insufficient, with the reason, for a cycle that is too short, inverted, empty or undated", () => {
-    expect(getCycleReport(customCycle(workouts, day(0), day(6)), workouts, scans).reason).toBe("needs 7 more days in this cycle (has 7, needs 14)".replace("needs 7 more days", "needs 7 more days"));
+    expect(getCycleReport(customCycle(workouts, day(0), day(6)), workouts, scans).reason).toBe("needs 7 more days in this cycle (has 7, needs 14)");
     expect(getCycleReport(customCycle(workouts, day(10), day(0)), workouts, scans).reason).toMatch(/ends before it starts/);
     expect(getCycleReport(customCycle(workouts, "", ""), workouts, scans).reason).toMatch(/needs a start and an end/);
     expect(getCycleReport(customCycle(workouts, "2020-01-01", "2020-03-01"), workouts, scans).reason).toMatch(/No workouts were logged/);
