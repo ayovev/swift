@@ -14,7 +14,7 @@ describe("deployment headers", () => {
   // The CSP allows exactly one inline script (the pre-hydration theme script) by
   // hash. Edit that script and this fails, instead of the page breaking in prod.
   it("hashes the inline script in index.html", () => {
-    const script = /<script>([\s\S]*?)<\/script>/.exec(read("index.html"))![1]!;
+    const script = /<script>([\s\S]*?)<\/script\s*>/i.exec(read("index.html"))![1]!;
     const hash = createHash("sha256").update(script).digest("base64");
     expect(csp).toContain(`'sha256-${hash}'`);
   });
