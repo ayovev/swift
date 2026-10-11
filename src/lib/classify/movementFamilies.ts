@@ -29,7 +29,7 @@ export interface MovementFamily {
 }
 
 export const MOVEMENT_FAMILIES: readonly MovementFamily[] = [
-  { id: "clean", label: "Clean", members: ["clean", "power-clean", "hang-clean", "hang-power-clean", "squat-clean", "clean-pull", "clean-and-jerk", "power-clean-and-jerk"], generic: "clean" },
+  { id: "clean", label: "Clean", members: ["clean", "power-clean", "hang-clean", "hang-power-clean", "squat-clean", "clean-pull", "medicine-ball-clean", "clean-and-jerk", "power-clean-and-jerk"], generic: "clean" },
   { id: "snatch", label: "Snatch", members: ["snatch", "power-snatch", "hang-snatch", "hang-power-snatch", "squat-snatch", "snatch-pull", "muscle-snatch", "snatch-balance"], generic: "snatch" },
   { id: "jerk", label: "Jerk", members: ["jerk", "split-jerk", "push-jerk", "clean-and-jerk", "power-clean-and-jerk"], generic: "jerk" },
   { id: "squat", label: "Squat", members: ["squat", "back-squat", "front-squat", "overhead-squat", "goblet-squat"], generic: "squat" },

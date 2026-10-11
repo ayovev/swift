@@ -375,3 +375,44 @@ describe("barbell_lift takes priority over the text", () => {
     expect(typed).toBeGreaterThan(250);
   });
 });
+
+describe("movements named on CrossFit's movement list", () => {
+  const ids = (text: string) => findMovements(text).map((m) => m.id);
+
+  it("skin the cat is gymnastics, not the ski erg", () => {
+    // "ski" is a substring of "skin"; measured on the sample, Skill Work read as an M row.
+    expect(ids("guided skin the cat practice")).toEqual(["skin-the-cat"]);
+    expect(classify("Skill Work", "guided skin the cat practice").split).toEqual({ M: 0, W: 0, G: 100 });
+    expect(ids("500m ski")).toEqual(["ski-erg"]);
+  });
+
+  it("a sumo deadlift high pull is not a sumo deadlift", () => {
+    expect(ids("10 kb sumo deadlift high pulls")).toEqual(["sumo-deadlift-high-pull"]);
+    expect(ids("3 sumo deadlift, 1 sumo deadlift high pull")).toEqual(["sumo-deadlift", "sumo-deadlift-high-pull"]);
+    expect(ids("sumo deadlift")).toEqual(["sumo-deadlift"]);
+  });
+
+  it("a medicine-ball clean is its own movement and still a clean", () => {
+    expect(ids("medicine-ball clean")).toEqual(["medicine-ball-clean"]);
+    expect(hasFamily(findMovements("medicine ball clean"), "clean")).toBe(true);
+  });
+
+  it("swing to backward roll is not a kettlebell swing", () => {
+    expect(ids("swing to backward roll to support")).toEqual(["swing-to-backward-roll"]);
+    expect(ids("20 swings")).toEqual(["kettlebell-swing"]);
+  });
+
+  it.each([
+    ["slam ball", "slam-ball"],
+    ["pull-over", "pull-overs"],
+    ["forward roll from support", "forward-roll"],
+    ["back scale", "back-scale"],
+    ["front scale", "front-scale"],
+    ["glide kip", "glide-kip"],
+    ["shoot-through", "shoot-through"],
+    ["strict toes-to-rings", "toes-to-rings"],
+    ["windshield wipers", "windshield-wipers"],
+  ])("recognises %s", (text, id) => {
+    expect(ids(text)).toContain(id);
+  });
+});

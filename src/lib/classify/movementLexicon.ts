@@ -50,7 +50,7 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "bike", phrase: "bike", modality: "M", label: "Bike" },
   { id: "assault-bike", phrase: "assault bike", modality: "M", label: "Assault bike" },
   { id: "echo-bike", phrase: "echo bike", modality: "M", label: "Echo bike" },
-  { id: "ski-erg", phrase: "ski", modality: "M", label: "Ski erg", exclude: ["skill"] },
+  { id: "ski-erg", phrase: "ski", modality: "M", label: "Ski erg", exclude: ["skill", "skin"] },
   { id: "ski-erg", phrase: "ski erg", modality: "M", label: "Ski erg" },
   { id: "ski-erg", phrase: "skierg", modality: "M", label: "Ski erg" },
   { id: "double-unders", phrase: "double-under", modality: "M", label: "Double-unders" },
@@ -87,6 +87,13 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "goblet-squat", phrase: "goblet squat", modality: "W", label: "Goblet squat" },
   { id: "squat-clean", phrase: "squat clean", modality: "W", label: "Squat clean" },
   { id: "clean-pull", phrase: "clean pull", modality: "W", label: "Clean pull" },
+  // Named on CrossFit's movement list. Each would otherwise read as its generic
+  // parent (a medicine-ball clean as a clean, a high pull as a sumo deadlift).
+  { id: "medicine-ball-clean", phrase: "medicine-ball clean", modality: "W", label: "Medicine-ball clean" },
+  { id: "medicine-ball-clean", phrase: "medicine ball clean", modality: "W", label: "Medicine-ball clean" },
+  { id: "medicine-ball-clean", phrase: "med ball clean", modality: "W", label: "Medicine-ball clean" },
+  { id: "sumo-deadlift-high-pull", phrase: "sumo deadlift high pull", modality: "W", label: "Sumo deadlift high pull" },
+  { id: "sumo-deadlift-high-pull", phrase: "sdhp", modality: "W", label: "Sumo deadlift high pull", mode: "token" },
   { id: "clean-and-jerk", phrase: "clean and jerk", modality: "W", label: "Clean & jerk" },
   { id: "clean-and-jerk", phrase: "c&j", modality: "W", label: "Clean & jerk" },
   // SugarWOD titles use the ampersand about as often as "and"; without this the
@@ -129,11 +136,12 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "kettlebell-swing", phrase: "kettlebell swing", modality: "W", label: "Kettlebell swing" },
   { id: "kettlebell-swing", phrase: "kb swing", modality: "W", label: "Kettlebell swing" },
   // Titles like "Tire Swing" and "Swing State" are names, not kettlebell work.
-  { id: "kettlebell-swing", phrase: "swing", modality: "W", label: "Kettlebell swing", exclude: ["tire swing", "swing state", "swing high"] },
+  { id: "kettlebell-swing", phrase: "swing", modality: "W", label: "Kettlebell swing", exclude: ["tire swing", "swing state", "swing high", "swing to backward roll"] },
   { id: "turkish-get-up", phrase: "turkish get-up", modality: "W", label: "Turkish get-up" },
   { id: "wall-balls", phrase: "wall ball", modality: "W", label: "Wall balls" },
   { id: "wall-balls", phrase: "wall-ball", modality: "W", label: "Wall balls" },
   { id: "wall-balls", phrase: "wallball", modality: "W", label: "Wall balls" },
+  { id: "slam-ball", phrase: "slam ball", modality: "W", label: "Slam ball" },
   { id: "medicine-ball", phrase: "medicine ball", modality: "W", label: "Medicine ball" },
   { id: "medicine-ball", phrase: "med ball", modality: "W", label: "Medicine ball" },
   { id: "sandbag", phrase: "sandbag", modality: "W", label: "Sandbag" },
@@ -199,6 +207,19 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "v-ups", phrase: "v-up", modality: "G", label: "V-ups" },
   { id: "bar-hang", phrase: "bar hang", modality: "G", label: "Bar hang" },
   { id: "pull-overs", phrase: "pull over", modality: "G", label: "Pull-overs" },
+  { id: "pull-overs", phrase: "pull-over", modality: "G", label: "Pull-overs" },
+  // Ring and bar skills named on CrossFit's movement list.
+  { id: "skin-the-cat", phrase: "skin the cat", modality: "G", label: "Skin the cat" },
+  { id: "swing-to-backward-roll", phrase: "swing to backward roll", modality: "G", label: "Swing to backward roll" },
+  { id: "forward-roll", phrase: "forward roll", modality: "G", label: "Forward roll" },
+  { id: "back-scale", phrase: "back scale", modality: "G", label: "Back scale" },
+  { id: "front-scale", phrase: "front scale", modality: "G", label: "Front scale" },
+  { id: "glide-kip", phrase: "glide kip", modality: "G", label: "Glide kip" },
+  { id: "shoot-through", phrase: "shoot-through", modality: "G", label: "Shoot-through" },
+  { id: "shoot-through", phrase: "shoot through", modality: "G", label: "Shoot-through" },
+  { id: "toes-to-rings", phrase: "toes-to-rings", modality: "G", label: "Toes-to-rings" },
+  { id: "toes-to-rings", phrase: "toes to rings", modality: "G", label: "Toes-to-rings" },
+  { id: "windshield-wipers", phrase: "windshield wiper", modality: "G", label: "Windshield wipers" },
 ];
 
 /** Longest phrase first — the order the classifier claims text ranges in. */
