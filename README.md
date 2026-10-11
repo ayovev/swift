@@ -1,6 +1,6 @@
 # Swift
 
-*The workout ends. The work doesn't.*
+*Training insights, no strings attached.*
 
 [![CI](https://github.com/ayovev/swift/actions/workflows/ci.yml/badge.svg)](https://github.com/ayovev/swift/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)

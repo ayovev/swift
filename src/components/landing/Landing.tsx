@@ -92,7 +92,7 @@ export function Landing({
       <main className="mx-auto w-full max-w-5xl px-5 pb-24">
         <section className="mx-auto max-w-2xl pt-12 text-center sm:pt-20">
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-            The workout ends. The work doesn't.
+            Training insights, no strings attached.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
             Upload your SugarWOD export and see what years of workouts add up to — how often you
