@@ -152,6 +152,7 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "good-morning", phrase: "good morning", modality: "W", label: "Good morning" },
   { id: "barbell-row", phrase: "barbell row", modality: "W", label: "Barbell row", implement: "barbell" },
   { id: "bent-over-row", phrase: "bent over row", modality: "W", label: "Bent-over row" },
+  { id: "bent-over-row", phrase: "bent-over row", modality: "W", label: "Bent-over row" },
   { id: "clean-pull", phrase: "clean pull to toes", modality: "W", label: "Clean pull" },
 
   // Dumbbell / kettlebell / odd object.

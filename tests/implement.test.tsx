@@ -69,14 +69,15 @@ describe("implement, read from the words before a movement", () => {
   it("labels a measured share of the sample export", async () => {
     // Text hits only: typed lifts are all barbell and are not counted here. Measured, so a
     // change to the lexicon or to the lookback that moves these should be looked at, not
-    // loosened.
+    // loosened. (One dumbbell label is a stray "carry" in "use two dbs for the carry": the words
+    // before it do name dumbbells, so it is left as read.)
     const counts = { dumbbell: 0, kettlebell: 0, barbell: 0 };
     for (const r of parseRows(await loadSampleRows())) {
       for (const m of r.movements) {
         if (m.source === "text" && m.implement !== undefined) counts[m.implement]++;
       }
     }
-    expect(counts).toEqual({ dumbbell: 126, kettlebell: 66, barbell: 6 });
+    expect(counts).toEqual({ dumbbell: 127, kettlebell: 66, barbell: 6 });
   });
 });
 

@@ -224,9 +224,9 @@ few letters apart) in one row, then asking whether the sport names that as one m
 pull-up, a snatch deadlift, a clean grip deadlift, a squat clean & jerk and a lateral burpee bar step-over are, so
 each is one entry whose longer phrase claims the range. A complex written with `+` ("clean + front squat") and glued
 lines are several movements and stay several. Left as two on purpose and pinned in `tests/modalityClassifier.test.ts`:
-burpee deadlifts, squat clean thrusters and wall ball sit-ups. Measured on the sample: 29 rows' movements changed and
-16 splits moved (farmers carry 13 rows no longer also a loaded carry; burpee pull-ups; a lateral burpee bar step-over
-moves from W to G). Not done: a lift named only as a percentage base ("75% of snatch", about 78 rows) still reads as
+burpee deadlifts, squat clean thrusters and wall ball sit-ups. Measured on the sample: 30 rows' movements changed and
+17 splits moved (farmers carry 13 rows no longer also a loaded carry; burpee pull-ups; a lateral burpee bar step-over
+moves from W to G; a hyphenated `bent-over rows` stops reading as a rower, M to W). Not done: a lift named only as a percentage base ("75% of snatch", about 78 rows) still reads as
 that lift.
 Bare equipment words (`db`, `kb`, `dumbbell`, `kettlebell`) are deliberately **not** lexicon entries: they name the
 implement, not the movement, and counting them inflated W.

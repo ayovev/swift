@@ -498,6 +498,12 @@ describe("movements that used to count twice", () => {
     expect(ids(text)).toEqual(expected);
   });
 
+  it("reads a hyphenated bent-over row as a row lift, not a rower", () => {
+    // "row" is monostructural (M); a bent-over row is weightlifting. The sample had one such row.
+    expect(ids("single-arm db bent-over rows")).toEqual(["bent-over-row"]);
+    expect(ids("500-m row")).toEqual(["row"]);
+  });
+
   it("keeps a bare farmer, carry and step-over as they were", () => {
     expect(ids("suitcase carry")).toEqual(["loaded-carry"]);
     expect(ids("200-m farmer")).toEqual(["farmer-carry"]);
