@@ -50,8 +50,10 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "row", phrase: "row", modality: "M", label: "Row", exclude: ["throw", "slow your row", "ring row", "db row", "dumbbell row", "bent over row", "barbell row", "arrow", "narrow"] },
   { id: "row", phrase: "rower", modality: "M", label: "Row" },
   { id: "bike", phrase: "bike", modality: "M", label: "Bike" },
-  { id: "assault-bike", phrase: "assault bike", modality: "M", label: "Assault bike" },
-  { id: "echo-bike", phrase: "echo bike", modality: "M", label: "Echo bike" },
+  // Assault and Echo are brands of the same bike. The aliases are kept so the "matched on" phrase still
+  // shows what the workout said, though the bare "bike" would claim them either way.
+  { id: "bike", phrase: "assault bike", modality: "M", label: "Bike" },
+  { id: "bike", phrase: "echo bike", modality: "M", label: "Bike" },
   { id: "ski-erg", phrase: "ski", modality: "M", label: "Ski erg", exclude: ["skill", "skin"] },
   { id: "ski-erg", phrase: "ski erg", modality: "M", label: "Ski erg" },
   { id: "ski-erg", phrase: "skierg", modality: "M", label: "Ski erg" },
@@ -62,7 +64,8 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "single-unders", phrase: "single under", modality: "M", label: "Single-unders" },
   { id: "jump-rope", phrase: "jump rope", modality: "M", label: "Jump rope" },
   { id: "shuttle-run", phrase: "shuttle run", modality: "M", label: "Shuttle run" },
-  { id: "sprint", phrase: "sprint", modality: "M", label: "Sprint" },
+  // A sprint is a run at a different pace, not a different movement.
+  { id: "run", phrase: "sprint", modality: "M", label: "Run" },
   { id: "swim", phrase: "swim", modality: "M", label: "Swim" },
 
   // ---------------------------------------------------------------- W ----

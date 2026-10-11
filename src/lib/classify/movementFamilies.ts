@@ -47,8 +47,7 @@ export const MOVEMENT_FAMILIES: readonly MovementFamily[] = [
   { id: "l-sit", label: "L-sit", members: ["l-sit", "hanging-l-sit", "l-sit-on-rings", "l-sit-to-shoulder-stand"] },
   { id: "burpee", label: "Burpee", members: ["burpees", "inverted-burpees", "burpee-pull-ups", "burpee-box-jump-overs", "lateral-burpee-bar-step-overs"] },
   { id: "lunge", label: "Lunge", members: ["lunge", "walking-lunges", "front-rack-lunges", "overhead-walking-lunges"] },
-  { id: "bike", label: "Bike", members: ["bike", "assault-bike", "echo-bike"] },
-  { id: "run", label: "Run", members: ["run", "shuttle-run", "sprint"] },
+  { id: "run", label: "Run", members: ["run", "shuttle-run"] },
   { id: "jump-rope", label: "Jump rope", members: ["double-unders", "single-unders", "jump-rope"] },
   { id: "carry", label: "Carry", members: ["loaded-carry", "farmer-carry"] },
 ];

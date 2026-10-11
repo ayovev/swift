@@ -532,3 +532,25 @@ describe("movements that used to count twice", () => {
     expect(ids("max wall ball sit ups")).toEqual(["wall-balls", "sit-ups"]);
   });
 });
+
+describe("brands and paces are not separate movements", () => {
+  const ids = (text: string) => findMovements(text).map((m) => m.id);
+
+  it("assault bike and echo bike are a bike, and keep the phrase they were written with", () => {
+    expect(ids("35/50-cal assault bike")).toEqual(["bike"]);
+    expect(findMovements("12-cal echo bike")[0]).toMatchObject({ id: "bike", phrase: "echo bike", label: "Bike" });
+    expect(ids("bike, then 20-cal echo bike")).toEqual(["bike"]);
+  });
+
+  it("a sprint is a run, and counts once next to a run", () => {
+    expect(ids("100-m sprint")).toEqual(["run"]);
+    expect(ids("400-m run, 100-m sprint")).toEqual(["run"]);
+    expect(classify("x", "400-m run, 12 thrusters, 100-m sprint").split).toEqual({ M: 50, W: 50, G: 0 });
+  });
+
+  it("keeps a shuttle run its own movement, inside the Run family", () => {
+    expect(ids("10 shuttle runs")).toEqual(["shuttle-run"]);
+    expect(hasFamily(findMovements("10 shuttle runs"), "run")).toBe(true);
+    expect(hasFamily(findMovements("100-m sprint"), "run")).toBe(true);
+  });
+});
