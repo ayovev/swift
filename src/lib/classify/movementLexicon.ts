@@ -96,6 +96,13 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "medicine-ball-clean", phrase: "med ball clean", modality: "W", label: "Medicine-ball clean" },
   { id: "sumo-deadlift-high-pull", phrase: "sumo deadlift high pull", modality: "W", label: "Sumo deadlift high pull" },
   { id: "sumo-deadlift-high-pull", phrase: "sdhp", modality: "W", label: "Sumo deadlift high pull", mode: "token" },
+  { id: "squat-clean-and-jerk", phrase: "squat clean and jerk", modality: "W", label: "Squat clean & jerk" },
+  { id: "squat-clean-and-jerk", phrase: "squat clean & jerk", modality: "W", label: "Squat clean & jerk" },
+  // A snatch deadlift is a deadlift with the snatch grip, one movement and not a snatch and a deadlift.
+  { id: "snatch-grip-deadlift", phrase: "snatch deadlift", modality: "W", label: "Snatch grip deadlift" },
+  { id: "snatch-grip-deadlift", phrase: "snatch-grip deadlift", modality: "W", label: "Snatch grip deadlift" },
+  { id: "snatch-grip-deadlift", phrase: "snatch-grip-deadlift", modality: "W", label: "Snatch grip deadlift" },
+  { id: "clean-grip-deadlift", phrase: "clean grip deadlift", modality: "W", label: "Clean grip deadlift" },
   { id: "clean-and-jerk", phrase: "clean and jerk", modality: "W", label: "Clean & jerk" },
   { id: "clean-and-jerk", phrase: "c&j", modality: "W", label: "Clean & jerk" },
   // SugarWOD titles use the ampersand about as often as "and"; without this the
@@ -168,6 +175,11 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "sandbag", phrase: "sandbag", modality: "W", label: "Sandbag" },
   { id: "sled", phrase: "sled", modality: "W", label: "Sled" },
   { id: "farmer-carry", phrase: "farmer", modality: "W", label: "Farmer carry" },
+  // The longer phrase claims "carry", so a farmers carry is one movement and not also a loaded carry.
+  { id: "farmer-carry", phrase: "farmers carry", modality: "W", label: "Farmer carry" },
+  { id: "farmer-carry", phrase: "farmer carry", modality: "W", label: "Farmer carry" },
+  { id: "farmer-carry", phrase: "farmer's carry", modality: "W", label: "Farmer carry" },
+  { id: "farmer-carry", phrase: "farmers' carry", modality: "W", label: "Farmer carry" },
   // "carries" needs no separate entry: the shared matcher also searches the
   // consonant+y -> i stem, so "carry" reaches carries/carried. See matcher.ts.
   { id: "loaded-carry", phrase: "carry", modality: "W", label: "Loaded carry", exclude: ["carryover"] },
@@ -300,6 +312,14 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "l-sit-on-rings", phrase: "l-sit on rings", modality: "G", label: "L-sit on rings" },
   { id: "l-sit-to-shoulder-stand", phrase: "l-sit to shoulder stand", modality: "G", label: "L-sit to shoulder stand" },
   { id: "inverted-burpees", phrase: "inverted burpee", modality: "G", label: "Inverted burpees" },
+  // A burpee that ends in a pull-up is one movement; "jumping" is how SugarWOD words the pull-up.
+  { id: "burpee-pull-ups", phrase: "burpee pull-up", modality: "G", label: "Burpee pull-ups" },
+  { id: "burpee-pull-ups", phrase: "burpee pull up", modality: "G", label: "Burpee pull-ups" },
+  { id: "burpee-pull-ups", phrase: "burpee pullup", modality: "G", label: "Burpee pull-ups" },
+  { id: "burpee-pull-ups", phrase: "burpee jumping pull-up", modality: "G", label: "Burpee pull-ups" },
+  { id: "burpee-pull-ups", phrase: "burpee jumping pull up", modality: "G", label: "Burpee pull-ups" },
+  // The bar here is stepped over by the athlete; without this it reads as a box step-over (W).
+  { id: "lateral-burpee-bar-step-overs", phrase: "lateral burpee bar step-over", modality: "G", label: "Lateral burpee bar step-overs" },
   { id: "burpee-box-jump-overs", phrase: "burpee box jump-over", modality: "G", label: "Burpee box jump-overs" },
   { id: "burpee-box-jump-overs", phrase: "burpee box jump over", modality: "G", label: "Burpee box jump-overs" },
   { id: "burpee-box-jump-overs", phrase: "burpee box over", modality: "G", label: "Burpee box jump-overs" },

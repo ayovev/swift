@@ -219,6 +219,15 @@ jerk` is not a `clean-and-push-jerk`). Measured on the sample: 117 rows' movemen
 moved, from three causes: double counts merged (9), `single-leg squat` read as a pistol and so G rather than W (13),
 and variants newly recognised (18). Dumbbell and kettlebell versions of lifts are deliberately **not** separate ids:
 that is an implement axis, not 14 more ids that duplicate the barbell ones.
+A double count is found by auditing the sample for two different movements whose matched text touches (or sits a
+few letters apart) in one row, then asking whether the sport names that as one movement: a farmers carry, a burpee
+pull-up, a snatch deadlift, a clean grip deadlift, a squat clean & jerk and a lateral burpee bar step-over are, so
+each is one entry whose longer phrase claims the range. A complex written with `+` ("clean + front squat") and glued
+lines are several movements and stay several. Left as two on purpose and pinned in `tests/modalityClassifier.test.ts`:
+burpee deadlifts, squat clean thrusters and wall ball sit-ups. Measured on the sample: 29 rows' movements changed and
+16 splits moved (farmers carry 13 rows no longer also a loaded carry; burpee pull-ups; a lateral burpee bar step-over
+moves from W to G). Not done: a lift named only as a percentage base ("75% of snatch", about 78 rows) still reads as
+that lift.
 Bare equipment words (`db`, `kb`, `dumbbell`, `kettlebell`) are deliberately **not** lexicon entries: they name the
 implement, not the movement, and counting them inflated W.
 **Implement is a label on a movement, not a movement.** `MovementHit.implement` (`barbell | dumbbell | kettlebell`,

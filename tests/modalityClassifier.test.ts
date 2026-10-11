@@ -480,3 +480,49 @@ describe("movement variants from CrossFit's movement list", () => {
     expect(has("kipping handstand push-ups", "handstand")).toBe(true);
   });
 });
+
+describe("movements that used to count twice", () => {
+  const ids = (text: string) => findMovements(text).map((m) => m.id);
+
+  it.each([
+    ["100-m db farmers carry", ["farmer-carry"]],
+    ["farmer's carry", ["farmer-carry"]],
+    ["5 burpee pull-ups", ["burpee-pull-ups"]],
+    ["burpee jumping pull up", ["burpee-pull-ups"]],
+    ["squat clean & jerk complex", ["squat-clean-and-jerk"]],
+    ["1 snatch deadlift", ["snatch-grip-deadlift"]],
+    ["snatch-grip deadlift", ["snatch-grip-deadlift"]],
+    ["clean grip deadlift 3x5", ["clean-grip-deadlift"]],
+    ["9 lateral burpee bar step-overs", ["lateral-burpee-bar-step-overs"]],
+  ])("%s is one movement", (text, expected) => {
+    expect(ids(text)).toEqual(expected);
+  });
+
+  it("keeps a bare farmer, carry and step-over as they were", () => {
+    expect(ids("suitcase carry")).toEqual(["loaded-carry"]);
+    expect(ids("200-m farmer")).toEqual(["farmer-carry"]);
+    expect(ids("20 box step-overs")).toEqual(["box-step-over"]);
+  });
+
+  it("keeps the new movements in the families that held their parts", () => {
+    const has = (text: string, family: string) => hasFamily(findMovements(text), family);
+    expect(has("burpee pull-ups", "pull-up")).toBe(true);
+    expect(has("burpee pull-ups", "burpee")).toBe(true);
+    expect(has("squat clean & jerk", "clean")).toBe(true);
+    expect(has("squat clean & jerk", "jerk")).toBe(true);
+    expect(has("clean grip deadlift", "deadlift")).toBe(true);
+  });
+
+  it("moves a lateral burpee bar step-over from W to G", () => {
+    expect(classify("x", "lateral burpee bar step-overs").split).toEqual({ M: 0, W: 0, G: 100 });
+  });
+
+  // Known limitations, pinned deliberately: each is a combined movement that still reads as its
+  // two parts. They are separate movements in the sport's own list or too rare (one sample row
+  // each) to be worth an entry; moving one of these is a deliberate change, not a fix to slip in.
+  it("still reads these combined movements as their parts", () => {
+    expect(ids("10 burpee deadlifts")).toEqual(["burpees", "deadlift"]);
+    expect(ids("6 squat clean thrusters")).toEqual(["squat-clean", "thruster"]);
+    expect(ids("max wall ball sit ups")).toEqual(["wall-balls", "sit-ups"]);
+  });
+});
