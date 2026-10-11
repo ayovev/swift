@@ -167,7 +167,7 @@ The **Movements** view (`MovementsTab.tsx`, under Breakdown) lists what the lexi
 (`movementFamilies.ts`, every variant counts) and single movements, picked by id. It reads
 `Insights.movements` (`buildMovementData.ts`), a thin reduction of the same `ParsedRow.movements`
 `buildModalityData` uses, so nothing is classified twice. The workout list shows the phrase that matched,
-because the matcher is a heuristic. Its one analytics event is the value-free `movement_selected`.
+because the matcher is a heuristic. Its analytics events are the value-free `movement_selected` and `implement_selected`.
 
 Two things that look like the same idea but are not — don't unify them:
 
