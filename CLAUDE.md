@@ -208,6 +208,17 @@ session is not also a vague squat. Rows with no recognised typed lift behave exa
 sample: 279 of 1,209 rows have the field, 25 rows' identities changed and no modality split moved (all typed lifts
 are W). Known and left alone: a `% of snatch` reference in a description still reads as a snatch (about 70 rows
 in the export name a lift only as a percentage base); fixing that is a lexicon `exclude` decision of its own.
+**Variants are their own ids, and their family keeps them.** CrossFit's movement list separates strict, kipping and
+butterfly pull-ups, the GHD movements, legless and L-sit rope climbs, walking and front-rack lunges and so on, so each
+is a lexicon id (`strict-pull-ups`) and a member of its family (`pull-up`); picking the family still finds every variant,
+picking the plain `pull-ups` id finds only the unqualified ones. The longer phrase wins the range, which also ends the
+double count (`chest-to-bar pull-ups` is one movement, not `chest-to-bar` plus `pull-ups`). A variant phrase must
+carry any suffix a shorter phrase could claim (`strict chest-to-bar pull-up`), or the shorter one claims the range
+first and the qualifier is lost. A prefixed complex stays split into its parts via `exclude` (`power clean and push
+jerk` is not a `clean-and-push-jerk`). Measured on the sample: 117 rows' movements changed and 40 modality splits
+moved, from three causes: double counts merged (9), `single-leg squat` read as a pistol and so G rather than W (13),
+and variants newly recognised (18). Dumbbell and kettlebell versions of lifts are deliberately **not** separate ids:
+that is an implement axis, not 14 more ids that duplicate the barbell ones.
 Bare equipment words (`db`, `kb`, `dumbbell`, `kettlebell`) are deliberately **not** lexicon entries: they name the
 implement, not the movement, and counting them inflated W.
 

@@ -310,7 +310,7 @@ describe("movement ids and families", () => {
   it("puts clean & jerk in both the clean and jerk families", () => {
     expect(familiesOf("clean-and-jerk").sort()).toEqual(["clean", "jerk"]);
     expect(familiesOf("run")).toEqual(["run"]);
-    expect(familiesOf("burpees")).toEqual([]);
+    expect(familiesOf("thruster")).toEqual([]);
   });
 
   it("keeps loaded and bodyweight squats apart", () => {
@@ -414,5 +414,69 @@ describe("movements named on CrossFit's movement list", () => {
     ["windshield wipers", "windshield-wipers"],
   ])("recognises %s", (text, id) => {
     expect(ids(text)).toContain(id);
+  });
+});
+
+describe("movement variants from CrossFit's movement list", () => {
+  const ids = (text: string) => findMovements(text).map((m) => m.id);
+
+  it.each([
+    ["strict pull-ups", "strict-pull-ups"],
+    ["kipping pull-ups", "kipping-pull-ups"],
+    ["butterfly pull-ups", "butterfly-pull-ups"],
+    ["strict muscle-ups", "strict-muscle-ups"],
+    ["kipping bar muscle-ups", "kipping-bar-muscle-ups"],
+    ["strict handstand push-ups", "strict-handstand-push-ups"],
+    ["kipping deficit handstand push-ups", "deficit-handstand-push-ups"],
+    ["freestanding handstand push-ups", "freestanding-handstand-push-ups"],
+    ["strict toes-to-bar", "strict-toes-to-bar"],
+    ["ghd hip extensions", "ghd-hip-extensions"],
+    ["ghd hip and back extensions", "ghd-hip-and-back-extensions"],
+    ["legless rope climbs", "legless-rope-climbs"],
+    ["walking lunges", "walking-lunges"],
+    ["front-rack lunges", "front-rack-lunges"],
+    ["overhead walking lunges", "overhead-walking-lunges"],
+    ["split cleans", "split-clean"],
+    ["hang clean and push jerk", "hang-clean-and-push-jerk"],
+  ])("%s is its own movement, not the generic one", (text, id) => {
+    expect(ids(text)).toEqual([id]);
+  });
+
+  it("a plain pull-up, lunge and rope climb keep their generic ids", () => {
+    expect(ids("10 pull-ups")).toEqual(["pull-ups"]);
+    expect(ids("20 lunges")).toEqual(["lunge"]);
+    expect(ids("3 rope climbs")).toEqual(["rope-climbs"]);
+  });
+
+  it("a movement named as one phrase is counted once, not as its parts", () => {
+    // These read as two movements each before the variants existed.
+    expect(ids("21 chest-to-bar pull-ups")).toEqual(["chest-to-bar"]);
+    expect(ids("strict chest-to-bar pull-ups")).toEqual(["strict-chest-to-bar"]);
+    expect(ids("12 ghd sit-ups")).toEqual(["ghd-sit-ups"]);
+    expect(ids("burpee box jump-overs")).toEqual(["burpee-box-jump-overs"]);
+  });
+
+  it("a prefixed complex falls through to its parts instead of the plain one", () => {
+    expect(ids("power clean and push jerk")).toEqual(["power-clean", "push-jerk"]);
+  });
+
+  it("a single-leg squat is a pistol, which moves it from W to G", () => {
+    expect(ids("alternating single-leg squats")).toEqual(["pistols"]);
+    expect(classify("x", "alternating single-leg squats").split).toEqual({ M: 0, W: 0, G: 100 });
+  });
+
+  it("a family still finds every variant of its movement", () => {
+    const has = (text: string, family: string) => hasFamily(findMovements(text), family);
+    expect(has("strict pull-ups", "pull-up")).toBe(true);
+    expect(has("chest-to-bar pull-ups", "pull-up")).toBe(true);
+    expect(has("kipping muscle-ups", "muscle-up")).toBe(true);
+    expect(has("split snatch", "snatch")).toBe(true);
+    expect(has("clean and push jerk", "clean")).toBe(true);
+    expect(has("clean and push jerk", "jerk")).toBe(true);
+    expect(has("walking lunges", "lunge")).toBe(true);
+    expect(has("ghd sit-ups", "sit-up")).toBe(true);
+    expect(has("ghd sit-ups", "ghd")).toBe(true);
+    expect(has("legless rope climbs", "rope-climb")).toBe(true);
+    expect(has("kipping handstand push-ups", "handstand")).toBe(true);
   });
 });
