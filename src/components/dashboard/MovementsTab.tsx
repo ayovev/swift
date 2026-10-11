@@ -5,6 +5,8 @@ import { ShareAreaChart } from "./charts/ShareAreaChart";
 import { WorkoutList } from "./WorkoutList";
 import {
   buildMovementOptions,
+  implementBreakdown,
+  labelInSentence,
   memberBreakdown,
   selectionLabel,
   trendFor,
@@ -12,6 +14,7 @@ import {
 } from "@/lib/analytics/buildMovementData";
 import { GRANULARITY_NOUN, granularityLabel, type Granularity } from "@/lib/analytics/granularity";
 import { capture } from "@/lib/posthog";
+import { IMPLEMENT_LABEL, IMPLEMENT_LIST, type Implement } from "@/types/modality";
 import type { MovementData, MovementSelection } from "@/types/movements";
 
 const keyOf = (s: MovementSelection) => `${s.kind}:${s.id}`;
@@ -30,6 +33,7 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
   const options = useMemo(() => buildMovementOptions(data), [data]);
   const first = options.families[0] ?? options.movements[0];
   const [picked, setPicked] = useState<string | null>(null);
+  const [implement, setImplement] = useState<Implement | "">("");
 
   const all = [...options.families, ...options.movements];
   const chosen = all.find((o) => keyOf(o) === picked) ?? first;
@@ -46,7 +50,14 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
     );
   }
 
-  const sel: MovementSelection = { kind: chosen.kind, id: chosen.id };
+  const implementOptions = implementBreakdown(data, { kind: chosen.kind, id: chosen.id });
+  // A pick from another movement may not exist for this one; fall back to any.
+  const activeImplement = implementOptions.find((o) => o.implement === implement)?.implement;
+  const sel: MovementSelection = {
+    kind: chosen.kind,
+    id: chosen.id,
+    ...(activeImplement !== undefined ? { implement: activeImplement } : {}),
+  };
   const name = selectionLabel(sel);
   const matches = workoutsFor(data, sel);
   const trend = trendFor(data, sel);
@@ -64,6 +75,7 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
               value={keyOf(chosen)}
               onChange={(e) => {
                 setPicked(e.target.value);
+                setImplement("");
                 capture({ name: "interaction_used", props: { interaction: "movement_selected" } });
               }}
               className="h-9 max-w-sm rounded-md border border-input bg-background px-2 text-sm"
@@ -84,10 +96,31 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
               </optgroup>
             </select>
           </div>
+          {implementOptions.length > 0 ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="implement-picker">Implement</Label>
+              <select
+                id="implement-picker"
+                value={activeImplement ?? ""}
+                onChange={(e) => {
+                  setImplement(IMPLEMENT_LIST.find((i) => i === e.target.value) ?? "");
+                  capture({ name: "interaction_used", props: { interaction: "implement_selected" } });
+                }}
+                className="h-9 max-w-sm rounded-md border border-input bg-background px-2 text-sm"
+              >
+                <option value="">Any</option>
+                {implementOptions.map((o) => (
+                  <option key={o.implement} value={o.implement}>
+                    {IMPLEMENT_LABEL[o.implement]} · {o.count.toLocaleString()}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-border pt-4">
             <div>
               <span className="text-2xl font-semibold tabular">{matches.length.toLocaleString()}</span>
-              <span className="ml-2 text-sm text-muted-foreground">workouts with {name.toLowerCase()} in them</span>
+              <span className="ml-2 text-sm text-muted-foreground">workouts with {labelInSentence(name)} in them</span>
             </div>
             <div className="text-sm text-muted-foreground tabular">
               {share.toFixed(1)}% of {data.workouts.length.toLocaleString()} workouts
@@ -108,7 +141,7 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
-            Workouts with {name.toLowerCase()}, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
+            Workouts with {labelInSentence(name)}, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -124,17 +157,17 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Every workout with {name.toLowerCase()} in it</CardTitle>
+          <CardTitle className="text-sm font-medium">Every workout with {labelInSentence(name)} in it</CardTitle>
         </CardHeader>
         <CardContent>
           <WorkoutList
             rows={[...matches].reverse().map(({ workout, matched }) => ({
               date: workout.date,
               title: workout.title,
-              reason: matched.map((m) => m.label).join(", "),
+              reason: matched.map((m) => (m.implement === undefined ? m.label : `${m.label} (${m.implement})`)).join(", "),
               detail: `matched on ${matched.map((m) => (m.source === "barbell_lift" ? `"${m.phrase}" (lift field)` : `"${m.phrase}"`)).join(", ")}`,
             }))}
-            emptyMessage={`No workouts in this range involved ${name.toLowerCase()}.`}
+            emptyMessage={`No workouts in this range involved ${labelInSentence(name)}.`}
           />
         </CardContent>
       </Card>

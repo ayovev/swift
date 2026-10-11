@@ -41,6 +41,20 @@ export interface ModalitySplit {
   G: number;
 }
 
+/**
+ * What a movement was done with, when the workout says so. Absent means unspecified,
+ * not "bodyweight": most barbell lifts are written without the word.
+ */
+export type Implement = "barbell" | "dumbbell" | "kettlebell";
+
+export const IMPLEMENT_LIST: readonly Implement[] = ["barbell", "dumbbell", "kettlebell"];
+
+export const IMPLEMENT_LABEL: Record<Implement, string> = {
+  barbell: "Barbell",
+  dumbbell: "Dumbbell",
+  kettlebell: "Kettlebell",
+};
+
 /** One recognised movement and the modality it contributed to. */
 export interface MovementHit {
   /** Stable movement id (see MovementEntry.id), e.g. "power-clean". */
@@ -52,6 +66,12 @@ export interface MovementHit {
   modality: Modality;
   /** Where the hit came from: SugarWOD's typed `barbell_lift` field, or the free text. */
   source: "barbell_lift" | "text";
+  /**
+   * The implement named right before the movement, or the one the movement is
+   * defined by (a kettlebell swing). Hits from SugarWOD's `barbell_lift` field are
+   * barbell. Absent when the workout does not say.
+   */
+  implement?: Implement;
 }
 
 export interface ModalityClassification {

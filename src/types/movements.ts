@@ -1,6 +1,8 @@
 // Shapes for the Movements view: which workouts contained a given movement
 // (or a whole family of them, like every kind of clean), and how often.
 
+import type { Implement } from "@/types/modality";
+
 /** One workout, reduced to what the Movements view needs. */
 export interface MovementWorkout {
   /** YY-MM-DD, matching every other workout list. */
@@ -9,7 +11,14 @@ export interface MovementWorkout {
   /** The row's aggregation bucket key (see granularity.ts). */
   bucket: string;
   /** Distinct movements found in the workout, in the order they were written. */
-  movements: { id: string; label: string; phrase: string; source: "barbell_lift" | "text" }[];
+  movements: {
+    id: string;
+    label: string;
+    phrase: string;
+    source: "barbell_lift" | "text";
+    /** What it was done with, when the workout says so. */
+    implement?: Implement;
+  }[];
 }
 
 export interface MovementData {
@@ -23,6 +32,8 @@ export interface MovementData {
 export interface MovementSelection {
   kind: "family" | "movement";
   id: string;
+  /** Only workouts where the movement was done with this. Absent means any, including unspecified. */
+  implement?: Implement;
 }
 
 export interface MovementOption {

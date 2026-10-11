@@ -4,6 +4,7 @@ import { classifiableText } from "@/lib/classify/matcher";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
 import { familiesOf, hasFamily, hasMovement, MOVEMENT_FAMILIES } from "@/lib/classify/movementFamilies";
 import { parseRows } from "@/lib/analytics/buildDashboardData";
+import { labelInSentence } from "@/lib/analytics/buildMovementData";
 import { loadSampleRows } from "./fixtures/sampleRows";
 import { MODALITY_LIST, type ModalitySplit } from "@/types/modality";
 
@@ -310,7 +311,7 @@ describe("movement ids and families", () => {
   it("puts clean & jerk in both the clean and jerk families", () => {
     expect(familiesOf("clean-and-jerk").sort()).toEqual(["clean", "jerk"]);
     expect(familiesOf("run")).toEqual(["run"]);
-    expect(familiesOf("burpees")).toEqual([]);
+    expect(familiesOf("thruster")).toEqual([]);
   });
 
   it("keeps loaded and bodyweight squats apart", () => {
@@ -373,5 +374,212 @@ describe("barbell_lift takes priority over the text", () => {
     }
     // Roughly a quarter of the export names a lift in the typed field.
     expect(typed).toBeGreaterThan(250);
+  });
+});
+
+describe("movements named on CrossFit's movement list", () => {
+  const ids = (text: string) => findMovements(text).map((m) => m.id);
+
+  it("skin the cat is gymnastics, not the ski erg", () => {
+    // "ski" is a substring of "skin"; measured on the sample, Skill Work read as an M row.
+    expect(ids("guided skin the cat practice")).toEqual(["skin-the-cat"]);
+    expect(classify("Skill Work", "guided skin the cat practice").split).toEqual({ M: 0, W: 0, G: 100 });
+    expect(ids("500m ski")).toEqual(["ski-erg"]);
+  });
+
+  it("a sumo deadlift high pull is not a sumo deadlift", () => {
+    expect(ids("10 kb sumo deadlift high pulls")).toEqual(["sumo-deadlift-high-pull"]);
+    expect(ids("3 sumo deadlift, 1 sumo deadlift high pull")).toEqual(["sumo-deadlift", "sumo-deadlift-high-pull"]);
+    expect(ids("sumo deadlift")).toEqual(["sumo-deadlift"]);
+  });
+
+  it("a medicine-ball clean is its own movement and still a clean", () => {
+    expect(ids("medicine-ball clean")).toEqual(["medicine-ball-clean"]);
+    expect(hasFamily(findMovements("medicine ball clean"), "clean")).toBe(true);
+  });
+
+  it("swing to backward roll is not a kettlebell swing", () => {
+    expect(ids("swing to backward roll to support")).toEqual(["swing-to-backward-roll"]);
+    expect(ids("20 swings")).toEqual(["kettlebell-swing"]);
+  });
+
+  it.each([
+    ["slam ball", "slam-ball"],
+    ["pull-over", "pull-overs"],
+    ["forward roll from support", "forward-roll"],
+    ["back scale", "back-scale"],
+    ["front scale", "front-scale"],
+    ["glide kip", "glide-kip"],
+    ["shoot-through", "shoot-through"],
+    ["strict toes-to-rings", "toes-to-rings"],
+    ["windshield wipers", "windshield-wipers"],
+  ])("recognises %s", (text, id) => {
+    expect(ids(text)).toContain(id);
+  });
+});
+
+describe("movement variants from CrossFit's movement list", () => {
+  const ids = (text: string) => findMovements(text).map((m) => m.id);
+
+  it.each([
+    ["strict pull-ups", "strict-pull-ups"],
+    ["kipping pull-ups", "kipping-pull-ups"],
+    ["butterfly pull-ups", "butterfly-pull-ups"],
+    ["strict muscle-ups", "strict-muscle-ups"],
+    ["kipping bar muscle-ups", "kipping-bar-muscle-ups"],
+    ["strict handstand push-ups", "strict-handstand-push-ups"],
+    ["kipping deficit handstand push-ups", "deficit-handstand-push-ups"],
+    ["freestanding handstand push-ups", "freestanding-handstand-push-ups"],
+    ["strict toes-to-bar", "strict-toes-to-bar"],
+    ["ghd hip extensions", "ghd-hip-extensions"],
+    ["ghd hip and back extensions", "ghd-hip-and-back-extensions"],
+    ["legless rope climbs", "legless-rope-climbs"],
+    ["walking lunges", "walking-lunges"],
+    ["front-rack lunges", "front-rack-lunges"],
+    ["overhead walking lunges", "overhead-walking-lunges"],
+    ["split cleans", "split-clean"],
+    ["hang clean and push jerk", "hang-clean-and-push-jerk"],
+  ])("%s is its own movement, not the generic one", (text, id) => {
+    expect(ids(text)).toEqual([id]);
+  });
+
+  it("a plain pull-up, lunge and rope climb keep their generic ids", () => {
+    expect(ids("10 pull-ups")).toEqual(["pull-ups"]);
+    expect(ids("20 lunges")).toEqual(["lunge"]);
+    expect(ids("3 rope climbs")).toEqual(["rope-climbs"]);
+  });
+
+  it("a movement named as one phrase is counted once, not as its parts", () => {
+    // These read as two movements each before the variants existed.
+    expect(ids("21 chest-to-bar pull-ups")).toEqual(["chest-to-bar"]);
+    expect(ids("strict chest-to-bar pull-ups")).toEqual(["strict-chest-to-bar"]);
+    expect(ids("12 ghd sit-ups")).toEqual(["ghd-sit-ups"]);
+    expect(ids("burpee box jump-overs")).toEqual(["burpee-box-jump-overs"]);
+  });
+
+  it("a prefixed complex falls through to its parts instead of the plain one", () => {
+    expect(ids("power clean and push jerk")).toEqual(["power-clean", "push-jerk"]);
+  });
+
+  it("a single-leg squat is a pistol, which moves it from W to G", () => {
+    expect(ids("alternating single-leg squats")).toEqual(["pistols"]);
+    expect(classify("x", "alternating single-leg squats").split).toEqual({ M: 0, W: 0, G: 100 });
+  });
+
+  it("a family still finds every variant of its movement", () => {
+    const has = (text: string, family: string) => hasFamily(findMovements(text), family);
+    expect(has("strict pull-ups", "pull-up")).toBe(true);
+    expect(has("chest-to-bar pull-ups", "pull-up")).toBe(true);
+    expect(has("kipping muscle-ups", "muscle-up")).toBe(true);
+    expect(has("split snatch", "snatch")).toBe(true);
+    expect(has("clean and push jerk", "clean")).toBe(true);
+    expect(has("clean and push jerk", "jerk")).toBe(true);
+    expect(has("walking lunges", "lunge")).toBe(true);
+    expect(has("ghd sit-ups", "sit-up")).toBe(true);
+    expect(has("ghd sit-ups", "ghd")).toBe(true);
+    expect(has("legless rope climbs", "rope-climb")).toBe(true);
+    expect(has("kipping handstand push-ups", "handstand")).toBe(true);
+  });
+});
+
+describe("movements that used to count twice", () => {
+  const ids = (text: string) => findMovements(text).map((m) => m.id);
+
+  it.each([
+    ["100-m db farmers carry", ["farmer-carry"]],
+    ["farmer's carry", ["farmer-carry"]],
+    ["5 burpee pull-ups", ["burpee-pull-ups"]],
+    ["burpee jumping pull up", ["burpee-pull-ups"]],
+    ["squat clean & jerk complex", ["squat-clean-and-jerk"]],
+    ["1 snatch deadlift", ["snatch-grip-deadlift"]],
+    ["snatch-grip deadlift", ["snatch-grip-deadlift"]],
+    ["clean grip deadlift 3x5", ["clean-grip-deadlift"]],
+    ["9 lateral burpee bar step-overs", ["lateral-burpee-bar-step-overs"]],
+  ])("%s is one movement", (text, expected) => {
+    expect(ids(text)).toEqual(expected);
+  });
+
+  it("reads a hyphenated bent-over row as a row lift, not a rower", () => {
+    // "row" is monostructural (M); a bent-over row is weightlifting. The sample had one such row.
+    expect(ids("single-arm db bent-over rows")).toEqual(["bent-over-row"]);
+    expect(ids("500-m row")).toEqual(["row"]);
+  });
+
+  it("keeps a bare farmer, carry and step-over as they were", () => {
+    expect(ids("suitcase carry")).toEqual(["loaded-carry"]);
+    expect(ids("200-m farmer")).toEqual(["farmer-carry"]);
+    expect(ids("20 box step-overs")).toEqual(["box-step-over"]);
+  });
+
+  it("keeps the new movements in the families that held their parts", () => {
+    const has = (text: string, family: string) => hasFamily(findMovements(text), family);
+    expect(has("burpee pull-ups", "pull-up")).toBe(true);
+    expect(has("burpee pull-ups", "burpee")).toBe(true);
+    expect(has("squat clean & jerk", "clean")).toBe(true);
+    expect(has("squat clean & jerk", "jerk")).toBe(true);
+    expect(has("clean grip deadlift", "deadlift")).toBe(true);
+  });
+
+  it("moves a lateral burpee bar step-over from W to G", () => {
+    expect(classify("x", "lateral burpee bar step-overs").split).toEqual({ M: 0, W: 0, G: 100 });
+  });
+
+  // Known limitations, pinned deliberately: each is a combined movement that still reads as its
+  // two parts. They are separate movements in the sport's own list or too rare (one sample row
+  // each) to be worth an entry; moving one of these is a deliberate change, not a fix to slip in.
+  it("still reads these combined movements as their parts", () => {
+    expect(ids("10 burpee deadlifts")).toEqual(["burpees", "deadlift"]);
+    expect(ids("6 squat clean thrusters")).toEqual(["squat-clean", "thruster"]);
+    expect(ids("max wall ball sit ups")).toEqual(["wall-balls", "sit-ups"]);
+  });
+});
+
+describe("brands and paces are not separate movements", () => {
+  const ids = (text: string) => findMovements(text).map((m) => m.id);
+
+  it("assault bike and echo bike are a bike, and keep the phrase they were written with", () => {
+    expect(ids("35/50-cal assault bike")).toEqual(["bike"]);
+    expect(findMovements("12-cal echo bike")[0]).toMatchObject({ id: "bike", phrase: "echo bike", label: "Bike" });
+    expect(ids("bike, then 20-cal echo bike")).toEqual(["bike"]);
+  });
+
+  it("a sprint is a run, and counts once next to a run", () => {
+    expect(ids("100-m sprint")).toEqual(["run"]);
+    expect(ids("400-m run, 100-m sprint")).toEqual(["run"]);
+    expect(classify("x", "400-m run, 12 thrusters, 100-m sprint").split).toEqual({ M: 50, W: 50, G: 0 });
+  });
+
+  it("keeps a shuttle run its own movement, inside the Run family", () => {
+    expect(ids("10 shuttle runs")).toEqual(["shuttle-run"]);
+    expect(hasFamily(findMovements("10 shuttle runs"), "run")).toBe(true);
+    expect(hasFamily(findMovements("100-m sprint"), "run")).toBe(true);
+  });
+});
+
+describe("movement labels are in sentence case", () => {
+  // Capitals past the first word that are part of a name, not the start of a word.
+  const MID_CAPS = new Set(["L-sit"]);
+  const labels = [...new Set(MOVEMENT_LEXICON.map((e) => e.label)), ...MOVEMENT_FAMILIES.map((f) => f.label)];
+
+  it("starts with a capital and lowercases every later word", () => {
+    for (const label of labels) {
+      expect(label.charAt(0), label).toBe(label.charAt(0).toUpperCase());
+      for (const word of label.split(" ").slice(1)) {
+        if (MID_CAPS.has(word)) continue;
+        expect(word, `${label} / ${word}`).toBe(word.toLowerCase());
+      }
+    }
+  });
+
+  it("puts a label into a sentence without breaking a name", () => {
+    expect(labelInSentence("Snatch")).toBe("snatch");
+    expect(labelInSentence("Clean & jerk")).toBe("clean & jerk");
+    expect(labelInSentence("GHD sit-ups")).toBe("GHD sit-ups");
+    expect(labelInSentence("AbMat sit-ups")).toBe("AbMat sit-ups");
+    expect(labelInSentence("L pull-ups")).toBe("L pull-ups");
+    expect(labelInSentence("L-sit")).toBe("L-sit");
+    expect(labelInSentence("Hanging L-sit")).toBe("hanging L-sit");
+    expect(labelInSentence("Turkish get-up")).toBe("Turkish get-up");
+    expect(labelInSentence("Zercher squat")).toBe("Zercher squat");
   });
 });
