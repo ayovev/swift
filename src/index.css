@@ -153,6 +153,17 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Tailwind v4's preflight no longer gives buttons a pointer cursor (v3 did), and the
+     shadcn primitives were written for v3, so restore it for interactive controls here. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  [role="tab"],
+  [role="checkbox"],
+  summary,
+  select {
+    cursor: pointer;
+  }
+
   /* One consistent focus treatment, in the accent, everywhere. */
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ring;
