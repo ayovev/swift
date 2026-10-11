@@ -1,3 +1,4 @@
+import { findImplementWords, implementBefore } from "./implement";
 import { classifiableText, findAllMatches, type MatchRange } from "./matcher";
 import { MOVEMENT_FAMILIES } from "./movementFamilies";
 import { LEXICON_BY_SPECIFICITY, type MovementEntry } from "./movementLexicon";
@@ -37,7 +38,7 @@ function overlaps(start: number, end: number, claimed: readonly MatchRange[]): b
 export function findMovements(text: string): MovementHit[] {
   const claimed: MatchRange[] = [];
   /** id -> hit, so two phrases for the same movement don't double-count. */
-  const byId = new Map<string, { hit: MovementHit; at: number }>();
+  const byId = new Map<string, { hit: MovementHit; at: number; entry: MovementEntry }>();
 
   for (const entry of LEXICON_BY_SPECIFICITY) {
     for (const [start, end] of findAllMatches(text, entry)) {
@@ -48,10 +49,19 @@ export function findMovements(text: string): MovementHit[] {
       if (existing === undefined || start < existing.at) {
         byId.set(entry.id, {
           at: start,
+          entry,
           hit: { id: entry.id, phrase: entry.phrase, label: entry.label, modality: entry.modality, source: "text" },
         });
       }
     }
+  }
+
+  // The implement of each movement's first mention, written right before it; else the one the
+  // movement is defined by. Needs every claim made, so it can tell a neighbouring movement apart.
+  const implementWords = findImplementWords(text);
+  for (const v of byId.values()) {
+    const implement = implementBefore(implementWords, text, v.at, claimed) ?? v.entry.implement;
+    if (implement !== undefined) v.hit.implement = implement;
   }
 
   // Report in the order the movements appear in the workout text — that reads
@@ -83,7 +93,7 @@ export function findRowMovements(fields: {
 }): MovementHit[] {
   const fromText = findMovements(classifiableText(fields));
   const typed = findMovements((fields.barbell_lift ?? "").toLowerCase()).map(
-    (hit): MovementHit => ({ ...hit, source: "barbell_lift" })
+    (hit): MovementHit => ({ ...hit, source: "barbell_lift", implement: "barbell" })
   );
   if (typed.length === 0) return fromText;
 

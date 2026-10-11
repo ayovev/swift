@@ -221,6 +221,17 @@ and variants newly recognised (18). Dumbbell and kettlebell versions of lifts ar
 that is an implement axis, not 14 more ids that duplicate the barbell ones.
 Bare equipment words (`db`, `kb`, `dumbbell`, `kettlebell`) are deliberately **not** lexicon entries: they name the
 implement, not the movement, and counting them inflated W.
+**Implement is a label on a movement, not a movement.** `MovementHit.implement` (`barbell | dumbbell | kettlebell`,
+absent when the workout does not say, which is not "bodyweight") is read by `implement.ts` from the words written
+directly before the first mention of a movement: at most two plain words between, and nothing else. SugarWOD glues
+lines together, so a digit or punctuation mark, another claimed movement in between (`dumbbell squatsbar-facing
+burpees`), or a hyphen straight after the implement (`db-facing burpees`) all end it. An implement named once for a
+list is not carried forward. A lexicon entry defined by its implement (`kettlebell-swing`, `dumbbell-row`,
+`barbell-row`) carries it as `MovementEntry.implement`, and what is written outranks it. A lift from the `barbell_lift`
+field is barbell. It never adds a movement and never moves a modality split. The Movements view narrows a selection
+with `MovementSelection.implement` (the "Implement" control appears only when a workout names one for the selection;
+`implement_selected` is the value-free analytics name). Measured on the sample: 126 dumbbell, 66 kettlebell and 6
+barbell labels from the text, and `loaded-carry` loses its label when a farmer carry claims the words before it.
 
 Order *is* significant in `DOMAIN_KEYWORDS` (`domainKeywords.ts`): the keyword reported as
 "matched on" in the drill-down is whichever is checked first and hits. Reordering a list

@@ -1,4 +1,5 @@
 import type { ParsedRow } from "./buildDashboardData";
+import { IMPLEMENT_LABEL, IMPLEMENT_LIST, type Implement } from "@/types/modality";
 import { MOVEMENT_FAMILIES } from "@/lib/classify/movementFamilies";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
 import type {
@@ -17,7 +18,13 @@ export function buildMovementData(parsedRows: readonly ParsedRow[]): MovementDat
     date: row.dateParsed.format("YY-MM-DD"),
     title: row.raw.title,
     bucket: row.bucket,
-    movements: row.movements.map((m) => ({ id: m.id, label: m.label, phrase: m.phrase, source: m.source })),
+    movements: row.movements.map((m) => ({
+      id: m.id,
+      label: m.label,
+      phrase: m.phrase,
+      source: m.source,
+      ...(m.implement !== undefined ? { implement: m.implement } : {}),
+    })),
   }));
   return { workouts, buckets: [...new Set(workouts.map((w) => w.bucket))].sort() };
 }
@@ -31,15 +38,23 @@ export function selectionIds(sel: MovementSelection): readonly string[] {
 }
 
 export function selectionLabel(sel: MovementSelection): string {
-  if (sel.kind === "movement") return LABEL_BY_ID.get(sel.id) ?? sel.id;
-  return MOVEMENT_FAMILIES.find((f) => f.id === sel.id)?.label ?? sel.id;
+  const base =
+    sel.kind === "movement"
+      ? (LABEL_BY_ID.get(sel.id) ?? sel.id)
+      : (MOVEMENT_FAMILIES.find((f) => f.id === sel.id)?.label ?? sel.id);
+  return sel.implement === undefined ? base : `${IMPLEMENT_LABEL[sel.implement]} ${base.toLowerCase()}`;
+}
+
+/** Does this movement in a workout belong to the selection, implement included? */
+function isSelected(m: MovementWorkout["movements"][number], ids: ReadonlySet<string>, sel: MovementSelection): boolean {
+  return ids.has(m.id) && (sel.implement === undefined || m.implement === sel.implement);
 }
 
 /** Workouts that include the selection, each with the movements that matched. */
 export function workoutsFor(data: MovementData, sel: MovementSelection) {
   const ids = new Set(selectionIds(sel));
   return data.workouts.flatMap((w) => {
-    const matched = w.movements.filter((m) => ids.has(m.id));
+    const matched = w.movements.filter((m) => isSelected(m, ids, sel));
     return matched.length > 0 ? [{ workout: w, matched }] : [];
   });
 }
@@ -79,7 +94,7 @@ export function trendFor(data: MovementData, sel: MovementSelection): { bucket: 
   for (const w of data.workouts) {
     const t = totals.get(w.bucket) ?? { n: 0, hit: 0 };
     t.n += 1;
-    if (w.movements.some((m) => ids.has(m.id))) t.hit += 1;
+    if (w.movements.some((m) => isSelected(m, ids, sel))) t.hit += 1;
     totals.set(w.bucket, t);
   }
   return data.buckets.map((bucket) => {
@@ -95,8 +110,22 @@ export function memberBreakdown(data: MovementData, sel: MovementSelection): { i
     .map((id) => ({
       id,
       label: LABEL_BY_ID.get(id) ?? id,
-      count: data.workouts.filter((w) => w.movements.some((m) => m.id === id)).length,
+      count: data.workouts.filter((w) => w.movements.some((m) => m.id === id && (sel.implement === undefined || m.implement === sel.implement))).length,
     }))
     .filter((m) => m.count > 0)
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
+/**
+ * How many of the selection's workouts name each implement, whatever implement the
+ * selection is currently narrowed to. Empty when none does, so the view can leave the
+ * control out. Workouts that do not say count toward no implement.
+ */
+export function implementBreakdown(data: MovementData, sel: MovementSelection): { implement: Implement; count: number }[] {
+  const anyImplement: MovementSelection = { kind: sel.kind, id: sel.id };
+  const ids = new Set(selectionIds(anyImplement));
+  return IMPLEMENT_LIST.map((implement) => ({
+    implement,
+    count: data.workouts.filter((w) => w.movements.some((m) => ids.has(m.id) && m.implement === implement)).length,
+  })).filter((o) => o.count > 0);
 }

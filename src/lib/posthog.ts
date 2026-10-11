@@ -45,6 +45,7 @@ export type InteractionName =
   | "tag_created"
   | "tag_edited"
   | "movement_selected"
+  | "implement_selected"
   | "backup_exported"
   | "backup_imported";
 

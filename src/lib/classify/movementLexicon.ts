@@ -1,5 +1,5 @@
 import type { MatchRule } from "./matcher";
-import type { Modality } from "@/types/modality";
+import type { Implement, Modality } from "@/types/modality";
 
 /**
  * The movement vocabulary behind the M/W/G modality classifier.
@@ -36,6 +36,8 @@ export interface MovementEntry extends MatchRule {
   modality: Modality;
   /** Shown to the athlete in the drill-down list. */
   label: string;
+  /** Set only where the movement is defined by its implement ("kettlebell swing"). */
+  implement?: Implement;
 }
 
 export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
@@ -141,7 +143,7 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   { id: "front-rack-lunges", phrase: "front rack lunge", modality: "W", label: "Front-rack lunges" },
   { id: "overhead-walking-lunges", phrase: "overhead walking lunge", modality: "W", label: "Overhead walking lunges" },
   { id: "good-morning", phrase: "good morning", modality: "W", label: "Good morning" },
-  { id: "barbell-row", phrase: "barbell row", modality: "W", label: "Barbell row" },
+  { id: "barbell-row", phrase: "barbell row", modality: "W", label: "Barbell row", implement: "barbell" },
   { id: "bent-over-row", phrase: "bent over row", modality: "W", label: "Bent-over row" },
   { id: "clean-pull", phrase: "clean pull to toes", modality: "W", label: "Clean pull" },
 
@@ -150,12 +152,12 @@ export const MOVEMENT_LEXICON: readonly MovementEntry[] = [
   // the movement, and counted as one, so a db snatch read as two W movements.
   // Measured on the sample export: dropping them changed 104 rows' shares and
   // left 2 rows (an implement-only title) unclassified.
-  { id: "dumbbell-row", phrase: "db row", modality: "W", label: "Dumbbell row" },
-  { id: "dumbbell-row", phrase: "dumbbell row", modality: "W", label: "Dumbbell row" },
-  { id: "kettlebell-swing", phrase: "kettlebell swing", modality: "W", label: "Kettlebell swing" },
-  { id: "kettlebell-swing", phrase: "kb swing", modality: "W", label: "Kettlebell swing" },
+  { id: "dumbbell-row", phrase: "db row", modality: "W", label: "Dumbbell row", implement: "dumbbell" },
+  { id: "dumbbell-row", phrase: "dumbbell row", modality: "W", label: "Dumbbell row", implement: "dumbbell" },
+  { id: "kettlebell-swing", phrase: "kettlebell swing", modality: "W", label: "Kettlebell swing", implement: "kettlebell" },
+  { id: "kettlebell-swing", phrase: "kb swing", modality: "W", label: "Kettlebell swing", implement: "kettlebell" },
   // Titles like "Tire Swing" and "Swing State" are names, not kettlebell work.
-  { id: "kettlebell-swing", phrase: "swing", modality: "W", label: "Kettlebell swing", exclude: ["tire swing", "swing state", "swing high", "swing to backward roll"] },
+  { id: "kettlebell-swing", phrase: "swing", modality: "W", label: "Kettlebell swing", implement: "kettlebell", exclude: ["tire swing", "swing state", "swing high", "swing to backward roll"] },
   { id: "turkish-get-up", phrase: "turkish get-up", modality: "W", label: "Turkish get-up" },
   { id: "wall-balls", phrase: "wall ball", modality: "W", label: "Wall balls" },
   { id: "wall-balls", phrase: "wall-ball", modality: "W", label: "Wall balls" },
