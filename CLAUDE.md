@@ -228,6 +228,9 @@ burpee deadlifts, squat clean thrusters and wall ball sit-ups. Measured on the s
 17 splits moved (farmers carry 13 rows no longer also a loaded carry; burpee pull-ups; a lateral burpee bar step-over
 moves from W to G; a hyphenated `bent-over rows` stops reading as a rower, M to W). Not done: a lift named only as a percentage base ("75% of snatch", about 70 rows, see above) still reads as
 that lift.
+Movement and family labels are in sentence case (pinned in `tests/modalityClassifier.test.ts`); a name keeps its capitals
+(`GHD`, `AbMat`, `L-sit`, `Turkish`). Inside a sentence use `labelInSentence()` (`buildMovementData.ts`), which lowers only the
+first letter and only when it starts an ordinary word, never `toLowerCase()`, which turned `Hanging L-sit` into `hanging l-sit`.
 A brand or a pace is not a movement: `assault bike` and `echo bike` are aliases of `bike`, and `sprint` is an alias of `run` (a
 workout naming both counts the movement once). The aliases keep the phrase the workout used for the "matched on" text.
 A sprint on a bike or rower would also read as a run; no exclusion is added until a real export shows one. Measured on

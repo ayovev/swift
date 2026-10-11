@@ -37,12 +37,28 @@ export function selectionIds(sel: MovementSelection): readonly string[] {
   return MOVEMENT_FAMILIES.find((f) => f.id === sel.id)?.members ?? [];
 }
 
+/** First words that are proper nouns, so they keep their capital in the middle of a sentence. */
+const PROPER_FIRST_WORDS: ReadonlySet<string> = new Set(["Turkish", "Russian", "Zercher", "Sots"]);
+
+/**
+ * A label for use inside a sentence ("workouts with ghd sit-ups"). Labels are in sentence case, so only
+ * the first letter changes, and not for an acronym ("GHD"), a mixed-case name ("AbMat"), a single
+ * capital ("L-sit", "L pull-ups") or a proper noun. Lowercasing the whole label would turn
+ * "Hanging L-sit" into "hanging l-sit".
+ */
+export function labelInSentence(label: string): string {
+  const first = label.split(" ")[0] ?? "";
+  const keepsCapital =
+    PROPER_FIRST_WORDS.has(first) || /^[A-Z]{2,}/.test(first) || /^[A-Z][a-z]+[A-Z]/.test(first) || /^[A-Z](?![a-z])/.test(first);
+  return keepsCapital ? label : label.charAt(0).toLowerCase() + label.slice(1);
+}
+
 export function selectionLabel(sel: MovementSelection): string {
   const base =
     sel.kind === "movement"
       ? (LABEL_BY_ID.get(sel.id) ?? sel.id)
       : (MOVEMENT_FAMILIES.find((f) => f.id === sel.id)?.label ?? sel.id);
-  return sel.implement === undefined ? base : `${IMPLEMENT_LABEL[sel.implement]} ${base.toLowerCase()}`;
+  return sel.implement === undefined ? base : `${IMPLEMENT_LABEL[sel.implement]} ${labelInSentence(base)}`;
 }
 
 /** Does this movement in a workout belong to the selection, implement included? */

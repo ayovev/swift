@@ -6,6 +6,7 @@ import { WorkoutList } from "./WorkoutList";
 import {
   buildMovementOptions,
   implementBreakdown,
+  labelInSentence,
   memberBreakdown,
   selectionLabel,
   trendFor,
@@ -119,7 +120,7 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
           <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-border pt-4">
             <div>
               <span className="text-2xl font-semibold tabular">{matches.length.toLocaleString()}</span>
-              <span className="ml-2 text-sm text-muted-foreground">workouts with {name.toLowerCase()} in them</span>
+              <span className="ml-2 text-sm text-muted-foreground">workouts with {labelInSentence(name)} in them</span>
             </div>
             <div className="text-sm text-muted-foreground tabular">
               {share.toFixed(1)}% of {data.workouts.length.toLocaleString()} workouts
@@ -140,7 +141,7 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">
-            Workouts with {name.toLowerCase()}, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
+            Workouts with {labelInSentence(name)}, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -156,7 +157,7 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Every workout with {name.toLowerCase()} in it</CardTitle>
+          <CardTitle className="text-sm font-medium">Every workout with {labelInSentence(name)} in it</CardTitle>
         </CardHeader>
         <CardContent>
           <WorkoutList
@@ -166,7 +167,7 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
               reason: matched.map((m) => (m.implement === undefined ? m.label : `${m.label} (${m.implement})`)).join(", "),
               detail: `matched on ${matched.map((m) => (m.source === "barbell_lift" ? `"${m.phrase}" (lift field)` : `"${m.phrase}"`)).join(", ")}`,
             }))}
-            emptyMessage={`No workouts in this range involved ${name.toLowerCase()}.`}
+            emptyMessage={`No workouts in this range involved ${labelInSentence(name)}.`}
           />
         </CardContent>
       </Card>

@@ -82,4 +82,21 @@ describe("MovementsTab", () => {
     render(<MovementsTab data={empty} granularity="monthly" />);
     expect(screen.getByText(/No movements were recognised/)).toBeInTheDocument();
   });
+
+  it("keeps an acronym, a mixed-case name and a single capital in a sentence", () => {
+    const named = buildMovementData(
+      parseRows([
+        workoutRow({ date: "01/05/2024", title: "A", description: "12 ghd sit-ups 10 db snatches" }),
+        workoutRow({ date: "01/06/2024", title: "B", description: "30-sec hanging l-sit" }),
+      ])
+    );
+    render(<MovementsTab data={named} granularity="monthly" />);
+    fireEvent.change(screen.getByLabelText("Movement"), { target: { value: "movement:ghd-sit-ups" } });
+    expect(screen.getByText(/workouts with GHD sit-ups in them/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Movement"), { target: { value: "movement:hanging-l-sit" } });
+    expect(screen.getByText(/workouts with hanging L-sit in them/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Movement"), { target: { value: "movement:snatch" } });
+    fireEvent.change(screen.getByLabelText("Implement"), { target: { value: "dumbbell" } });
+    expect(screen.getByText(/workouts with dumbbell snatch in them/)).toBeInTheDocument();
+  });
 });

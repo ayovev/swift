@@ -4,6 +4,7 @@ import { classifiableText } from "@/lib/classify/matcher";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
 import { familiesOf, hasFamily, hasMovement, MOVEMENT_FAMILIES } from "@/lib/classify/movementFamilies";
 import { parseRows } from "@/lib/analytics/buildDashboardData";
+import { labelInSentence } from "@/lib/analytics/buildMovementData";
 import { loadSampleRows } from "./fixtures/sampleRows";
 import { MODALITY_LIST, type ModalitySplit } from "@/types/modality";
 
@@ -552,5 +553,33 @@ describe("brands and paces are not separate movements", () => {
     expect(ids("10 shuttle runs")).toEqual(["shuttle-run"]);
     expect(hasFamily(findMovements("10 shuttle runs"), "run")).toBe(true);
     expect(hasFamily(findMovements("100-m sprint"), "run")).toBe(true);
+  });
+});
+
+describe("movement labels are in sentence case", () => {
+  // Capitals past the first word that are part of a name, not the start of a word.
+  const MID_CAPS = new Set(["L-sit"]);
+  const labels = [...new Set(MOVEMENT_LEXICON.map((e) => e.label)), ...MOVEMENT_FAMILIES.map((f) => f.label)];
+
+  it("starts with a capital and lowercases every later word", () => {
+    for (const label of labels) {
+      expect(label.charAt(0), label).toBe(label.charAt(0).toUpperCase());
+      for (const word of label.split(" ").slice(1)) {
+        if (MID_CAPS.has(word)) continue;
+        expect(word, `${label} / ${word}`).toBe(word.toLowerCase());
+      }
+    }
+  });
+
+  it("puts a label into a sentence without breaking a name", () => {
+    expect(labelInSentence("Snatch")).toBe("snatch");
+    expect(labelInSentence("Clean & jerk")).toBe("clean & jerk");
+    expect(labelInSentence("GHD sit-ups")).toBe("GHD sit-ups");
+    expect(labelInSentence("AbMat sit-ups")).toBe("AbMat sit-ups");
+    expect(labelInSentence("L pull-ups")).toBe("L pull-ups");
+    expect(labelInSentence("L-sit")).toBe("L-sit");
+    expect(labelInSentence("Hanging L-sit")).toBe("hanging L-sit");
+    expect(labelInSentence("Turkish get-up")).toBe("Turkish get-up");
+    expect(labelInSentence("Zercher squat")).toBe("Zercher squat");
   });
 });
