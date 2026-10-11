@@ -1,7 +1,7 @@
 {
   "name": "Swift",
   "short_name": "Swift",
-  "description": "The workout ends. The work doesn't.",
+  "description": "Training insights, no strings attached.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
