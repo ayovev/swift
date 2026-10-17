@@ -41,6 +41,14 @@ it honestly. "Decision" is what the athlete would do differently.
 
 ### A. About one lift or benchmark
 
+> **Decided (A1).** The platform's central question is the aggregate one, **"Is my performance
+> improving over time?"**, and per-subject answers ("am I getting stronger or faster at X?") are the
+> evidence beneath it. Keep. The verdict window is **session-based**, to cope with sparse logging.
+> **Benchmarks use the same rule as lifts.** The Workouts lift chart is a visualisation of the
+> series, not an answer to this question. Compare (arbitrary A-vs-B ranges) is doubted: a comparison
+> earns its place only with a common thread to compare across or a distinguishing factor (pre/post);
+> to be settled at C1.
+
 **A1. Am I getting stronger (or faster) at X?**
 Decision: keep, change or stop what I'm doing for X.
 Today: plateau classification (last N vs previous N sessions), the lift chart on Workouts, relative
