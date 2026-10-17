@@ -56,6 +56,13 @@ strength's raw series, compare's per-lift row.
 Needs: a single per-lift series (best estimated 1RM per session, or benchmark score) and one rule for
 calling a change real. Honest answer when sessions are too few: say how many more it needs.
 
+> **Decided (A2).** Keep, as a **qualifier on A1's verdict**, not a separate view or pipeline. It uses
+> A1's session-based window (no separate 365-day window or gates) and shows only when body mass moved
+> by more than noise. **Manual bodyweight entries, stored over time, are enough on their own** for
+> athletes without InBody data. Consequence: manual weigh-ins are a new persisted athlete dataset,
+> so per the sync/backup rule in CLAUDE.md they must join sync and backup in the same change, and be
+> validated like every other incoming dataset. Bodyweight only gives weight, not lean or fat mass.
+
 **A2. Is it me, or is it my body mass?**
 Decision: whether a heavier lift is training progress or just a heavier athlete.
 Today: relative strength (e1RM / body mass, with attribution `strength-driven`, `mass-driven`,
