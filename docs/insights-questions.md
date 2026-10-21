@@ -191,10 +191,15 @@ commitments.
   compute internally but nothing shows on its own.
 - **Decided (G3).** Dropped, as a computed insight and as a side-by-side. Most athletes train about the
   same amount week to week and month to month, so volume next to a verdict does not help anyone.
-  **Open follow-on:** C2 kept "logged workouts per week" in a period's "what it was" part. The same
-  reasoning argues for removing it there too (focus lifts stay); confirm.
+  **Follow-on (decided):** logged workouts per week is also removed from a period's "what it was"
+  part, amending C2. Focus lifts stay.
 - **G3. Does my consistency show up in results?** Workouts per week against outcome. The data to do
   this is already there; the honest answer is likely "can't tell" for most athletes.
+- **Decided (G4).** Dropped. Strength per body mass is an accepted convention for lifts but there is
+  none for benchmark times (the direction depends on the workout, and the prescribed load is fixed),
+  and A1 already answers "am I getting faster". The A2 mass-attribution qualifier applies to
+  load-scored lifts only; benchmarks get the A1 verdict without it. The aggregate headline's
+  body-context line still states body changes as plain facts.
 - **G4. Benchmarks against body mass.** A2 covers lifts only. Whether it makes sense for timed
   benchmarks is an open question, not an assumption.
 - **G5. What do I do with this?** The app deliberately describes and never grades. Whether a next-step
