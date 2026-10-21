@@ -189,6 +189,10 @@ commitments.
   cannot get a verdict ("1 session in the window, 3 needed").
 - **G2. Which lifts am I neglecting?** Lift frequency over time (exposure), which cycle reports
   compute internally but nothing shows on its own.
+- **Decided (G3).** Dropped, as a computed insight and as a side-by-side. Most athletes train about the
+  same amount week to week and month to month, so volume next to a verdict does not help anyone.
+  **Open follow-on:** C2 kept "logged workouts per week" in a period's "what it was" part. The same
+  reasoning argues for removing it there too (focus lifts stay); confirm.
 - **G3. Does my consistency show up in results?** Workouts per week against outcome. The data to do
   this is already there; the honest answer is likely "can't tell" for most athletes.
 - **G4. Benchmarks against body mass.** A2 covers lifts only. Whether it makes sense for timed
