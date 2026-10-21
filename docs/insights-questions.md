@@ -136,6 +136,15 @@ calls relative strength rather than sharing C1's rules.
 
 ### D. About something I changed
 
+> **Decided (D1).** D1 is A1's logic applied to a period, session-based, with the verdict **separated
+> from body composition**. The "before" side is the sessions immediately before the period (not all
+> earlier history); the manual `baselineStart` leaves the normal path and stays only if it earns its
+> place. The verdict needs SugarWOD only and states its coverage; the A2 body-context line sits
+> beside it when body data exists and says so when it does not. Injury and travel stay context only,
+> a cut keeps its "a decline is expected" note. Consequence: A1 is the foundation for A2, B1, C2 and
+> D1, so its definition (series, real-change rule, aggregation, coverage) is specified before any of
+> them is built.
+
 **D1. Did the thing I tried work?**
 Decision: keep it, drop it, or repeat it.
 Today: period verdict (`improved`, `declined`, `no_change`, `mixed`, `insufficient_data`) against
