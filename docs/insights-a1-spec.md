@@ -82,8 +82,9 @@ the window and the sessions behind it with every verdict.
   else `Holding steady` (*tunable*). With fewer than 3 eligible subjects there is no label, only the
   shortfall. On the sample this gives 5 up, 6 flat, 1 down of 12, so net +0.33, `Improving`. Under
   the current rule it was 18 of 29 up, which is the optimism the stricter rule removes.
-- **Known skew**: 5 of those 12 are Olympic variants (Snatch, Power Snatch, Clean, Power Clean,
-  Clean & Jerk), so equal weight per subject leans toward them. See "Open decisions".
+- **Family weighting** (measured, see section 7): each movement family casts one vote, split equally
+  among its eligible subjects, so Snatch and Power Snatch together weigh as much as Deadlift alone.
+  The net share uses these weights; the sentence still counts subjects.
 
 ## 5. Reuse
 
@@ -149,9 +150,31 @@ check that none of them is silently wrong.
 
 **Still open**
 
-3. **Equal weight per subject, or per movement family?** Counting each family once would stop the
-   Olympic variants dominating (5 of the 12 eligible), but needs the lexicon's families applied to
-   subject names and a rule for combining variants into one family verdict.
+3. **Family weighting changes the label, and the label is fragile (measured).** Subjects are mapped to
+   families with the existing lexicon (`findMovements` on the subject name, then `familiesOf`, first
+   family; a clean-and-jerk counts as a clean; Bench Press and Thruster have no family and stand alone;
+   every lift subject in the sample resolved). At the recommended setting (3 per side, 5%):
+
+   | Weighting | Groups | Up / flat / down | Net | Label |
+   | --- | --- | --- | --- | --- |
+   | Per subject | 12 | 5 / 6 / 1 | +0.33 | Improving |
+   | **Per family** | 7 | 2.17 / 3.83 / 1.00 | **+0.17** | **Holding steady** |
+
+   The 12 eligible subjects fall into 7 groups: squat (Back Squat flat, Front Squat up), snatch
+   (Snatch flat, Power Snatch up), clean (Clean & Jerk flat, Clean up, Power Clean up), press (Shoulder
+   Press flat, Push Press up), and Deadlift, Bench Press and Nancy alone. The Olympic variants made
+   up 5 of 12 subjects but 2 of 7 groups, and four of the five "up" subjects sit in families that also
+   have a flat member, which is why the net halves.
+   Across settings the same comparison gives: 2 per side, 5% (17 subjects, 9 groups): +0.35
+   Improving per subject, +0.31 Improving per family; 3 per side, 8%: +0.33 per subject, +0.26 per
+   family, both Improving. So only the recommended setting changes label, and by a margin of one
+   subject: one more flat subject turning up is +0.14 and flips it back. **With 7 groups, a single
+   subject's change moves the label.** Two consequences to decide:
+   - Weight by family, as the more honest picture (recommended).
+   - Treat the one-word label as low-confidence below roughly 10 groups, or drop it in favour of the
+     counts sentence alone. This conflicts with wanting a direct answer to "is my performance
+     improving?", so it is your call.
+
 4. **Threshold and window**: 5% and N up to 4 are recommended; 8% is steadier (20% flips) but calls
    about 70% of everything `flat`.
 5. **Scaled to RX**: an athlete who moves from Scaled to RX gets two thin subjects instead of one
