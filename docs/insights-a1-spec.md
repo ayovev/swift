@@ -248,7 +248,7 @@ check that none of them is silently wrong.
    sets read from "5x3"-style notation, 77 are ladders, 24 name an explicit rep max and 210 have no
    readable scheme; tests only would leave 87 of 246 counted lift sessions and 6 of 12 subjects.
 
-   **Threshold and record: decided.**  is a window change of 5% or more, or a record (section 2).
+   **Threshold and record: decided.** `up` is a window change of 5% or more, or a record (section 2).
    **Span display: recommended, not yet decided**: the signed change always shown, and each window's span
    shown with the verdict with a "long gap" note past 24 months. Spans measured on the same 12:
 
