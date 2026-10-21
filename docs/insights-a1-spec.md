@@ -95,9 +95,18 @@ subjects (family-weighted, as in section 7):
 - **A record is the same idea without the noise.** It compares a session with the subject's whole
   history (not with the previous four sessions, which may sit in a trough) and needs a 1% margin
   over every earlier estimate, so a session that is 0.3% higher by rounding does not count.
-- **5% or a record** keeps 5% as the way to recognise a recovery from a trough, and adds records on top.
-  It has the fewest reversals of the five. Back Squat (+3.9%, no record) stays `no clear change`;
-  Snatch and Deadlift become `up` through records.
+- **5% or a record (decided)** keeps 5% as the way to recognise a recovery from a trough, and adds records
+  on top. Against "3% or a record" it differs on exactly one subject, Back Squat: its window change is
+  +3.9%, its best recent session (232) is only 0.9% above its 2023 best of 230, and its last two
+  sessions are 215 and 212, so  is the accurate reading. The reversal counts
+  (0% to 3% across the five rules) are 0 to 4 events out of 140 pairs and cannot rank them. The
+  worked data for every subject is in [](insights-a1-sample-trace.md).
+- **The 1% record margin is arbitrary at its edge.** Snatch (141 against 140, ) and Shoulder Press
+  (138 against 136, ) both round to +1.0%, one just over the margin and one just
+  under. A larger margin (2% would keep Deadlift +4.0%, Push Press, Power Snatch, Clean and Power
+  Clean as records and drop Snatch) would remove the knife-edge. Not decided.
+- **A window  can still sit below the athlete's best.** Front Squat reads  (+8.8%) because the
+  previous window was a trough, but its recent best of 200 is 2.6% under its 2023 best of 205.
 - 89 of 246 lift sessions (36%) read as max efforts, and every one of the 12 subjects has at least one in
   its recent window, so `down` can fire. No lift is `not tested since` or `down` on the sample's latest
   windows. How often `not tested since` appears over the history was not measured.
@@ -239,9 +248,9 @@ check that none of them is silently wrong.
    sets read from "5x3"-style notation, 77 are ladders, 24 name an explicit rep max and 210 have no
    readable scheme; tests only would leave 87 of 246 counted lift sessions and 6 of 12 subjects.
 
-   **Threshold, span and record: recommended, not yet decided.** Section 2 has the replay of 5%, 3%,
-   PR flag and record rules. Recommended: 5% or a record, signed change always shown, each window's span
-   shown with the verdict and a "long gap" note past 24 months. Spans measured on the same 12:
+   **Threshold and record: decided.**  is a window change of 5% or more, or a record (section 2).
+   **Span display: recommended, not yet decided**: the signed change always shown, and each window's span
+   shown with the verdict with a "long gap" note past 24 months. Spans measured on the same 12:
 
    | Rule | Verdicts | Too spread out | Net, label |
    | --- | --- | --- | --- |
