@@ -97,6 +97,13 @@ Today: alignment (`aligned` / `tension`), a rollup of A3 across lifts.
 Needs: several classified lifts and a single shared window. Currently its window is the union of
 per-lift windows, which is the weakest part of the design.
 
+> **Decided (B2).** An internal foundation under A2, not a question the athlete asks, so it gets no
+> view of its own beyond Body Comp. The method behind a band (measured or default) is abstracted away
+> from the athlete: the copy stays the single generic "within normal scan variation" sentence and
+> never names how the band was estimated. Copy must still not claim the band was measured from the
+> athlete. Manual weigh-ins may give bodyweight a measured band later; thresholds stay in
+> `insightConfig.ts`.
+
 **B2. Is my body composition change real?**
 Decision: whether to believe a number on a scan.
 Today: noise bands (`paired-scans`, `residual`, `default`) used by everything else; shown on Body Comp.
