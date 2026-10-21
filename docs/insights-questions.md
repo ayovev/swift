@@ -112,6 +112,12 @@ this is really a fixed tolerance, and should be labelled as one.
 
 ### C. About a span of time
 
+> **Decided (C1).** Dropped. Free-form Compare (arbitrary A-vs-B ranges) goes, along with its window
+> picker and `compareWindows.ts`; its use cases are covered by D1 (a named change, pre vs post) and C2
+> (a block). Chart drag-to-select may stay as a quick way to start a period, not as a comparison.
+> The "same season, different years" idea is **not** pursued: the data is read over a broad range of
+> time, and the aim is to be as useful as possible with as little data as necessary.
+
 **C1. What changed between this span and that one?**
 Decision: open-ended: "what did that summer do to me".
 Today: Compare tables (per lift, per benchmark, per body-comp metric).
