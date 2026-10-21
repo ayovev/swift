@@ -191,16 +191,33 @@ check that none of them is silently wrong.
    - **A 365-day cap is not workable at this logging density.** Four sessions of a typical lift span more
      than a year, so it withholds 10 of 12 verdicts. A 730-day cap withholds only Power Snatch and Power
      Clean (both span about three years).
-   - **The last-session check changes one verdict**: Power Clean goes from up (+13.5%, resting on one 210 in
-     25-02 while its last two sessions were 178) to flat. It costs no coverage.
+   - **The last-session check is rejected.** It changed one verdict (Power Clean, up to flat), but it
+     misreads a training cycle: an athlete in week 3 of a 12-week build works at 145 for 3 and tests the
+     max only at the end, so the latest session is almost always below the previous best. Any rule that
+     treats a lighter recent session as a decline punishes exactly the people who program cycles.
    - **3% roughly doubles the up-to-down reversals (3% to 9%)** and turns Back Squat (+3.9%) and Deadlift
      (+4.4%) into UP, both inside the 6.9% median session-to-session movement. It lifts the label to
      Improving, which is the optimism the stricter rule was meant to remove. Lowering the threshold
      loosens the rule; it does not tighten it.
-   - Recommended: keep 5%, add the last-session check, and show the span of each window with the verdict
-     (with a "long gap" note past 24 months) instead of withholding. Always show the signed percentage
-     beside the verdict (for example `flat, +3.9%`) so a small move is visible without being called a trend.
-     Not yet decided.
+   - Recommended: keep 5%, show the span of each window with the verdict (a "long gap" note past 24
+     months) instead of withholding, and always show the signed percentage beside the verdict (for
+     example `flat, +3.9%`). Not yet decided.
+
+   **The cycle problem also reaches the base rule.** If a recent window of 4 sessions is all sub-maximal
+   work from a build, its best is below the previous window's best and the rule reads flat or down.
+   Estimated 1RM from any set is a lower bound on what the athlete can do, so the evidence is
+   one-sided: a recent session that beats the previous best by 5% is real, while a recent window that
+   does not says nothing unless the athlete actually tested. Candidate rule (not decided): `up` from
+   any session; `down` only when the recent window contains a session that reads as a max effort
+   (an explicit "3RM" in the title, a rep ladder, or a PR flag), otherwise "no clear change" is
+   reported and never "declined". Benchmarks are scored efforts and are unaffected.
+   Measured on the sample, 215 of 526 Load rows (41%) are working sets read from "5x3"-style notation,
+   77 are ladders, 24 name an explicit rep max and 210 have no readable scheme. Using only
+   ladder and explicit sessions would leave 87 of 246 counted lift sessions and 6 of 12 eligible
+   subjects, so filtering the series to tests is too costly; the one-sided rule above is not.
+   In the sample no lift is `down` under the base rule, so it would change labels (flat becomes "no
+   clear change") but no lift verdict.
+
 5. **Scaled to RX**: an athlete who moves from Scaled to RX gets two thin subjects instead of one
    continuous history. Merging is unsafe (different loads); leaving them apart is simple but hides
    progress.
