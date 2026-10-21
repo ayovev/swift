@@ -174,6 +174,13 @@ Needs: periods as context only. Never changes a result (already a rule).
 These came from reading what an athlete has in the export, not from any pipeline. Candidates, not
 commitments.
 
+- **Decided (G1).** Kept, and it is the **front door** of Insights: the A1 aggregate headline with
+  its coverage, then the subjects that moved (both directions) with their A2 body-context line, or one
+  plain sentence when nothing cleared the real-change rule. "Lately" is **session-based by default**.
+  A fixed-period option (30, 60 or 90 days, values to settle) is reserved. It only changes which
+  sessions are eligible; the same real-change rule and minimums apply, a subject without enough
+  sessions in the period says so, and the view always states which window it is showing, so it
+  cannot silently disagree with the session-based verdict.
 - **G1. What has moved lately?** Today the athlete must pick a lift or a range. A short "what changed
   since you last looked" read across everything, without choosing, is the natural front door.
 - **G2. Which lifts am I neglecting?** Lift frequency over time (exposure), which cycle reports
