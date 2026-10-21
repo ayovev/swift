@@ -78,10 +78,11 @@ the window and the sessions behind it with every verdict.
   weighs the same as one logged 8 times.
 - **Counts** `up`, `flat`, `down` and `eligible`; the headline always shows them with coverage:
   "improving in 5 of 12 lifts and benchmarks (6 holding, 1 down). 33 more lack enough sessions."
-- **Label** from `net = (up − down) / eligible`: `Improving` if net ≥ +0.25, `Declining` if net ≤ −0.25,
-  else `Holding steady` (*tunable*). With fewer than 3 eligible subjects there is no label, only the
-  shortfall. On the sample this gives 5 up, 6 flat, 1 down of 12, so net +0.33, `Improving`. Under
-  the current rule it was 18 of 29 up, which is the optimism the stricter rule removes.
+- **Label** from the family-weighted `net = (up − down) / groups`: `Improving` if net ≥ +0.25,
+  `Declining` if net ≤ −0.25, else `Holding steady` (*tunable*). With fewer than 3 eligible subjects
+  there is no label, only the shortfall. On the sample (5 up, 6 flat, 1 down across 7 groups) the net
+  is +0.17, so `Holding steady`; counted per subject it would be +0.33, `Improving`. Under the
+  previous rule it was 18 of 29 up, which is the optimism the stricter rule removes.
 - **Family weighting** (measured, see section 7): each movement family casts one vote, split equally
   among its eligible subjects, so Snatch and Power Snatch together weigh as much as Deadlift alone.
   The net share uses these weights; the sentence still counts subjects.
@@ -117,8 +118,9 @@ check that none of them is silently wrong.
 10. **Unreadable schemes**: rows with no readable rep scheme are absent from the series and counted in
     the coverage line.
 11. **Aggregate shortfall**: with 2 eligible subjects there is no label, only "needs 1 more".
-12. **Aggregate label**: 12 eligible with 5 up, 6 flat, 1 down gives `Improving` and the sentence in
-    section 4; the same counts mirrored give `Declining`.
+12. **Aggregate label**: 7 movement groups (one subject each) with 3 up, 3 flat, 1 down give net +0.29
+    and `Improving`; the mirrored counts give `Declining`. Two subjects of one family, one up and one
+    flat, together weigh the same as one subject alone (so the group counts as half up).
 13. **Independence from body data**: the verdict is identical with and without scans, weigh-ins or
     periods.
 14. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
