@@ -25,7 +25,22 @@ session in each window:
 
     change = (best(recent) − best(previous)) / best(previous), signed
 
-- `up` if change ≥ +5%, `down` if change ≤ −5%, else `flat` (*tunable*).
+- **Record**: a recent session at least 1% better than every earlier session of the subject (*tunable*).
+  So a new personal best of 200 over 195 (+2.6%) counts even though it is under the 5% window threshold.
+- **Max effort**: a session whose title or description names an explicit rep max ("3RM") or a rep
+  ladder. Benchmarks are always scored efforts. SugarWOD's own PR flag is **not** used (see below).
+
+For a lift, the first rule that applies wins:
+
+1. `up` if change ≥ +5% *or* the recent window holds a record (*tunable*).
+2. `down` if change ≤ −5% and the recent window holds a max-effort session.
+3. `not tested since` if change ≤ −5% and it does not: "last tested 14 months ago at 195; recent
+   sessions are lighter work". This is the mid-cycle case. It is never called a decline.
+4. `no clear change` otherwise.
+
+A benchmark skips rule 3: a change of −5% or worse is `down`. The signed change is always shown beside
+the verdict (for example `no clear change, +3.9%`).
+
 - **Eligible** only with at least 3 sessions per side (`n ≥ 6`) (*tunable*). Otherwise there is no
   verdict, only a shortfall: "needs 2 more sessions (has 4, needs 6)".
 - The verdict states the window: the dates the sessions cover and `N`.
@@ -61,6 +76,32 @@ The same sample shows how much the choice matters: Deadlift reads `down −4.2%`
 At this data density the verdict for a given subject is fragile, which is the reason the spec states
 the window and the sessions behind it with every verdict.
 
+### Why a record rule, and why not the PR flag
+
+The 5% window threshold is a large jump for an experienced lifter at the end of a cycle, and a move
+from 195 to 200 is a real improvement. Three candidate additions were replayed on the 12 eligible
+subjects (family-weighted, as in section 7):
+
+| Rule | up / no clear change / not tested / down | Net, label | Flips | Reversals |
+| --- | --- | --- | --- | --- |
+| 5% only | 5 / 6 / 0 / 1 | +0.17 Holding steady | 32% | 0% |
+| 3% only | 7 / 4 / 0 / 1 | +0.38 Improving | 31% | 2% |
+| 3% or SugarWOD PR flag in the recent window | 11 / 0 / 0 / 1 | +0.71 Improving | 24% | 3% |
+| 3% or a record | 8 / 3 / 0 / 1 | +0.45 Improving | 29% | 3% |
+| **5% or a record** | **7 / 4 / 0 / 1** | **+0.38 Improving** | **29%** | **1%** |
+
+- **The PR flag is too generous to use.** 53 of 246 lift sessions (22%) carry it, because SugarWOD
+  flags a best at any new title or rep scheme. As an "up" signal it turns 11 of 12 subjects up.
+- **A record is the same idea without the noise.** It compares a session with the subject's whole
+  history (not with the previous four sessions, which may sit in a trough) and needs a 1% margin
+  over every earlier estimate, so a session that is 0.3% higher by rounding does not count.
+- **5% or a record** keeps 5% as the way to recognise a recovery from a trough, and adds records on top.
+  It has the fewest reversals of the five. Back Squat (+3.9%, no record) stays `no clear change`;
+  Snatch and Deadlift become `up` through records.
+- 89 of 246 lift sessions (36%) read as max efforts, and every one of the 12 subjects has at least one in
+  its recent window, so `down` can fire. No lift is `not tested since` or `down` on the sample's latest
+  windows. How often `not tested since` appears over the history was not measured.
+
 ## 3. What counts as a lift session
 
 - One rep-scheme rule for every view: any scheme from 1 to 8 reps (*tunable*), replacing the
@@ -76,13 +117,16 @@ the window and the sessions behind it with every verdict.
 
 - **Population**: eligible, recent subjects. Each subject counts once, so a lift logged 37 times
   weighs the same as one logged 8 times.
-- **Counts** `up`, `flat`, `down` and `eligible`; the headline always shows them with coverage:
-  "improving in 5 of 12 lifts and benchmarks (6 holding, 1 down). 33 more lack enough sessions."
+- **Counts** `up`, `no clear change`, `down` and `eligible`, plus how many are `not tested since`;
+  the headline always shows them with coverage: "improving in 7 of 12 lifts and benchmarks (4 no
+  clear change, 1 down). 33 more lack enough sessions." Subjects that are `not tested since` are
+  left out of the net, because they carry no information about direction, and are named in the
+  coverage line ("2 lifts not tested recently").
 - **Label** from the family-weighted `net = (up − down) / groups`: `Improving` if net ≥ +0.25,
   `Declining` if net ≤ −0.25, else `Holding steady` (*tunable*). With fewer than 3 eligible subjects
-  there is no label, only the shortfall. On the sample (5 up, 6 flat, 1 down across 7 groups) the net
-  is +0.17, so `Holding steady`; counted per subject it would be +0.33, `Improving`. Under the
-  previous rule it was 18 of 29 up, which is the optimism the stricter rule removes.
+  there is no label, only the shortfall. On the sample (7 up, 4 no clear change, 1 down across 7
+  groups) the net is +0.38, so `Improving`; with 5% alone it was +0.17, `Holding steady`. Under
+  the previous rule it was 18 of 29 up, which is the optimism the stricter rule removes.
 - **Family weighting** (measured, see section 7): each movement family casts one vote, split equally
   among its eligible subjects, so Snatch and Power Snatch together weigh as much as Deadlift alone.
   The net share uses these weights; the sentence still counts subjects.
@@ -106,12 +150,13 @@ check that none of them is silently wrong.
    session (has 5, needs 6)".
 2. **Steady rise**: 6 sessions of e1RM rising about 10% in total gives `up`, with the window dates.
 3. **Same-day duplicates**: two entries on one day count as one session, the better one.
-4. **Mixed rep schemes**: a 1RM and a 5RM whose e1RMs agree produce `flat`, never `down`.
+4. **Mixed rep schemes**: a 1RM and a 5RM whose e1RMs agree produce `no clear change`, never `down`.
 5. **Lower is better**: a benchmark time falling 10% gives `up`; rising 10% gives `down`.
-6. **Noise stays noise**: a series alternating about ±6% around a constant gives `flat` at every point
-   from the first eligible one onward (the stability case).
+6. **Noise stays noise**: a series alternating about ±6% around a constant gives `no clear change` at
+   every point from the first eligible one onward (the stability case; the highs are equal, so none is
+   a record).
 7. **A light day**: the recent window includes one sub-maximal session but the same best as before,
-   so `flat`.
+   so `no clear change`.
 8. **Stale subject**: eligible, latest session 14 months ago, so it keeps a verdict on the list but is
    excluded from the headline and the front door.
 9. **RX and Scaled** of the same subject are never merged.
@@ -123,7 +168,16 @@ check that none of them is silently wrong.
     flat, together weigh the same as one subject alone (so the group counts as half up).
 13. **Independence from body data**: the verdict is identical with and without scans, weigh-ins or
     periods.
-14. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
+14. **A build cycle**: a 195 test, then four sessions at 145 for 3 over twelve weeks, with no rep max
+    named, reads `not tested since` ("last tested ... at 195"), never `down`.
+15. **End-of-cycle test**: after that build, a 3RM that estimates to 200 reads `up` (a record, +2.6%),
+    even though it is under 5%.
+16. **A failed test**: an explicit "3RM" in the recent window that estimates 175 against a previous best of
+    195 reads `down`.
+17. **Not a record**: a session 0.5% above the previous best is `no clear change`.
+18. **Benchmarks**: a time 10% worse reads `down` with no test marker; a time 10% better reads `up`.
+19. **The PR flag is ignored**: setting it on every session changes no verdict.
+20. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
     in section 2 are in the same range before any threshold is trusted.
 
 ## 7. Decisions
@@ -177,46 +231,28 @@ check that none of them is silently wrong.
      counts sentence alone. This conflicts with wanting a direct answer to "is my performance
      improving?", so it is your call.
 
-4. **Threshold, window span and last-session check (measured on the 12 eligible subjects).** Each rule
-   below changes only the one thing named; the weighted label uses the family weighting above.
+4. **Verdict states: decided.** Lifts have four verdicts (`up`, `no clear change`, `not tested since`,
+   `down`) so a training cycle is not read as a decline. Estimated 1RM from any set is a lower bound on
+   what the athlete can do, so only `up` can come from any session; `down` needs a max-effort session in
+   the recent window. Rejected: a last-session check (it flags nearly every athlete mid-cycle), and
+   filtering the series to tests only. Measured on the sample, 215 of 526 Load rows (41%) are working
+   sets read from "5x3"-style notation, 77 are ladders, 24 name an explicit rep max and 210 have no
+   readable scheme; tests only would leave 87 of 246 counted lift sessions and 6 of 12 subjects.
 
-   | Rule | Verdicts (up / flat / down) | Too spread out | Net, label | Flips | Reversals |
-   | --- | --- | --- | --- | --- | --- |
-   | **Base: 5%** | 12 (5 / 6 / 1) | 0 | +0.17 Holding steady | 31% | 3% |
-   | 3% threshold | 12 (7 / 4 / 1) | 0 | +0.38 Improving | 30% | 9% |
-   | 5%, each window spans at most 365 days | 2 (0 / 2 / 0) | 10 | no label | 35% | 3% |
-   | 5%, each window spans at most 730 days | 10 (3 / 6 / 1) | 2 | +0.07 Holding steady | 32% | 3% |
-   | 5%, latest session within 2% of the previous best | 12 (4 / 7 / 1) | 0 | +0.12 Holding steady | 36% | 1% |
+   **Threshold, span and record: recommended, not yet decided.** Section 2 has the replay of 5%, 3%,
+   PR flag and record rules. Recommended: 5% or a record, signed change always shown, each window's span
+   shown with the verdict and a "long gap" note past 24 months. Spans measured on the same 12:
 
-   - **A 365-day cap is not workable at this logging density.** Four sessions of a typical lift span more
-     than a year, so it withholds 10 of 12 verdicts. A 730-day cap withholds only Power Snatch and Power
-     Clean (both span about three years).
-   - **The last-session check is rejected.** It changed one verdict (Power Clean, up to flat), but it
-     misreads a training cycle: an athlete in week 3 of a 12-week build works at 145 for 3 and tests the
-     max only at the end, so the latest session is almost always below the previous best. Any rule that
-     treats a lighter recent session as a decline punishes exactly the people who program cycles.
-   - **3% roughly doubles the up-to-down reversals (3% to 9%)** and turns Back Squat (+3.9%) and Deadlift
-     (+4.4%) into UP, both inside the 6.9% median session-to-session movement. It lifts the label to
-     Improving, which is the optimism the stricter rule was meant to remove. Lowering the threshold
-     loosens the rule; it does not tighten it.
-   - Recommended: keep 5%, show the span of each window with the verdict (a "long gap" note past 24
-     months) instead of withholding, and always show the signed percentage beside the verdict (for
-     example `flat, +3.9%`). Not yet decided.
+   | Rule | Verdicts | Too spread out | Net, label |
+   | --- | --- | --- | --- |
+   | Base: 5% | 12 (5 up / 6 flat / 1 down) | 0 | +0.17 Holding steady |
+   | Each window spans at most 365 days | 2 | 10 | no label |
+   | Each window spans at most 730 days | 10 (3 / 6 / 1) | 2 | +0.07 Holding steady |
 
-   **The cycle problem also reaches the base rule.** If a recent window of 4 sessions is all sub-maximal
-   work from a build, its best is below the previous window's best and the rule reads flat or down.
-   Estimated 1RM from any set is a lower bound on what the athlete can do, so the evidence is
-   one-sided: a recent session that beats the previous best by 5% is real, while a recent window that
-   does not says nothing unless the athlete actually tested. Candidate rule (not decided): `up` from
-   any session; `down` only when the recent window contains a session that reads as a max effort
-   (an explicit "3RM" in the title, a rep ladder, or a PR flag), otherwise "no clear change" is
-   reported and never "declined". Benchmarks are scored efforts and are unaffected.
-   Measured on the sample, 215 of 526 Load rows (41%) are working sets read from "5x3"-style notation,
-   77 are ladders, 24 name an explicit rep max and 210 have no readable scheme. Using only
-   ladder and explicit sessions would leave 87 of 246 counted lift sessions and 6 of 12 eligible
-   subjects, so filtering the series to tests is too costly; the one-sided rule above is not.
-   In the sample no lift is `down` under the base rule, so it would change labels (flat becomes "no
-   clear change") but no lift verdict.
+   A 365-day cap is not workable at this logging density: four sessions of a typical lift span more than
+   a year. A 730-day cap withholds only Power Snatch and Power Clean (about three years each). Lowering
+   the threshold to 3% loosens the rule, not tightens it: reversals rise from 3% to 9% and Back Squat
+   (+3.9%) and Deadlift (+4.4%) become `up`, both inside the 6.9% median session-to-session movement.
 
 5. **Scaled to RX**: an athlete who moves from Scaled to RX gets two thin subjects instead of one
    continuous history. Merging is unsafe (different loads); leaving them apart is simple but hides
