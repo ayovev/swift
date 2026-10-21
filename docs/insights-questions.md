@@ -183,6 +183,10 @@ commitments.
   cannot silently disagree with the session-based verdict.
 - **G1. What has moved lately?** Today the athlete must pick a lift or a range. A short "what changed
   since you last looked" read across everything, without choosing, is the natural front door.
+- **Decided (G2).** Kept as **neutral exposure facts on the subject list**, with no separate view and
+  no "neglected" label: last logged date, sessions in the last year, and the gap since the last
+  session, sortable by longest since last logged. The same facts name the shortfall when a subject
+  cannot get a verdict ("1 session in the window, 3 needed").
 - **G2. Which lifts am I neglecting?** Lift frequency over time (exposure), which cycle reports
   compute internally but nothing shows on its own.
 - **G3. Does my consistency show up in results?** Workouts per week against outcome. The data to do
