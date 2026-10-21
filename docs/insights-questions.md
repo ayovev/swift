@@ -84,6 +84,13 @@ an independent question.
 
 ### B. About the whole athlete
 
+> **Decided (B1).** Dropped as its own question. The aggregate headline from A1 (with its coverage,
+> e.g. "improving in 9 of 14") carries the whole-athlete read, with the same body-context line as A2
+> underneath at whole-athlete level. `aligned` / `tension`, the alignment window and its gates go.
+> Contradictory signals are stated as two plain facts, not labelled. A period's type (cut, bulk,
+> maintain) names the context ("during your cut") and never changes a number, which is the existing
+> rule that periods never change a result.
+
 **B1. Are my lifts and my body composition telling the same story?**
 Decision: whether the current approach is working overall.
 Today: alignment (`aligned` / `tension`), a rollup of A3 across lifts.
