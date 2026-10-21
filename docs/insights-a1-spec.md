@@ -123,29 +123,47 @@ check that none of them is silently wrong.
 14. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
     in section 2 are in the same range before any threshold is trusted.
 
-## 7. Open decisions
+## 7. Decisions
 
-1. **Minimum sessions per side**: 3 (recommended, 12 eligible in the sample) or 2 as an "early read"
-   (17 eligible, but verdicts flip more). "As little data as necessary" argues for 2; the stability
-   numbers argue for 3.
-2. **Equal weight per subject, or per movement family?** Counting each family once would stop the
-   Olympic variants dominating, but needs the lexicon's families applied to subject names and a rule
-   for combining variants into one family verdict.
-3. **Threshold and window**: 5% and N ≤ 4 are the recommended values; 8% is steadier but calls
-   about three quarters of everything `flat`.
-4. **Scaled to RX**: an athlete who moves from Scaled to RX gets two thin subjects instead of one
+**Decided**
+
+1. **Minimum sessions per side: 3.** Chosen over 2 as an "early read" for the steadier verdicts (12 of 45
+   sample subjects are eligible, against 17). Below it the athlete sees the shortfall, never a guess.
+2. **The windowed best-of rule stays; a trend line was tried and not adopted.** A Theil-Sen slope (the
+   median of all pairwise slopes, robust to single bad sessions) over the last K sessions was replayed
+   the same way as section 2, with change defined as slope times the span over the window's median:
+
+   | Rule | Eligible now | Flips after one more session | Reversals | Reads "up" |
+   | --- | --- | --- | --- | --- |
+   | **Best of 4 vs best of 4 (min 3 per side), 5%** | 12 | **31%** | **3%** | 37% |
+   | Theil-Sen, last 6 sessions, 5% | 12 | 45% | 10% | 50% |
+   | Theil-Sen, last 8 sessions, 5% | 10 | 38% | 3% | 50% |
+   | Theil-Sen, last 8 sessions, 8% | 10 | 32% | 0% | 38% |
+
+   At the same data requirement (6 sessions) the trend line is clearly less stable and reads "up"
+   more often, because a recent run of higher sessions tilts the whole line. Only with 8 sessions and an
+   8% threshold does it match the window rule, at the cost of two subjects and of a rule that is harder
+   to explain to an athlete ("best of your last 4 against best of the 4 before" is a sentence they can
+   check by eye). Using calendar days instead of session order on the x-axis changed nothing. Revisit if
+   a real export shows many subjects with long, regular histories.
+
+**Still open**
+
+3. **Equal weight per subject, or per movement family?** Counting each family once would stop the
+   Olympic variants dominating (5 of the 12 eligible), but needs the lexicon's families applied to
+   subject names and a rule for combining variants into one family verdict.
+4. **Threshold and window**: 5% and N up to 4 are recommended; 8% is steadier (20% flips) but calls
+   about 70% of everything `flat`.
+5. **Scaled to RX**: an athlete who moves from Scaled to RX gets two thin subjects instead of one
    continuous history. Merging is unsafe (different loads); leaving them apart is simple but hides
-   progress. Not decided.
-5. **Alternative estimator**: a robust trend line (for example Theil-Sen) over the last six or so
-   sessions would use every session instead of two windows. Not tested here; worth trying on the real
-   export before settling.
-6. **Benchmarks**: in the sample only Nancy has more than 4 sessions (7), so benchmarks will mostly read "not enough
-   sessions yet" under any rule that is steady. That is the honest answer, but the headline will be
-   lifts in practice.
+   progress.
+6. **Benchmarks**: in the sample only Nancy has more than 4 sessions (7), so benchmarks will mostly read
+   "not enough sessions yet" under any rule that is steady. That is the honest answer, but the headline
+   will be lifts in practice.
 
 ## 8. How the numbers above were measured
 
-A throwaway test (not committed) loaded `public/sample/sugarwod-sample-export.csv` through the real
+Throwaway tests (not committed) loaded `public/sample/sugarwod-sample-export.csv` through the real
 parser, built subjects with `buildLiftSubjects` (reps up to 8) and `buildBenchmarkSubjects`, collapsed
 same-day entries, and replayed each rule at every point of each subject's history to count verdict
 changes. The numbers describe one export; they are not a validation.
