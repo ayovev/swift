@@ -177,8 +177,30 @@ check that none of them is silently wrong.
      counts sentence alone. This conflicts with wanting a direct answer to "is my performance
      improving?", so it is your call.
 
-4. **Threshold and window**: 5% and N up to 4 are recommended; 8% is steadier (20% flips) but calls
-   about 70% of everything `flat`.
+4. **Threshold, window span and last-session check (measured on the 12 eligible subjects).** Each rule
+   below changes only the one thing named; the weighted label uses the family weighting above.
+
+   | Rule | Verdicts (up / flat / down) | Too spread out | Net, label | Flips | Reversals |
+   | --- | --- | --- | --- | --- | --- |
+   | **Base: 5%** | 12 (5 / 6 / 1) | 0 | +0.17 Holding steady | 31% | 3% |
+   | 3% threshold | 12 (7 / 4 / 1) | 0 | +0.38 Improving | 30% | 9% |
+   | 5%, each window spans at most 365 days | 2 (0 / 2 / 0) | 10 | no label | 35% | 3% |
+   | 5%, each window spans at most 730 days | 10 (3 / 6 / 1) | 2 | +0.07 Holding steady | 32% | 3% |
+   | 5%, latest session within 2% of the previous best | 12 (4 / 7 / 1) | 0 | +0.12 Holding steady | 36% | 1% |
+
+   - **A 365-day cap is not workable at this logging density.** Four sessions of a typical lift span more
+     than a year, so it withholds 10 of 12 verdicts. A 730-day cap withholds only Power Snatch and Power
+     Clean (both span about three years).
+   - **The last-session check changes one verdict**: Power Clean goes from up (+13.5%, resting on one 210 in
+     25-02 while its last two sessions were 178) to flat. It costs no coverage.
+   - **3% roughly doubles the up-to-down reversals (3% to 9%)** and turns Back Squat (+3.9%) and Deadlift
+     (+4.4%) into UP, both inside the 6.9% median session-to-session movement. It lifts the label to
+     Improving, which is the optimism the stricter rule was meant to remove. Lowering the threshold
+     loosens the rule; it does not tighten it.
+   - Recommended: keep 5%, add the last-session check, and show the span of each window with the verdict
+     (with a "long gap" note past 24 months) instead of withholding. Always show the signed percentage
+     beside the verdict (for example `flat, +3.9%`) so a small move is visible without being called a trend.
+     Not yet decided.
 5. **Scaled to RX**: an athlete who moves from Scaled to RX gets two thin subjects instead of one
    continuous history. Merging is unsafe (different loads); leaving them apart is simple but hides
    progress.
