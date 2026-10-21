@@ -123,6 +123,11 @@ Decision: open-ended: "what did that summer do to me".
 Today: Compare tables (per lift, per benchmark, per body-comp metric).
 Needs: two windows, same evidence rules as A1. Rows with too little data say so and show no numbers.
 
+> **Decided (C2).** Merged into D1: a period gets one detail view with two parts. "What it was": span,
+> logged workouts per week and focus lifts (needs SugarWOD only). "What it did": A1's session-based
+> verdict across the span and against what came before, with the A2 body-context line. No separate
+> cycle report, one engine, one set of gates. Automatic cycle detection stays deferred.
+
 **C2. What happened during that block?**
 Decision: retrospective on a bulk, a cut or a programming cycle.
 Today: cycle report (volume, focus lifts, lift changes with attribution, body-comp change).
