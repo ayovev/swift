@@ -71,6 +71,11 @@ Needs: lift series, body mass at each session (exact, interpolated or nearest sc
 extrapolated), a mass-change noise band. Only meaningful when body mass actually moved; otherwise it
 collapses into A1.
 
+> **Decided (A3).** Merged into A2: one body-context line under a subject's A1 verdict, using whatever
+> body data the athlete has (bodyweight, or InBody lean/fat). The causal labels `plateaued_body_comp`
+> and `plateaued_other` are **dropped**; the app states what the body did and the athlete draws the
+> conclusion. "Stalled" is not its own state, it is A1's "flat".
+
 **A3. If a lift stalled, is body composition a plausible reason?**
 Decision: whether to look at food and recovery or at programming.
 Today: `plateaued_body_comp` vs `plateaued_other`.
