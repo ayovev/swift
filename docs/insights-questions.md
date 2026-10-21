@@ -152,6 +152,17 @@ earlier history or from `baselineStart`.
 Needs: a dated change, a "before" span, an "after" span, and C1's evidence on both. The verdict is C1
 with a name attached and a summary sentence.
 
+> **Decided (D2).** Context only, for **all** period types. A note attaches to any A1 verdict (per
+> subject or aggregate) when the sessions behind it overlap a period, names the period, and never
+> changes a number or a gate.
+>
+> **Open (period types).** Whether periods keep a strict list of types (`TAG_GROUPS`) or become
+> open-ended, and how that feeds verdicts, is to be re-evaluated. What the verdict logic actually
+> needs is small: whether a period is *something the athlete changed* (gets a before/after verdict) or
+> *something that happened* (context only), plus an optional marker for a cut so its "a decline is
+> expected" note keeps working. A free-text name could carry everything else. Settle this before the
+> period form is rebuilt; it does not block A1.
+
 **D2. What was going on when that result happened?**
 Decision: not blaming a plateau on training when the athlete was injured or travelling.
 Today: period tags add notes (`tagNotes`) when they overlap a plateau or alignment window; periods
