@@ -110,7 +110,8 @@ is context for it.
 
 ## Open items
 
-- **A1 specification** (the next piece of work): the real-change rule (the current 3% threshold was
+- **A1 specification**: drafted in [`insights-a1-spec.md`](insights-a1-spec.md), with measured
+  numbers and open decisions. It covers: the real-change rule (the current 3% threshold was
   tuned on one sample athlete's Back Squat and Diane), the session window size and minimums, the rep
   scheme rule (plateaus count 1/2/3/5RM, the others up to 8 reps), how a subject's relative change
   is signed and averaged into the aggregate, how coverage is stated, and how the aggregate avoids
