@@ -25,7 +25,7 @@ session in each window:
 
     change = (best(recent) − best(previous)) / best(previous), signed
 
-- **Record**: a recent session at least 1% better than every earlier session of the subject (*tunable*).
+- **Record**: a recent session at least 2% better than every earlier session of the subject (*tunable*).
   So a new personal best of 200 over 195 (+2.6%) counts even though it is under the 5% window threshold.
 - **Max effort**: a session whose title or description names an explicit rep max ("3RM") or a rep
   ladder. Benchmarks are always scored efforts. SugarWOD's own PR flag is **not** used (see below).
@@ -93,18 +93,21 @@ subjects (family-weighted, as in section 7):
 - **The PR flag is too generous to use.** 53 of 246 lift sessions (22%) carry it, because SugarWOD
   flags a best at any new title or rep scheme. As an "up" signal it turns 11 of 12 subjects up.
 - **A record is the same idea without the noise.** It compares a session with the subject's whole
-  history (not with the previous four sessions, which may sit in a trough) and needs a 1% margin
-  over every earlier estimate, so a session that is 0.3% higher by rounding does not count.
+  history (not with the previous four sessions, which may sit in a trough) and needs a 2% margin
+  over every earlier estimate. The margin sits above the estimator's own error (the Epley and Brzycki
+  formulas diverge by 3 to 4 percentage points at 2, 3 and 5 reps), so a rep-scheme artifact does not
+  count as a record. A real but small PR, such as 195 to 198 (+1.5%), reads `no clear change`.
 - **5% or a record (decided)** keeps 5% as the way to recognise a recovery from a trough, and adds records
   on top. Against "3% or a record" it differs on exactly one subject, Back Squat: its window change is
   +3.9%, its best recent session (232) is only 0.9% above its 2023 best of 230, and its last two
   sessions are 215 and 212, so `no clear change` is the accurate reading. The reversal counts
   (0% to 3% across the five rules) are 0 to 4 events out of 140 pairs and cannot rank them. The
   worked data for every subject is in [`insights-a1-sample-trace.md`](insights-a1-sample-trace.md).
-- **The 1% record margin is arbitrary at its edge.** Snatch (141 against 140, `up`) and Shoulder Press
-  (138 against 136, `no clear change`) both round to +1.0%, one just over the margin and one just
-  under. A larger margin (2% would keep Deadlift +4.0%, Push Press, Power Snatch, Clean and Power
-  Clean as records and drop Snatch) would remove the knife-edge. Not decided.
+- **Record margin: decided, 2%.** At 1%, Snatch (141 against 140, `up`) and Shoulder Press (138 against
+  136, `no clear change`) both round to +1.0% and fell on opposite sides of the line. At 2% Snatch reads
+  `no clear change`; Deadlift (+4.0%), Push Press, Power Snatch, Clean and Power Clean stay `up`. On the
+  12 subjects that is 6 up, 5 no clear change, 1 down, family-weighted net +0.31 (derived from the
+  1% measurements, not re-run).
 - **A window `up` can still sit below the athlete's best.** Front Squat reads `up` (+8.8%) because the
   previous window was a trough, but its recent best of 200 is 2.6% under its 2023 best of 205.
 - 89 of 246 lift sessions (36%) read as max efforts, and every one of the 12 subjects has at least one in
@@ -127,18 +130,55 @@ subjects (family-weighted, as in section 7):
 - **Population**: eligible, recent subjects. Each subject counts once, so a lift logged 37 times
   weighs the same as one logged 8 times.
 - **Counts** `up`, `no clear change`, `down` and `eligible`, plus how many are `not tested since`;
-  the headline always shows them with coverage: "improving in 7 of 12 lifts and benchmarks (4 no
+  the headline always shows them with coverage: "improving in 6 of 12 lifts and benchmarks (5 no
   clear change, 1 down). 33 more lack enough sessions." Subjects that are `not tested since` are
   left out of the net, because they carry no information about direction, and are named in the
   coverage line ("2 lifts not tested recently").
-- **Label** from the family-weighted `net = (up − down) / groups`: `Improving` if net ≥ +0.25,
-  `Declining` if net ≤ −0.25, else `Holding steady` (*tunable*). With fewer than 3 eligible subjects
-  there is no label, only the shortfall. On the sample (7 up, 4 no clear change, 1 down across 7
-  groups) the net is +0.38, so `Improving`; with 5% alone it was +0.17, `Holding steady`. Under
-  the previous rule it was 18 of 29 up, which is the optimism the stricter rule removes.
+- **Label (decided)**: one tier for everyone, defined only by the counts. `Improving` if the
+  family-weighted net `(up − down) / groups` is at least +0.25 **and** at least a third of the groups are
+  up; `Declining` is the mirror; otherwise `Holding steady` (*tunable*). The only gate is 3 eligible
+  subjects; below that there is no label, only what is missing. There is no minimum number of movement
+  groups for conviction: an athlete with a short or narrow history gets the same rule, and the counts
+  sentence always beside the label shows how much stands behind it. The one-third bar stops `Improving`
+  resting on a minority of groups (otherwise 2 of 7 groups up with the rest unchanged would read
+  `Improving`). On the sample (6 up, 5 no clear change, 1 down across 7 groups) the net is +0.31 and
+  45% of groups are up, so `Improving`; with 5% alone it was +0.17, `Holding steady`. Under the
+  previous rule it was 18 of 29 up, which is the optimism the stricter rule removes.
 - **Family weighting** (measured, see section 7): each movement family casts one vote, split equally
   among its eligible subjects, so Snatch and Power Snatch together weigh as much as Deadlift alone.
   The net share uses these weights; the sentence still counts subjects.
+
+### Scaling with history (measured)
+
+The final rule replayed on the first K workouts of the sample export, and on its first 12, 24 and 36
+months, each as if the athlete had uploaded at that point. Eligible means a subject with at least 6
+sessions (3 per side) and a session in the last 365 days.
+
+| Slice | Load rows | Subjects logged | Eligible | Groups | Up / none / down | Label |
+| --- | --- | --- | --- | --- | --- | --- |
+| first 100 workouts | 59 | 11 | 0 | 0 | none | no label (needs 3 more) |
+| first 250 workouts | 114 | 23 | 2 | 1 | 1 / 0 / 0 (+1 not tested) | no label (needs 1 more) |
+| first 350 workouts | 186 | 26 | 3 | 2 | 2 / 1 / 0 | Improving |
+| first 500 workouts | 288 | 32 | 5 | 2 | 1 / 2 / 1 (+1 not tested) | Holding steady |
+| first 800 workouts | 415 | 37 | 7 | 5 | 4 / 2 / 0 (+1 not tested) | Improving |
+| all 1,209 workouts | 526 | 45 | 12 | 7 | 6 / 5 / 1 | Improving |
+| first 12 months (436 workouts) | 245 | 30 | 5 | 2 | 0 / 3 / 0 (+2 not tested) | Holding steady |
+| first 24 months | 412 | 37 | 7 | 5 | 4 / 2 / 0 (+1 not tested) | Improving |
+| first 36 months | 469 | 40 | 11 | 7 | 6 / 3 / 1 (+1 not tested) | Improving |
+
+- **The label rule does not change with history; eligibility does.** What limits a new or light user is
+  the 6-session gate on a single subject, not the label bar. At about 100 workouts none of 11 subjects
+  has 6 sessions (21 sessions across 11 subjects), so there is no headline, only what is missing.
+- **At 4 years the headline can still be thin.** The first 500 workouts give 5 eligible subjects in 2
+  groups and a `Holding steady` that rests on 1 up, 2 no clear change and 1 down. It moves to `Improving` at
+  800 workouts. The counts sentence shows this; the label does not hide it.
+- This athlete is a heavy lifter (about half the rows are Load). An athlete who lifts less will qualify
+  fewer subjects at the same workout count.
+- **No floor on the number of groups.** A floor of 3 groups would have withheld the label until about
+  800 workouts here. It is not adopted; the cost is a label from as few as 2 groups, visible in the
+  counts.
+- Slices are the first K rows of one athlete's history, not many athletes, so these are examples of
+  scaling, not distributions.
 
 ## 5. Reuse
 
@@ -183,10 +223,13 @@ check that none of them is silently wrong.
     even though it is under 5%.
 16. **A failed test**: an explicit "3RM" in the recent window that estimates 175 against a previous best of
     195 reads `down`.
-17. **Not a record**: a session 0.5% above the previous best is `no clear change`.
+17. **Not a record**: a session 1.5% above the previous best (195 to 198) is `no clear change`; one 2.6% above
+    (195 to 200) is `up`.
 18. **Benchmarks**: a time 10% worse reads `down` with no test marker; a time 10% better reads `up`.
 19. **The PR flag is ignored**: setting it on every session changes no verdict.
-20. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
+20. **Label bar**: 2 of 7 groups up, the rest `no clear change`, none down, reads `Holding steady`; 3 of 7
+    up reads `Improving`. The same rule applies to an athlete with 3 groups.
+21. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
     in section 2 are in the same range before any threshold is trusted.
 
 ## 7. Decisions
@@ -235,10 +278,8 @@ check that none of them is silently wrong.
    family, both Improving. So only the recommended setting changes label, and by a margin of one
    subject: one more flat subject turning up is +0.14 and flips it back. **With 7 groups, a single
    subject's change moves the label.** Two consequences to decide:
-   - Weight by family, as the more honest picture (recommended).
-   - Treat the one-word label as low-confidence below roughly 10 groups, or drop it in favour of the
-     counts sentence alone. This conflicts with wanting a direct answer to "is my performance
-     improving?", so it is your call.
+   Decided: weight by family, as the more honest picture, and one label tier for everyone with the
+   counts beside it (section 4), not a lower-confidence wording below a number of groups.
 
 4. **Verdict states: decided.** Lifts have four verdicts (`up`, `no clear change`, `not tested since`,
    `down`) so a training cycle is not read as a decline. Estimated 1RM from any set is a lower bound on
