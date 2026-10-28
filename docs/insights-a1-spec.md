@@ -277,9 +277,12 @@ check that none of them is silently wrong.
    24-month horizon drops Clean, Power Clean and Power Snatch for lack of points. With 4 or 5 points only an
    almost monotone series reaches p below 0.10, a fit over every session is tilted down by the light sessions of a
    build (quarterly best avoids that but needs a year of history), and a p-value is harder for an athlete to
-   check than "best of the last 4 against the best of the 4 before". Not adopted. Candidates, not decided: draw
-   the best-fit line on the lift chart as a visualisation only, and use the trend as a labelled early read for
-   subjects with 4 or 5 sessions.
+   check than "best of the last 4 against the best of the 4 before". Not adopted as the verdict.
+   **Decided:** a best-fit line is drawn on the lift chart as a visualisation only, and does not change any
+   verdict. The early read for subjects with 4 or 5 sessions is **not** built. **Open:** which series the line
+   is fitted to and over what span. The current chart plots raw loads by rep scheme as unconnected points on
+   purpose (a 165 lb 5RM and a 165 lb single are different data), while the verdict is on estimated 1RM, so a
+   line on the raw chart would either mix schemes or describe a different series than the verdict.
 
 **Still open**
 
