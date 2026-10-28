@@ -256,6 +256,31 @@ check that none of them is silently wrong.
    check by eye). Using calendar days instead of session order on the x-axis changed nothing. Revisit if
    a real export shows many subjects with long, regular histories.
 
+   **A second trend-line test, with a significance gate and no session count.** A Theil-Sen slope with a
+   Mann-Kendall test (exact for up to 8 points) needs at least 4 points, p below 0.10 and a total change of at
+   least 5%; tried over all history and over the last 24 months, on every session and on the best session per
+   quarter, against the final window rule on the full sample and on its first 100, 250 and 500 workouts:
+
+   | Slice | Window rule | Trend, all history | Trend, last 24 months | Trend, quarterly best |
+   | --- | --- | --- | --- | --- |
+   | Eligible, first 100 workouts | 0 | 2 | 2 | 0 |
+   | Eligible, first 250 workouts | 2 | 4 | 4 | 0 |
+   | Eligible, first 500 workouts | 5 | 7 | 7 | 6 |
+   | Eligible, all 1,209 workouts | 12 | 15 | 10 | 15 (all history), 8 (24 months) |
+   | Up, all 1,209 workouts | 6 | 8 | 2 | 5 (all history), 2 (24 months) |
+   | Flips after one more session | 29% | 13% | 12% | 7% to 8% |
+
+   The trend variants are steadier mostly because they say `no clear change` more often, which is not
+   evidence they are more correct. The significance gate scales with the amount of data and qualifies a few more
+   subjects (Hang Power Clean, 5 sessions, reads up), but it moves the arbitrary choice instead of removing it:
+   over all history Back Squat, Bench Press and Clean & Jerk read `up` from rises in 2022 to 2023, while a
+   24-month horizon drops Clean, Power Clean and Power Snatch for lack of points. With 4 or 5 points only an
+   almost monotone series reaches p below 0.10, a fit over every session is tilted down by the light sessions of a
+   build (quarterly best avoids that but needs a year of history), and a p-value is harder for an athlete to
+   check than "best of the last 4 against the best of the 4 before". Not adopted. Candidates, not decided: draw
+   the best-fit line on the lift chart as a visualisation only, and use the trend as a labelled early read for
+   subjects with 4 or 5 sessions.
+
 **Still open**
 
 3. **Family weighting changes the label, and the label is fragile (measured).** Subjects are mapped to
