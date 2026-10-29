@@ -125,6 +125,29 @@ subjects (family-weighted, as in section 7):
 - A lift is a subject only when the row names it (the `barbell_lift` field, or a title matching a
   lift already known), as today.
 
+## 3a. Subjects without a verdict: the facts line (decided)
+
+The gate stays at 3 sessions per side (6 sessions). A subject below it is not given a weaker verdict;
+it gets a facts line, which states what was logged and claims nothing about direction.
+
+- **Who:** every subject with 2 to 5 sessions. On the sample that is 17 of the 33 without a verdict
+  (3 with 5 sessions, 2 with 4, 5 with 3, 7 with 2). The 16 with a single session show only that
+  ("1 session, Dec 2023") and the shortfall.
+- **What it shows:** the latest and the previous session with their months, the difference in the
+  subject's own unit, and the shortfall. Lifts show estimated 1RM, labelled as an estimate, in pounds.
+  Time benchmarks show the logged time with "faster" or "slower". A Rounds + Reps benchmark shows both
+  scores, and a difference in reps only where reps per round is known (Cindy: 30).
+  Example: "Hang Power Clean (RX): 5 sessions. Latest 185 lb est. (Aug 2026), previous 175 lb est.
+  (Mar 2026), +10 lb. Needs 1 more session for a verdict."
+- **What it never shows:** a verdict word (`up`, `no clear change`, `down`), a percentage, or a pill.
+  It adds nothing to the headline counts, the label or the "eligible" figure; the coverage line still
+  says "33 more lack enough sessions".
+- **Stale subjects** (latest session more than 365 days before today) still show the line, with "last
+  logged Aug 2025" in place of a recent month. Of the 17 on the sample, 9 have a session in the last
+  year and 8 do not.
+- It sits with the exposure facts on the subject list (last logged, sessions in the last year), as one
+  line and not a second feature.
+
 ## 4. Aggregate (the headline)
 
 - **Population**: eligible, recent subjects. Each subject counts once, so a lift logged 37 times
@@ -229,7 +252,21 @@ check that none of them is silently wrong.
 19. **The PR flag is ignored**: setting it on every session changes no verdict.
 20. **Label bar**: 2 of 7 groups up, the rest `no clear change`, none down, reads `Holding steady`; 3 of 7
     up reads `Improving`. The same rule applies to an athlete with 3 groups.
-21. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
+21. **Facts line, 2 to 5 sessions**: a subject with 5 sessions (latest 185 est. in Aug 2026, previous 175 est. in
+    Mar 2026) shows "Latest 185 lb est. (Aug 2026), previous 175 lb est. (Mar 2026), +10 lb. Needs 1 more
+    session for a verdict." It shows no verdict word, no percentage and no pill, and it is not counted in the
+    headline.
+22. **Facts line, 6 or more sessions**: a subject with 6 sessions shows its verdict and no facts line.
+23. **Single session**: a subject with 1 session shows "1 session (Dec 2023)" and "Needs 5 more sessions
+    for a verdict", and no comparison.
+24. **Facts line, benchmarks**: a time benchmark with latest 877 s and previous 827 s shows "Latest 14:37,
+    previous 13:47, 0:50 slower". A Rounds + Reps benchmark without a known reps-per-round shows both
+    scores and no difference; Cindy shows a difference in reps.
+25. **Stale facts line**: a subject with 3 sessions whose latest is 14 months ago shows the line with "last
+    logged" and the month, and the coverage line still counts it among those without a verdict.
+26. **Coverage**: with 45 subjects, 12 with a verdict and 33 without, the coverage line says "33 more lack
+    enough sessions", and facts lines appear for 17 of them.
+27. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
     in section 2 are in the same range before any threshold is trusted.
 
 ## 7. Decisions
