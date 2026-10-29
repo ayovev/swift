@@ -44,9 +44,8 @@ the verdict (for example `no clear change, +3.9%`).
 - **Eligible** only with at least 3 sessions per side (`n ≥ 6`) (*tunable*). Otherwise there is no
   verdict, only a shortfall: "needs 2 more sessions (has 4, needs 6)".
 - The verdict states the window: the dates the sessions cover and `N`.
-- **Recency**: a subject whose latest session is more than 365 days before today (*tunable*) keeps its
-  verdict on the subject list marked as not recent and is **left out of the headline and the front
-  door**. Measured: 2 of 17 subjects were affected under a lighter rule.
+- **Recency**: a subject whose latest session is more than 365 days before the reference date (*tunable*) is
+  marked not recent; see section 3c.
 - The verdict depends only on SugarWOD rows. It never reads body data, periods or tags.
 
 ### Why best-of-window, 5% and up to 4 sessions
@@ -125,6 +124,44 @@ chosen; per subject they are higher, for example +0.50 for 5% or a record at a 1
   without a word.
 - A lift is a subject only when the row names it (the `barbell_lift` field, or a title matching a
   lift already known), as today.
+
+## 3c. Recency (decided)
+
+- **The reference date is today**, the device's calendar day. The app already computes the Insights views
+  as of today and anchors date-range presets to it, and demo mode extends its sample through today. It is a
+  function input (the existing insight functions take an `asOfDate`) and is never read from the clock inside a
+  calculation, so the same history and date always give the same result.
+- **One date for every rule that needs one:** the 365-day recency rule, the 12-month window for Scaled-to-RX
+  votes (3b), "sessions in the last year" in the exposure facts, and the 30, 60 or 90 day option on the front
+  door.
+- **Counting:** whole local calendar days between the reference date and the latest session. 365 days is
+  recent; 366 is not (*tunable*). Sessions dated after the reference date are ignored.
+- **A not-recent subject** keeps its verdict on the subject list, marked "Not recent: last logged Aug 2025".
+  It is excluded from the counts, the label, the front door and the "eligible" figure.
+- **Results change with the date, not only with new data.** A subject drops out of the headline when it
+  crosses 365 days. This is intended: a lift not logged in a year is not recent.
+- **The headline shows "Log through Sep 11, 2026"**, the date of the latest session in the log, so the
+  athlete can see how current the data is.
+- **No recent subject:** the headline reads "No lift or benchmark was logged in the last 12 months." and
+  shows no label.
+- **On the sample** (derived from the measured data, not re-run): as of 2026-09-11 all 12 subjects with a
+  verdict are recent. As of 2027-04-30 Power Snatch (last logged 2026-03-10), Nancy (2026-04-13) and Deadlift
+  (2026-04-29) are not recent, and the Fran and Grace move-ups have passed 12 months, so the headline reads 4
+  up of 9 (5 no clear change) and is still `Improving`.
+
+Acceptance cases:
+
+- **AC-R-01.** The same history and the same reference date always give the same result; nothing reads the
+  clock inside the calculation.
+- **AC-R-02.** A latest session exactly 365 days before the reference date is recent; 366 days before is not.
+- **AC-R-03.** A not-recent subject shows its verdict marked "Not recent: last logged Aug 2025" and is excluded
+  from the counts, the label, the front door and the "eligible" figure.
+- **AC-R-04.** Sample as of 2027-04-30: Power Snatch, Nancy and Deadlift are not recent, both Scaled-to-RX
+  moves no longer vote, and the headline reads 4 up of 9 (5 no clear change).
+- **AC-R-05.** With no recent subject the headline reads "No lift or benchmark was logged in the last 12
+  months." and shows no label.
+- **AC-R-06.** Sessions dated after the reference date are ignored.
+- **AC-R-07.** The headline shows "Log through <month day, year>", the date of the latest session in the log.
 
 ## 3a. Subjects without a verdict: the facts line (decided)
 
