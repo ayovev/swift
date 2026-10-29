@@ -149,6 +149,53 @@ it gets a facts line, which states what was logged and claims nothing about dire
 - It sits with the exposure facts on the subject list (last logged, sessions in the last year), as one
   line and not a second feature.
 
+## 3b. Scaled and RX (decided)
+
+- **Separate subjects, never merged.** RX and Scaled of one name have their own sessions, verdicts, counts
+  and gates. On the sample, every Scaled-to-RX move on a benchmark makes the time worse because RX is the
+  harder workout (Fran Scaled 7:36, 6:32, 7:37, then RX 9:13; Grace 3:45 to 4:51; Murph 49:16 to 58:28), so a
+  merged history would read as a 20 to 30% decline at each switch. Lifts follow the same rule: only 7 of
+  526 Load rows are Scaled (1 with a named lift), and a Scaled lift's estimated 1RM reads its reps from the
+  prescription, which may not be what was done. The real-export check counts Scaled Load rows; merging
+  lifts is revisited only if a real export has many.
+- **Cross-reference line.** A subject whose name also has sessions under the other status shows a
+  factual line in the subject's own units, with no percentage, verdict word or pill and no effect on any
+  count: "Also logged as RX: 1 session (Dec 2025), 9:13", "Also logged as Scaled: 2 sessions (Nov 2022 to
+  Oct 2023), latest 3:45".
+- **Moving up to RX is an improvement, whatever the load or time.** A *move-up* is an RX session of a
+  subject whose most recent earlier session of that name was Scaled (one Scaled session before and one RX
+  after is enough). The RX subject then reads `up` with the reason, "Moved up to RX in Dec 2025, after 3
+  Scaled sessions", and no percentage. It casts one up vote in the headline for 12 months after the
+  move (*tunable*, the same as the recency rule); after that the line stays as a fact and the vote ends.
+  When the RX subject reaches 6 sessions its normal verdict replaces the move-up. It applies to lifts and
+  benchmarks alike.
+- **Moving down to Scaled is a neutral fact.** It could be an injury, travel or programming, so it gets the
+  cross-reference line, no `down` and no vote (Cindy RX in 2023 and Jan 2025, Scaled in Apr 2026).
+- **On the sample** (as of 2026-09-11): Fran RX (Dec 2025) and Grace RX (Mar 2026) vote up. Murph (May 2025)
+  and Helen (Oct 2024) moved up earlier, so they show the fact and do not vote. The headline goes from 6 up
+  of 12 to 8 up of 14 (5 no clear change, 1 down; net +0.50, 57% up, `Improving`), and 31 subjects, not 33,
+  lack enough sessions.
+
+Acceptance cases:
+
+- **AC-S-01.** RX and Scaled of the same name are separate subjects with separate sessions, verdicts and counts.
+- **AC-S-02.** Fran Scaled 2023-01-16 7:36, 2023-04-11 6:32, 2025-05-19 7:37 and Fran RX 2025-12-08 9:13 produce
+  no verdict across the two. Fran Scaled shows the facts line for 3 sessions, and no `down` appears anywhere.
+- **AC-S-03.** Grace RX shows "Also logged as Scaled: 2 sessions (Nov 2022 to Oct 2023), latest 3:45", with no
+  percentage, verdict word or pill.
+- **AC-S-04.** The cross-reference line changes no headline count, label or coverage figure.
+- **AC-S-05.** A subject with no sessions under the other status shows no cross-reference.
+- **AC-S-06.** Fran RX (9:13, slower than every Scaled time) reads `up` with "Moved up to RX in Dec 2025, after
+  3 Scaled sessions" and no percentage.
+- **AC-S-07.** As of 2026-09-11 the Fran move-up counts toward the headline. As of 2027-01-01, more than 12
+  months on, the line remains and casts no vote.
+- **AC-S-08.** A second RX session adds no vote. When the RX subject reaches 6 sessions its normal verdict
+  replaces the move-up.
+- **AC-S-09.** Cindy RX, RX, then Scaled shows "Also logged as RX: 2 sessions (May 2023 to Jan 2025)", with no
+  `down` and no vote.
+- **AC-S-10.** A Scaled and an RX session on the same day make no move.
+- **AC-S-11.** A Scaled Back Squat followed by an RX Back Squat is a move-up under the same rule as a benchmark.
+
 ## 4. Aggregate (the headline)
 
 - **Population**: eligible, recent subjects. Each subject counts once, so a lift logged 37 times
@@ -170,7 +217,7 @@ it gets a facts line, which states what was logged and claims nothing about dire
   narrow history gets the same rule, and the counts sentence beside the label shows how much stands
   behind it. The one-third bar stops `Improving` resting on a minority (2 of 7 up with the rest unchanged
   is net +0.29 but only 29% up, so `Holding steady`). On the sample (6 up, 5 no clear change, 1 down of
-  12) the net is +0.42 and 50% are up, so `Improving`. Under the previous rule it was 18 of 29 up, which is
+  12) the net is +0.42 and 50% are up, so `Improving` (8 up of 14 with the two Scaled-to-RX moves, section 3b). Under the previous rule it was 18 of 29 up, which is
   the optimism the stricter rule removes.
 - **Family breakdown (decided: collapsed).** Under the headline sits one collapsed section, "By movement
   family". Its summary line lists the families with more than one counted subject, largest first and ties
@@ -285,7 +332,8 @@ check that none of them is silently wrong.
     the line that it is information only. Opening or closing it changes no count, label or order.
 29. **No repeated family**: when every family has one counted subject the breakdown is not shown.
 30. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
-    in section 2 are in the same range before any threshold is trusted.
+    in section 2 are in the same range before any threshold is trusted. Also count the Scaled Load rows and
+    the Scaled-to-RX moves (section 3b).
 
 ## 7. Decisions
 
