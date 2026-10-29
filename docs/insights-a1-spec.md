@@ -80,7 +80,8 @@ the window and the sessions behind it with every verdict.
 
 The 5% window threshold is a large jump for an experienced lifter at the end of a cycle, and a move
 from 195 to 200 is a real improvement. Three candidate additions were replayed on the 12 eligible
-subjects (family-weighted, as in section 7):
+subjects (the net and label columns were measured family-weighted, before one vote per subject was
+chosen; per subject they are higher, for example +0.50 for 5% or a record at a 1% margin):
 
 | Rule | up / no clear change / not tested / down | Net, label | Flips | Reversals |
 | --- | --- | --- | --- | --- |
@@ -106,7 +107,7 @@ subjects (family-weighted, as in section 7):
 - **Record margin: decided, 2%.** At 1%, Snatch (141 against 140, `up`) and Shoulder Press (138 against
   136, `no clear change`) both round to +1.0% and fell on opposite sides of the line. At 2% Snatch reads
   `no clear change`; Deadlift (+4.0%), Push Press, Power Snatch, Clean and Power Clean stay `up`. On the
-  12 subjects that is 6 up, 5 no clear change, 1 down, family-weighted net +0.31 (derived from the
+  12 subjects that is 6 up, 5 no clear change, 1 down, net +0.42 per subject (+0.31 family-weighted; derived from the
   1% measurements, not re-run).
 - **A window `up` can still sit below the athlete's best.** Front Squat reads `up` (+8.8%) because the
   previous window was a trough, but its recent best of 200 is 2.6% under its 2023 best of 205.
@@ -157,19 +158,28 @@ it gets a facts line, which states what was logged and claims nothing about dire
   clear change, 1 down). 33 more lack enough sessions." Subjects that are `not tested since` are
   left out of the net, because they carry no information about direction, and are named in the
   coverage line ("2 lifts not tested recently").
-- **Label (decided)**: one tier for everyone, defined only by the counts. `Improving` if the
-  family-weighted net `(up − down) / groups` is at least +0.25 **and** at least a third of the groups are
-  up; `Declining` is the mirror; otherwise `Holding steady` (*tunable*). The only gate is 3 eligible
-  subjects; below that there is no label, only what is missing. There is no minimum number of movement
-  groups for conviction: an athlete with a short or narrow history gets the same rule, and the counts
-  sentence always beside the label shows how much stands behind it. The one-third bar stops `Improving`
-  resting on a minority of groups (otherwise 2 of 7 groups up with the rest unchanged would read
-  `Improving`). On the sample (6 up, 5 no clear change, 1 down across 7 groups) the net is +0.31 and
-  45% of groups are up, so `Improving`; with 5% alone it was +0.17, `Holding steady`. Under the
-  previous rule it was 18 of 29 up, which is the optimism the stricter rule removes.
-- **Family weighting** (measured, see section 7): each movement family casts one vote, split equally
-  among its eligible subjects, so Snatch and Power Snatch together weigh as much as Deadlift alone.
-  The net share uses these weights; the sentence still counts subjects.
+- **Votes (decided: one per subject).** A lift logged 37 times weighs the same as one logged 8, and a
+  Snatch and a Power Snatch are two votes. The cost is skew: 5 of the 12 sample subjects (42%) are snatch,
+  clean or jerk variants, so a specialist's headline mostly reflects what they train. The skew is shown,
+  not corrected (the breakdown below).
+- **Label (decided)**: one tier for everyone, defined only by the counts. Counted subjects are the
+  eligible, recent subjects that are not `not tested since`. `net = (up − down) / counted`. `Improving` if
+  net is at least +0.25 **and** at least a third of the counted subjects are up; `Declining` is the mirror;
+  otherwise `Holding steady` (*tunable*). The only gate is 3 counted subjects; below that there is no
+  label, only what is missing. There is no minimum number of movement families: an athlete with a short or
+  narrow history gets the same rule, and the counts sentence beside the label shows how much stands
+  behind it. The one-third bar stops `Improving` resting on a minority (2 of 7 up with the rest unchanged
+  is net +0.29 but only 29% up, so `Holding steady`). On the sample (6 up, 5 no clear change, 1 down of
+  12) the net is +0.42 and 50% are up, so `Improving`. Under the previous rule it was 18 of 29 up, which is
+  the optimism the stricter rule removes.
+- **Family breakdown (decided: collapsed).** Under the headline sits one collapsed section, "By movement
+  family". Its summary line lists the families with more than one counted subject, largest first and ties
+  alphabetical: "Votes per family: Clean 3 · Press 2 · Snatch 2 · Squat 2. The other families have one
+  each." Opening it lists every family as "x of y up" with its members and says it is information only.
+  Display rules, which affect nothing else: a subject's family is its lexicon family (the first one listed
+  for a movement, so Clean & Jerk is a clean), a lift with no family stands alone, and all benchmarks show as
+  one "Benchmarks" row. If no family has more than one subject the section is not shown. Opening or closing
+  it changes no count, label or order.
 
 ### Scaling with history (measured)
 
@@ -177,29 +187,29 @@ The final rule replayed on the first K workouts of the sample export, and on its
 months, each as if the athlete had uploaded at that point. Eligible means a subject with at least 6
 sessions (3 per side) and a session in the last 365 days.
 
-| Slice | Load rows | Subjects logged | Eligible | Groups | Up / none / down | Label |
-| --- | --- | --- | --- | --- | --- | --- |
-| first 100 workouts | 59 | 11 | 0 | 0 | none | no label (needs 3 more) |
-| first 250 workouts | 114 | 23 | 2 | 1 | 1 / 0 / 0 (+1 not tested) | no label (needs 1 more) |
-| first 350 workouts | 186 | 26 | 3 | 2 | 2 / 1 / 0 | Improving |
-| first 500 workouts | 288 | 32 | 5 | 2 | 1 / 2 / 1 (+1 not tested) | Holding steady |
-| first 800 workouts | 415 | 37 | 7 | 5 | 4 / 2 / 0 (+1 not tested) | Improving |
-| all 1,209 workouts | 526 | 45 | 12 | 7 | 6 / 5 / 1 | Improving |
-| first 12 months (436 workouts) | 245 | 30 | 5 | 2 | 0 / 3 / 0 (+2 not tested) | Holding steady |
-| first 24 months | 412 | 37 | 7 | 5 | 4 / 2 / 0 (+1 not tested) | Improving |
-| first 36 months | 469 | 40 | 11 | 7 | 6 / 3 / 1 (+1 not tested) | Improving |
+| Slice | Load rows | Subjects logged | Eligible | Counted | Up / none / down | Net, up share | Label |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| first 100 workouts | 59 | 11 | 0 | 0 | none | — | no label (needs 3 more) |
+| first 250 workouts | 114 | 23 | 2 | 1 | 1 / 0 / 0 (+1 not tested) | — | no label (needs 2 more) |
+| first 350 workouts | 186 | 26 | 3 | 3 | 2 / 1 / 0 | +0.67, 67% | Improving |
+| first 500 workouts | 288 | 32 | 5 | 4 | 1 / 2 / 1 (+1 not tested) | 0.00, 25% | Holding steady |
+| first 800 workouts | 415 | 37 | 7 | 6 | 4 / 2 / 0 (+1 not tested) | +0.67, 67% | Improving |
+| all 1,209 workouts | 526 | 45 | 12 | 12 | 6 / 5 / 1 | +0.42, 50% | Improving |
+| first 12 months (436 workouts) | 245 | 30 | 5 | 3 | 0 / 3 / 0 (+2 not tested) | 0.00, 0% | Holding steady |
+| first 24 months | 412 | 37 | 7 | 6 | 4 / 2 / 0 (+1 not tested) | +0.67, 67% | Improving |
+| first 36 months | 469 | 40 | 11 | 10 | 6 / 3 / 1 (+1 not tested) | +0.50, 60% | Improving |
+
+The net and up-share columns were recomputed per subject from the counts of the earlier family-weighted
+run, not re-run.
 
 - **The label rule does not change with history; eligibility does.** What limits a new or light user is
   the 6-session gate on a single subject, not the label bar. At about 100 workouts none of 11 subjects
   has 6 sessions (21 sessions across 11 subjects), so there is no headline, only what is missing.
-- **At 4 years the headline can still be thin.** The first 500 workouts give 5 eligible subjects in 2
-  groups and a `Holding steady` that rests on 1 up, 2 no clear change and 1 down. It moves to `Improving` at
+- **At 4 years the headline can still be thin.** The first 500 workouts give 5 eligible subjects, 4 of them
+  counted, and a `Holding steady` that rests on 1 up, 2 no clear change and 1 down. It moves to `Improving` at
   800 workouts. The counts sentence shows this; the label does not hide it.
 - This athlete is a heavy lifter (about half the rows are Load). An athlete who lifts less will qualify
   fewer subjects at the same workout count.
-- **No floor on the number of groups.** A floor of 3 groups would have withheld the label until about
-  800 workouts here. It is not adopted; the cost is a label from as few as 2 groups, visible in the
-  counts.
 - Slices are the first K rows of one athlete's history, not many athletes, so these are examples of
   scaling, not distributions.
 
@@ -235,9 +245,8 @@ check that none of them is silently wrong.
 10. **Unreadable schemes**: rows with no readable rep scheme are absent from the series and counted in
     the coverage line.
 11. **Aggregate shortfall**: with 2 eligible subjects there is no label, only "needs 1 more".
-12. **Aggregate label**: 7 movement groups (one subject each) with 3 up, 3 flat, 1 down give net +0.29
-    and `Improving`; the mirrored counts give `Declining`. Two subjects of one family, one up and one
-    flat, together weigh the same as one subject alone (so the group counts as half up).
+12. **Aggregate label**: 7 counted subjects with 3 up, 3 no clear change and 1 down give net +0.29 with 43% up,
+    so `Improving`; the mirrored counts give `Declining`. A Snatch and a Power Snatch both up are two votes.
 13. **Independence from body data**: the verdict is identical with and without scans, weigh-ins or
     periods.
 14. **A build cycle**: a 195 test, then four sessions at 145 for 3 over twelve weeks, with no rep max
@@ -250,8 +259,10 @@ check that none of them is silently wrong.
     (195 to 200) is `up`.
 18. **Benchmarks**: a time 10% worse reads `down` with no test marker; a time 10% better reads `up`.
 19. **The PR flag is ignored**: setting it on every session changes no verdict.
-20. **Label bar**: 2 of 7 groups up, the rest `no clear change`, none down, reads `Holding steady`; 3 of 7
-    up reads `Improving`. The same rule applies to an athlete with 3 groups.
+20. **Label bar**: 7 counted subjects with 2 up, 5 no clear change and none down give net +0.29 but only 29%
+    up, so `Holding steady`; with 3 up it reads `Improving`. 1 of 3 up (net +0.33, exactly a third) reads
+    `Improving`; 1 of 4 up (net +0.25, 25% up) reads `Holding steady`. The same rule applies at any number of
+    subjects.
 21. **Facts line, 2 to 5 sessions**: a subject with 5 sessions (latest 185 est. in Aug 2026, previous 175 est. in
     Mar 2026) shows "Latest 185 lb est. (Aug 2026), previous 175 lb est. (Mar 2026), +10 lb. Needs 1 more
     session for a verdict." It shows no verdict word, no percentage and no pill, and it is not counted in the
@@ -266,7 +277,14 @@ check that none of them is silently wrong.
     logged" and the month, and the coverage line still counts it among those without a verdict.
 26. **Coverage**: with 45 subjects, 12 with a verdict and 33 without, the coverage line says "33 more lack
     enough sessions", and facts lines appear for 17 of them.
-27. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
+27. **Breakdown summary**: counted subjects Clean, Power Clean and Clean & Jerk; Front Squat and Back Squat;
+    Snatch and Power Snatch; Shoulder Press and Push Press; Deadlift; Bench Press; Nancy give the summary
+    "Votes per family: Clean 3 · Press 2 · Snatch 2 · Squat 2. The other families have one each."
+28. **Breakdown opened**: opening it lists seven rows, each "x of y up" with its members (Clean 2 of 3,
+    Squat 1 of 2, Snatch 1 of 2, Press 1 of 2, Deadlift 1 of 1, Bench Press 0 of 1, Benchmarks 0 of 1) and
+    the line that it is information only. Opening or closing it changes no count, label or order.
+29. **No repeated family**: when every family has one counted subject the breakdown is not shown.
+30. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
     in section 2 are in the same range before any threshold is trusted.
 
 ## 7. Decisions
@@ -323,28 +341,17 @@ check that none of them is silently wrong.
 
 **Still open**
 
-3. **Family weighting changes the label, and the label is fragile (measured).** Subjects are mapped to
-   families with the existing lexicon (`findMovements` on the subject name, then `familiesOf`, first
-   family; a clean-and-jerk counts as a clean; Bench Press and Thruster have no family and stand alone;
-   every lift subject in the sample resolved). At the recommended setting (3 per side, 5%):
-
-   | Weighting | Groups | Up / flat / down | Net | Label |
-   | --- | --- | --- | --- | --- |
-   | Per subject | 12 | 5 / 6 / 1 | +0.33 | Improving |
-   | **Per family** | 7 | 2.17 / 3.83 / 1.00 | **+0.17** | **Holding steady** |
-
-   The 12 eligible subjects fall into 7 groups: squat (Back Squat flat, Front Squat up), snatch
-   (Snatch flat, Power Snatch up), clean (Clean & Jerk flat, Clean up, Power Clean up), press (Shoulder
-   Press flat, Push Press up), and Deadlift, Bench Press and Nancy alone. The Olympic variants made
-   up 5 of 12 subjects but 2 of 7 groups, and four of the five "up" subjects sit in families that also
-   have a flat member, which is why the net halves.
-   Across settings the same comparison gives: 2 per side, 5% (17 subjects, 9 groups): +0.35
-   Improving per subject, +0.31 Improving per family; 3 per side, 8%: +0.33 per subject, +0.26 per
-   family, both Improving. So only the recommended setting changes label, and by a margin of one
-   subject: one more flat subject turning up is +0.14 and flips it back. **With 7 groups, a single
-   subject's change moves the label.** Two consequences to decide:
-   Decided: weight by family, as the more honest picture, and one label tier for everyone with the
-   counts beside it (section 4), not a lower-confidence wording below a number of groups.
+3. **One vote per subject, with a collapsed family breakdown: decided.** Compared in a mockup as A (no
+   breakdown), B (breakdown always shown) and C (collapsed); C chosen. Subjects were mapped to families with
+   the existing lexicon (`findMovements` on the subject name, then `familiesOf`; every lift subject in the
+   sample resolved). Measured at 3 per side and 5%, before the 2% record margin: per subject the 12 sample
+   subjects give net +0.33 and `Improving`; per family (7 groups) +0.17 and `Holding steady`. At the final
+   rule both read `Improving` (+0.42 per subject, +0.31 per family). Per subject was chosen because the
+   sentence and the label count the same things, one subject changing moves the net by 0.08 here and not
+   0.14, nothing depends on the lexicon's family list or on mapping rules (back versus front squat, Clean &
+   Jerk, pooling benchmarks), and at low data a family can collapse five subjects into two votes (the first
+   500 workouts). The cost is the Olympic skew (5 of 12 subjects), which the breakdown shows instead of
+   correcting.
 
 4. **Verdict states: decided.** Lifts have four verdicts (`up`, `no clear change`, `not tested since`,
    `down`) so a training cycle is not read as a decline. Estimated 1RM from any set is a lower bound on
