@@ -7,7 +7,6 @@ interface SplashProps {
 
 const SIDES: {
   audience: Audience;
-  eyebrow: string;
   title: string;
   body: string;
   cta: string;
@@ -15,7 +14,6 @@ const SIDES: {
 }[] = [
   {
     audience: "athlete",
-    eyebrow: "Athlete",
     title: "I train.",
     body: "See what your training history adds up to: how often you showed up, what got heavier, and what your PRs look like.",
     cta: "Continue as an athlete",
@@ -23,7 +21,6 @@ const SIDES: {
   },
   {
     audience: "coach",
-    eyebrow: "Coach",
     title: "I coach.",
     body: "Review an athlete's training from the export they send you. Their file stays in your browser.",
     cta: "Continue as a coach",
@@ -51,9 +48,6 @@ export function Splash({ onChoose }: SplashProps) {
           onClick={() => onChoose(side.audience)}
           className={`group flex flex-col items-start justify-center gap-4 px-8 py-10 text-left outline-offset-[-6px] focus-visible:outline-2 sm:px-14 md:px-16 lg:px-24 ${side.className}`}
         >
-          <span className="text-xs font-semibold uppercase tracking-widest opacity-70">
-            {side.eyebrow}
-          </span>
           <span className="text-5xl font-semibold tracking-tight sm:text-6xl">{side.title}</span>
           <span className="max-w-sm text-pretty text-base leading-relaxed opacity-80 md:min-h-[6.5rem]">
             {side.body}
