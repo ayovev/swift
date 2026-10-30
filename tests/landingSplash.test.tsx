@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Landing } from "@/components/landing/Landing";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -62,5 +62,26 @@ describe("Landing splash", () => {
     unmount();
     renderLanding({ error: "bad file" });
     expect(screen.getByText("bad file")).toBeInTheDocument();
+  });
+});
+
+describe("Landing splash takeover", () => {
+  beforeEach(() => localStorage.removeItem("swift.audience"));
+
+  it("lets the chosen side fill the screen before applying the choice, and ignores a second click", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("matchMedia", () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }));
+    try {
+      renderLanding();
+      fireEvent.click(screen.getByRole("button", { name: /continue as a coach/i }));
+      fireEvent.click(screen.getByRole("button", { name: /continue as an athlete/i }));
+      expect(readAudience()).toBeNull();
+      act(() => void vi.advanceTimersByTime(500));
+      expect(readAudience()).toBe("coach");
+      expect(screen.getByRole("button", { name: /upload your sugarwod csv export/i })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 });
