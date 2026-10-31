@@ -378,40 +378,38 @@ export function SettingsSheet(props: SettingsSheetProps) {
           </Section>
 
           <Section title="Role">
-            <DatasetRow
-              title={audience === "coach" ? "Coach" : "Athlete"}
-              detail="Sets the wording on the upload page"
-              action={
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 shrink-0">
-                      Change
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Switch to {otherAudience}?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        The upload page will use {otherAudience} wording from now on. Your data and the
-                        dashboard stay as they are.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => {
-                          writeAudience(otherAudience);
-                          setAudience(otherAudience);
-                        }}
-                        className={buttonVariants({ size: "sm" })}
-                      >
-                        Switch to {otherAudience}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              }
-            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-sm">{audience === "coach" ? "Coach" : "Athlete"}</span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 shrink-0">
+                    Change
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Switch to {otherAudience}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      The upload page will use {otherAudience} wording from now on. Your data and the
+                      dashboard stay as they are.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        writeAudience(otherAudience);
+                        setAudience(otherAudience);
+                      }}
+                      className={buttonVariants({ size: "sm" })}
+                    >
+                      Switch to {otherAudience}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            <p className="text-[13px] text-muted-foreground">Sets the wording on the upload page.</p>
           </Section>
 
           <Section title="Start over">
