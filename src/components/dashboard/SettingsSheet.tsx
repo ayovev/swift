@@ -27,9 +27,10 @@ import { BackupPassphraseForm } from "@/components/backup/BackupPassphraseForm";
 import { DownloadBackupButton } from "@/components/backup/DownloadBackupButton";
 import { useBackupRestore } from "@/components/backup/useBackupRestore";
 import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
-import { ACTIVE_SEGMENT_CLASSES } from "./SegmentedControl";
+import { ACTIVE_SEGMENT_CLASSES, SegmentedControl } from "./SegmentedControl";
 import { FilePickerButton } from "./FilePickerButton";
 import type { BodyCompState } from "./BodyCompTab";
+import { readAudience, writeAudience, type Audience } from "@/lib/audience";
 import { cryptoAvailable } from "@/lib/backup/encryption";
 import { passphraseProblem } from "@/lib/backup/passphrase";
 import { capture } from "@/lib/posthog";
@@ -109,6 +110,9 @@ export function SettingsSheet(props: SettingsSheetProps) {
   const [open, setOpen] = useState(false);
   const { accent, setAccent, mode, setMode, resolvedMode } = useTheme();
   const upload = props.source === "upload";
+  // Per device, like the theme: it only sets the wording on the upload page,
+  // which reads it fresh the next time it mounts (after Start over).
+  const [audience, setAudience] = useState<Audience>(() => readAudience() ?? "athlete");
 
   // Passphrase for a new encrypted backup. Held here only while the sheet is
   // open: closing it, or finishing a download, clears all three.
@@ -370,6 +374,24 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 ))}
               </div>
             </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-sm">Viewing as</span>
+              <SegmentedControl
+                ariaLabel="Viewing as"
+                value={audience}
+                onChange={(next) => {
+                  writeAudience(next);
+                  setAudience(next);
+                }}
+                options={[
+                  { id: "athlete", label: "Athlete" },
+                  { id: "coach", label: "Coach" },
+                ]}
+              />
+            </div>
+            <p className="text-[13px] text-muted-foreground">
+              Sets the wording on the upload page. The dashboard is the same for both.
+            </p>
           </Section>
 
           <Section title="Start over">

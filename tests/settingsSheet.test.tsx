@@ -31,6 +31,16 @@ function renderSheet(source: DataSource, onReset = vi.fn()) {
 }
 
 describe("SettingsSheet", () => {
+  it("shows the stored audience and switches it for this device", async () => {
+    localStorage.setItem("swift.audience", "coach");
+    renderSheet("upload");
+    const group = await screen.findByRole("group", { name: "Viewing as" });
+    expect(group.querySelector("[aria-pressed=true]")).toHaveTextContent("Coach");
+    fireEvent.click(screen.getByRole("button", { name: "Athlete" }));
+    expect(localStorage.getItem("swift.audience")).toBe("athlete");
+    expect(group.querySelector("[aria-pressed=true]")).toHaveTextContent("Athlete");
+  });
+
   it("groups data, devices, appearance and start over in one sheet", async () => {
     renderSheet("upload");
     await screen.findByRole("dialog", { name: "Settings" });
