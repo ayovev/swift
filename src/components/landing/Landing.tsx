@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, FileUp, Lock, PlayCircle, Smartphone } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,10 @@ import { ThemeControls } from "@/components/theme/ThemeControls";
 import { FilePickerButton } from "@/components/dashboard/FilePickerButton";
 import { useBackupRestore } from "@/components/backup/useBackupRestore";
 import { looksLikeBackup } from "@/lib/backup/backup";
+import { readAudience, writeAudience, type Audience } from "@/lib/audience";
 import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
 import { ExportGuide } from "./ExportGuide";
+import { Splash } from "./Splash";
 import { HowItWorks } from "./HowItWorks";
 import { UploadDropzone } from "./UploadDropzone";
 import { UploadReveal } from "./UploadReveal";
@@ -46,6 +48,12 @@ export function Landing({
   onSyncedTags,
 }: LandingProps) {
   const busy = loading || reveal !== null;
+  const [audience, setAudience] = useState<Audience | null>(readAudience);
+  const chooseAudience = useCallback((next: Audience) => {
+    writeAudience(next);
+    setAudience(next);
+  }, []);
+  const isCoach = audience === "coach";
   // Nothing is stored yet, so a backup restores without asking.
   const backupRestore = useBackupRestore({
     existing: { workout: null, bodyComp: null, tags: null },
@@ -80,13 +88,28 @@ export function Landing({
     return () => window.removeEventListener("paste", onPaste);
   }, [busy, handleFile]);
 
+  // Only once the stored data has been looked for: a returning visitor goes
+  // straight to the dashboard and never reaches this, and an upload in flight
+  // (a pasted file) keeps the page it started on.
+  if (audience === null && !busy && !error) return <Splash onChoose={chooseAudience} />;
+
   return (
     <div className="relative isolate min-h-svh bg-background">
       <WhiteboardTexture />
 
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5">
         <SwiftMark />
-        <ThemeControls />
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground"
+            onClick={() => chooseAudience(isCoach ? "athlete" : "coach")}
+          >
+            {isCoach ? "I'm an athlete" : "I'm a coach"}
+          </Button>
+          <ThemeControls />
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-5xl px-5 pb-24">
@@ -95,9 +118,9 @@ export function Landing({
             Training insights, no strings attached.
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-muted-foreground">
-            Upload your SugarWOD export and see what years of workouts add up to — how often you
-            showed up, what got heavier, and which of the ten physical skills your training has
-            actually been building.
+            {isCoach
+              ? "Upload the SugarWOD export an athlete sends you and see what their workouts add up to — how often they showed up, what got heavier, and which of the ten physical skills their training has been building."
+              : "Upload your SugarWOD export and see what years of workouts add up to — how often you showed up, what got heavier, and which of the ten physical skills your training has actually been building."}
           </p>
 
           <div className="mt-9">
@@ -109,7 +132,11 @@ export function Landing({
                 onFile={handleFile}
                 loadingVariant="bar"
                 frame="soft"
-                hint="The .csv file SugarWOD gives you from Export Workouts. A Swift backup works too."
+                hint={
+                  isCoach
+                    ? "The .csv file SugarWOD gives an athlete from Export Workouts. A Swift backup works too."
+                    : "The .csv file SugarWOD gives you from Export Workouts. A Swift backup works too."
+                }
               />
             )}
           </div>

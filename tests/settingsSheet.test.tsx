@@ -31,6 +31,27 @@ function renderSheet(source: DataSource, onReset = vi.fn()) {
 }
 
 describe("SettingsSheet", () => {
+  it("shows the stored role and switches it only after a confirmation", async () => {
+    localStorage.setItem("swift.audience", "coach");
+    renderSheet("upload");
+    const section = await screen.findByRole("region", { name: "Role" });
+    expect(section).toHaveTextContent("Coach");
+    fireEvent.click(screen.getByRole("button", { name: "Change" }));
+    await screen.findByRole("alertdialog", { name: "Switch to athlete?" });
+    expect(localStorage.getItem("swift.audience")).toBe("coach");
+    fireEvent.click(screen.getByRole("button", { name: "Switch to athlete" }));
+    expect(localStorage.getItem("swift.audience")).toBe("athlete");
+    expect(section).toHaveTextContent("Athlete");
+  });
+
+  it("leaves the role alone when the change is cancelled", async () => {
+    localStorage.setItem("swift.audience", "athlete");
+    renderSheet("upload");
+    fireEvent.click(await screen.findByRole("button", { name: "Change" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cancel" }));
+    expect(localStorage.getItem("swift.audience")).toBe("athlete");
+  });
+
   it("groups data, devices, appearance and start over in one sheet", async () => {
     renderSheet("upload");
     await screen.findByRole("dialog", { name: "Settings" });
