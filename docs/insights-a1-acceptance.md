@@ -341,6 +341,31 @@ sessions are lighter work."
 
 **A1-CHT-12** At 360 px wide the chart's text is at least 11 px and nothing overflows horizontally.
 
+## Last PR (PRL)
+
+**A1-PRL-01 A lift.** Given Deadlift RX whose best estimated 1RM is 365 lb on 2026-03-24 (20 sessions). Then the line reads
+"Last PR: 365 lb est. on Mar 24, 2026".
+
+**A1-PRL-02 A time benchmark.** Given Nancy Scaled 884, 878, 866, 827, 877, 956, 899 seconds (2023-01-04 to 2026-04-13), the
+best being 827 on 2024-11-12. Then the line reads "Last PR: 13:47 on Nov 12, 2024" (lower is better).
+
+**A1-PRL-03 A tie is not a PR.** Given RX sessions 2025-01-10 190, 2025-02-07 195 and 2025-03-07 195. Then the line reads
+"Last PR: 195 lb est. on Feb 7, 2025".
+
+**A1-PRL-04 A single session shows no line.**
+
+**A1-PRL-05 An old PR is still shown and does not vote.** Given the sessions of A1-DSP-01 (best 205 on 2023-07-07). Then the
+line reads "Last PR: 205 lb est. on Jul 7, 2023", while the verdict is `up` through the window alone, and removing the line
+changes no verdict, count, label or paragraph clause.
+
+**A1-PRL-06 Rounds + Reps.** Given Cindy RX with the totals of A1-DSP-04 (best 530 reps, 17+20, on 2024-08-01). Then the line
+reads "Last PR: 17+20 on Aug 1, 2024".
+
+**A1-PRL-07 RX and Scaled are separate.** Fran Scaled and Fran RX each show their own last PR; neither compares with the other.
+
+**A1-PRL-08 A facts-line subject** (2 to 5 sessions) shows the Last PR line as well as its facts line, and a subject that is
+not recent still shows it.
+
 ## Manual checks (MAN)
 
 **A1-MAN-01 Real export.** Run the rules on the real export and confirm the stability figures in the spec are in the

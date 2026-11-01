@@ -317,6 +317,29 @@ a 165 lb single are still never drawn as one series. Three mockups were reviewed
 
 Acceptance cases: `A1-CHT` in [`insights-a1-acceptance.md`](insights-a1-acceptance.md) (the chart).
 
+## 3f. Last PR (decided)
+
+- **A PR is a session whose value beats every earlier session of the subject** (strictly, so a tie is not a PR),
+  with no margin and no time limit. **Last PR** is the most recent one, which is the session holding the subject's
+  best. Lifts compare estimated 1RM, benchmarks compare the better score.
+- **Display:** a fact line on every subject with 2 or more sessions, in the subject's own unit, with the date
+  and no percentage: "Last PR: 365 lb est. on Mar 24, 2026" (lift), "Last PR: 13:47 on Nov 12, 2024" (time
+  benchmark), "Last PR: 17+20 on Aug 1, 2024" (Rounds + Reps). A subject with one session shows no line, since
+  there is nothing to beat. It sits with the exposure facts on the subject list.
+- **It never votes.** It changes no verdict, count, label or paragraph clause. The verdict still uses the recent
+  window and the 2% margin (section 2), so a record is a PR that falls in the recent window and clears the best
+  before it by 2%.
+- **Why a PR does not vote on its own** (measured on the sample's 11 lifts): 22% of later sessions are a new best
+  by any margin and 18% by 2% or more, about the rate a flat athlete produces by noise alone (19% over 12
+  sessions), and close to SugarWOD's own PR flag (22%), which was rejected for the same reason. Several lifts'
+  last PR is old (Front Squat Jul 2023; Back Squat 2% or more in Jan 2023; Snatch Aug 2023), so counting any past
+  PR would keep them `up` for years.
+- **An alternative was considered and not adopted:** a PR of 2% or more within the last 12 months counts as `up`.
+  On the sample it would add Clean & Jerk and Bench Press (derived from the PR dates, not run through the full rule:
+  8 of 11 lifts `up` instead of 6) and would keep a lift `up` for months after its last heavy session.
+
+Acceptance cases: `A1-PRL` in [`insights-a1-acceptance.md`](insights-a1-acceptance.md) (last PR).
+
 ## 4. Aggregate (the headline)
 
 - **Population**: eligible, recent subjects. Each subject counts once, so a lift logged 37 times
@@ -413,7 +436,7 @@ The same function serves every consumer, with only the sessions chosen different
 
 All A1 acceptance cases live in [`insights-a1-acceptance.md`](insights-a1-acceptance.md), grouped as SES (sessions
 and values), VRD (verdicts), DSP (display), FCT (facts line), SCL (Scaled and RX), REC (recency), HDL (headline),
-BRK (family breakdown), CHT (evidence chart) and MAN (manual checks). Each has exact inputs and exact outputs. The
+BRK (family breakdown), CHT (evidence chart), PRL (last PR) and MAN (manual checks). Each has exact inputs and exact outputs. The
 document ends with the open points the writing exposed (the new-best note, a slow steady climb, sentence wording
 for the other labels, and a few display details).
 
@@ -506,6 +529,8 @@ for the other labels, and a few display details).
 
 5. **Scaled to RX: decided** (section 3b). RX and Scaled stay separate subjects; a move up to RX is an
    improvement and casts a vote for 12 months; moving down is a neutral fact.
+8. **A PR does not vote on its own: decided** (section 3f). The recent-window rule and the 2% margin stay; the last
+   PR is shown as a fact line.
 7. **Estimator and margin: decided** (section 2, "The estimator and the 2% margin"): the average of Epley and
    Brzycki, and a 2% record margin for every pair of sessions.
 6. **Benchmarks: decided.** Most benchmarks will read "not enough sessions yet" under any steady rule (only
