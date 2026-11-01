@@ -52,7 +52,8 @@ its own sessions, window, verdict and counts, and no session is shared.
 ## Verdicts (VRD)
 
 **A1-VRD-01 Too few sessions.** Given 5 sessions of one lift. Then `state` is `not enough sessions`, no change and no
-percentage are shown, and the subject needs 1 more session.
+percentage are shown, and the shortfall data is `{ has: 5, needs: 6 }`. The subject row says "Needs 1 more session for
+a verdict." and, with 4 sessions, "Needs 2 more sessions for a verdict."; "(has 5, needs 6)" is never shown.
 
 **A1-VRD-02 Window size.** Given RX Back Squat sessions on the 10th of each month in 2025 with values 100, 101, 102,
 103, 104, 105, 106, 107, 108, 109 (January to October).
@@ -147,7 +148,9 @@ displayed "Last 4: Feb to Aug 2026 · Previous 4: Mar 2024 to Mar 2025" and "+16
 "Mar to Aug 2026"; across years shows "Mar 2024 to Mar 2025".
 
 **A1-DSP-03 Time words and format.** A benchmark that is 6.0% slower shows "0:50 slower (13:47 to 14:37), 6.0%
-slower"; 10.0% faster shows "1:20 faster (13:20 to 12:00), 10.0% faster". Times under an hour are `m:ss`.
+slower"; 10.0% faster shows "1:20 faster (13:20 to 12:00), 10.0% faster". Times under an hour are `m:ss`; from an hour
+up they are `h:mm:ss`: previous 3508 s and recent 3735 s show "3:47 slower (58:28 to 1:02:15), 6.5% slower", and previous
+2400 s with recent 6135 s show "1:02:15 slower (40:00 to 1:42:15), 155.6% slower".
 
 **A1-DSP-04 Rounds + Reps with a known reps per round.** Given Cindy RX, six sessions, display scores 16, 15+10, 16+5,
 16+15, 17+2, 17+20 (480, 460, 485, 495, 512, 530 reps at 30 per round). Then previous best 485 (16+5), recent best 530
@@ -158,9 +161,10 @@ slower"; 10.0% faster shows "1:20 faster (13:20 to 12:00), 10.0% faster". Times 
 **A1-DSP-06 Rounds + Reps are read from the display.** A raw value `5.01` with display `5+10` is 5 rounds and 10 reps;
 `12.0019` with display `12+19` is 12 and 19; `16.015` with display `16+15` is 16 and 15; display `16` is 16 and 0.
 
-**A1-DSP-07 No change in the best.** Given bests of 211.6 and 212.4 (both 212 lb to the pound). Then the line reads
-"no change in the best (212 and 212 lb)" and no percentage. The `state` still follows the unrounded rule (here `no
-clear change`).
+**A1-DSP-07 No change in the best.** The line reads "no change in the best" and no percentage when the two bests display as
+the same value. Lift: bests of 211.6 and 212.4 (both 212 lb) read "no change in the best (212 and 212 lb)". Time: bests of
+827 s and 827 s read "(13:47 and 13:47)". Rounds + Reps: totals of 485 and 485 read "(16+5 and 16+5)". The `state` still
+follows the unrounded rule (here `no clear change`).
 
 **A1-DSP-08 Long gap.** A recent window from 2024-01-18 to 2026-03-10 (782 days) shows "Recent sessions span 26 months
 (Jan 2024 to Mar 2026)." One of 21 months shows no note. The `state` is unchanged in both.
@@ -173,6 +177,10 @@ clear change`).
 counted in the headline.
 
 **A1-FCT-02 6 or more sessions** show the verdict and no facts line.
+
+**A1-FCT-08 The shortfall wording.** A subject with 5 sessions reads "Needs 1 more session for a verdict."; with 4, "Needs 2
+more sessions for a verdict."; in the no-headline part "Closest: Back Squat, 1 more session; Clean, 2 more." (only the first
+item spells out "session"). The data holds `{ has, needs }`; no screen shows "(has 5, needs 6)".
 
 **A1-FCT-03 A single session** reads "Back Pause Squat (RX): 1 session (Sep 2023). Needs 5 more sessions for a
 verdict." with no comparison.
@@ -254,10 +262,10 @@ steady` (net +0.29 but 29% up); 1 / 2 / 0 → `Improving` (exactly a third up); 
 and benchmarks (5 no clear change, 1 down)." A zero part is dropped: 5 up and 1 down of 6 reads "Improving in 5 of 6
 lifts and benchmarks (1 down)."; 4 up of 4 reads "Improving in 4 of 4 lifts and benchmarks."
 
-**A1-HDL-03 The counts sentence, other labels (pending).** Proposed wording: `Declining` with 1 up, 4 no clear
-change and 4 down of 9 reads "Declining in 4 of 9 lifts and benchmarks (4 no clear change, 1 up)." and `Holding
-steady` with 2 up and 5 no clear change of 7 reads "Holding steady across 7 lifts and benchmarks (2 up, 5 no clear
-change)."
+**A1-HDL-03 The counts sentence, other labels.** `Declining` with 1 up, 4 no clear change and 4 down of 9 reads "Declining in 4 of
+9 lifts and benchmarks (4 no clear change, 1 up)." `Holding steady` with 2 up and 5 no clear change of 7 reads "Holding
+steady across 7 lifts and benchmarks (2 up, 5 no clear change)."; with 3 up, 6 no clear change and 2 down of 11 it reads
+"Holding steady across 11 lifts and benchmarks (3 up, 6 no clear change, 2 down)." A zero part is dropped.
 
 **A1-HDL-04 The paragraph, full sample** (as of 2026-09-11). Then "Includes 2 that moved up to RX. Left out: 31 with
 under 6 sessions. 2 compare sessions over 24 months apart. Log through Sep 11, 2026."
@@ -373,16 +381,9 @@ same range before any threshold is trusted. Count the Scaled Load rows and the S
 
 **A1-MAN-02 Units.** Confirm on the real export that a lift the athlete logs in kilograms appears in pounds in the file.
 
-## Open points the cases exposed
+## Open points
 
-These are not covered by a decision yet. The cases above record the current behaviour or are marked pending.
-
-1. **Sentence wording for `Holding steady` and `Declining`** is undefined (A1-HDL-03 proposes wording).
-2. **Zero-change wording** (A1-DSP-07) assumes "the same pound" is the test; confirm.
-3. **Times of an hour or more** are shown `h:mm:ss` (A1-DSP-03); not previously stated.
-4. **The shortfall string.** The data holds "has 5, needs 6"; each screen shows its own wording ("Needs 1 more session
-   for a verdict", "1 more session"). Confirm the data/display split.
-
-Resolved while writing the cases: the record rule applies to benchmarks (A1-VRD-13), and a record now means the recent
-best is 2% above the best before the recent window, which fixes the new-best note and lets a slow steady climb read
-`up` (A1-VRD-17 to A1-VRD-20).
+None. The four display points the cases exposed are decided: the sentence for `Holding steady` and `Declining`
+(A1-HDL-03), the zero-change test (A1-DSP-07), times of an hour or more (A1-DSP-03) and the shortfall wording
+(A1-VRD-01, A1-FCT-08). The record rule applies to benchmarks (A1-VRD-13), and a record is the recent best 2% above the
+best before the recent window (A1-VRD-17 to A1-VRD-20).

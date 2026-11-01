@@ -45,7 +45,9 @@ A benchmark skips rule 3: a change of −5% or worse is `down`. The signed chang
 the verdict (for example `no clear change, +3.9%`).
 
 - **Eligible** only with at least 3 sessions per side (`n ≥ 6`) (*tunable*). Otherwise there is no
-  verdict, only a shortfall: "needs 2 more sessions (has 4, needs 6)".
+  verdict, only a shortfall. The shortfall is data, `{ has: 4, needs: 6 }`, never a sentence; each screen words it
+  from the count (section 3a and the no-headline "Closest" part of section 4), and the old helper's "needs 2 more
+  sessions (has 4, needs 6)" is not used.
 - The verdict states the window: the dates the sessions cover and `N`.
 - **Recency**: a subject whose latest session is more than 365 days before the reference date (*tunable*) is
   marked not recent; see section 3c.
@@ -277,7 +279,13 @@ Acceptance cases: `A1-REC` in [`insights-a1-acceptance.md`](insights-a1-acceptan
   shows both scores and no difference.
 - **The percentage is rounded to one decimal** (half away from zero) before it is compared with any threshold
   (5%, 2%), so the number shown never contradicts the verdict. A true 4.96% counts as 5.0% and reads `up`.
-- **A zero change** reads "no change in the best (200 and 200)", never "+0".
+- **A zero change** is decided by what is shown: when the two bests display as the same value (the same whole
+  pound for a lift, the same second for a time, the same score for Rounds + Reps) the line reads "no change in the
+  best (212 and 212 lb)", "(13:47 and 13:47)" or "(16+5 and 16+5)" with no percentage, never "+0". The state still
+  follows the unrounded rule; a gap that small cannot reach a threshold.
+- **Times** under an hour are `m:ss`; from an hour up they are `h:mm:ss` (seconds always two digits, minutes two
+  digits only when an hour is shown): "3:47 slower (58:28 to 1:02:15), 6.5% slower". A difference of an hour or more
+  uses the same format.
 - **Long-gap note.** When either window spans more than 730 days (about 24 months), first to last session, the
   verdict says "Recent sessions span 26 months (Jan 2024 to Mar 2026)." It is an annotation only and never
   withholds a verdict. On the sample it appears for 2 of 12 (Power Snatch, Power Clean). The coverage
@@ -345,10 +353,13 @@ Acceptance cases: `A1-PRL` in [`insights-a1-acceptance.md`](insights-a1-acceptan
 - **Population**: eligible, recent subjects. Each subject counts once, so a lift logged 37 times
   weighs the same as one logged 8 times.
 - **Counts sentence and coverage paragraph (decided).** One sentence, then a short muted paragraph.
-  - *Sentence:* "<Label> in <up> of <counted> lifts and benchmarks (<n> no clear change, <n> down)." A part
-    that is zero is dropped, and with both zero there are no brackets: "Improving in 4 of 4 lifts and
-    benchmarks." Counted subjects are those with a verdict that are recent and not `not tested since`, plus
-    move-ups (3b).
+  - *Sentence* (decided): `Improving` names the up count and brackets the rest: "Improving in 8 of 14 lifts and
+    benchmarks (5 no clear change, 1 down)." `Declining` names the down count: "Declining in 4 of 9 lifts and
+    benchmarks (4 no clear change, 1 up)." `Holding steady` has no single count, so it names the total and lists
+    every part, always in the order up, no clear change, down: "Holding steady across 7 lifts and benchmarks (2
+    up, 5 no clear change)." A part that is zero is dropped, and with nothing left there are no brackets:
+    "Improving in 4 of 4 lifts and benchmarks." Counted subjects are those with a verdict that are recent and not
+    `not tested since`, plus move-ups (3b).
   - *Paragraph:* short clauses in this order, each shown only when its number is above zero, with correct
     singular and plural. (1) "Includes 2 that moved up to RX." (2) "Left out: 31 with under 6 sessions, 1 not
     logged in 12 months, 2 not tested recently." (3) "2 compare sessions over 24 months apart." (4) "Log
