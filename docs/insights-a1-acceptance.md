@@ -59,8 +59,8 @@ percentage are shown, and the subject needs 1 more session.
 - With the first 6 (Jan to Jun: 100 to 105): `N` = 3, previous Jan to Mar best 102, recent Apr to Jun best 105.
 - With the first 7 (to Jul: 106): `N` = 3, the oldest session (Jan) is not used, previous Feb to Apr best 103,
   recent May to Jul best 106.
-- With all 10: `N` = 4, previous Mar to Jun best 105, recent Jul to Oct best 109, `change` +3.8%, `state` `no clear
-  change`, `record` none.
+- With all 10: `N` = 4, previous Mar to Jun best 105, recent Jul to Oct best 109, `change` +3.8%, `record` = the
+  109 on 2025-10-10, 3.8% above the best before the recent window (105), `state` `up`.
 
 **A1-VRD-03 Up by window, no record.** Given 9 sessions: 2024-01-10 230; 2024-04-10 190; 2024-07-10 195; 2024-10-10
 200; 2025-01-10 192; 2025-04-10 205; 2025-07-10 208; 2025-10-10 210; 2026-01-10 207. Then `N` = 4, previous Apr 2024
@@ -115,6 +115,24 @@ output is identical to A1-VRD-05.
 195, 196, 197 and 198 lb (estimated 205.1, 207.2, 210.5, 211.6, 212.6, 213.7). Then `N` = 3, previous best 210.5, recent
 best 213.7, `change` +1.5%, `record` none, `state` `no clear change`, although every session used the same rep count.
 
+**A1-VRD-17 A slow steady climb reads `up`.** Given 2025-01-10 to 2025-12-10, one session a month: 100, 101, ..., 111.
+Then `N` = 4, previous May to Aug best 107, recent Sep to Dec best 111, `change` +3.7%, `record` = the 111 on
+2025-12-10, 3.7% above the best before the recent window (107), `state` `up`, displayed "+4 lb (107 to 111 lb), +3.7%"
+and "New best: 111 lb on Dec 10, 2025, 3.7% above the previous best of 107 lb."
+
+**A1-VRD-18 A very slow climb stays unclear.** Given twelve monthly sessions 100 × 1.0025^m (100.00, 100.25, 100.50,
+100.75, 101.00, 101.26, 101.51, 101.76, 102.02, 102.27, 102.53, 102.78). Then previous best 101.76, recent best 102.78,
+`change` +1.0%, `record` none, `state` `no clear change`.
+
+**A1-VRD-19 The record is the recent best.** Given 2025-01-10 100; 02-07 102; 03-07 104; 04-04 108; 05-02 110; 06-06
+112. Then `N` = 3, `change` +7.7%, `record` = the 112 on 2025-06-06, 7.7% above the best before the recent window (104),
+`state` `up`, and the note reads "New best: 112 lb on Jun 6, 2025, 7.7% above the previous best of 104 lb." (not the
+108 or the 110).
+
+**A1-VRD-20 An older peak blocks the record.** Given the sessions of A1-DSP-01 (the 205 in 2023 is the best before the
+recent window). Then `record` none although the window change is +8.7%; `state` `up` through the window alone.
+Without the 2023 session the same eight sessions give `record` = the 200 on 2026-03-30, 8.7% above 184.
+
 **A1-VRD-15 A verdict reads only SugarWOD rows.** Given the sessions of A1-VRD-05 with and without InBody scans,
 bodyweight entries, periods and tags. Then the output is identical.
 
@@ -133,7 +151,7 @@ slower"; 10.0% faster shows "1:20 faster (13:20 to 12:00), 10.0% faster". Times 
 
 **A1-DSP-04 Rounds + Reps with a known reps per round.** Given Cindy RX, six sessions, display scores 16, 15+10, 16+5,
 16+15, 17+2, 17+20 (480, 460, 485, 495, 512, 530 reps at 30 per round). Then previous best 485 (16+5), recent best 530
-(17+20), `change` +9.3%, `state` `up` (records at 16+15, 17+2 and 17+20), displayed "+45 reps (16+5 to 17+20), +9.3%".
+(17+20), `change` +9.3%, `state` `up` (a record: 17+20, 9.3% above the 485 before the recent window), displayed "+45 reps (16+5 to 17+20), +9.3%".
 
 **A1-DSP-05 Rounds + Reps with no known reps per round** shows both scores ("16+15 to 18+2") and no difference.
 
@@ -299,8 +317,8 @@ closing it changes no count, label or order.
 **A1-CHT-03** Previous-window dots are dark, recent-window dots use the accent, all others are faint. There are no
 shaded areas, no legend and no controls.
 
-**A1-CHT-04** The two window bests are labelled with their values. A new-best session is a larger accent dot labelled
-"new best +4.0%"; when it is the recent best the label reads "365 · new best +4.0%".
+**A1-CHT-04** The two window bests are labelled with their values. When the recent best is a record it is a larger
+accent dot labelled "365 · new best +4.0%", the only new-best marker.
 
 **A1-CHT-05** Quarterly bests of 100, 102, 104 and 106 draw a rising dashed line labelled "Trend" ending at the last
 quarter. Three quarters draw no line.
@@ -335,21 +353,11 @@ same range before any threshold is trusted. Count the Scaled Load rows and the S
 These are not covered by a decision yet. The cases above record the current behaviour or are marked pending.
 
 1. **Sentence wording for `Holding steady` and `Declining`** is undefined (A1-HDL-03 proposes wording).
-2. **The new-best note names a session that is not always the highest** (proposed fix awaiting your confirmation:
-   a record is the recent best being 2% above the best of every session before the recent window. On the sample this
-   changes no verdict across all 45 subjects at every point of their history, and gives the same false-up rate as
-   today; 1% and 0.5% monthly climbs then read `up`, 0.25% does not). The record rule compares each recent session
-   with everything before it, including earlier recent sessions. With sessions 108, 110 and 112 after a previous best of
-   104 (the first 108 is +3.8%, then 110 and 112 are only +1.9% and +1.8% over the session before), the note reads "New
-   best: 108 lb ... 3.8% above the previous best of 104 lb" while the recent best is 112. Front Squat with its 2023 peak
-   removed gives records of +2.7% over 184 and +5.8% over 189 against a verdict of +8.7% over 184. A simpler rule
-   (compare the recent best with the best before the recent window) removes this; it needs your decision.
-3. **A slow steady climb never reads `up`.** One pound a month for twelve months (100 to 111) gives previous best 107,
-   recent best 111, +3.7%, `no clear change`, with no record (each gain is under 1%). The trend line rises but the
-   verdict does not. Confirm that is intended or add a longer baseline.
-4. **Zero-change wording** (A1-DSP-07) assumes "the same pound" is the test; confirm.
-5. **Times of an hour or more** are shown `h:mm:ss` (A1-DSP-03); not previously stated.
-6. **The shortfall string.** The data holds "has 5, needs 6"; each screen shows its own wording ("Needs 1 more session
+2. **Zero-change wording** (A1-DSP-07) assumes "the same pound" is the test; confirm.
+3. **Times of an hour or more** are shown `h:mm:ss` (A1-DSP-03); not previously stated.
+4. **The shortfall string.** The data holds "has 5, needs 6"; each screen shows its own wording ("Needs 1 more session
    for a verdict", "1 more session"). Confirm the data/display split.
-7. **The record rule applies to benchmarks**, as implemented in the measurements; the spec now says so
-   (A1-VRD-13).
+
+Resolved while writing the cases: the record rule applies to benchmarks (A1-VRD-13), and a record now means the recent
+best is 2% above the best before the recent window, which fixes the new-best note and lets a slow steady climb read
+`up` (A1-VRD-17 to A1-VRD-20).
