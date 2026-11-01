@@ -111,6 +111,10 @@ The record rule applies to benchmarks.
 **A1-VRD-14 The PR flag is ignored.** Given the sessions of A1-VRD-05 with the PR flag set on every session. Then the
 output is identical to A1-VRD-05.
 
+**A1-VRD-16 The margin has no same-scheme exception.** Given six triples on the 10th of Jan to Jun 2025: 190, 192,
+195, 196, 197 and 198 lb (estimated 205.1, 207.2, 210.5, 211.6, 212.6, 213.7). Then `N` = 3, previous best 210.5, recent
+best 213.7, `change` +1.5%, `record` none, `state` `no clear change`, although every session used the same rep count.
+
 **A1-VRD-15 A verdict reads only SugarWOD rows.** Given the sessions of A1-VRD-05 with and without InBody scans,
 bodyweight entries, periods and tags. Then the output is identical.
 
@@ -331,7 +335,10 @@ same range before any threshold is trusted. Count the Scaled Load rows and the S
 These are not covered by a decision yet. The cases above record the current behaviour or are marked pending.
 
 1. **Sentence wording for `Holding steady` and `Declining`** is undefined (A1-HDL-03 proposes wording).
-2. **The new-best note names a session that is not always the highest.** The record rule compares each recent session
+2. **The new-best note names a session that is not always the highest** (proposed fix awaiting your confirmation:
+   a record is the recent best being 2% above the best of every session before the recent window. On the sample this
+   changes no verdict across all 45 subjects at every point of their history, and gives the same false-up rate as
+   today; 1% and 0.5% monthly climbs then read `up`, 0.25% does not). The record rule compares each recent session
    with everything before it, including earlier recent sessions. With sessions 108, 110 and 112 after a previous best of
    104 (the first 108 is +3.8%, then 110 and 112 are only +1.9% and +1.8% over the session before), the note reads "New
    best: 108 lb ... 3.8% above the previous best of 104 lb" while the recent best is 112. Front Squat with its 2023 peak

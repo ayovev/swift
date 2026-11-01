@@ -115,6 +115,39 @@ chosen; per subject they are higher, for example +0.50 for 5% or a record at a 1
   its recent window, so `down` can fire. No lift is `not tested since` or `down` on the sample's latest
   windows. How often `not tested since` appears over the history was not measured.
 
+### The estimator and the 2% margin (decided)
+
+- **The estimator stays the average of Epley and Brzycki** (a single is used as-is). The formulas disagree by 3.6%
+  to 3.8% of the average at 2 to 5 reps (multipliers at 3 reps: ×1.100 and ×1.059, average ×1.079; 185 lb for 3
+  gives 203.5, 195.9 and 199.7), so each sits about 1.9% from the average. They are population curves, so an
+  athlete's real ratio between a rep max and a 1RM can differ by a few percent. That error cancels when two
+  sessions use the same rep count and does not when they differ. Mixing is routine on the sample: of 301 rows with
+  a readable 1 to 8 rep scheme, 85 are singles, 69 doubles, 74 triples, 21 fours, 36 fives and 16 at six to eight.
+- **Tested against a single formula.** Recomputing the 11 sample lifts with Epley only and Brzycki only, one
+  state changes (Snatch is `up` under Epley, a +2.9% record, and `no clear change` under the average and Brzycki).
+  The percentages move by 3 to 4 points: Bench Press −2.3% (Brzycki), −0.5% (average), +1.3% (Epley); Deadlift
+  against the best before the window +5.8%, +4.0%, +2.1%; Snatch −0.8%, +1.0%, +2.9%. The average sits between the
+  two every time, so choosing one formula would hand the verdict to that formula's lean.
+- **The record margin stays 2% for every pair of sessions.** It matches the half-gap above (about ±1.9%). A smaller
+  margin when both bests use the same rep count was considered and not adopted: it would add a rule the athlete
+  cannot see the reason for, and session noise (the larger source) does not cancel. Revisit if a real export shows
+  many same-scheme near-misses between 1% and 2%.
+- **Why not a threshold at or near zero, or the sign of the trend line.** Simulating an athlete whose lifts do not
+  change (12 monthly sessions), the chance of a false `up` by noise per session:
+
+  | Noise per session | Current rule | Recent best 2% above the best before the window | 1% | Above 0% |
+  | --- | --- | --- | --- | --- |
+  | 3% | 13% | 14% | 22% | 33% |
+  | 4% | 20% | 21% | 27% | 35% |
+  | 5% | 24% | 25% | 31% | 37% |
+  | 7% | 30% | 30% | 34% | 37% |
+
+  A positive trend slope is positive for about half of such athletes (50%), whether fitted to every session or to
+  the best per quarter. On the sample 10 of 12 lifts have a positive slope over their whole history because
+  everyone gains early (Back Squat slopes up 5.2% a year while flat since 2023), so a positive slope answers "have
+  you improved since you started", not "are you improving now". The margin at 0%, 1%, 2% and 3% gives 9, 8, 6 and 6
+  of the 12 sample subjects `up`.
+
 ## 3. What counts as a lift session
 
 - One rep-scheme rule for every view: any scheme from 1 to 8 reps (*tunable*), replacing the
@@ -452,6 +485,8 @@ for the other labels, and a few display details).
 
 5. **Scaled to RX: decided** (section 3b). RX and Scaled stay separate subjects; a move up to RX is an
    improvement and casts a vote for 12 months; moving down is a neutral fact.
+7. **Estimator and margin: decided** (section 2, "The estimator and the 2% margin"): the average of Epley and
+   Brzycki, and a 2% record margin for every pair of sessions.
 6. **Benchmarks: decided.** Most benchmarks will read "not enough sessions yet" under any steady rule (only
    Nancy has more than 4 sessions in the sample). They are not forced into the headline: a benchmark votes
    through a move up to RX (3b) or a normal verdict at 6 sessions, and otherwise gets the facts line (3a).
