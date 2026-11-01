@@ -119,7 +119,7 @@ chosen; per subject they are higher, for example +0.50 for 5% or a record at a 1
 - One rep-scheme rule for every view: any scheme from 1 to 8 reps (*tunable*), replacing the
   plateau-only 1/2/3/5RM rule. This adds sessions for lifts trained mostly at 4 to 8 reps (Front Squat
   30 to 38, Back Squat 25 to 32 in the sample) at the cost of less accurate high-rep estimates.
-- A Load row whose rep scheme cannot be read is not counted, **and the coverage line says so**.
+- A Load row whose rep scheme cannot be read is not counted, **and "How this was counted" (section 4) says so**.
   Measured: 210 of 526 Load rows (40%) in the sample have no readable scheme; today they disappear
   without a word.
 - A lift is a subject only when the row names it (the `barbell_lift` field, or a title matching a
@@ -131,7 +131,8 @@ The gate stays at 3 sessions per side (6 sessions). A subject below it is not gi
 it gets a facts line, which states what was logged and claims nothing about direction.
 
 - **Who:** every subject with 2 to 5 sessions. On the sample that is 17 of the 33 without a verdict
-  (3 with 5 sessions, 2 with 4, 5 with 3, 7 with 2). The 16 with a single session show only that
+  (3 with 5 sessions, 2 with 4, 5 with 3, 7 with 2). Grace RX, one of the 7, becomes a move-up (3b), which
+  leaves 16 facts lines among 31 subjects without a verdict. The 16 with a single session show only that
   ("1 session, Dec 2023") and the shortfall.
 - **What it shows:** the latest and the previous session with their months, the difference in the
   subject's own unit, and the shortfall. Lifts show estimated 1RM, labelled as an estimate, in pounds.
@@ -140,8 +141,8 @@ it gets a facts line, which states what was logged and claims nothing about dire
   Example: "Hang Power Clean (RX): 5 sessions. Latest 185 lb est. (Aug 2026), previous 175 lb est.
   (Mar 2026), +10 lb. Needs 1 more session for a verdict."
 - **What it never shows:** a verdict word (`up`, `no clear change`, `down`), a percentage, or a pill.
-  It adds nothing to the headline counts, the label or the "eligible" figure; the coverage line still
-  says "33 more lack enough sessions".
+  It adds nothing to the headline counts, the label or the "eligible" figure; the "Left out"
+  clause still counts it among those with under 6 sessions.
 - **Stale subjects** (latest session more than 365 days before today) still show the line, with "last
   logged Aug 2025" in place of a recent month. Of the 17 on the sample, 9 have a session in the last
   year and 8 do not.
@@ -182,7 +183,7 @@ Acceptance cases:
   no verdict across the two. Fran Scaled shows the facts line for 3 sessions, and no `down` appears anywhere.
 - **AC-S-03.** Grace RX shows "Also logged as Scaled: 2 sessions (Nov 2022 to Oct 2023), latest 3:45", with no
   percentage, verdict word or pill.
-- **AC-S-04.** The cross-reference line changes no headline count, label or coverage figure.
+- **AC-S-04.** The cross-reference line changes no headline count, label or coverage clause.
 - **AC-S-05.** A subject with no sessions under the other status shows no cross-reference.
 - **AC-S-06.** Fran RX (9:13, slower than every Scaled time) reads `up` with "Moved up to RX in Dec 2025, after
   3 Scaled sessions" and no percentage.
@@ -237,11 +238,29 @@ Acceptance cases:
 
 - **Population**: eligible, recent subjects. Each subject counts once, so a lift logged 37 times
   weighs the same as one logged 8 times.
-- **Counts** `up`, `no clear change`, `down` and `eligible`, plus how many are `not tested since`;
-  the headline always shows them with coverage: "improving in 6 of 12 lifts and benchmarks (5 no
-  clear change, 1 down). 33 more lack enough sessions." Subjects that are `not tested since` are
-  left out of the net, because they carry no information about direction, and are named in the
-  coverage line ("2 lifts not tested recently").
+- **Counts sentence and coverage paragraph (decided).** One sentence, then a short muted paragraph.
+  - *Sentence:* "<Label> in <up> of <counted> lifts and benchmarks (<n> no clear change, <n> down)." A part
+    that is zero is dropped, and with both zero there are no brackets: "Improving in 4 of 4 lifts and
+    benchmarks." Counted subjects are those with a verdict that are recent and not `not tested since`, plus
+    move-ups (3b).
+  - *Paragraph:* short clauses in this order, each shown only when its number is above zero, with correct
+    singular and plural. (1) "Includes 2 that moved up to RX." (2) "Left out: 31 with under 6 sessions, 1 not
+    logged in 12 months, 2 not tested recently." (3) "2 compare sessions over 24 months apart." (4) "Log
+    through Sep 11, 2026." The log date always shows.
+  - *Left out* parts are exclusive and taken in order: a subject with under 6 sessions is counted there only,
+    then one not logged in the last 12 months, then a lift not tested recently (benchmarks never are).
+  - *No headline:* with fewer than 3 counted subjects the label and sentence are replaced by "No headline yet:
+    needs 3 lifts or benchmarks with a verdict, has 0." followed by "Closest: Back Squat, 1 more session;
+    Clean, 2 more." The closest are up to 2 recent subjects needing the fewest more sessions, ties to the more
+    recently logged; a subject that is not recent is never named. Without any, the closest part is omitted. The
+    paragraph clauses follow.
+  - *"How this was counted"* sits behind a link under the paragraph and opens on demand. It lists the counted
+    subjects (verdicts and move-ups), the left-out ones by reason with names, the subjects with a long gap, and the
+    unused weight entries by reason (on the sample 272 of 526: 210 with no readable rep scheme, 15 outside 1 to 8
+    reps, 47 with no lift named).
+  - *On the sample* (as of 2026-09-11): "Improving in 8 of 14 lifts and benchmarks (5 no clear change, 1
+    down)." then "Includes 2 that moved up to RX. Left out: 31 with under 6 sessions. 2 compare sessions
+    over 24 months apart. Log through Sep 11, 2026."
 - **Votes (decided: one per subject).** A lift logged 37 times weighs the same as one logged 8, and a
   Snatch and a Power Snatch are two votes. The cost is skew: 5 of the 12 sample subjects (42%) are snatch,
   clean or jerk variants, so a specialist's headline mostly reflects what they train. The skew is shown,
@@ -326,8 +345,8 @@ check that none of them is silently wrong.
 8. **Stale subject**: eligible, latest session 14 months ago, so it keeps a verdict on the list but is
    excluded from the headline and the front door.
 9. **RX and Scaled** of the same subject are never merged.
-10. **Unreadable schemes**: rows with no readable rep scheme are absent from the series and counted in
-    the coverage line.
+10. **Unreadable schemes**: rows with no readable rep scheme are absent from the series and counted under
+    "unused weight entries" in "How this was counted".
 11. **Aggregate shortfall**: with 2 eligible subjects there is no label, only "needs 1 more".
 12. **Aggregate label**: 7 counted subjects with 3 up, 3 no clear change and 1 down give net +0.29 with 43% up,
     so `Improving`; the mirrored counts give `Declining`. A Snatch and a Power Snatch both up are two votes.
@@ -358,9 +377,9 @@ check that none of them is silently wrong.
     previous 13:47, 0:50 slower". A Rounds + Reps benchmark without a known reps-per-round shows both
     scores and no difference; Cindy shows a difference in reps.
 25. **Stale facts line**: a subject with 3 sessions whose latest is 14 months ago shows the line with "last
-    logged" and the month, and the coverage line still counts it among those without a verdict.
-26. **Coverage**: with 45 subjects, 12 with a verdict and 33 without, the coverage line says "33 more lack
-    enough sessions", and facts lines appear for 17 of them.
+    logged" and the month, and the "Left out" clause still counts it among those with under 6 sessions.
+26. **Coverage**: with 45 subjects, of which 12 have a verdict and 2 moved up to RX, the "Left out" clause says 31,
+    and facts lines appear for 16 of them (the other 15 have a single session).
 27. **Breakdown summary**: counted subjects Clean, Power Clean and Clean & Jerk; Front Squat and Back Squat;
     Snatch and Power Snatch; Shoulder Press and Push Press; Deadlift; Bench Press; Nancy give the summary
     "Votes per family: Clean 3 · Press 2 · Snatch 2 · Squat 2. The other families have one each."
@@ -368,7 +387,27 @@ check that none of them is silently wrong.
     Squat 1 of 2, Snatch 1 of 2, Press 1 of 2, Deadlift 1 of 1, Bench Press 0 of 1, Benchmarks 0 of 1) and
     the line that it is information only. Opening or closing it changes no count, label or order.
 29. **No repeated family**: when every family has one counted subject the breakdown is not shown.
-30. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
+30. **Counts sentence and paragraph, full sample** (as of 2026-09-11): the sentence reads "Improving in 8 of 14
+    lifts and benchmarks (5 no clear change, 1 down)." and the paragraph reads "Includes 2 that moved up to RX.
+    Left out: 31 with under 6 sessions. 2 compare sessions over 24 months apart. Log through Sep 11, 2026."
+31. **Nothing to add**: 4 counted subjects all up, no move-up, nothing left out, no long gap read "Improving in 4 of 4
+    lifts and benchmarks." and "Log through Sep 11, 2026." Five up and one down, none unchanged, reads
+    "Improving in 5 of 6 lifts and benchmarks (1 down)."
+32. **Singular**: 1 move-up, 1 with under 6 sessions, 1 not logged in 12 months, 1 not tested recently and 1 long
+    gap read "Includes 1 that moved up to RX. Left out: 1 with under 6 sessions, 1 not logged in 12 months, 1 not
+    tested recently. 1 compare session over 24 months apart. Log through Sep 11, 2026."
+33. **Exclusive reasons**: a subject with 4 sessions whose latest is 2 years old appears only under "under 6
+    sessions". A benchmark is never "not tested recently".
+34. **No headline, none counted**: Back Squat (5 sessions, last logged last month), Clean (4) and Shoulder Press
+    (2) read "No headline yet: needs 3 lifts or benchmarks with a verdict, has 0. Closest: Back Squat, 1 more
+    session; Clean, 2 more." followed by the paragraph clauses.
+35. **No headline, two counted**: reads "...has 2." and names the closest.
+36. **Closest skips not-recent subjects**: Push Jerk (5 sessions, last logged Aug 2025) is never named; Hang Power
+    Clean (5 sessions, last logged Aug 2026) is.
+37. **How this was counted**: collapsed by default; open it lists the 12 verdicts and 2 move-ups, the 31 left out
+    with names, the 2 long-gap subjects (Power Snatch, Power Clean), and "272 of 526 weight entries weren't used:
+    210 no readable rep scheme, 15 outside 1 to 8 reps, 47 no lift named."
+38. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
     in section 2 are in the same range before any threshold is trusted. Also count the Scaled Load rows and
     the Scaled-to-RX moves (section 3b).
 
