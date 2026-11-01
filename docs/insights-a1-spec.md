@@ -26,14 +26,16 @@ session in each window:
 
     change = (best(recent) − best(previous)) / best(previous), signed
 
-- **Record**: a recent session at least 2% better than every earlier session of the subject (*tunable*).
-  So a new personal best of 200 over 195 (+2.6%) counts even though it is under the 5% window threshold.
+- **Record** (decided): the recent best is at least 2% better than the best of every session before the recent
+  window, that is the previous window and anything older (*tunable*). The record session is the recent best, so
+  there is at most one. A new personal best of 200 over 195 (+2.6%) counts even though it is under the 5% window
+  threshold, and a slow steady climb counts once the recent best has cleared the old best by 2%.
 - **Max effort**: a session whose title or description names an explicit rep max ("3RM") or a rep
   ladder. Benchmarks are always scored efforts. SugarWOD's own PR flag is **not** used (see below).
 
 For a lift, the first rule that applies wins:
 
-1. `up` if change ≥ +5% *or* the recent window holds a record (*tunable*).
+1. `up` if change ≥ +5% *or* the recent best is a record (*tunable*).
 2. `down` if change ≤ −5% and the recent window holds a max-effort session.
 3. `not tested since` if change ≤ −5% and it does not: "last tested 14 months ago at 195; recent
    sessions are lighter work". This is the mid-cycle case. It is never called a decline.
@@ -93,11 +95,13 @@ chosen; per subject they are higher, for example +0.50 for 5% or a record at a 1
 
 - **The PR flag is too generous to use.** 53 of 246 lift sessions (22%) carry it, because SugarWOD
   flags a best at any new title or rep scheme. As an "up" signal it turns 11 of 12 subjects up.
-- **A record is the same idea without the noise.** It compares a session with the subject's whole
-  history (not with the previous four sessions, which may sit in a trough) and needs a 2% margin
-  over every earlier estimate. The margin sits above the estimator's own error (the Epley and Brzycki
-  formulas diverge by 3 to 4 percentage points at 2, 3 and 5 reps), so a rep-scheme artifact does not
-  count as a record. A real but small PR, such as 195 to 198 (+1.5%), reads `no clear change`.
+- **A record is the same idea without the noise.** It compares the recent best with the whole history before the
+  recent window (not only the previous four sessions, which may sit in a trough) and needs a 2% margin over it.
+  The margin sits above the estimator's own error (the Epley and Brzycki formulas diverge by 3 to 4 percentage
+  points at 2, 3 and 5 reps), so a rep-scheme artifact does not count as a record. A real but small PR, such as 195
+  to 198 (+1.5%), reads `no clear change`. The first version compared every recent session with everything before
+  it, including earlier recent sessions; that named a session that was not the highest (108 in a climb to 112) and
+  never flagged a slow climb, so it was replaced.
 - **5% or a record (decided)** keeps 5% as the way to recognise a recovery from a trough, and adds records
   on top. Against "3% or a record" it differs on exactly one subject, Back Squat: its window change is
   +3.9%, its best recent session (232) is only 0.9% above its 2023 best of 230, and its last two
@@ -147,6 +151,24 @@ chosen; per subject they are higher, for example +0.50 for 5% or a record at a 1
   everyone gains early (Back Squat slopes up 5.2% a year while flat since 2023), so a positive slope answers "have
   you improved since you started", not "are you improving now". The margin at 0%, 1%, 2% and 3% gives 9, 8, 6 and 6
   of the 12 sample subjects `up`.
+
+### The record definition (decided)
+
+A record is the recent best at least 2% above the best of every session before the recent window. Replayed on all 45
+sample subjects at every point of their history it changes no verdict, and the flips, reversals and false-up rate
+are identical to the per-session version. It changes slow climbs only. Synthetic athletes with one session a month,
+starting at 100, read at the end:
+
+| Climb | Total gain | Per-session record (replaced) | Recent best against the best before the window |
+| --- | --- | --- | --- |
+| 1.0% a month, 12 months | +11.6% | `no clear change` | `up` |
+| 1.0% a month, 24 months | +25.7% | `no clear change` | `up` |
+| 0.5% a month, 12 months | +5.6% | `no clear change` | `up` |
+| 0.5% a month, 24 months | +12.2% | `no clear change` | `up` |
+| 0.25% a month, 12 months | +2.8% | `no clear change` | `no clear change` |
+| 0.25% a month, 24 months | +5.9% | `no clear change` | `no clear change` |
+
+A climb of about 6% a year or more reads `up`; one of about 3% a year reads `no clear change`.
 
 ## 3. What counts as a lift session
 
@@ -273,9 +295,8 @@ a 165 lb single are still never drawn as one series. Three mockups were reviewed
   drawn for subjects with a verdict. Whether subjects with only a facts line (3a) get a dots-only chart is open.
 - **Emphasis, not shading:** the previous window's dots are dark, the recent window's dots use the accent, and
   every other dot is faint. There are no shaded bands, no window best-lines, no legend and no controls.
-- **Labels:** the best of each window carries its value. A new-best session (2% above everything earlier) is a
-  larger accent dot labelled "new best +4.0%"; when it is also the recent best the label reads "365 · new best
-  +4.0%".
+- **Labels:** the best of each window carries its value. When the recent best is a record it is a larger accent
+  dot labelled "365 · new best +4.0%"; it is the only new-best marker.
 - **Trend line:** a robust (Theil-Sen) line through the best session of each calendar quarter, over the
   subject's whole history (Insights uses the full log, not the dashboard's date range). It is dashed, labelled
   "Trend" at its right end, carries no number and no up or down wording, and is drawn only with 4 or more
