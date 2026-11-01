@@ -4,6 +4,7 @@
 context, period verdicts, the front door; see `insights-questions.md`). This file defines it
 precisely enough to write tests against. Every number marked *tunable* is a starting point chosen from
 the measurements below, not a validated value.
+The acceptance cases are in [`insights-a1-acceptance.md`](insights-a1-acceptance.md).
 
 ## 1. Definitions
 
@@ -176,25 +177,7 @@ it gets a facts line, which states what was logged and claims nothing about dire
   of 12 to 8 up of 14 (5 no clear change, 1 down; net +0.50, 57% up, `Improving`), and 31 subjects, not 33,
   lack enough sessions.
 
-Acceptance cases:
-
-- **AC-S-01.** RX and Scaled of the same name are separate subjects with separate sessions, verdicts and counts.
-- **AC-S-02.** Fran Scaled 2023-01-16 7:36, 2023-04-11 6:32, 2025-05-19 7:37 and Fran RX 2025-12-08 9:13 produce
-  no verdict across the two. Fran Scaled shows the facts line for 3 sessions, and no `down` appears anywhere.
-- **AC-S-03.** Grace RX shows "Also logged as Scaled: 2 sessions (Nov 2022 to Oct 2023), latest 3:45", with no
-  percentage, verdict word or pill.
-- **AC-S-04.** The cross-reference line changes no headline count, label or coverage clause.
-- **AC-S-05.** A subject with no sessions under the other status shows no cross-reference.
-- **AC-S-06.** Fran RX (9:13, slower than every Scaled time) reads `up` with "Moved up to RX in Dec 2025, after
-  3 Scaled sessions" and no percentage.
-- **AC-S-07.** As of 2026-09-11 the Fran move-up counts toward the headline. As of 2027-01-01, more than 12
-  months on, the line remains and casts no vote.
-- **AC-S-08.** A second RX session adds no vote. When the RX subject reaches 6 sessions its normal verdict
-  replaces the move-up.
-- **AC-S-09.** Cindy RX, RX, then Scaled shows "Also logged as RX: 2 sessions (May 2023 to Jan 2025)", with no
-  `down` and no vote.
-- **AC-S-10.** A Scaled and an RX session on the same day make no move.
-- **AC-S-11.** A Scaled Back Squat followed by an RX Back Squat is a move-up under the same rule as a benchmark.
+Acceptance cases: `A1-SCL` in [`insights-a1-acceptance.md`](insights-a1-acceptance.md) (Scaled and RX).
 
 ## 3c. Recency (decided)
 
@@ -220,19 +203,7 @@ Acceptance cases:
   (2026-04-29) are not recent, and the Fran and Grace move-ups have passed 12 months, so the headline reads 4
   up of 9 (5 no clear change) and is still `Improving`.
 
-Acceptance cases:
-
-- **AC-R-01.** The same history and the same reference date always give the same result; nothing reads the
-  clock inside the calculation.
-- **AC-R-02.** A latest session exactly 365 days before the reference date is recent; 366 days before is not.
-- **AC-R-03.** A not-recent subject shows its verdict marked "Not recent: last logged Aug 2025" and is excluded
-  from the counts, the label, the front door and the "eligible" figure.
-- **AC-R-04.** Sample as of 2027-04-30: Power Snatch, Nancy and Deadlift are not recent, both Scaled-to-RX
-  moves no longer vote, and the headline reads 4 up of 9 (5 no clear change).
-- **AC-R-05.** With no recent subject the headline reads "No lift or benchmark was logged in the last 12
-  months." and shows no label.
-- **AC-R-06.** Sessions dated after the reference date are ignored.
-- **AC-R-07.** The headline shows "Log through <month day, year>", the date of the latest session in the log.
+Acceptance cases: `A1-REC` in [`insights-a1-acceptance.md`](insights-a1-acceptance.md) (recency).
 
 ## 3d. How a verdict is displayed (decided)
 
@@ -257,21 +228,7 @@ Acceptance cases:
   withholds a verdict. On the sample it appears for 2 of 12 (Power Snatch, Power Clean). The coverage
   paragraph counts such subjects (section 4).
 
-Acceptance cases:
-
-- **AC-D-01.** Front Squat RX, previous side 2024-03-11 166, 2024-03-18 161, 2024-04-08 184, 2025-03-31 178 and
-  recent side 2026-02-03 189, 2026-03-30 200, 2026-04-07 178, 2026-08-07 194: window size 4, previous Mar 2024 to
-  Mar 2025 with best 184, recent Feb to Aug 2026 with best 200, displayed "+16 lb (184 to 200 lb), +8.7%".
-- **AC-D-02.** Previous best 200 and recent best 209.9 (+4.95%) display "+5.0%" and read `up`; 209.8 (+4.9%)
-  displays "+4.9%" and reads `no clear change`.
-- **AC-D-03.** A time benchmark with previous best 827 s and recent best 877 s displays "0:50 slower (13:47 to
-  14:37), 6.0% slower".
-- **AC-D-04.** A recent side from 2024-01-18 to 2026-03-10 shows "Recent sessions span 26 months (Jan 2024 to Mar
-  2026)." A recent side spanning 21 months shows no note. The state is unchanged in both.
-- **AC-D-05.** Cindy previous 16+15 (495 reps) and recent 17+20 (530 reps) display "+35 reps (16+15 to 17+20),
-  +7.1%". A Rounds + Reps benchmark with no reps-per-round shows "16+15 to 18+2" and no difference.
-- **AC-D-06.** A raw value of 5.01 with display "5+10" is read as 5 rounds and 10 reps.
-- **AC-D-07.** A lift whose two bests are equal reads "no change in the best (200 and 200)".
+Acceptance cases: `A1-DSP` in [`insights-a1-acceptance.md`](insights-a1-acceptance.md) (display).
 
 ## 3e. The evidence chart (decided)
 
@@ -304,28 +261,7 @@ a 165 lb single are still never drawn as one series. Three mockups were reviewed
 - **Width:** the chart is sized to its container so the text stays at least 11 px on a 360 px screen.
 - **It never changes a verdict, count or label** and is not reconciled with the verdict when they disagree.
 
-Acceptance cases:
-
-- **AC-L-01.** The chart opens from a subject row with a verdict. The Workouts lift chart gains no
-  estimated-1RM option.
-- **AC-L-02.** One dot per day, equal to that day's best estimated 1RM.
-- **AC-L-03.** Previous-window dots are dark, recent-window dots use the accent, all others are faint. There are no
-  shaded areas, no legend and no controls.
-- **AC-L-04.** The two window bests are labelled with their values. A new-best session is a larger accent dot
-  labelled "new best +4.0%", and when it is the recent best the label reads "365 · new best +4.0%".
-- **AC-L-05.** Quarterly bests of 100, 102, 104 and 106 draw a rising dashed line labelled "Trend" ending at the
-  last quarter. Three quarters draw no line.
-- **AC-L-06.** The trend line has no number and no up or down wording, and uses the subject's whole history
-  whatever the dashboard's date range.
-- **AC-L-07.** Rings appear only for `down` and `not tested since`, on every max-effort session. For `up` and
-  `no clear change` there are none.
-- **AC-L-08.** The muted line reads "Highlighted dots are the sessions the verdict compared. The dashed line is
-  the long-run trend." and adds " Rings mark max efforts." only when rings are shown.
-- **AC-L-09.** For `not tested since` the text above the chart reads "Last tested Jan 10, 2025 at 195 lb. Recent
-  sessions are lighter work."
-- **AC-L-10.** Power Clean (line flat to down, verdict `up`) shows both and no reconciliation.
-- **AC-L-11.** RX and Scaled of one name have separate charts.
-- **AC-L-12.** At 360 px wide the chart's text is at least 11 px and nothing overflows horizontally.
+Acceptance cases: `A1-CHT` in [`insights-a1-acceptance.md`](insights-a1-acceptance.md) (the chart).
 
 ## 4. Aggregate (the headline)
 
@@ -421,88 +357,11 @@ The same function serves every consumer, with only the sessions chosen different
 
 ## 6. Acceptance cases
 
-Each is a synthetic history and the honest answer. These become tests; the real export is then used to
-check that none of them is silently wrong.
-
-1. **Too few sessions**: 5 sessions of one lift gives no verdict and the shortfall "needs 1 more
-   session (has 5, needs 6)".
-2. **Steady rise**: 6 sessions of e1RM rising about 10% in total gives `up`, with the window dates.
-3. **Same-day duplicates**: two entries on one day count as one session, the better one.
-4. **Mixed rep schemes**: a 1RM and a 5RM whose e1RMs agree produce `no clear change`, never `down`.
-5. **Lower is better**: a benchmark time falling 10% gives `up`; rising 10% gives `down`.
-6. **Noise stays noise**: a series alternating about ±6% around a constant gives `no clear change` at
-   every point from the first eligible one onward (the stability case; the highs are equal, so none is
-   a record).
-7. **A light day**: the recent window includes one sub-maximal session but the same best as before,
-   so `no clear change`.
-8. **Stale subject**: eligible, latest session 14 months ago, so it keeps a verdict on the list but is
-   excluded from the headline and the front door.
-9. **RX and Scaled** of the same subject are never merged.
-10. **Unreadable schemes**: rows with no readable rep scheme are absent from the series and counted under
-    "unused weight entries" in "How this was counted".
-11. **Aggregate shortfall**: with 2 eligible subjects there is no label, only "needs 1 more".
-12. **Aggregate label**: 7 counted subjects with 3 up, 3 no clear change and 1 down give net +0.29 with 43% up,
-    so `Improving`; the mirrored counts give `Declining`. A Snatch and a Power Snatch both up are two votes.
-13. **Independence from body data**: the verdict is identical with and without scans, weigh-ins or
-    periods.
-14. **A build cycle**: a 195 test, then four sessions at 145 for 3 over twelve weeks, with no rep max
-    named, reads `not tested since` ("last tested ... at 195"), never `down`.
-15. **End-of-cycle test**: after that build, a 3RM that estimates to 200 reads `up` (a record, +2.6%),
-    even though it is under 5%.
-16. **A failed test**: an explicit "3RM" in the recent window that estimates 175 against a previous best of
-    195 reads `down`.
-17. **Not a record**: a session 1.5% above the previous best (195 to 198) is `no clear change`; one 2.6% above
-    (195 to 200) is `up`.
-18. **Benchmarks**: a time 10% worse reads `down` with no test marker; a time 10% better reads `up`.
-19. **The PR flag is ignored**: setting it on every session changes no verdict.
-20. **Label bar**: 7 counted subjects with 2 up, 5 no clear change and none down give net +0.29 but only 29%
-    up, so `Holding steady`; with 3 up it reads `Improving`. 1 of 3 up (net +0.33, exactly a third) reads
-    `Improving`; 1 of 4 up (net +0.25, 25% up) reads `Holding steady`. The same rule applies at any number of
-    subjects.
-21. **Facts line, 2 to 5 sessions**: a subject with 5 sessions (latest 185 est. in Aug 2026, previous 175 est. in
-    Mar 2026) shows "Latest 185 lb est. (Aug 2026), previous 175 lb est. (Mar 2026), +10 lb. Needs 1 more
-    session for a verdict." It shows no verdict word, no percentage and no pill, and it is not counted in the
-    headline.
-22. **Facts line, 6 or more sessions**: a subject with 6 sessions shows its verdict and no facts line.
-23. **Single session**: a subject with 1 session shows "1 session (Dec 2023)" and "Needs 5 more sessions
-    for a verdict", and no comparison.
-24. **Facts line, benchmarks**: a time benchmark with latest 877 s and previous 827 s shows "Latest 14:37,
-    previous 13:47, 0:50 slower". A Rounds + Reps benchmark without a known reps-per-round shows both
-    scores and no difference; Cindy shows a difference in reps.
-25. **Stale facts line**: a subject with 3 sessions whose latest is 14 months ago shows the line with "last
-    logged" and the month, and the "Left out" clause still counts it among those with under 6 sessions.
-26. **Coverage**: with 45 subjects, of which 12 have a verdict and 2 moved up to RX, the "Left out" clause says 31,
-    and facts lines appear for 16 of them (the other 15 have a single session).
-27. **Breakdown summary**: counted subjects Clean, Power Clean and Clean & Jerk; Front Squat and Back Squat;
-    Snatch and Power Snatch; Shoulder Press and Push Press; Deadlift; Bench Press; Nancy give the summary
-    "Votes per family: Clean 3 · Press 2 · Snatch 2 · Squat 2. The other families have one each."
-28. **Breakdown opened**: opening it lists seven rows, each "x of y up" with its members (Clean 2 of 3,
-    Squat 1 of 2, Snatch 1 of 2, Press 1 of 2, Deadlift 1 of 1, Bench Press 0 of 1, Benchmarks 0 of 1) and
-    the line that it is information only. Opening or closing it changes no count, label or order.
-29. **No repeated family**: when every family has one counted subject the breakdown is not shown.
-30. **Counts sentence and paragraph, full sample** (as of 2026-09-11): the sentence reads "Improving in 8 of 14
-    lifts and benchmarks (5 no clear change, 1 down)." and the paragraph reads "Includes 2 that moved up to RX.
-    Left out: 31 with under 6 sessions. 2 compare sessions over 24 months apart. Log through Sep 11, 2026."
-31. **Nothing to add**: 4 counted subjects all up, no move-up, nothing left out, no long gap read "Improving in 4 of 4
-    lifts and benchmarks." and "Log through Sep 11, 2026." Five up and one down, none unchanged, reads
-    "Improving in 5 of 6 lifts and benchmarks (1 down)."
-32. **Singular**: 1 move-up, 1 with under 6 sessions, 1 not logged in 12 months, 1 not tested recently and 1 long
-    gap read "Includes 1 that moved up to RX. Left out: 1 with under 6 sessions, 1 not logged in 12 months, 1 not
-    tested recently. 1 compare session over 24 months apart. Log through Sep 11, 2026."
-33. **Exclusive reasons**: a subject with 4 sessions whose latest is 2 years old appears only under "under 6
-    sessions". A benchmark is never "not tested recently".
-34. **No headline, none counted**: Back Squat (5 sessions, last logged last month), Clean (4) and Shoulder Press
-    (2) read "No headline yet: needs 3 lifts or benchmarks with a verdict, has 0. Closest: Back Squat, 1 more
-    session; Clean, 2 more." followed by the paragraph clauses.
-35. **No headline, two counted**: reads "...has 2." and names the closest.
-36. **Closest skips not-recent subjects**: Push Jerk (5 sessions, last logged Aug 2025) is never named; Hang Power
-    Clean (5 sessions, last logged Aug 2026) is.
-37. **How this was counted**: collapsed by default; open it lists the 12 verdicts and 2 move-ups, the 31 left out
-    with names, the 2 long-gap subjects (Power Snatch, Power Clean), and "272 of 526 weight entries weren't used:
-    210 no readable rep scheme, 15 outside 1 to 8 reps, 47 no lift named."
-38. **Real-export check** (manual): run the rule on the real export and confirm the stability numbers
-    in section 2 are in the same range before any threshold is trusted. Also count the Scaled Load rows and
-    the Scaled-to-RX moves (section 3b).
+All A1 acceptance cases live in [`insights-a1-acceptance.md`](insights-a1-acceptance.md), grouped as SES (sessions
+and values), VRD (verdicts), DSP (display), FCT (facts line), SCL (Scaled and RX), REC (recency), HDL (headline),
+BRK (family breakdown), CHT (evidence chart) and MAN (manual checks). Each has exact inputs and exact outputs. The
+document ends with the open points the writing exposed (the new-best note, a slow steady climb, sentence wording
+for the other labels, and a few display details).
 
 ## 7. Decisions
 
