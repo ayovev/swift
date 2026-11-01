@@ -46,6 +46,7 @@ vocabularies are never mixed: a subject is never "Improving" and the headline is
 | eligible | Has at least 6 sessions |
 | counted | Eligible, recent and not Not tested since, plus recent move-ups |
 | left out | Not counted, with a reason: under 6 sessions, not logged in 12 months, not tested recently |
+| period filter | The front door control "Logged in the last 30 / 60 / 90 days". It chooses which rows are listed and changes no verdict or headline |
 | move up to RX | An RX session after a Scaled one. Counts as Up for 12 months. Moving down to Scaled is a neutral fact |
 
 ## Bests and records
