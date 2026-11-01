@@ -55,7 +55,7 @@ is context for it.
   generic sentence ("within normal scan variation") and never names how the band was estimated, and
   must not claim it was measured from the athlete. Thresholds stay in `insightConfig.ts`.
 - **No causal labels.** `plateaued_body_comp`, `plateaued_other`, `aligned` and `tension` are gone.
-  "Stalled" is not a state; it is A1's "flat". Contradictory signals are stated as two plain facts.
+  "Stalled" is not a state; it is A1's "no clear change". Contradictory signals are stated as two plain facts.
 
 ### Periods (was C2, D1, D2)
 

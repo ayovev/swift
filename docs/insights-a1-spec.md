@@ -5,6 +5,7 @@ context, period verdicts, the front door; see `insights-questions.md`). This fil
 precisely enough to write tests against. Every number marked *tunable* is a starting point chosen from
 the measurements below, not a validated value.
 The acceptance cases are in [`insights-a1-acceptance.md`](insights-a1-acceptance.md).
+The words used in the app and in these documents are defined in [`insights-glossary.md`](insights-glossary.md).
 
 ## 1. Definitions
 
@@ -76,7 +77,7 @@ the sample, against 29 under the current rule, which was reading very little. **
 enough history to test stability, so these are directions, not tuned values.**
 
 The same sample shows how much the choice matters: Deadlift reads `down −4.2%` under the mean and
-`up +4.4%` under best-of-window, and Snatch reads `up +14.7%` (mean of up to 3) or `flat +1.0%` (best of up to 4, 3 per side).
+`up +4.4%` under best-of-window, and Snatch reads `up +14.7%` (mean of up to 3) or `no clear change +1.0%` (best of up to 4, 3 per side).
 At this data density the verdict for a given subject is fragile, which is the reason the spec states
 the window and the sessions behind it with every verdict.
 
@@ -89,7 +90,7 @@ chosen; per subject they are higher, for example +0.50 for 5% or a record at a 1
 
 | Rule | up / no clear change / not tested / down | Net, label | Flips | Reversals |
 | --- | --- | --- | --- | --- |
-| 5% only | 5 / 6 / 0 / 1 | +0.17 Holding steady | 32% | 0% |
+| 5% only | 5 / 6 / 0 / 1 | +0.17 Steady | 32% | 0% |
 | 3% only | 7 / 4 / 0 / 1 | +0.38 Improving | 31% | 2% |
 | 3% or SugarWOD PR flag in the recent window | 11 / 0 / 0 / 1 | +0.71 Improving | 24% | 3% |
 | 3% or a record | 8 / 3 / 0 / 1 | +0.45 Improving | 29% | 3% |
@@ -150,7 +151,7 @@ chosen; per subject they are higher, for example +0.50 for 5% or a record at a 1
 
   A positive trend slope is positive for about half of such athletes (50%), whether fitted to every session or to
   the best per quarter. On the sample 10 of 12 lifts have a positive slope over their whole history because
-  everyone gains early (Back Squat slopes up 5.2% a year while flat since 2023), so a positive slope answers "have
+  everyone gains early (Back Squat slopes up 5.2% a year while level since 2023), so a positive slope answers "have
   you improved since you started", not "are you improving now". The margin at 0%, 1%, 2% and 3% gives 9, 8, 6 and 6
   of the 12 sample subjects `up`.
 
@@ -338,7 +339,7 @@ Acceptance cases: `A1-CHT` in [`insights-a1-acceptance.md`](insights-a1-acceptan
   window and the 2% margin (section 2), so a record is a PR that falls in the recent window and clears the best
   before it by 2%.
 - **Why a PR does not vote on its own** (measured on the sample's 11 lifts): 22% of later sessions are a new best
-  by any margin and 18% by 2% or more, about the rate a flat athlete produces by noise alone (19% over 12
+  by any margin and 18% by 2% or more, about the rate an athlete whose lifts do not change produces by noise alone (19% over 12
   sessions), and close to SugarWOD's own PR flag (22%), which was rejected for the same reason. Several lifts'
   last PR is old (Front Squat Jul 2023; Back Squat 2% or more in Jan 2023; Snatch Aug 2023), so counting any past
   PR would keep them `up` for years.
@@ -355,8 +356,8 @@ Acceptance cases: `A1-PRL` in [`insights-a1-acceptance.md`](insights-a1-acceptan
 - **Counts sentence and coverage paragraph (decided).** One sentence, then a short muted paragraph.
   - *Sentence* (decided): `Improving` names the up count and brackets the rest: "Improving in 8 of 14 lifts and
     benchmarks (5 no clear change, 1 down)." `Declining` names the down count: "Declining in 4 of 9 lifts and
-    benchmarks (4 no clear change, 1 up)." `Holding steady` has no single count, so it names the total and lists
-    every part, always in the order up, no clear change, down: "Holding steady across 7 lifts and benchmarks (2
+    benchmarks (4 no clear change, 1 up)." `Steady` has no single count, so it names the total and lists
+    every part, always in the order up, no clear change, down: "Steady across 7 lifts and benchmarks (2
     up, 5 no clear change)." A part that is zero is dropped, and with nothing left there are no brackets:
     "Improving in 4 of 4 lifts and benchmarks." Counted subjects are those with a verdict that are recent and not
     `not tested since`, plus move-ups (3b).
@@ -385,11 +386,11 @@ Acceptance cases: `A1-PRL` in [`insights-a1-acceptance.md`](insights-a1-acceptan
 - **Label (decided)**: one tier for everyone, defined only by the counts. Counted subjects are the
   eligible, recent subjects that are not `not tested since`. `net = (up − down) / counted`. `Improving` if
   net is at least +0.25 **and** at least a third of the counted subjects are up; `Declining` is the mirror;
-  otherwise `Holding steady` (*tunable*). The only gate is 3 counted subjects; below that there is no
+  otherwise `Steady` (*tunable*). The only gate is 3 counted subjects; below that there is no
   label, only what is missing. There is no minimum number of movement families: an athlete with a short or
   narrow history gets the same rule, and the counts sentence beside the label shows how much stands
   behind it. The one-third bar stops `Improving` resting on a minority (2 of 7 up with the rest unchanged
-  is net +0.29 but only 29% up, so `Holding steady`). On the sample (6 up, 5 no clear change, 1 down of
+  is net +0.29 but only 29% up, so `Steady`). On the sample (6 up, 5 no clear change, 1 down of
   12) the net is +0.42 and 50% are up, so `Improving` (8 up of 14 with the two Scaled-to-RX moves, section 3b). Under the previous rule it was 18 of 29 up, which is
   the optimism the stricter rule removes.
 - **Family breakdown (decided: collapsed).** Under the headline sits one collapsed section, "By movement
@@ -412,10 +413,10 @@ sessions (3 per side) and a session in the last 365 days.
 | first 100 workouts | 59 | 11 | 0 | 0 | none | — | no label (needs 3 more) |
 | first 250 workouts | 114 | 23 | 2 | 1 | 1 / 0 / 0 (+1 not tested) | — | no label (needs 2 more) |
 | first 350 workouts | 186 | 26 | 3 | 3 | 2 / 1 / 0 | +0.67, 67% | Improving |
-| first 500 workouts | 288 | 32 | 5 | 4 | 1 / 2 / 1 (+1 not tested) | 0.00, 25% | Holding steady |
+| first 500 workouts | 288 | 32 | 5 | 4 | 1 / 2 / 1 (+1 not tested) | 0.00, 25% | Steady |
 | first 800 workouts | 415 | 37 | 7 | 6 | 4 / 2 / 0 (+1 not tested) | +0.67, 67% | Improving |
 | all 1,209 workouts | 526 | 45 | 12 | 12 | 6 / 5 / 1 | +0.42, 50% | Improving |
-| first 12 months (436 workouts) | 245 | 30 | 5 | 3 | 0 / 3 / 0 (+2 not tested) | 0.00, 0% | Holding steady |
+| first 12 months (436 workouts) | 245 | 30 | 5 | 3 | 0 / 3 / 0 (+2 not tested) | 0.00, 0% | Steady |
 | first 24 months | 412 | 37 | 7 | 6 | 4 / 2 / 0 (+1 not tested) | +0.67, 67% | Improving |
 | first 36 months | 469 | 40 | 11 | 10 | 6 / 3 / 1 (+1 not tested) | +0.50, 60% | Improving |
 
@@ -426,7 +427,7 @@ run, not re-run.
   the 6-session gate on a single subject, not the label bar. At about 100 workouts none of 11 subjects
   has 6 sessions (21 sessions across 11 subjects), so there is no headline, only what is missing.
 - **At 4 years the headline can still be thin.** The first 500 workouts give 5 eligible subjects, 4 of them
-  counted, and a `Holding steady` that rests on 1 up, 2 no clear change and 1 down. It moves to `Improving` at
+  counted, and a `Steady` that rests on 1 up, 2 no clear change and 1 down. It moves to `Improving` at
   800 workouts. The counts sentence shows this; the label does not hide it.
 - This athlete is a heavy lifter (about half the rows are Load). An athlete who lifts less will qualify
   fewer subjects at the same workout count.
@@ -507,7 +508,7 @@ for the other labels, and a few display details).
    breakdown), B (breakdown always shown) and C (collapsed); C chosen. Subjects were mapped to families with
    the existing lexicon (`findMovements` on the subject name, then `familiesOf`; every lift subject in the
    sample resolved). Measured at 3 per side and 5%, before the 2% record margin: per subject the 12 sample
-   subjects give net +0.33 and `Improving`; per family (7 groups) +0.17 and `Holding steady`. At the final
+   subjects give net +0.33 and `Improving`; per family (7 groups) +0.17 and `Steady`. At the final
    rule both read `Improving` (+0.42 per subject, +0.31 per family). Per subject was chosen because the
    sentence and the label count the same things, one subject changing moves the net by 0.08 here and not
    0.14, nothing depends on the lexicon's family list or on mapping rules (back versus front squat, Clean &
@@ -529,9 +530,9 @@ for the other labels, and a few display details).
 
    | Rule | Verdicts | Too spread out | Net, label |
    | --- | --- | --- | --- |
-   | Base: 5% | 12 (5 up / 6 flat / 1 down) | 0 | +0.17 Holding steady |
+   | Base: 5% | 12 (5 up / 6 no clear change / 1 down) | 0 | +0.17 Steady |
    | Each window spans at most 365 days | 2 | 10 | no label |
-   | Each window spans at most 730 days | 10 (3 / 6 / 1) | 2 | +0.07 Holding steady |
+   | Each window spans at most 730 days | 10 (3 / 6 / 1) | 2 | +0.07 Steady |
 
    A 365-day cap is not workable at this logging density: four sessions of a typical lift span more than
    a year. A 730-day cap withholds only Power Snatch and Power Clean (about three years each). Lowering

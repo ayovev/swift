@@ -2,7 +2,7 @@
 
 **Status: draft for review, nothing built.** These are the acceptance cases for the A1 specification
 ([`insights-a1-spec.md`](insights-a1-spec.md)), written so each can become a test: exact inputs, exact outputs.
-They replace the scattered case lists that used to sit in the spec. Every expected value for the verdict
+They replace the scattered case lists that used to sit in the spec. Terms follow [`insights-glossary.md`](insights-glossary.md). Every expected value for the verdict
 cases was computed by a throwaway reference implementation of the rules (not committed) so none is a guess; the
 cases marked **pending** record current behaviour that the writing exposed as questionable (see "Open points"
 at the end).
@@ -21,7 +21,7 @@ at the end).
   (first month, last month, best), `record` (the session and its gain, or none), `lastTested` (date and value, or
   none), and the displayed strings.
 - **A label** follows from the counted subjects: `Improving` when `4 × (up − down) ≥ counted` and `3 × up ≥
-  counted`; `Declining` is the mirror; otherwise `Holding steady`. Fewer than 3 counted gives no label.
+  counted`; `Declining` is the mirror; otherwise `Steady`. Fewer than 3 counted gives no label.
 
 ## Sessions and values (SES)
 
@@ -254,18 +254,18 @@ or benchmark was logged in the last 12 months." and shows no label.
 ## Headline (HDL)
 
 **A1-HDL-01 The label.** Counts (up / no clear change / down → label): 3 / 3 / 1 → `Improving`; 2 / 5 / 0 → `Holding
-steady` (net +0.29 but 29% up); 1 / 2 / 0 → `Improving` (exactly a third up); 1 / 3 / 0 → `Holding steady`; 5 / 0 / 1 →
-`Improving`; 0 / 5 / 2 → `Holding steady` (29% down); 1 / 1 / 4 → `Declining`; 1 / 0 / 3 → `Declining`; 3 / 3 / 3 →
-`Holding steady`; 6 / 5 / 1 → `Improving`. Two counted subjects give no label.
+steady` (net +0.29 but 29% up); 1 / 2 / 0 → `Improving` (exactly a third up); 1 / 3 / 0 → `Steady`; 5 / 0 / 1 →
+`Improving`; 0 / 5 / 2 → `Steady` (29% down); 1 / 1 / 4 → `Declining`; 1 / 0 / 3 → `Declining`; 3 / 3 / 3 →
+`Steady`; 6 / 5 / 1 → `Improving`. Two counted subjects give no label.
 
 **A1-HDL-02 The counts sentence, Improving.** 8 up, 5 no clear change and 1 down of 14 reads "Improving in 8 of 14 lifts
 and benchmarks (5 no clear change, 1 down)." A zero part is dropped: 5 up and 1 down of 6 reads "Improving in 5 of 6
 lifts and benchmarks (1 down)."; 4 up of 4 reads "Improving in 4 of 4 lifts and benchmarks."
 
 **A1-HDL-03 The counts sentence, other labels.** `Declining` with 1 up, 4 no clear change and 4 down of 9 reads "Declining in 4 of
-9 lifts and benchmarks (4 no clear change, 1 up)." `Holding steady` with 2 up and 5 no clear change of 7 reads "Holding
+9 lifts and benchmarks (4 no clear change, 1 up)." `Steady` with 2 up and 5 no clear change of 7 reads "Holding
 steady across 7 lifts and benchmarks (2 up, 5 no clear change)."; with 3 up, 6 no clear change and 2 down of 11 it reads
-"Holding steady across 11 lifts and benchmarks (3 up, 6 no clear change, 2 down)." A zero part is dropped.
+"Steady across 11 lifts and benchmarks (3 up, 6 no clear change, 2 down)." A zero part is dropped.
 
 **A1-HDL-04 The paragraph, full sample** (as of 2026-09-11). Then "Includes 2 that moved up to RX. Left out: 31 with
 under 6 sessions. 2 compare sessions over 24 months apart. Log through Sep 11, 2026."
@@ -343,7 +343,7 @@ long-run trend." and adds " Rings mark max efforts." only when rings are shown.
 **A1-CHT-09** For `not tested since` the text above the chart reads "Last tested Jan 10, 2025 at 195 lb. Recent
 sessions are lighter work."
 
-**A1-CHT-10** Power Clean (trend line flat to down, verdict `up`) shows both and no reconciliation.
+**A1-CHT-10** Power Clean (trend line level or sloping down, verdict `up`) shows both and no reconciliation.
 
 **A1-CHT-11** RX and Scaled of one name have separate charts.
 
@@ -383,7 +383,7 @@ same range before any threshold is trusted. Count the Scaled Load rows and the S
 
 ## Open points
 
-None. The four display points the cases exposed are decided: the sentence for `Holding steady` and `Declining`
+None. The four display points the cases exposed are decided: the sentence for `Steady` and `Declining`
 (A1-HDL-03), the zero-change test (A1-DSP-07), times of an hour or more (A1-DSP-03) and the shortfall wording
 (A1-VRD-01, A1-FCT-08). The record rule applies to benchmarks (A1-VRD-13), and a record is the recent best 2% above the
 best before the recent window (A1-VRD-17 to A1-VRD-20).
