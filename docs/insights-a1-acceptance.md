@@ -64,8 +64,8 @@ percentage are shown, and the subject needs 1 more session.
 
 **A1-VRD-03 Up by window, no record.** Given 9 sessions: 2024-01-10 230; 2024-04-10 190; 2024-07-10 195; 2024-10-10
 200; 2025-01-10 192; 2025-04-10 205; 2025-07-10 208; 2025-10-10 210; 2026-01-10 207. Then `N` = 4, previous Apr 2024
-to Jan 2025 best 200, recent Apr 2025 to Jan 2026 best 210, `change` +5.0%, `record` none (the 230 in 2024 is higher
-than every recent session), `state` `up`.
+to Jan 2025 best 200, recent Apr 2025 to Jan 2026 best 210, `change` +5.0%, `record` none (the 230 in 2024, before the
+recent window, is higher than the recent best), `state` `up`.
 
 **A1-VRD-04 The threshold compares the rounded percentage.** Given the sessions of A1-VRD-03 with the last recent
 best changed to 209.8 (+4.9%) and then to 209.9 (+4.95%, which rounds to +5.0%). Then 209.8 reads `no clear change` and
