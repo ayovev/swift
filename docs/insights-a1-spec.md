@@ -234,6 +234,99 @@ Acceptance cases:
 - **AC-R-06.** Sessions dated after the reference date are ignored.
 - **AC-R-07.** The headline shows "Log through <month day, year>", the date of the latest session in the log.
 
+## 3d. How a verdict is displayed (decided)
+
+- **Each verdict shows** the sessions it compared, in months: "Last 4: Feb to Aug 2026 · Previous 4: Mar 2024
+  to Mar 2025" (a window inside one month shows a single month), the best of each side, the change in the
+  subject's own unit first and the percentage second: "+16 lb (184 to 200 lb), +8.7%".
+- **Lifts are in pounds** (estimated 1RM, rounded to a whole pound). The export is always in pounds,
+  whatever unit the athlete uses in SugarWOD (maintainer's note, not verifiable from the file, which has no unit
+  column). The app has no weight-unit setting and every weight in it is hard-coded to pounds. A kilogram display
+  setting would be a display-only preference outside these criteria, added only if it proves necessary.
+- **Time benchmarks** show the logged time with words: "0:50 slower (13:47 to 14:37), 6.0% slower".
+- **Rounds + Reps** benchmarks are read from the display string ("16+15", or "16"), never the raw number. The
+  raw value has two encodings in the sample (reps ÷ 1000 on 65 rows, reps ÷ 10000 on 17) and drops trailing
+  zeros ("5.01" is 5+10). A benchmark with a known reps-per-round converts to total reps (Cindy: 5 pull-ups, 10
+  push-ups, 15 squats, so 30 per round) and shows "+35 reps (16+15 to 17+20), +7.1%". One without a lookup
+  shows both scores and no difference.
+- **The percentage is rounded to one decimal** (half away from zero) before it is compared with any threshold
+  (5%, 2%), so the number shown never contradicts the verdict. A true 4.96% counts as 5.0% and reads `up`.
+- **A zero change** reads "no change in the best (200 and 200)", never "+0".
+- **Long-gap note.** When either window spans more than 730 days (about 24 months), first to last session, the
+  verdict says "Recent sessions span 26 months (Jan 2024 to Mar 2026)." It is an annotation only and never
+  withholds a verdict. On the sample it appears for 2 of 12 (Power Snatch, Power Clean). The coverage
+  paragraph counts such subjects (section 4).
+
+Acceptance cases:
+
+- **AC-D-01.** Front Squat RX, previous side 2024-03-11 166, 2024-03-18 161, 2024-04-08 184, 2025-03-31 178 and
+  recent side 2026-02-03 189, 2026-03-30 200, 2026-04-07 178, 2026-08-07 194: window size 4, previous Mar 2024 to
+  Mar 2025 with best 184, recent Feb to Aug 2026 with best 200, displayed "+16 lb (184 to 200 lb), +8.7%".
+- **AC-D-02.** Previous best 200 and recent best 209.9 (+4.95%) display "+5.0%" and read `up`; 209.8 (+4.9%)
+  displays "+4.9%" and reads `no clear change`.
+- **AC-D-03.** A time benchmark with previous best 827 s and recent best 877 s displays "0:50 slower (13:47 to
+  14:37), 6.0% slower".
+- **AC-D-04.** A recent side from 2024-01-18 to 2026-03-10 shows "Recent sessions span 26 months (Jan 2024 to Mar
+  2026)." A recent side spanning 21 months shows no note. The state is unchanged in both.
+- **AC-D-05.** Cindy previous 16+15 (495 reps) and recent 17+20 (530 reps) display "+35 reps (16+15 to 17+20),
+  +7.1%". A Rounds + Reps benchmark with no reps-per-round shows "16+15 to 18+2" and no difference.
+- **AC-D-06.** A raw value of 5.01 with display "5+10" is read as 5 rounds and 10 reps.
+- **AC-D-07.** A lift whose two bests are equal reads "no change in the best (200 and 200)".
+
+## 3e. The evidence chart (decided)
+
+A chart explaining a verdict opens from its subject row on the Insights list. The Workouts lift chart (raw load
+by rep scheme, points not joined across schemes) is unchanged, with no estimated-1RM option, so a 165 lb 5RM and
+a 165 lb single are still never drawn as one series. Three mockups were reviewed; this is the third.
+
+- **Series:** one dot per day, the best estimated 1RM of that day, the same series the verdict uses. It is
+  drawn for subjects with a verdict. Whether subjects with only a facts line (3a) get a dots-only chart is open.
+- **Emphasis, not shading:** the previous window's dots are dark, the recent window's dots use the accent, and
+  every other dot is faint. There are no shaded bands, no window best-lines, no legend and no controls.
+- **Labels:** the best of each window carries its value. A new-best session (2% above everything earlier) is a
+  larger accent dot labelled "new best +4.0%"; when it is also the recent best the label reads "365 · new best
+  +4.0%".
+- **Trend line:** a robust (Theil-Sen) line through the best session of each calendar quarter, over the
+  subject's whole history (Insights uses the full log, not the dashboard's date range). It is dashed, labelled
+  "Trend" at its right end, carries no number and no up or down wording, and is drawn only with 4 or more
+  quarters of sessions. Best per quarter is used because it does not tilt down with the light sessions of a
+  build. Measured on the sample it tracks the verdict more closely than a fit through every session (+0.7%/yr
+  for Back Squat against +5.2%) or through the last 24 months (±14% to 24% a year on 3 to 5 points); it
+  still disagrees where a record sits in one quarter (Power Clean: line −1.2%/yr, verdict `up` from a 210).
+- **Max-effort rings** appear only when the verdict is `down` or `not tested since`, on every max-effort
+  session (an explicit rep max or a rep ladder), so the athlete sees when the last test was. Otherwise the
+  tooltip says "max effort".
+- **Text:** above the chart, the window dates, the new-best note ("New best: 365 lb on Mar 24, 2026, 4.0% above
+  the previous best of 351 lb.") and, for `not tested since`, "Last tested Jan 10, 2025 at 195 lb. Recent
+  sessions are lighter work." Under it one muted line: "Highlighted dots are the sessions the verdict
+  compared. The dashed line is the long-run trend." plus " Rings mark max efforts." when rings are shown.
+- **Tooltip:** date, estimated 1RM, max effort, and any record gain.
+- **Width:** the chart is sized to its container so the text stays at least 11 px on a 360 px screen.
+- **It never changes a verdict, count or label** and is not reconciled with the verdict when they disagree.
+
+Acceptance cases:
+
+- **AC-L-01.** The chart opens from a subject row with a verdict. The Workouts lift chart gains no
+  estimated-1RM option.
+- **AC-L-02.** One dot per day, equal to that day's best estimated 1RM.
+- **AC-L-03.** Previous-window dots are dark, recent-window dots use the accent, all others are faint. There are no
+  shaded areas, no legend and no controls.
+- **AC-L-04.** The two window bests are labelled with their values. A new-best session is a larger accent dot
+  labelled "new best +4.0%", and when it is the recent best the label reads "365 · new best +4.0%".
+- **AC-L-05.** Quarterly bests of 100, 102, 104 and 106 draw a rising dashed line labelled "Trend" ending at the
+  last quarter. Three quarters draw no line.
+- **AC-L-06.** The trend line has no number and no up or down wording, and uses the subject's whole history
+  whatever the dashboard's date range.
+- **AC-L-07.** Rings appear only for `down` and `not tested since`, on every max-effort session. For `up` and
+  `no clear change` there are none.
+- **AC-L-08.** The muted line reads "Highlighted dots are the sessions the verdict compared. The dashed line is
+  the long-run trend." and adds " Rings mark max efforts." only when rings are shown.
+- **AC-L-09.** For `not tested since` the text above the chart reads "Last tested Jan 10, 2025 at 195 lb. Recent
+  sessions are lighter work."
+- **AC-L-10.** Power Clean (line flat to down, verdict `up`) shows both and no reconciliation.
+- **AC-L-11.** RX and Scaled of one name have separate charts.
+- **AC-L-12.** At 360 px wide the chart's text is at least 11 px and nothing overflows horizontally.
+
 ## 4. Aggregate (the headline)
 
 - **Population**: eligible, recent subjects. Each subject counts once, so a lift logged 37 times
@@ -457,13 +550,11 @@ check that none of them is silently wrong.
    almost monotone series reaches p below 0.10, a fit over every session is tilted down by the light sessions of a
    build (quarterly best avoids that but needs a year of history), and a p-value is harder for an athlete to
    check than "best of the last 4 against the best of the 4 before". Not adopted as the verdict.
-   **Decided:** a best-fit line is drawn on the lift chart as a visualisation only, and does not change any
-   verdict. The early read for subjects with 4 or 5 sessions is **not** built. **Open:** which series the line
-   is fitted to and over what span. The current chart plots raw loads by rep scheme as unconnected points on
-   purpose (a 165 lb 5RM and a 165 lb single are different data), while the verdict is on estimated 1RM, so a
-   line on the raw chart would either mix schemes or describe a different series than the verdict.
+   **Decided:** a best-fit line is drawn as a visualisation only, and does not change any verdict (section
+   3e: best per quarter, on an evidence chart opened from the subject row, not on the raw-load lift chart). The
+   early read for subjects with 4 or 5 sessions is **not** built.
 
-**Still open**
+**Decided after further measurement**
 
 3. **One vote per subject, with a collapsed family breakdown: decided.** Compared in a mockup as A (no
    breakdown), B (breakdown always shown) and C (collapsed); C chosen. Subjects were mapped to families with
@@ -486,8 +577,8 @@ check that none of them is silently wrong.
    readable scheme; tests only would leave 87 of 246 counted lift sessions and 6 of 12 subjects.
 
    **Threshold and record: decided.** `up` is a window change of 5% or more, or a record (section 2).
-   **Span display: recommended, not yet decided**: the signed change always shown, and each window's span
-   shown with the verdict with a "long gap" note past 24 months. Spans measured on the same 12:
+   **Span display: decided** (section 3d): the signed change is always shown, with each window's span and a
+   long-gap note past 730 days. Spans measured on the same 12:
 
    | Rule | Verdicts | Too spread out | Net, label |
    | --- | --- | --- | --- |
@@ -500,12 +591,11 @@ check that none of them is silently wrong.
    the threshold to 3% loosens the rule, not tightens it: reversals rise from 3% to 9% and Back Squat
    (+3.9%) and Deadlift (+4.4%) become `up`, both inside the 6.9% median session-to-session movement.
 
-5. **Scaled to RX**: an athlete who moves from Scaled to RX gets two thin subjects instead of one
-   continuous history. Merging is unsafe (different loads); leaving them apart is simple but hides
-   progress.
-6. **Benchmarks**: in the sample only Nancy has more than 4 sessions (7), so benchmarks will mostly read
-   "not enough sessions yet" under any rule that is steady. That is the honest answer, but the headline
-   will be lifts in practice.
+5. **Scaled to RX: decided** (section 3b). RX and Scaled stay separate subjects; a move up to RX is an
+   improvement and casts a vote for 12 months; moving down is a neutral fact.
+6. **Benchmarks: decided.** Most benchmarks will read "not enough sessions yet" under any steady rule (only
+   Nancy has more than 4 sessions in the sample). They are not forced into the headline: a benchmark votes
+   through a move up to RX (3b) or a normal verdict at 6 sessions, and otherwise gets the facts line (3a).
 
 ## 8. How the numbers above were measured
 
