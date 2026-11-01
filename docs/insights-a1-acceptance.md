@@ -349,6 +349,19 @@ sessions are lighter work."
 
 **A1-CHT-12** At 360 px wide the chart's text is at least 11 px and nothing overflows horizontally.
 
+**A1-CHT-13 Dots only for a facts-line subject.** Given Hang Power Clean RX with 2022-12-06 139.9; 2023-01-02 120.5; 2023-01-09
+151.9; 2026-01-06 205.1; 2026-08-19 214.8. Then the row opens to a chart of 5 dots in one style, with no highlighted dots, no
+shaded areas, no value labels, no new-best marker and no rings. There is no trend line although the sessions span 4 calendar
+quarters.
+
+**A1-CHT-14 The dots-only text.** The muted line reads "Each dot is the best result of a day." and nothing else; each dot's tooltip
+gives the date and the estimated 1RM, and "max effort" where it applies.
+
+**A1-CHT-15 One session has no chart.** A subject with a single session opens to no chart (assumption, to confirm).
+
+**A1-CHT-16 A sixth session replaces the dots-only chart.** When the subject reaches 6 sessions it opens to the evidence chart of
+A1-CHT-02 to A1-CHT-09.
+
 ## Last PR (PRL)
 
 **A1-PRL-01 A lift.** Given Deadlift RX whose best estimated 1RM is 365 lb on 2026-03-24 (20 sessions). Then the line reads

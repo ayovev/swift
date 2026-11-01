@@ -244,7 +244,7 @@ Acceptance cases: `A1-SCL` in [`insights-a1-acceptance.md`](insights-a1-acceptan
   function input (the existing insight functions take an `asOfDate`) and is never read from the clock inside a
   calculation, so the same history and date always give the same result.
 - **One date for every rule that needs one:** the 365-day recency rule, the 12-month window for Scaled-to-RX
-  votes (3b), "sessions in the last year" in the exposure facts, and the 30, 60 or 90 day filter on the front
+  votes (3b), "sessions in the last year" in the exposure facts, and the 30, 60 or 90 day option on the front
   door.
 - **Counting:** whole local calendar days between the reference date and the latest session. 365 days is
   recent; 366 is not (*tunable*). Sessions dated after the reference date are ignored.
@@ -301,7 +301,15 @@ by rep scheme, points not joined across schemes) is unchanged, with no estimated
 a 165 lb single are still never drawn as one series. Three mockups were reviewed; this is the third.
 
 - **Series:** one dot per day, the best estimated 1RM of that day, the same series the verdict uses. It is
-  drawn for subjects with a verdict. Whether subjects with only a facts line (3a) get a dots-only chart is open.
+  drawn for subjects with a verdict, and as dots only for subjects with a facts line (below).
+- **Dots only for a facts-line subject** (decided): a subject with 2 to 5 sessions (section 3a) opens to a chart
+  of its sessions, all dots in one style, with no highlighted sessions, no windows, no trend line (even when it has 4
+  or more quarters), no value labels, no new-best marker and no rings; each dot has a tooltip (date, estimated 1RM, and
+  "max effort" where it applies). One muted line sits under it: "Each dot is the best result of a day." The chart
+  shows what the facts line cannot: Hang Power Clean RX (Dec 2022 140, Jan 2023 121, Jan 2023 152, Jan 2026 205, Aug
+  2026 215) is two clusters three years apart, which "+10 lb" hides. It makes no verdict claim. A subject with one
+  session has no chart (assumption: a single dot adds nothing). Benchmark charts, including whether faster is drawn
+  higher on a time axis, are not yet specified.
 - **Emphasis, not shading:** the previous window's dots are dark, the recent window's dots use the accent, and
   every other dot is faint. There are no shaded bands, no window best-lines, no legend and no controls.
 - **Labels:** the best of each window carries its value. When the recent best is a record it is a larger accent
@@ -441,9 +449,10 @@ The same function serves every consumer, with only the sessions chosen different
 - **Subject list and headline**: the most recent sessions of each subject.
 - **Period verdict (D1)**: the period's own sessions as **recent**, and the sessions immediately before
   the period as **previous**, same window size cap, same threshold, same minimum.
-- **Front door period filter**: not a recomputation. "Logged in the last 30, 60 or 90 days" only chooses which
-  subjects are listed; every verdict and the headline are unchanged (measured: no subject has 6 sessions inside 30,
-  60 or 90 days). See [`insights-front-door.md`](insights-front-door.md).
+- **Front door fixed-period option**: only sessions inside the last 30, 60 or 90 days are eligible
+  (values *tunable*); the same rule applies to them, and a subject without enough sessions says so. **Under
+  review:** measured on the sample, no subject has 6 sessions inside 30, 60 or 90 days, so this would show an empty
+  page. See [`insights-front-door.md`](insights-front-door.md).
 
 ## 6. Acceptance cases
 
