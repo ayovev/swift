@@ -387,6 +387,38 @@ reads "Last PR: 17+20 on Aug 1, 2024".
 **A1-PRL-08 A facts-line subject** (2 to 5 sessions) shows the Last PR line as well as its facts line, and a subject that is
 not recent still shows it.
 
+## Front-door filter (FLT)
+
+The filter is described in [`insights-front-door.md`](insights-front-door.md). Counts below are on the bundled sample
+as of the end of its log (derived, to be confirmed by running); demo mode extends the sample through today, so they drift.
+
+**A1-FLT-01 All is the default** and lists every subject (45 on the sample). Nothing is filtered and no "Showing" line
+appears.
+
+**A1-FLT-02 The sample counts.** "30 days" lists 5 subjects and "90 days" lists 14.
+
+**A1-FLT-03 The line.** When a period is chosen, the muted line under the control reads "Showing 5 of 45 subjects."
+With All it is absent. The 45 is every subject, including not-recent and facts-line subjects.
+
+**A1-FLT-04 Nothing else changes.** Under every option the headline label, the counts sentence, the coverage paragraph
+and "How this was counted" are identical, and every listed row shows the same state, change and chart it shows under All.
+
+**A1-FLT-05 The boundary.** A subject whose latest session is exactly 30 days before the reference date is listed under
+"30 days"; one at 31 days is not.
+
+**A1-FLT-06 Every group is filtered** (pending: proposed, not yet confirmed), including the collapsed ones. A facts-line subject logged 10 days ago is listed
+under "30 days" with its facts line; its group count reflects the filter.
+
+**A1-FLT-07 A not-recent subject** (latest session over 365 days ago) is never listed under 30 or 90 days.
+
+**A1-FLT-08 An empty period.** When no subject qualifies the list reads "No lift or benchmark was logged in the last 30
+days." (or 90), the "Showing 0 of 45 subjects." line stays, and the headline is unchanged.
+
+**A1-FLT-09 Not saved.** Leaving Insights and returning, or reloading, shows All.
+
+**A1-FLT-10 Local to the list.** Choosing a period changes nothing on Overview, Workouts, the domain, modality, Movements
+or Body Comp views, or on Periods, and the scope line still reads "Uses your full history."
+
 ## Manual checks (MAN)
 
 **A1-MAN-01 Real export.** Run the rules on the real export and confirm the stability figures in the spec are in the

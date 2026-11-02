@@ -75,11 +75,10 @@ is context for it.
 - The Insights **front door** is the A1 aggregate headline with its coverage, then the subjects that
   moved (both directions) with their body-context line, or one plain sentence when nothing cleared
   the real-change rule.
-- "Lately" is **session-based by default**. A fixed-period option (30, 60 or 90 days, values to
-  settle) is reserved. It only changes which sessions are eligible; the same real-change rule and
-  minimums apply, a subject without enough sessions says so, and the view states which window it shows.
-  **Under review:** measured on the sample, no subject has 6 sessions inside those windows, so it would show an
-  empty page; a filter on which subjects are listed is the candidate (see `insights-front-door.md`).
+- "Lately" is **session-based by default**. The fixed-period recompute was dropped: measured on the
+  sample, no subject has 6 sessions inside 30, 60 or 90 days, so it would show an empty page. In its place a
+  **"Logged in the last" filter** (30 days, 90 days, All) chooses which subjects are listed. It is local to the subject
+  list, changes no verdict, headline or chart, and says "Showing 5 of 45 subjects." (see `insights-front-door.md`).
 - The subject list carries **neutral exposure facts**: last logged date, sessions in the last year and
   the gap since the last session, sortable by longest since last logged. No "neglected" label.
 
@@ -122,7 +121,7 @@ is context for it.
   period is something the athlete changed (gets a verdict) or something that happened (context only),
   plus an optional cut marker. A free-text name could carry the rest. Settle before the period form
   is rebuilt; it does not block A1.
-- **Fixed-period values** for the front door (30, 60, 90 days are placeholders); the control itself is under review, drafted in [`insights-front-door.md`](insights-front-door.md).
+- **Filter values** for the front door (30 and 90 days are tunable); the control itself is decided, see [`insights-front-door.md`](insights-front-door.md).
 - **Manual weigh-ins**: the entry UI, storage key, sync and backup wiring, and whether frequent
   weigh-ins give bodyweight a measured noise band.
 - **Real data**: one real export exists and is not committed. Anything not tested against it stays

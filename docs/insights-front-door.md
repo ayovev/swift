@@ -1,7 +1,7 @@
 # Insights front door
 
 **Status: draft for review, nothing built.** The first view of Insights (today's Progress view): what is on it, in what
-order, and how its one control works. It reuses the A1 verdict ([`insights-a1-spec.md`](insights-a1-spec.md)), its
+order, and how its one control works (a filter on the list, decided below). It reuses the A1 verdict ([`insights-a1-spec.md`](insights-a1-spec.md)), its
 cases ([`insights-a1-acceptance.md`](insights-a1-acceptance.md)) and its words
 ([`insights-glossary.md`](insights-glossary.md)). Items marked **decided** were settled in conversation; items marked
 **proposed** await an answer.
@@ -15,14 +15,10 @@ labels, new-best marker or rings, with a tooltip on each dot. It is specified in
 [`A1 spec 3e`](insights-a1-spec.md) and its cases are A1-CHT-13 to A1-CHT-16. Example: Hang Power Clean RX (5 sessions)
 shows two clusters three years apart, which the facts line's "+10 lb" hides.
 
-## What is proposed
+### The period control is a filter on the subject list
 
-Awaiting your answers; nothing below is decided.
-
-### The period control
-
-The earlier decision was a fixed-period option (30, 60 or 90 days) that applies the verdict rule and its minimums to the
-sessions inside the window. Measured on the bundled sample, as of the log's end, that shows nothing:
+Replaces the fixed-period recompute (30, 60 or 90 days applying the verdict rule), which measured empty on the sample:
+no subject has 6 sessions inside any of those windows.
 
 | Window | Subjects with any session | Of the 12 with a verdict | Subjects with 6 or more sessions inside |
 | --- | --- | --- | --- |
@@ -32,17 +28,21 @@ sessions inside the window. Measured on the bundled sample, as of the log's end,
 | 180 days | 21 | 11 | 1 |
 | 365 days | 25 | 12 | 2 |
 
-Even the most-trained lift, Clean & Jerk, has 5 sessions in the last 90 days. The candidate replacement is a **filter**:
-"Logged in the last 30 / 60 / 90 days" lists only the subjects with a session in that period (All by default) and changes
-no verdict, headline label, counts sentence or coverage paragraph. On the sample it lists 5, 12 and 14 of 45 subjects. It
-would use the same reference date as the recency rule (a session exactly N days old is inside; N + 1 is not), never match
-a not-recent subject, and not be saved. If adopted, its cases would be: the sample counts (5, 12, 14, All 45); the headline
-unchanged under every option; a verdict unchanged whether or not rows are hidden; the 30 and 31 day boundary; a not-recent
-subject absent; an empty period reading "No lift or benchmark was logged in the last 30 days."; and a facts-line subject
-listed with its facts line.
+- **What it is:** "Logged in the last" with 30 days, 90 days and All (values *tunable*; All by default; not saved). It lists
+  only subjects with a session in that period (5 and 14 of 45 on the sample).
+- **Local to the subject list.** It changes no verdict, label, counts sentence, coverage paragraph, chart or other view,
+  and the scope line still reads "Uses your full history."
+- **The line under it:** "Showing 5 of 45 subjects." when a period is chosen, absent under All.
+- **Boundary:** the same reference date as the recency rule; a session exactly N days old is inside, N + 1 is not.
+- **Cases:** A1-FLT-01 to A1-FLT-10.
+
+## What is proposed
+
+Awaiting your answers; nothing below is decided.
 
 ### The rest of the layout
 
+0. **The filter applies to every group,** including the collapsed ones (A1-FLT-06).
 1. **Order, top to bottom:** page title and scope line ("Uses your full history"); the headline (label, sentence, coverage
    paragraph, "How this was counted"); the body-context line when body data exists (its wording is not yet specified); the
    period control; the subject list; small links to Periods and an optional "Add body composition".

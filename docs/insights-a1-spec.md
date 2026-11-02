@@ -244,8 +244,8 @@ Acceptance cases: `A1-SCL` in [`insights-a1-acceptance.md`](insights-a1-acceptan
   function input (the existing insight functions take an `asOfDate`) and is never read from the clock inside a
   calculation, so the same history and date always give the same result.
 - **One date for every rule that needs one:** the 365-day recency rule, the 12-month window for Scaled-to-RX
-  votes (3b), "sessions in the last year" in the exposure facts, and the 30, 60 or 90 day option on the front
-  door.
+  votes (3b), "sessions in the last year" in the exposure facts, and the "Logged in the last" filter on the
+  front door.
 - **Counting:** whole local calendar days between the reference date and the latest session. 365 days is
   recent; 366 is not (*tunable*). Sessions dated after the reference date are ignored.
 - **A not-recent subject** keeps its verdict on the subject list, marked "Not recent: last logged Aug 2025".
@@ -449,10 +449,11 @@ The same function serves every consumer, with only the sessions chosen different
 - **Subject list and headline**: the most recent sessions of each subject.
 - **Period verdict (D1)**: the period's own sessions as **recent**, and the sessions immediately before
   the period as **previous**, same window size cap, same threshold, same minimum.
-- **Front door fixed-period option**: only sessions inside the last 30, 60 or 90 days are eligible
-  (values *tunable*); the same rule applies to them, and a subject without enough sessions says so. **Under
-  review:** measured on the sample, no subject has 6 sessions inside 30, 60 or 90 days, so this would show an empty
-  page. See [`insights-front-door.md`](insights-front-door.md).
+- **Front door "Logged in the last" filter (decided)**: replaces the earlier fixed-period recompute, which was
+  measured on the sample and left every row empty (no subject has 6 sessions inside 30, 60 or 90 days). The filter
+  chooses which subjects are *listed* and changes no verdict, label, count or paragraph. It applies to the subject
+  list only, never to other views. Options 30 days, 90 days and All (*tunable*), All by default, not saved. Cases:
+  A1-FLT-01 to A1-FLT-08 in the acceptance document; layout in [`insights-front-door.md`](insights-front-door.md).
 
 ## 6. Acceptance cases
 
