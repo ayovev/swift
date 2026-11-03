@@ -395,7 +395,8 @@ as of the end of its log (derived, to be confirmed by running); demo mode extend
 **A1-FLT-01 All is the default** and lists every subject (45 on the sample). Nothing is filtered and no "Showing" line
 appears.
 
-**A1-FLT-02 The sample counts.** "30 days" lists 5 subjects and "90 days" lists 14.
+**A1-FLT-02 The sample counts.** As of 2026-09-09, "Last month" lists 5 subjects, "Last 3 months" 15, "Last 6 months" 22
+and "Last year" 25.
 
 **A1-FLT-03 The line.** When a period is chosen, the muted line under the control reads "Showing 5 of 45 subjects."
 With All it is absent. The 45 is every subject, including not-recent and facts-line subjects.
@@ -403,21 +404,32 @@ With All it is absent. The 45 is every subject, including not-recent and facts-l
 **A1-FLT-04 Nothing else changes.** Under every option the headline label, the counts sentence, the coverage paragraph
 and "How this was counted" are identical, and every listed row shows the same state, change and chart it shows under All.
 
-**A1-FLT-05 The boundary.** A subject whose latest session is exactly 30 days before the reference date is listed under
-"30 days"; one at 31 days is not.
+**A1-FLT-05 The boundary.** With reference date 2026-09-09, a subject whose latest session is on 2026-08-09 is listed
+under "Last month"; one whose latest session is on 2026-08-08 is not. A month that is shorter than the reference day
+clamps as the date-range control does (reference 2026-03-31, "Last month" starts 2026-02-28).
 
-**A1-FLT-06 Every group is filtered** (pending: proposed, not yet confirmed), including the collapsed ones. A facts-line subject logged 10 days ago is listed
-under "30 days" with its facts line; its group count reflects the filter.
+**A1-FLT-06 Every group is filtered**, including the collapsed ones. A facts-line subject logged 10 days ago is listed
+under "Last month" with its facts line; its group count reflects the filter.
 
-**A1-FLT-07 A not-recent subject** (latest session over 365 days ago) is never listed under 30 or 90 days.
+**A1-FLT-07 A not-recent subject** (latest session over 365 days ago) is never listed under any preset.
 
-**A1-FLT-08 An empty period.** When no subject qualifies the list reads "No lift or benchmark was logged in the last 30
-days." (or 90), the "Showing 0 of 45 subjects." line stays, and the headline is unchanged.
+**A1-FLT-08 An empty period.** When no subject qualifies the list reads "No lift or benchmark was logged in this
+period.", the "Showing 0 of 45 subjects." line stays, and the headline is unchanged.
 
 **A1-FLT-09 Not saved.** Leaving Insights and returning, or reloading, shows All.
 
 **A1-FLT-10 Local to the list.** Choosing a period changes nothing on Overview, Workouts, the domain, modality, Movements
-or Body Comp views, or on Periods, and the scope line still reads "Uses your full history."
+or Body Comp views, or on Periods, and the scope line still reads "Uses your full history." The date-range control on
+those views keeps its own selection, and this filter does not follow it.
+
+**A1-FLT-11 Custom range** (proposed details). Choosing Custom with 2026-03-01 to 2026-04-30 lists every subject with at
+least one session in that span, both dates inclusive, and the line reads "Showing N of 45 subjects."
+
+**A1-FLT-12 Custom bounds** (proposed details). A start after the end is not applied and an inline message says so; the
+list keeps its previous contents. The end date defaults to today.
+
+**A1-FLT-13 Custom does not touch verdicts.** A subject listed under a custom range that holds 1 session shows the same
+verdict, change and chart it shows under All.
 
 ## Manual checks (MAN)
 

@@ -28,13 +28,23 @@ no subject has 6 sessions inside any of those windows.
 | 180 days | 21 | 11 | 1 |
 | 365 days | 25 | 12 | 2 |
 
-- **What it is:** "Logged in the last" with 30 days, 90 days and All (values *tunable*; All by default; not saved). It lists
-  only subjects with a session in that period (5 and 14 of 45 on the sample).
+- **What it is:** "Logged in" with presets and a custom range, listing only subjects with at least one session in the
+  period. The presets are **All** (default), **Last month**, **Last 3 months**, **Last 6 months** and **Last year**, plus
+  **Custom**, which takes a start and an end date. Not saved.
+- **Same words and arithmetic as the date-range control** on the other views (`dateRange.ts`: calendar months back from
+  today, start of day, inclusive), but its own state: choosing a period here does not change that control, and that
+  control does not change this one. "Last 9 months" is not offered here.
+- **Sample counts** as of the end of the sample log (2026-09-09): Last month 5, Last 3 months 15, Last 6 months 22, Last year
+  25, of 45 subjects.
+- **Applies to every group,** including the collapsed ones, and the group counts reflect it.
 - **Local to the subject list.** It changes no verdict, label, counts sentence, coverage paragraph, chart or other view,
   and the scope line still reads "Uses your full history."
 - **The line under it:** "Showing 5 of 45 subjects." when a period is chosen, absent under All.
-- **Boundary:** the same reference date as the recency rule; a session exactly N days old is inside, N + 1 is not.
-- **Cases:** A1-FLT-01 to A1-FLT-10.
+- **Boundary:** the same reference date as the recency rule (today). The window starts N calendar months before it, so
+  a session on that day is inside and the day before is not.
+- **Custom (proposed details, not yet confirmed):** both dates are inclusive and bounded by the log's first and last
+  dates; the end date defaults to today; a start after the end is not accepted and says so inline.
+- **Cases:** A1-FLT-01 to A1-FLT-13.
 
 ## What is proposed
 
@@ -42,7 +52,6 @@ Awaiting your answers; nothing below is decided.
 
 ### The rest of the layout
 
-0. **The filter applies to every group,** including the collapsed ones (A1-FLT-06).
 1. **Order, top to bottom:** page title and scope line ("Uses your full history"); the headline (label, sentence, coverage
    paragraph, "How this was counted"); the body-context line when body data exists (its wording is not yet specified); the
    period control; the subject list; small links to Periods and an optional "Add body composition".
