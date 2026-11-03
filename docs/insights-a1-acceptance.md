@@ -515,6 +515,22 @@ sentence relating them. A change of exactly 3 lb is inside the band; 3.1 lb is n
 **A1-BDY-10 A small lift change.** The record case in which a lift is Up at +1.5% with body weight +3.0% reads as A1-BDY-05;
 there is no minimum lift change and no 5% floor.
 
+**A1-BDY-11 The first line, four forms.** Body weight moved past the band: "Body weight 178 to 184 lb (+6 lb) over the same
+span." With lean and fat at both dates: "Body weight +6 lb: lean +2.4 lb, fat +3.6 lb." Inside the band: "Body weight 181 to
+182 lb, within normal scan variation." No reading near a session: "No body weight within 21 days of Mar 2026."
+
+**A1-BDY-12 Which date is read.** The two dates are those of the sessions that set the previous best and the recent best. With
+a scan on the first date and scans 30 days either side of the second, the second is read by a straight line between them. A
+reading 20 days away is used when nothing brackets the date; one 22 days away is not (the line reads "No body weight within
+21 days of ...").
+
+**A1-BDY-13 Which rows.** An Up, Down or Not tested since row shows the line. A No clear change row shows it only when
+opened. A facts-line subject, and any row inside a collapsed group, shows none. With no body data there is no line and no
+placeholder on any row.
+
+**A1-BDY-14 The default band.** With scans too far apart for a measured band, 3 lb is the weight band: 3.0 lb is inside it, 3.1
+lb is not. The copy says "within normal scan variation" and never names the method.
+
 ## Manual checks (MAN)
 
 **A1-MAN-01 Real export.** Run the rules on the real export and confirm the stability figures in the spec are in the

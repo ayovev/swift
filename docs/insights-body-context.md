@@ -30,15 +30,32 @@ shown on the row (rounded half away from zero to one decimal), and "lift" means 
   up to RX (the Scaled and RX sessions are not the same task) and for Not tested since (there is no real change to relate).
 - The words never say why a lift changed: they state how two measured changes compare.
 
+## Decided: what the line compares, what it says first, and which rows show it
+
+1. **What it compares:** body weight at the dates of the two sessions that set the two bests the verdict compares, so
+   the line always describes the same span as the verdict and has no window of its own. Body weight at a date is read with
+   the existing rule: that day's reading, else a straight line between two readings no more than 45 days apart, else the
+   nearest reading within 21 days, else none. It is never extrapolated.
+2. **The first line** (the sentence above relates it to the lift):
+   - body weight moved past the band: "Body weight 178 to 184 lb (+6 lb) over the same span."
+   - with InBody lean and fat mass at both dates: "Body weight +6 lb: lean +2.4 lb, fat +3.6 lb."
+   - inside the band: "Body weight 181 to 182 lb, within normal scan variation."
+   - no reading near a session: "No body weight within 21 days of Mar 2026."
+3. **Which rows:** Up, Down and Not tested since rows show the line. A No clear change row shows it when opened.
+   Facts-line subjects and collapsed groups show nothing. With no body data at all there is no line and no per-row
+   placeholder; the page-level "Add body composition" link covers that.
+
+## The noise band
+
+"Normal scan variation" is the athlete's own band where it can be measured and a **3 lb default** where it cannot
+(`DEFAULT_NOISE_BAND` in `insightConfig.ts`: weight 3 lb, lean 3 lb, fat 3 lb, body fat 1.5 points). `getBodyCompNoiseBand()` tries
+scans within 7 days of each other, then the spread around a rolling median, then the default. The cases use 3 lb so they do
+not depend on the history. The default is a round number in line with commonly cited InBody test-retest variation, not
+measured on any athlete (*tunable, unvalidated*): the one real export fell to the default for every metric because its
+scans were months apart. The copy never names which method produced the band. Whether frequent manual weigh-ins earn a
+measured band is part of the manual weigh-ins decision, not settled here.
+
 ## Proposed
 
-Awaiting your answers; nothing below is decided.
-
-1. **What the line compares:** body weight at the dates of the two sessions that set the two bests the verdict compares,
-   using the existing rule (that day, else a straight line between readings no more than 45 days apart, else the nearest
-   reading within 21 days, else none; never extrapolated).
-2. **First sentence:** "Body weight 178 to 184 lb (+6 lb) over the same span."; with InBody lean and fat, "Body weight +6 lb: lean
-   +2.4 lb, fat +3.6 lb."; inside the band, "Body weight 181 to 182 lb, within normal scan variation."; no reading near a
-   session, "No body weight within 21 days of Mar 2026."
-3. **Which rows:** Up, Down and Not tested since rows show it; a No clear change row shows it when opened; facts-line subjects
-   and collapsed groups show nothing. With no body data there is no line and no per-row placeholder.
+Nothing about the line itself awaits an answer. Open elsewhere: manual weigh-ins (entry, storage, sync and backup, noise)
+and the headline-level body-context line.
