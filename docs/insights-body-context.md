@@ -52,10 +52,42 @@ shown on the row (rounded half away from zero to one decimal), and "lift" means 
 scans within 7 days of each other, then the spread around a rolling median, then the default. The cases use 3 lb so they do
 not depend on the history. The default is a round number in line with commonly cited InBody test-retest variation, not
 measured on any athlete (*tunable, unvalidated*): the one real export fell to the default for every metric because its
-scans were months apart. The copy never names which method produced the band. Whether frequent manual weigh-ins earn a
-measured band is part of the manual weigh-ins decision, not settled here.
+scans were months apart. The copy never names which method produced the band. Frequent manual weigh-ins can reach a measured
+band (see manual weigh-ins).
+
+## Decided: manual weigh-ins
+
+A weigh-in is a body weight the athlete types in. It is a new persisted athlete dataset, so it joins sync and backup in the
+same change and is validated like every other incoming dataset.
+
+- **Record:** `{ date, weightLb, notes?, source: "manual" }`. The date is a day, the weight is in pounds (**lb only**), and
+  `notes` is optional plain text. `source` is stored on every record so the pooled series can always say where a reading
+  came from.
+- **Validation:** the date is a real day no later than today; the weight is a number from 50 to 600 lb inclusive; `notes` is
+  trimmed, at most 200 characters, and a blank note is stored as absent. A record that fails says which rule in a plain
+  sentence. `source` must be `"manual"`.
+- **One per day.** Saving a weigh-in for a date that has one replaces it, notes included.
+- **Where:** a "Weigh-ins" panel on the Body Comp view, which is already in the nav before any InBody file is loaded. A date and
+  weight form with an optional note, and a list newest first. Manual rows carry edit and delete. InBody scan weights appear
+  in the same list, labelled **InBody scan**, read-only; manual rows are labelled **Entered**. Sample mode accepts weigh-ins
+  in memory only, like its periods. No chart and no bulk import in v1.
+- **One body-weight series, pooled.** InBody scan weights and weigh-ins together answer "body weight at a date" with the rule above.
+  Each point carries its source (`inbody` or `manual`). **On a day with both, the InBody scan is used**; the weigh-in is kept,
+  listed as "Not used: an InBody scan the same day", and used again if the scan goes away. Lean and fat mass come from
+  InBody scans only.
+- **The noise band is estimated from the pooled series,** so frequent weigh-ins reach a measured method (paired readings within
+  7 days, or the rolling median) where scans alone fell to the 3 lb default. The copy is unchanged and never names the
+  method. A home scale and an InBody can disagree by several lb for reasons unrelated to training; the pooled spread
+  absorbs part of that, and the limitation is accepted.
+- **No smoothing in v1:** a reading is used as entered, not as a median of nearby days.
+- **Storage:** a new key through its own wrapper (`weighInsStorage.ts`), written only when the data source is an upload and wiped by
+  Start over. **Sync:** a new `weighIns` dataset, every row validated before anything is written, all-or-nothing. **Backup:** a
+  new section, restored per dataset and never merged, omitted when empty. A device on an older build rejects a manifest naming
+  a dataset it does not know, so both devices need the current build.
+- **Analytics:** a value-free interaction name. No weight, date or note ever reaches a payload.
+
+Cases: A1-WGH-01 to A1-WGH-14.
 
 ## Proposed
 
-Nothing about the line itself awaits an answer. Open elsewhere: manual weigh-ins (entry, storage, sync and backup, noise)
-and the headline-level body-context line.
+Nothing about the line or the weigh-ins awaits an answer. Open elsewhere: the headline-level body-context line.

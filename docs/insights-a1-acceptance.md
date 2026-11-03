@@ -531,6 +531,54 @@ placeholder on any row.
 **A1-BDY-14 The default band.** With scans too far apart for a measured band, 3 lb is the weight band: 3.0 lb is inside it, 3.1
 lb is not. The copy says "within normal scan variation" and never names the method.
 
+## Manual weigh-ins (WGH)
+
+Rules are in [`insights-body-context.md`](insights-body-context.md). Reference date 2026-09-11 unless a case says otherwise.
+
+**A1-WGH-01 Add a weigh-in.** Date 2026-09-01, 182.4 lb, note "after a long run" is saved as `{ date: 2026-09-01, weightLb:
+182.4, notes: "after a long run", source: "manual" }` and appears at the top of the list labelled "Entered".
+
+**A1-WGH-02 Validation.** A date of 2026-09-12 (after the reference date), a weight of 49.9 or 600.1, a weight that is not a
+number and a `source` other than "manual" are each rejected with a sentence naming the rule. 50 and 600 are accepted.
+Nothing is written for a rejected record.
+
+**A1-WGH-03 One per day.** Saving 183.0 lb for 2026-09-01 replaces the 182.4 lb record and its note. The list shows one
+record for that date.
+
+**A1-WGH-04 Notes.** A note is optional. "  steady  " is stored as "steady"; a blank or all-space note is stored as absent; a
+note of 200 characters is accepted and one of 201 is rejected.
+
+**A1-WGH-05 Sources in the list.** With 3 InBody scans and 2 weigh-ins the list shows 5 rows newest first. InBody rows read
+"InBody scan" and have no edit or delete; weigh-in rows read "Entered" and have both.
+
+**A1-WGH-06 Same-day tie.** An InBody scan of 184.0 lb and a weigh-in of 182.0 lb on the same day: body weight that day is 184.0
+(the scan). The weigh-in stays listed, marked "Not used: an InBody scan the same day". If the scan file is replaced by one
+without that day, the weigh-in is used.
+
+**A1-WGH-07 Weigh-ins alone.** With no InBody data, a verdict row shows a body-context line from the weigh-ins. The first line
+has the "Body weight 178 to 184 lb (+6 lb) over the same span." form; the lean-and-fat form never appears.
+
+**A1-WGH-08 A measured band** (derived, to be confirmed by running). Twelve weekly weigh-ins within 12 weeks give a band from
+the readings and not the 3 lb default; the line's wording does not change and names no method.
+
+**A1-WGH-09 Sample mode.** A weigh-in added in sample mode appears in the list and is gone after a reload; nothing is
+written to storage.
+
+**A1-WGH-10 Persistence.** With an uploaded workout log, a weigh-in survives a reload. Start over removes it, and the
+confirmation names weigh-ins among what it deletes.
+
+**A1-WGH-11 Sync.** A transfer carrying `weighIns` replaces the other device's weigh-ins after the all-or-nothing
+confirmation. One invalid row (weight 700) rejects the `weighIns` dataset with a reason naming the row, applies nothing from
+the transfer, and leaves the local copy as it was.
+
+**A1-WGH-12 Backup.** A backup holds weigh-ins, notes included, and a restore replaces them without merging. With no
+weigh-ins the section is omitted, and a restore then leaves the local weigh-ins alone.
+
+**A1-WGH-13 An older build.** A build that does not know `weighIns` rejects a manifest naming it, as it does for any unknown
+dataset.
+
+**A1-WGH-14 Analytics.** No payload contains a weight, a date or a note. The interaction names are a fixed list.
+
 ## Manual checks (MAN)
 
 **A1-MAN-01 Real export.** Run the rules on the real export and confirm the stability figures in the spec are in the

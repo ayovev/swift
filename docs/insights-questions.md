@@ -122,8 +122,7 @@ is context for it.
   plus an optional cut marker. A free-text name could carry the rest. Settle before the period form
   is rebuilt; it does not block A1.
 - **Filter details** for the front door (the Custom range's bounds and default end date are proposed); the control itself is decided, see [`insights-front-door.md`](insights-front-door.md).
-- **Manual weigh-ins**: the entry UI, storage key, sync and backup wiring, and whether frequent
-  weigh-ins give bodyweight a measured noise band.
+- **Manual weigh-ins**: decided, see [`insights-body-context.md`](insights-body-context.md) and cases A1-WGH-01 to A1-WGH-14.
 - **Real data**: one real export exists and is not committed. Anything not tested against it stays
   labelled as unvalidated.
 
