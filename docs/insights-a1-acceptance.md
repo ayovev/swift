@@ -407,9 +407,12 @@ appears in Up. Within Down, the largest fall comes first.
 
 **A1-GRP-05 An empty group is not shown.** With no `down` and no `not tested since` subject, neither heading appears.
 
-**A1-GRP-06 Collapsed by default** (proposed): No clear change, Fewer than 6 sessions and Not recent show their name and
+**A1-GRP-06 Collapsed by default:** No clear change, Fewer than 6 sessions and Not recent show their name and
 count only; Up, Down and Not tested since are open. A group's count equals its rows, and the counts follow the "Logged in"
 filter (A1-FLT-06).
+
+**A1-GRP-07 Nothing moved.** With no `up` and no `down` subject, the list opens with "No lift or benchmark has moved
+clearly." above the collapsed groups, and no Up or Down heading appears.
 
 ## Front-door filter (FLT)
 

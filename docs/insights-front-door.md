@@ -55,8 +55,13 @@ clearer than a single list sorted by size, and a Down row gets its own heading i
 - **Up** is sorted by size of change, largest first; **Down** by size of fall, largest first.
 - **A group with no rows is not shown** (most athletes have no Down or Not tested since rows).
 - **Each group's heading carries its count,** and the counts follow the "Logged in" filter.
+- **Collapsed by default:** No clear change, Fewer than 6 sessions (facts lines, most recently logged first) and Not
+  recent, each showing its count; Up, Down and Not tested since are open. Each row opens to its chart.
+- **A move up to RX has no percentage,** so it follows the sized rows in Up, most recent first.
+- **If neither Up nor Down has rows,** the list opens with "No lift or benchmark has moved clearly." above the collapsed
+  groups.
 - Compared on the bundled sample as of 2026-09-09: Up 8, Down 1 (Nancy Scaled), No clear change 5, Fewer than 6 sessions
-  13, Not recent 20. Cases: A1-GRP-01 to A1-GRP-06.
+  13, Not recent 20. Cases: A1-GRP-01 to A1-GRP-07.
 
 ## What is proposed
 
@@ -67,9 +72,5 @@ Awaiting your answers; nothing below is decided.
 1. **Order, top to bottom:** page title and scope line ("Uses your full history"); the headline (label, sentence, coverage
    paragraph, "How this was counted"); the body-context line when body data exists (its wording is not yet specified); the
    period control; the subject list; small links to Periods and an optional "Add body composition".
-2. **Collapsed by default:** No clear change, Fewer than 6 sessions (facts lines, most recently logged first) and Not
-   recent, each showing its count; Up, Down and Not tested since are open. Each row opens to its chart.
-3. **A move up to RX has no percentage,** so it follows the sized rows in Up, most recent first.
-4. **If neither Up nor Down has rows,** the list opens with "No lift or benchmark has moved clearly." above the collapsed groups.
-5. **States:** fewer than 3 counted gives "No headline yet" with the closest subjects; nothing recent gives the existing
+2. **States:** fewer than 3 counted gives "No headline yet" with the closest subjects; nothing recent gives the existing
    sentence; body data is optional and never gates the view.
