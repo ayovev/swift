@@ -63,14 +63,34 @@ clearer than a single list sorted by size, and a Down row gets its own heading i
 - Compared on the bundled sample as of 2026-09-09: Up 8, Down 1 (Nancy Scaled), No clear change 5, Fewer than 6 sessions
   13, Not recent 20. Cases: A1-GRP-01 to A1-GRP-07.
 
+### Page order
+
+Top to bottom:
+
+1. **Title and scope line:** "Insights" and "Uses your full history."
+2. **Headline:** the label, the counts sentence, the coverage paragraph (ending "As of Sep 11, 2026.", the date of the
+   latest session in the log) and the "How this was counted" link.
+3. **Body-context line,** only when body data exists. Its wording is not specified yet; the slot is reserved.
+4. **"Logged in" filter** and its "Showing N of 45 subjects." line.
+5. **Subject list,** in the groups above.
+6. **Small links at the bottom:** Periods, and "Add body composition" when there is none.
+
+The order gives the answer first, then context for it, then the evidence. The filter sits directly above the list it
+filters so it does not read as a control on the headline. No other date is shown near the top. Cases: A1-PGE-01 to
+A1-PGE-07.
+
+### States
+
+| State | When | What the page shows |
+| --- | --- | --- |
+| Normal | 3 or more counted subjects | The full page |
+| No headline yet | Fewer than 3 counted subjects | "No headline yet: needs 3 lifts or benchmarks with a verdict, has 0." with the closest subjects (A1-HDL-10); the coverage paragraph and the list still show |
+| Nothing recent | Every subject's latest session is over 365 days ago | "No lift or benchmark was logged in the last 12 months.", no label; the list shows, with every subject under Not recent |
+| No data at all | No lift or benchmark sessions in the log | "No lift or benchmark has been logged yet." No headline, no filter and no list |
+| No body data | No InBody scans and no manual weigh-ins | The body-context line is absent; nothing is gated; "Add body composition" appears in the small links |
+| Filter returns nothing | The chosen period lists no subjects | "No lift or benchmark was logged in this period."; the headline is unchanged (A1-FLT-08) |
+
 ## What is proposed
 
-Awaiting your answers; nothing below is decided.
-
-### The rest of the layout
-
-1. **Order, top to bottom:** page title and scope line ("Uses your full history"); the headline (label, sentence, coverage
-   paragraph, "How this was counted"); the body-context line when body data exists (its wording is not yet specified); the
-   period control; the subject list; small links to Periods and an optional "Add body composition".
-2. **States:** fewer than 3 counted gives "No headline yet" with the closest subjects; nothing recent gives the existing
-   sentence; body data is optional and never gates the view.
+Nothing on the front door awaits an answer except the wording of the body-context line, which is settled with body
+context.

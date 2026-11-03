@@ -268,14 +268,14 @@ steady across 7 lifts and benchmarks (2 up, 5 no clear change)."; with 3 up, 6 n
 "Steady across 11 lifts and benchmarks (3 up, 6 no clear change, 2 down)." A zero part is dropped.
 
 **A1-HDL-04 The paragraph, full sample** (as of 2026-09-11). Then "Includes 2 that moved up to RX. Left out: 31 with
-under 6 sessions. 2 compare sessions over 24 months apart. Log through Sep 11, 2026."
+under 6 sessions. 2 compare sessions over 24 months apart. As of Sep 11, 2026."
 
 **A1-HDL-05 Clauses appear only above zero, in order.** With 4 counted subjects all up and nothing else, the
-paragraph is "Log through Sep 11, 2026."
+paragraph is "As of Sep 11, 2026."
 
 **A1-HDL-06 Singular.** 1 move-up, 1 with under 6 sessions, 1 not logged in 12 months, 1 not tested recently and 1 long
 gap read "Includes 1 that moved up to RX. Left out: 1 with under 6 sessions, 1 not logged in 12 months, 1 not tested
-recently. 1 compare session over 24 months apart. Log through Sep 11, 2026."
+recently. 1 compare session over 24 months apart. As of Sep 11, 2026."
 
 **A1-HDL-07 Left-out reasons are exclusive.** A subject with 4 sessions whose latest is 2 years old appears only under
 "under 6 sessions". A benchmark is never "not tested recently".
@@ -287,7 +287,7 @@ the label and appears under "not tested recently".
 
 **A1-HDL-10 No headline, none counted.** Back Squat (5 sessions, latest last month), Clean (4) and Shoulder Press (2)
 read "No headline yet: needs 3 lifts or benchmarks with a verdict, has 0. Closest: Back Squat, 1 more session; Clean, 2
-more." then "Left out: 3 with under 6 sessions. Log through Sep 11, 2026."
+more." then "Left out: 3 with under 6 sessions. As of Sep 11, 2026."
 
 **A1-HDL-11 No headline, two counted** reads "...has 2." and names the closest.
 
@@ -302,7 +302,7 @@ lines appear for 16 of them and the other 15 have a single session.
 out with names, the 2 long-gap subjects (Power Snatch, Power Clean) and "272 of 526 weight entries weren't used: 210
 no readable rep scheme, 15 outside 1 to 8 reps, 47 no lift named."
 
-**A1-HDL-15 Log through** shows the date of the latest session in the log, always.
+**A1-HDL-15 As of** shows the date of the latest session in the log, always, as "As of Sep 11, 2026." It is the last clause of the coverage paragraph and is the only date shown near the top.
 
 ## Family breakdown (BRK)
 
@@ -413,6 +413,30 @@ filter (A1-FLT-06).
 
 **A1-GRP-07 Nothing moved.** With no `up` and no `down` subject, the list opens with "No lift or benchmark has moved
 clearly." above the collapsed groups, and no Up or Down heading appears.
+
+## Page order and states (PGE)
+
+Layout is in [`insights-front-door.md`](insights-front-door.md). Sample values are as of 2026-09-09.
+
+**A1-PGE-01 Order.** The page reads, top to bottom: title and scope line, headline, body-context line (only with body
+data), "Logged in" filter with its line, subject list, small links.
+
+**A1-PGE-02 Scope line.** It reads "Uses your full history." under every filter option and every state.
+
+**A1-PGE-03 No headline yet.** With fewer than 3 counted subjects the headline reads as in A1-HDL-10, the coverage
+paragraph and the list still show, and no label shows.
+
+**A1-PGE-04 Nothing recent.** With every subject's latest session over 365 days old, the headline reads "No lift or
+benchmark was logged in the last 12 months." with no label, and every subject is listed under Not recent.
+
+**A1-PGE-05 No data at all.** A log with no lift or benchmark sessions reads "No lift or benchmark has been logged yet."
+with no headline, no filter and no list, and the small links still show.
+
+**A1-PGE-06 No body data.** With no scans and no weigh-ins the body-context line is absent, the headline and list are
+unchanged, and the small links include "Add body composition". With body data that link is absent.
+
+**A1-PGE-07 One date near the top.** The only date shown above the list is the "As of" clause at the end of the coverage
+paragraph.
 
 ## Front-door filter (FLT)
 

@@ -252,7 +252,7 @@ Acceptance cases: `A1-SCL` in [`insights-a1-acceptance.md`](insights-a1-acceptan
   It is excluded from the counts, the label, the front door and the "eligible" figure.
 - **Results change with the date, not only with new data.** A subject drops out of the headline when it
   crosses 365 days. This is intended: a lift not logged in a year is not recent.
-- **The headline shows "Log through Sep 11, 2026"**, the date of the latest session in the log, so the
+- **The headline shows "As of Sep 11, 2026"**, the date of the latest session in the log, so the
   athlete can see how current the data is.
 - **No recent subject:** the headline reads "No lift or benchmark was logged in the last 12 months." and
   shows no label.
@@ -386,7 +386,7 @@ Acceptance cases: `A1-PRL` in [`insights-a1-acceptance.md`](insights-a1-acceptan
     reps, 47 with no lift named).
   - *On the sample* (as of 2026-09-11): "Improving in 8 of 14 lifts and benchmarks (5 no clear change, 1
     down)." then "Includes 2 that moved up to RX. Left out: 31 with under 6 sessions. 2 compare sessions
-    over 24 months apart. Log through Sep 11, 2026."
+    over 24 months apart. As of Sep 11, 2026."
 - **Votes (decided: one per subject).** A lift logged 37 times weighs the same as one logged 8, and a
   Snatch and a Power Snatch are two votes. The cost is skew: 5 of the 12 sample subjects (42%) are snatch,
   clean or jerk variants, so a specialist's headline mostly reflects what they train. The skew is shown,
