@@ -46,6 +46,18 @@ no subject has 6 sessions inside any of those windows.
   dates; the end date defaults to today; a start after the end is not accepted and says so inline.
 - **Cases:** A1-FLT-01 to A1-FLT-13.
 
+### Up and Down are separate groups
+
+The subject list shows **Up** and **Down** as two groups, not one "Moved" group. The discrete categories of change are
+clearer than a single list sorted by size, and a Down row gets its own heading instead of sitting between Up rows.
+
+- **Order:** Up, Down, Not tested since, No clear change, Fewer than 6 sessions, Not recent.
+- **Up** is sorted by size of change, largest first; **Down** by size of fall, largest first.
+- **A group with no rows is not shown** (most athletes have no Down or Not tested since rows).
+- **Each group's heading carries its count,** and the counts follow the "Logged in" filter.
+- Compared on the bundled sample as of 2026-09-09: Up 8, Down 1 (Nancy Scaled), No clear change 5, Fewer than 6 sessions
+  13, Not recent 20. Cases: A1-GRP-01 to A1-GRP-06.
+
 ## What is proposed
 
 Awaiting your answers; nothing below is decided.
@@ -55,9 +67,9 @@ Awaiting your answers; nothing below is decided.
 1. **Order, top to bottom:** page title and scope line ("Uses your full history"); the headline (label, sentence, coverage
    paragraph, "How this was counted"); the body-context line when body data exists (its wording is not yet specified); the
    period control; the subject list; small links to Periods and an optional "Add body composition".
-2. **Subject list groups:** **Moved** (Up and Down together, largest change first, so good and bad news sort by size and not
-   by sign), **Not tested since**, **No clear change**, **Fewer than 6 sessions** (facts lines, most recently logged first)
-   and **Not recent**. The last three are collapsed by default with their counts; each row opens to its chart.
-3. **If nothing moved,** the first group reads "No lift or benchmark has moved clearly."
-4. **States:** fewer than 3 counted gives "No headline yet" with the closest subjects; nothing recent gives the existing
+2. **Collapsed by default:** No clear change, Fewer than 6 sessions (facts lines, most recently logged first) and Not
+   recent, each showing its count; Up, Down and Not tested since are open. Each row opens to its chart.
+3. **A move up to RX has no percentage,** so it follows the sized rows in Up, most recent first.
+4. **If neither Up nor Down has rows,** the list opens with "No lift or benchmark has moved clearly." above the collapsed groups.
+5. **States:** fewer than 3 counted gives "No headline yet" with the closest subjects; nothing recent gives the existing
    sentence; body data is optional and never gates the view.

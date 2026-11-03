@@ -387,6 +387,30 @@ reads "Last PR: 17+20 on Aug 1, 2024".
 **A1-PRL-08 A facts-line subject** (2 to 5 sessions) shows the Last PR line as well as its facts line, and a subject that is
 not recent still shows it.
 
+## Subject-list groups (GRP)
+
+Counts are on the bundled sample as of 2026-09-09 (derived, to be confirmed by running). Layout is in
+[`insights-front-door.md`](insights-front-door.md).
+
+**A1-GRP-01 Separate groups, in order.** The groups appear as Up, Down, Not tested since, No clear change, Fewer than 6
+sessions, Not recent. On the sample: Up 8, Down 1, No clear change 5, Fewer than 6 sessions 13, Not recent 20, and no Not
+tested since group.
+
+**A1-GRP-02 Up is sorted by size.** On the sample the order is Power Snatch RX +16.8%, Power Clean RX +13.5%, Push Press RX
++9.5%, Front Squat RX +8.8%, Clean RX +7.5%, Deadlift RX +4.4%, then Fran and Grace.
+
+**A1-GRP-03 Move-ups follow the sized rows.** Fran (first RX session Dec 2025) and Grace (Mar 2026) have no percentage and
+follow Deadlift, most recent move-up first (Grace, then Fran).
+
+**A1-GRP-04 Down is its own group.** Nancy Scaled (6.0% slower, 13:47 to 14:37) is listed alone under "Down 1" and never
+appears in Up. Within Down, the largest fall comes first.
+
+**A1-GRP-05 An empty group is not shown.** With no `down` and no `not tested since` subject, neither heading appears.
+
+**A1-GRP-06 Collapsed by default** (proposed): No clear change, Fewer than 6 sessions and Not recent show their name and
+count only; Up, Down and Not tested since are open. A group's count equals its rows, and the counts follow the "Logged in"
+filter (A1-FLT-06).
+
 ## Front-door filter (FLT)
 
 The filter is described in [`insights-front-door.md`](insights-front-door.md). Counts below are on the bundled sample

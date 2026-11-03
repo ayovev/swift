@@ -67,6 +67,7 @@ vocabularies are never mixed: a subject is never "Improving" and the headline is
 | cross-reference line | "Also logged as RX: ...". Facts about the other status. Counts nothing |
 | Last PR | The subject's best session, with its date |
 | coverage paragraph | The short muted paragraph under the headline sentence |
+| group | A heading on the front-door list: Up, Down, Not tested since, No clear change, Fewer than 6 sessions or Not recent. A group with no rows is not shown |
 | period filter | "Logged in": All, Last month, Last 3 months, Last 6 months, Last year or Custom, on the front door. Chooses which subjects are listed; changes no verdict or headline |
 
 ## Words not to use
