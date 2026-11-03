@@ -482,6 +482,39 @@ list keeps its previous contents. The end date defaults to today.
 **A1-FLT-13 Custom does not touch verdicts.** A subject listed under a custom range that holds 1 session shows the same
 verdict, change and chart it shows under All.
 
+## Body-context sentence (BDY)
+
+The sentence relating body weight to a lift is in [`insights-body-context.md`](insights-body-context.md). Inputs are the
+lift's two bests (estimated 1RM, lb) and body weight at those two sessions; the weight noise band is 3 lb.
+
+**A1-BDY-01 A little.** Front Squat RX 184 to 200 lb (+8.8%), body weight 180 to 183.6 lb (+2.0%, +3.6 lb). Share 2.0 / 8.8 =
+23%. Then "A little of this change is body weight."
+
+**A1-BDY-02 About half.** Same lift, body weight 180 to 185.4 lb (+3.0%). Share 34%. Then "About half of this change is body
+weight."
+
+**A1-BDY-03 Most.** Same lift, body weight 180 to 193 lb (+7.2%). Share 82%. Then "Most of this change is body weight."
+
+**A1-BDY-04 The edges.** A share of exactly 25% reads "About half"; exactly 75% reads "About half"; 76% reads "Most".
+
+**A1-BDY-05 At least as much as the lift.** A lift from 370 to 375 lb (+1.4%) with body weight 180 to 185.4 lb (+3.0%). Then
+"Body weight rose at least as much as the lift (+3.0% vs +1.4%)." No fraction is stated. A lift down 3.0% with body weight
+down 6.0% reads "Body weight fell at least as much as the lift (−6.0% vs −3.0%)."
+
+**A1-BDY-06 The best case.** Front Squat RX 184 to 200 lb, body weight 180 to 176 lb. Then "Body weight fell 4 lb while the lift
+rose: relative to body weight, +11.2%."
+
+**A1-BDY-07 The reverse.** A lift 200 to 188 lb (−6.0%), body weight 180 to 185 lb. Then "Body weight rose 5 lb while the lift
+fell: relative to body weight, −8.5%."
+
+**A1-BDY-08 Inside the noise band.** Body weight 180 to 182 lb (+2 lb, under 3). The line shows the two weights and no
+sentence relating them. A change of exactly 3 lb is inside the band; 3.1 lb is not.
+
+**A1-BDY-09 No sentence for a benchmark,** for a move up to RX, or for Not tested since. The weights still show.
+
+**A1-BDY-10 A small lift change.** The record case in which a lift is Up at +1.5% with body weight +3.0% reads as A1-BDY-05;
+there is no minimum lift change and no 5% floor.
+
 ## Manual checks (MAN)
 
 **A1-MAN-01 Real export.** Run the rules on the real export and confirm the stability figures in the spec are in the
