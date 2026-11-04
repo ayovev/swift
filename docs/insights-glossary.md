@@ -71,7 +71,7 @@ vocabularies are never mixed: a subject is never "Improving" and the headline is
 | entry | One item on the timeline: something the athlete changed or something that happened, with a start date and an optional end date |
 | timeline | The view where entries are added and read. Formerly periods |
 | I changed it / It happened | The two initiations of an entry. Only "I changed it" gets a before/after verdict |
-| domain | Training, Nutrition, Health and recovery, Travel and schedule or Other. Groups entries; drives no rule |
+| domain | Training, Nutrition, Health, Travel or Other. Groups entries; drives no rule |
 | period filter | "Logged in": All, Last month, Last 3 months, Last 6 months, Last year or Custom, on the front door. Chooses which subjects are listed; changes no verdict or headline |
 
 ## Words not to use

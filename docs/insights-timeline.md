@@ -13,10 +13,10 @@ An entry has three independent parts.
 1. **Initiation (required).** **I changed it** (something the athlete chose or decided) or **It happened** (something that came
    to them). It is the only part a rule reads: an "I changed it" entry gets a before/after verdict; an "It happened" entry is
    context only.
-2. **Domain (required), the same five for both:** Training, Nutrition, Health and recovery, Travel and schedule, Other.
+2. **Domain (required), the same five for both:** Training, Nutrition, Health, Travel, Other.
    A domain groups and filters entries and drives no rule.
-3. **Dates.** A **start date** is required. The **end date** is optional: *ended on* a date (not before the start), *still
-   going* (no end yet), or *a single day* (end equals start). The app never invents an end.
+3. **Dates.** A **start date** is required. The **end date** is optional: a date (not before the start) or **ongoing** (no end
+   yet). A single day is an end equal to the start. The app never invents an end.
 
 An entry also has an optional name in the athlete's own words ("Spring cut", "Shoulder tweak") and an optional note.
 
@@ -24,18 +24,18 @@ An entry also has an optional name in the athlete's own words ("Spring cut", "Sh
 | --- | --- | --- |
 | Training | new program, new cycle, deload, a change of focus | a coach changed the plan |
 | Nutrition | cut, bulk, a new diet | |
-| Health and recovery | more sleep, a therapy, a rest week | injury, illness, surgery |
-| Travel and schedule | a planned trip, a new work pattern | a work trip, a move, a family change |
-| Other | anything else | anything else |
+| Health | more sleep, a therapy, a rest week | injury, illness, surgery |
+| Travel | a planned trip | a work trip, two weeks abroad |
+| Other | a new work pattern, anything else | a move, a family change, anything else |
 
-The two axes are independent: a planned holiday and a forced work trip are both Travel and schedule and differ in initiation.
+The two axes are independent: a planned holiday and a forced work trip are both Travel and differ in initiation. Work, family and schedule changes go under Other, with a name.
 
 ### What an open end means
 
 - The "after" side of an "I changed it" verdict runs from the start to the reference date and reads "so far". Its "before" side is
   the sessions immediately before the start, as already decided.
 - Any verdict whose span overlaps the entry gets a note naming it, so an entry left open keeps attaching to every row from its
-  start to today. The entry itself reads "Still going since Mar 2026", which makes it easy to close.
+  start to today. The entry itself reads "Ongoing since Mar 2026", which makes it easy to close.
 
 ### What happens to the old twelve types
 
@@ -43,10 +43,10 @@ The two axes are independent: a planned holiday and a forced work trip are both 
 | --- | --- |
 | cut, bulk, maintain, nutrition | I changed it, Nutrition |
 | programming, cycle, deload | I changed it, Training |
-| recovery | I changed it, Health and recovery |
+| recovery | I changed it, Health |
 | experiment, other | I changed it, Other |
-| injury | It happened, Health and recovery |
-| travel | It happened, Travel and schedule |
+| injury | It happened, Health |
+| travel | It happened, Travel |
 
 Old records are read through this table; nothing needs the athlete's attention.
 
@@ -54,6 +54,27 @@ Old records are read through this table; nothing needs the athlete's attention.
 
 "A decline during a cut is expected" existed because the app could not see body weight. A row now states body weight over its
 span, so the note adds nothing. No type-specific wording or behavior is left.
+
+## Decided: the entry form
+
+One form, classify first. Mockup: the Timeline Entry Form artifact. Cases A1-TLN-11 to A1-TLN-17.
+
+- **Order:** what kind of entry is it; what does it touch; starts; ends; name; note.
+- **Kind:** two cards, each stating its consequence. "Something I changed": "You chose or decided it. It gets a before and after
+  comparison." "Something that happened": "It came to you. It is shown beside your results for context."
+- **Area:** five one-word chips: Training, Nutrition, Health, Travel, Other. "Health and recovery" and "Travel and schedule" were
+  lumped: the kind already separates a chosen change (more sleep) from something that happened (an injury), and a coarse label
+  costs nothing because an area drives no rule.
+- **Ends:** one date field and an **Ongoing** checkbox, ticked at first with the date greyed out. Unticking enables the date, which
+  starts empty. A single day is the start date entered again; no hint says so.
+- **Nothing is pre-selected,** including the start date, so a hasty tap cannot misfile an entry.
+- **Name** is optional. Its placeholder follows the two choices ("e.g. Spring cut" for Something I changed and Nutrition; "e.g.
+  Shoulder tweak" for Something that happened and Health), and reads "e.g. Spring cut, Shoulder tweak, Two weeks abroad" before
+  both are chosen. The placeholders are hints and map to nothing. An unnamed entry reads by its area ("Nutrition").
+- **Note** is optional, up to 200 characters.
+- **Rejected with a plain sentence,** all failing rules listed and nothing saved: "Choose whether you changed it or it happened."
+  "Choose what it touches." "Add a start date." "The start date is after today." "Add an end date, or tick Ongoing." "The end date
+  is before the start date." "The note is over 200 characters."
 
 ## Decided: names, in the app and in the code
 
@@ -73,10 +94,9 @@ span, so the note adds nothing. No type-specific wording or behavior is left.
 
 Awaiting your answers; nothing below is decided.
 
-1. **The UX.** The entry form (two required choices, then dates and an optional name), the timeline view (how entries, open ends and
-   single days are drawn), and how an entry appears beside a verdict. Each is to be mocked up before it is written down.
-2. **An unnamed entry** reads by its domain ("Nutrition").
-3. **What "overlap" means:** the entry's dates intersect the dates from the first session of the previous window to the last session
+1. **The rest of the UX.** The timeline view (how entries, open ends and single days are drawn), the list and the edit and delete
+   paths, and how an entry appears beside a verdict. Each is to be mocked up before it is written down.
+2. **What "overlap" means:** the entry's dates intersect the dates from the first session of the previous window to the last session
    of the recent window.
-4. **`baselineStart`** (a manual start for the "before" side) stays only if it earns its place.
-5. **Focus lifts** on an entry's detail ("what it was"): chosen by the athlete or derived from the sessions inside the span.
+3. **`baselineStart`** (a manual start for the "before" side) stays only if it earns its place.
+4. **Focus lifts** on an entry's detail ("what it was"): chosen by the athlete or derived from the sessions inside the span.

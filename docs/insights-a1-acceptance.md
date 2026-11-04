@@ -587,13 +587,13 @@ dataset.
 Rules are in [`insights-timeline.md`](insights-timeline.md). Reference date 2026-09-11 unless a case says otherwise.
 
 **A1-TLN-01 Required parts.** An entry needs an initiation ("I changed it" or "It happened"), one of the five domains (Training,
-Nutrition, Health and recovery, Travel and schedule, Other) and a start date. Saving without one is rejected with a sentence
+Nutrition, Health, Travel, Other) and a start date. Saving without one is rejected with a sentence
 naming the missing part. The name and the note are optional.
 
-**A1-TLN-02 End date.** An end date of 2026-03-20 on a start of 2026-03-03 is a span. No end date is "still going". An end equal to
+**A1-TLN-02 End date.** An end date of 2026-03-20 on a start of 2026-03-03 is a span. No end date is "ongoing". An end equal to
 the start is a single day. An end of 2026-03-02 on that start is rejected: "The end date is before the start date."
 
-**A1-TLN-03 No automatic end.** An entry started 2026-03-03 with no end, read as of 2026-09-11, shows "Still going since Mar 2026"
+**A1-TLN-03 No automatic end.** An entry started 2026-03-03 with no end, read as of 2026-09-11, shows "Ongoing since Mar 2026"
 and nothing closes it.
 
 **A1-TLN-04 Only "I changed it" gets a verdict.** A Training entry marked "I changed it" shows a before/after verdict. A Health and
@@ -606,7 +606,7 @@ reads "so far"; the "before" side is the sessions immediately before the start.
 a note naming it, for either initiation and any domain. No number, pill, label or count changes with or without the entry.
 
 **A1-TLN-07 Old types are read as new ones.** `bulk` reads as I changed it, Nutrition; `deload` as I changed it, Training; `injury` as
-It happened, Health and recovery; `travel` as It happened, Travel and schedule; `experiment` and `other` as I changed it, Other. A
+It happened, Health; `travel` as It happened, Travel; `experiment` and `other` as I changed it, Other. A
 type the app does not know is rejected.
 
 **A1-TLN-08 No cut note.** An old `cut` entry shows no "a decline is expected" sentence anywhere.
@@ -616,6 +616,30 @@ the name of an entry. The view is called Timeline and an item an entry.
 
 **A1-TLN-10 Old data is kept** (pending: the migration is to be designed). Rows stored under `"context-tags"`, and a backup or sync
 that names the `tags` dataset, load into the timeline with nothing lost; the old key is removed only after the new one reads back.
+
+**A1-TLN-11 Nothing is pre-selected.** Opening the form shows no kind, no area and an empty start date. Ongoing is ticked and the
+end date is greyed out. The name placeholder reads "e.g. Spring cut, Shoulder tweak, Two weeks abroad".
+
+**A1-TLN-12 The placeholder follows the choices.** With Something I changed and Nutrition chosen it reads "e.g. Spring cut"; with
+Something that happened and Health, "e.g. Shoulder tweak". It saves nothing: an empty name saves as absent and the entry reads by
+its area ("Nutrition").
+
+**A1-TLN-13 What each kind says.** The "Something I changed" card reads "You chose or decided it. It gets a before and after
+comparison." The "Something that happened" card reads "It came to you. It is shown beside your results for context."
+
+**A1-TLN-14 The Ongoing control.** Ticking Ongoing greys out the end date and clears it. Unticking enables it, empty. Saving unticked
+with no date is rejected: "Add an end date, or tick Ongoing."
+
+**A1-TLN-15 A single day.** A start of 2026-03-03 with Ongoing unticked and an end of 2026-03-03 saves as a single day. No hint about
+this appears on the form.
+
+**A1-TLN-16 Rejections.** Each failing rule shows its own sentence and nothing is saved: no kind, "Choose whether you changed it or it
+happened."; no area, "Choose what it touches."; no start, "Add a start date."; a start of 2026-09-12, "The start date is after
+today."; an end of 2026-03-02 on a start of 2026-03-03, "The end date is before the start date."; a 201 character note, "The note
+is over 200 characters." With several failing, all their sentences are listed. A start of 2026-09-11 (today) is accepted.
+
+**A1-TLN-17 A valid save.** Something I changed, Nutrition, a start of 2026-03-03, Ongoing, name "  Spring cut  " saves `{ initiation:
+changed, domain: nutrition, start: 2026-03-03, end: none, name: "Spring cut" }` with the name trimmed.
 
 ## Manual checks (MAN)
 
