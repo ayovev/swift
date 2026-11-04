@@ -135,7 +135,7 @@ recent window). Then `record` none although the window change is +8.7%; `state` 
 Without the 2023 session the same eight sessions give `record` = the 200 on 2026-03-30, 8.7% above 184.
 
 **A1-VRD-15 A verdict reads only SugarWOD rows.** Given the sessions of A1-VRD-05 with and without InBody scans,
-bodyweight entries, periods and tags. Then the output is identical.
+weigh-ins and timeline entries. Then the output is identical.
 
 ## Display (DSP)
 
@@ -470,7 +470,7 @@ period.", the "Showing 0 of 45 subjects." line stays, and the headline is unchan
 **A1-FLT-09 Not saved.** Leaving Insights and returning, or reloading, shows All.
 
 **A1-FLT-10 Local to the list.** Choosing a period changes nothing on Overview, Workouts, the domain, modality, Movements
-or Body Comp views, or on Periods, and the scope line still reads "Uses your full history." The date-range control on
+or Body Comp views, or on Timeline, and the scope line still reads "Uses your full history." The date-range control on
 those views keeps its own selection, and this filter does not follow it.
 
 **A1-FLT-11 Custom range** (proposed details). Choosing Custom with 2026-03-01 to 2026-04-30 lists every subject with at
@@ -581,6 +581,41 @@ weigh-ins the section is omitted, and a restore then leaves the local weigh-ins 
 dataset.
 
 **A1-WGH-14 Analytics.** No payload contains a weight, a date or a note. The interaction names are a fixed list.
+
+## Timeline (TLN)
+
+Rules are in [`insights-timeline.md`](insights-timeline.md). Reference date 2026-09-11 unless a case says otherwise.
+
+**A1-TLN-01 Required parts.** An entry needs an initiation ("I changed it" or "It happened"), one of the five domains (Training,
+Nutrition, Health and recovery, Travel and schedule, Other) and a start date. Saving without one is rejected with a sentence
+naming the missing part. The name and the note are optional.
+
+**A1-TLN-02 End date.** An end date of 2026-03-20 on a start of 2026-03-03 is a span. No end date is "still going". An end equal to
+the start is a single day. An end of 2026-03-02 on that start is rejected: "The end date is before the start date."
+
+**A1-TLN-03 No automatic end.** An entry started 2026-03-03 with no end, read as of 2026-09-11, shows "Still going since Mar 2026"
+and nothing closes it.
+
+**A1-TLN-04 Only "I changed it" gets a verdict.** A Training entry marked "I changed it" shows a before/after verdict. A Health and
+recovery entry marked "It happened" shows none, and its detail says it is context only.
+
+**A1-TLN-05 An open entry's verdict.** The "after" side of an open "I changed it" entry runs from its start to the reference date and
+reads "so far"; the "before" side is the sessions immediately before the start.
+
+**A1-TLN-06 A note beside a verdict** (pending: the definition of overlap is proposed). A verdict whose span overlaps an entry shows
+a note naming it, for either initiation and any domain. No number, pill, label or count changes with or without the entry.
+
+**A1-TLN-07 Old types are read as new ones.** `bulk` reads as I changed it, Nutrition; `deload` as I changed it, Training; `injury` as
+It happened, Health and recovery; `travel` as It happened, Travel and schedule; `experiment` and `other` as I changed it, Other. A
+type the app does not know is rejected.
+
+**A1-TLN-08 No cut note.** An old `cut` entry shows no "a decline is expected" sentence anywhere.
+
+**A1-TLN-09 Words.** No copy in the Insights views or the Timeline view contains "period", "tag", "experiment", "cycle" or "block" as
+the name of an entry. The view is called Timeline and an item an entry.
+
+**A1-TLN-10 Old data is kept** (pending: the migration is to be designed). Rows stored under `"context-tags"`, and a backup or sync
+that names the `tags` dataset, load into the timeline with nothing lost; the old key is removed only after the new one reads back.
 
 ## Manual checks (MAN)
 

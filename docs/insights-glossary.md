@@ -68,6 +68,10 @@ vocabularies are never mixed: a subject is never "Improving" and the headline is
 | Last PR | The subject's best session, with its date |
 | coverage paragraph | The short muted paragraph under the headline sentence |
 | group | A heading on the front-door list: Up, Down, Not tested since, No clear change, Fewer than 6 sessions or Not recent. A group with no rows is not shown |
+| entry | One item on the timeline: something the athlete changed or something that happened, with a start date and an optional end date |
+| timeline | The view where entries are added and read. Formerly periods |
+| I changed it / It happened | The two initiations of an entry. Only "I changed it" gets a before/after verdict |
+| domain | Training, Nutrition, Health and recovery, Travel and schedule or Other. Groups entries; drives no rule |
 | period filter | "Logged in": All, Last month, Last 3 months, Last 6 months, Last year or Custom, on the front door. Chooses which subjects are listed; changes no verdict or headline |
 
 ## Words not to use
@@ -80,4 +84,5 @@ vocabularies are never mixed: a subject is never "Improving" and the headline is
 | unchanged | Same problem as flat | No clear change |
 | stalled, plateau | Retired. They implied a cause | No clear change, with the body-context line |
 | aligned, tension | Retired with the alignment view | The counts, and the body-context line on each row |
+| period, tag, experiment, cycle (for an entry) | Retired names. A period implied a closed span; the rest were implementation names | entry, timeline |
 | decline (for Not tested since) | A lighter session mid-cycle is not a decline | Not tested since |

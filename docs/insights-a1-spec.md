@@ -52,7 +52,7 @@ the verdict (for example `no clear change, +3.9%`).
 - The verdict states the window: the dates the sessions cover and `N`.
 - **Recency**: a subject whose latest session is more than 365 days before the reference date (*tunable*) is
   marked not recent; see section 3c.
-- The verdict depends only on SugarWOD rows. It never reads body data, periods or tags.
+- The verdict depends only on SugarWOD rows. It never reads body data or timeline entries.
 
 ### Why best-of-window, 5% and up to 4 sessions
 
@@ -447,8 +447,8 @@ run, not re-run.
 The same function serves every consumer, with only the sessions chosen differently:
 
 - **Subject list and headline**: the most recent sessions of each subject.
-- **Period verdict (D1)**: the period's own sessions as **recent**, and the sessions immediately before
-  the period as **previous**, same window size cap, same threshold, same minimum.
+- **Entry verdict (D1)**: an "I changed it" timeline entry's own sessions as **recent**, and the sessions immediately before
+  its start as **previous**, same window size cap, same threshold, same minimum. An entry with no end runs to the reference date.
 - **Front door "Logged in the last" filter (decided)**: replaces the earlier fixed-period recompute, which was
   measured on the sample and left every row empty (no subject has 6 sessions inside 30, 60 or 90 days). The filter
   chooses which subjects are *listed* and changes no verdict, label, count or paragraph. It applies to the subject

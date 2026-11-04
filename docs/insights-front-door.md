@@ -80,7 +80,7 @@ Top to bottom:
    latest session in the log) and the "How this was counted" link.
 3. **"Logged in" filter** and its "Showing N of 45 subjects." line.
 4. **Subject list,** in the groups above. Body context lives here, on the rows (see below).
-5. **Small links at the bottom:** Periods, and "Add body composition" when there is none.
+5. **Small links at the bottom:** Timeline, and "Add body composition" when there is none.
 
 The order gives the answer first, then the evidence. The filter sits directly above the list it
 filters so it does not read as a control on the headline. No other date is shown near the top. Cases: A1-PGE-01 to

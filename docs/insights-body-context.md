@@ -78,7 +78,7 @@ same change and is validated like every other incoming dataset.
 - **Where:** a "Weigh-ins" panel on the Body Comp view, which is already in the nav before any InBody file is loaded. A date and
   weight form with an optional note, and a list newest first. Manual rows carry edit and delete. InBody scan weights appear
   in the same list, labelled **InBody scan**, read-only; manual rows are labelled **Entered**. Sample mode accepts weigh-ins
-  in memory only, like its periods. No chart and no bulk import in v1.
+  in memory only, like its timeline entries. No chart and no bulk import in v1.
 - **One body-weight series, pooled.** InBody scan weights and weigh-ins together answer "body weight at a date" with the rule above.
   Each point carries its source (`inbody` or `manual`). **On a day with both, the InBody scan is used**; the weigh-in is kept,
   listed as "Not used: an InBody scan the same day", and used again if the scan goes away. Lean and fat mass come from

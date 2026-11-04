@@ -58,17 +58,20 @@ is context for it.
 - **No causal labels.** `plateaued_body_comp`, `plateaued_other`, `aligned` and `tension` are gone.
   "Stalled" is not a state; it is A1's "no clear change". Contradictory signals are stated as two plain facts.
 
-### Periods (was C2, D1, D2)
+### Timeline (was periods; was C2, D1, D2)
 
-- A period's detail view has two parts. **What it was**: its span and its focus lifts (workouts per
+The model, the 12-type replacement and the new names are in [`insights-timeline.md`](insights-timeline.md). An item is an
+**entry** on a **timeline**; this section keeps the original wording of the decisions.
+
+- An entry's detail view has two parts. **What it was**: its span and its focus lifts (workouts per
   week was removed: most athletes train about the same amount, so it helps no one). **What it did**:
   A1's verdict applied to the period, comparing its sessions with the sessions immediately before it,
   with the body-context line beside it, and stating plainly when body data is absent.
 - The verdict needs SugarWOD only. Body composition is **never folded into the verdict**.
-- Injury and travel are context only and get no verdict. A cut keeps its note that a decline is
-  expected. The manual `baselineStart` leaves the normal path and stays only if it earns its place.
-- **Context only, for all period types:** a note naming the period attaches to any verdict (per
-  subject or aggregate) whose sessions overlap it. A period never changes a number or a gate.
+- "It happened" entries (injury, travel and the like) are context only and get no verdict. The cut note is gone, since a row
+  states body weight. The manual `baselineStart` leaves the normal path and stays only if it earns its place.
+- **Context only, for every entry:** a note naming the entry attaches to any verdict (per
+  subject or aggregate) whose sessions overlap it. An entry never changes a number or a gate.
 - Cycle reports and automatic cycle detection are not part of this; detection stays deferred.
 
 ### Front door and subject list (was G1, G2)
@@ -118,10 +121,8 @@ is context for it.
   scheme rule (plateaus count 1/2/3/5RM, the others up to 8 reps), how a subject's relative change
   is signed and averaged into the aggregate, how coverage is stated, and how the aggregate avoids
   leaning toward the lifts the athlete retests most.
-- **Period types**: a strict list (`TAG_GROUPS`) or open-ended? The verdict logic needs only whether a
-  period is something the athlete changed (gets a verdict) or something that happened (context only),
-  plus an optional cut marker. A free-text name could carry the rest. Settle before the period form
-  is rebuilt; it does not block A1.
+- **Entry types**: decided. Initiation (I changed it / It happened) plus five domains replace the 12 types, an end date is
+  optional, and the view is renamed Timeline; see [`insights-timeline.md`](insights-timeline.md). The UX is next.
 - **Filter details** for the front door (the Custom range's bounds and default end date are proposed); the control itself is decided, see [`insights-front-door.md`](insights-front-door.md).
 - **Manual weigh-ins**: decided, see [`insights-body-context.md`](insights-body-context.md) and cases A1-WGH-01 to A1-WGH-14.
 - **Real data**: one real export exists and is not committed. Anything not tested against it stays
