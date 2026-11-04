@@ -63,6 +63,14 @@ clearer than a single list sorted by size, and a Down row gets its own heading i
 - Compared on the bundled sample as of 2026-09-09: Up 8, Down 1 (Nancy Scaled), No clear change 5, Fewer than 6 sessions
   13, Not recent 20. Cases: A1-GRP-01 to A1-GRP-07.
 
+### Body context is on the rows only
+
+There is **no body-context line under the headline.** Body context appears only as the lines under each subject's row
+(see [`insights-body-context.md`](insights-body-context.md)). A headline-level line would count one body weight change once
+per subject, over spans that differ, so it would read as more evidence than it is; it needed a rule for move-ups and four
+extra states of its own, and it restated what the rows already show. The headline stays a strength answer and body
+composition stays out of it. Mockup compared three options (rows only, rows and headline, none) and rows only was chosen.
+
 ### Page order
 
 Top to bottom:
@@ -70,12 +78,11 @@ Top to bottom:
 1. **Title and scope line:** "Insights" and "Uses your full history."
 2. **Headline:** the label, the counts sentence, the coverage paragraph (ending "As of Sep 11, 2026.", the date of the
    latest session in the log) and the "How this was counted" link.
-3. **Body-context line,** only when body data exists. Its wording is not specified yet; the slot is reserved.
-4. **"Logged in" filter** and its "Showing N of 45 subjects." line.
-5. **Subject list,** in the groups above.
-6. **Small links at the bottom:** Periods, and "Add body composition" when there is none.
+3. **"Logged in" filter** and its "Showing N of 45 subjects." line.
+4. **Subject list,** in the groups above. Body context lives here, on the rows (see below).
+5. **Small links at the bottom:** Periods, and "Add body composition" when there is none.
 
-The order gives the answer first, then context for it, then the evidence. The filter sits directly above the list it
+The order gives the answer first, then the evidence. The filter sits directly above the list it
 filters so it does not read as a control on the headline. No other date is shown near the top. Cases: A1-PGE-01 to
 A1-PGE-07.
 
@@ -87,10 +94,9 @@ A1-PGE-07.
 | No headline yet | Fewer than 3 counted subjects | "No headline yet: needs 3 lifts or benchmarks with a verdict, has 0." with the closest subjects (A1-HDL-10); the coverage paragraph and the list still show |
 | Nothing recent | Every subject's latest session is over 365 days ago | "No lift or benchmark was logged in the last 12 months.", no label; the list shows, with every subject under Not recent |
 | No data at all | No lift or benchmark sessions in the log | "No lift or benchmark has been logged yet." No headline, no filter and no list |
-| No body data | No InBody scans and no manual weigh-ins | The body-context line is absent; nothing is gated; "Add body composition" appears in the small links |
+| No body data | No InBody scans and no manual weigh-ins | No row shows a body-context line; nothing is gated; "Add body composition" appears in the small links |
 | Filter returns nothing | The chosen period lists no subjects | "No lift or benchmark was logged in this period."; the headline is unchanged (A1-FLT-08) |
 
 ## What is proposed
 
-Nothing on the front door awaits an answer except the wording of the body-context line, which is settled with body
-context.
+Nothing on the front door awaits an answer.

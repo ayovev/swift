@@ -41,9 +41,10 @@ is context for it.
 
 ### Body context (was A2, A3, B1, B2)
 
-- One **body-context line** sits under a subject's verdict and under the aggregate headline, using
-  whatever body data exists: bodyweight alone, or InBody lean and fat mass. It states what the body
-  did and the athlete draws the conclusion.
+- One **body-context line** sits under a subject's verdict, using whatever body data exists: bodyweight
+  alone, or InBody lean and fat mass. It states what the body did and the athlete draws the conclusion.
+  **There is no body-context line under the aggregate headline** (decided after a three-way mockup): it would
+  count one body weight change per subject over differing spans and restate the rows.
 - For **load-scored lifts only**, when body mass moved by more than scan or scale noise, it also says
   how much of the lift change is mass ("about half of this is mass"). It uses A1's window, not its own.
   Benchmarks get no mass attribution (there is no convention for timed work, and the direction
@@ -88,7 +89,7 @@ is context for it.
 | --- | --- | --- |
 | Compare (A vs B ranges), `compareWindows.ts` | Dropped | An arbitrary pair of ranges has no frame; the real uses are a named change (periods) and a block (periods). "Same season, different years" not pursued: the data is read over a broad range with as little data as necessary. Chart drag-to-select may stay as a way to start a period. |
 | Plateau causal labels | Dropped | Correlation presented as cause on a few scans. Replaced by the body-context line. |
-| Alignment (`aligned` / `tension`) | Dropped | Rolled up the dropped labels; its window and gates were the weakest part. Replaced by the aggregate headline plus body context. |
+| Alignment (`aligned` / `tension`) | Dropped | Rolled up the dropped labels; its window and gates were the weakest part. Replaced by the aggregate headline plus the rows' body context. |
 | Relative-strength section and 365-day window | Folded into body context | Same question as A1 with its own window and gates. |
 | Cycle report | Merged into the period detail | Same record, same engine; its unique parts were volume (dropped) and focus lifts (kept). |
 | Consistency against results | Dropped | A causal claim from correlation on sparse data; volume beside a verdict helps no one. |

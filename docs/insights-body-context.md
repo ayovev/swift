@@ -30,6 +30,14 @@ shown on the row (rounded half away from zero to one decimal), and "lift" means 
   up to RX (the Scaled and RX sessions are not the same task) and for Not tested since (there is no real change to relate).
 - The words never say why a lift changed: they state how two measured changes compare.
 
+## Decided: rows only, no headline line
+
+Body context appears on subject rows and nowhere else on the front door. There is no body-context line under the headline.
+Reasons, from the three-way mockup: a headline line counts one body weight change once per subject over spans that differ,
+needs a rule for move-ups (no pair of bests) and four states of its own, and restates what the rows show; the headline stays a
+strength answer, and body composition stays out of every verdict and label. The cost is that an athlete who opens no row sees
+no body context; the rows in the open groups show it without opening.
+
 ## Decided: what the line compares, what it says first, and which rows show it
 
 1. **What it compares:** body weight at the dates of the two sessions that set the two bests the verdict compares, so

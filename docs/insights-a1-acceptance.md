@@ -418,8 +418,8 @@ clearly." above the collapsed groups, and no Up or Down heading appears.
 
 Layout is in [`insights-front-door.md`](insights-front-door.md). Sample values are as of 2026-09-09.
 
-**A1-PGE-01 Order.** The page reads, top to bottom: title and scope line, headline, body-context line (only with body
-data), "Logged in" filter with its line, subject list, small links.
+**A1-PGE-01 Order.** The page reads, top to bottom: title and scope line, headline, "Logged in" filter with its line,
+subject list, small links. There is no body-context line between the headline and the filter.
 
 **A1-PGE-02 Scope line.** It reads "Uses your full history." under every filter option and every state.
 
@@ -432,7 +432,7 @@ benchmark was logged in the last 12 months." with no label, and every subject is
 **A1-PGE-05 No data at all.** A log with no lift or benchmark sessions reads "No lift or benchmark has been logged yet."
 with no headline, no filter and no list, and the small links still show.
 
-**A1-PGE-06 No body data.** With no scans and no weigh-ins the body-context line is absent, the headline and list are
+**A1-PGE-06 No body data.** With no scans and no weigh-ins no row shows a body-context line, the headline and list are
 unchanged, and the small links include "Add body composition". With body data that link is absent.
 
 **A1-PGE-07 One date near the top.** The only date shown above the list is the "As of" clause at the end of the coverage
@@ -483,6 +483,9 @@ list keeps its previous contents. The end date defaults to today.
 verdict, change and chart it shows under All.
 
 ## Body-context sentence (BDY)
+
+**A1-BDY-00 No headline line.** With body data of any kind the headline shows no body-context line, count or sentence, and
+its label, sentence and coverage paragraph are identical with and without body data.
 
 The sentence relating body weight to a lift is in [`insights-body-context.md`](insights-body-context.md). Inputs are the
 lift's two bests (estimated 1RM, lb) and body weight at those two sessions; the weight noise band is 3 lb.

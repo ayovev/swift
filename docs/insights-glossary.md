@@ -79,5 +79,5 @@ vocabularies are never mixed: a subject is never "Improving" and the headline is
 | Improved, Declined | Past tense reads as a grade on one subject | Up, Down |
 | unchanged | Same problem as flat | No clear change |
 | stalled, plateau | Retired. They implied a cause | No clear change, with the body-context line |
-| aligned, tension | Retired with the alignment view | The counts and the body-context line |
+| aligned, tension | Retired with the alignment view | The counts, and the body-context line on each row |
 | decline (for Not tested since) | A lighter session mid-cycle is not a decline | Not tested since |
