@@ -610,8 +610,8 @@ recovery entry marked "It happened" shows none, and its detail says it is contex
 **A1-TLN-05 An open entry's verdict.** The "after" side of an open "I changed it" entry runs from its start to the reference date and
 reads "so far"; the "before" side is the sessions immediately before the start.
 
-**A1-TLN-06 A note beside a verdict** (pending: the definition of overlap is proposed). A verdict whose span overlaps an entry shows
-a note naming it, for either initiation and any domain. No number, pill, label or count changes with or without the entry.
+**A1-TLN-06 An entry never changes a number.** With or without any entries, every verdict, pill, label, count, coverage paragraph and
+body-context line is identical. Rows carry no entry names.
 
 **A1-TLN-07 Old types are read as new ones.** `bulk` reads as I changed it, Nutrition; `deload` as I changed it, Training; `injury` as
 It happened, Health; `travel` as It happened, Travel; `experiment` and `other` as I changed it, Other. A
@@ -648,6 +648,42 @@ is over 200 characters." With several failing, all their sentences are listed. A
 
 **A1-TLN-17 A valid save.** Something I changed, Nutrition, a start of 2026-03-03, Ongoing, name "  Spring cut  " saves `{ initiation:
 changed, domain: nutrition, start: 2026-03-03, end: none, name: "Spring cut" }` with the name trimmed.
+
+**A1-TLN-18 Stacking.** Entries that overlap in time sit in different lanes; entries that do not overlap may share one. On the
+sample's ten demo entries (derived, to be confirmed by running) First cut (Oct 2023 to Jan 2024) and Started 5/3/1 (Feb 2024 to
+May 2024) do not overlap and may share a lane, and Maintenance block (Nov 2024 to Mar 2025) and Protein-forward diet (Mar 21 2025
+to Jun 2025) do not overlap either. No two entries in one lane overlap.
+
+**A1-TLN-19 Encoding.** An "I changed it" entry is a solid blue bar and an "It happened" entry a dashed outline. The area is not
+written on the bar and appears in the entry's detail.
+
+**A1-TLN-20 Ongoing and single-day entries.** An entry with no end runs to the right edge of the axis with an arrow, and its detail
+reads "Ongoing since Jul 2026". An entry whose end equals its start is a marker of a minimum visible width.
+
+**A1-TLN-21 Which verdict lanes.** One lane for each subject in Up, Down, Not tested since and No clear change, in the front door's
+order, and one for each move up to RX. On the sample 14: Power Snatch, Power Clean, Push Press, Front Squat, Clean, Deadlift, Grace,
+Fran, Nancy (Scaled), Back Squat, Clean & Jerk, Snatch, Shoulder Press, Bench Press. None for Fewer than 6 sessions or Not recent.
+
+**A1-TLN-22 A verdict lane.** Power Snatch is a line from 2023-02-06 (previous best, dark dot) to 2026-03-10 (recent best, blue dot),
+blue, labelled "Up +16.8%". Nancy (Scaled) is red and labelled "Down 6.0% slower". A Not tested since lane is amber. A No clear
+change lane is grey. Grace's lane runs from 2023-10-10 (last Scaled session) to 2026-03-31 (first RX session), labelled "Moved up
+to RX".
+
+**A1-TLN-23 Opening a subject.** Selecting Snatch shows its 32 sessions as dots on the same axis: the previous-window sessions dark,
+the recent-window sessions blue, the rest faint, with the two bests labelled "140 lb" and "141 lb". Selecting another subject closes
+it. A benchmark's faster results are drawn higher.
+
+**A1-TLN-24 Opening an entry.** Selecting "Shoulder tweak" shows Something that happened, Health, Jun 21, 2024 to Jul 8, 2024, its
+note, edit and delete, and no verdict. Selecting "Started 5/3/1" (something I changed) also shows a before and after verdict.
+
+**A1-TLN-25 Range.** As of 2026-09-09, "Last year" starts 2025-09-09 and "Last 6 months" starts 2026-03-09. Entries and lines are
+clipped to the range, and a subject whose two bests both fall outside reads "Outside this range". The range is not saved.
+
+**A1-TLN-26 The link on a row.** A row in Up, Down or Not tested since, and a No clear change row once opened, carries "See on
+timeline". Selecting it opens the Timeline with that subject's sessions shown. Rows in Fewer than 6 sessions and Not recent have no
+link, and no row shows an entry name.
+
+**A1-TLN-27 Words.** The view is titled Timeline, the button reads "Add to timeline", and no copy says "period" or "tag".
 
 ## Manual checks (MAN)
 

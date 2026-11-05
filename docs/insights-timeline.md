@@ -90,13 +90,40 @@ One form, classify first. Mockup: the Timeline Entry Form artifact. Cases A1-TLN
   already is: receive-only, never sent. Both devices need the current build, since an older build rejects a manifest naming a
   dataset it does not know.
 
+## Decided: the Timeline view
+
+Mockup: the Timeline View artifact. Cases A1-TLN-18 to A1-TLN-27. It replaces the earlier plan to write entries on each verdict row
+(a text line naming what was running at each best): on the bundled sample the verdict spans run for years, so most entries overlap
+most rows, and text cannot show that. A timeline can, so **rows carry no entry text** and nothing computes "overlap".
+
+- **One time axis, two bands.** Entries are stacked in lanes on top; the verdicts are lanes below.
+- **Entries.** Each entry is a bar across its dates, labelled with its name (inside the bar if it fits, beside it if not, and to its
+  left if it would run off the right edge). Entries that overlap in time sit in separate lanes, so overlapping spans are visible
+  without any rule. **I changed it** is a solid blue bar; **It happened** is a dashed outline. The area (Training, Nutrition, Health,
+  Travel, Other) appears only in the detail. An ongoing entry runs to the right edge with an arrow. A single day is a marker.
+- **Verdict lanes.** One lane for each subject listed in Up, Down, Not tested since and No clear change, in the front door's order
+  (so none for Fewer than 6 sessions or Not recent), plus a lane for each move up to RX. A lane is a line from the date of the
+  previous best (dark dot) to the date of the recent best (blue dot), coloured by state: blue Up, red Down, amber Not tested since,
+  grey No clear change. The state and change are written beside the line. A move-up is a line from the last Scaled session to the
+  first RX session, labelled "Moved up to RX".
+- **Opening a subject.** Selecting a verdict lane shows that subject's sessions as dots on the same axis: previous-window sessions dark,
+  recent-window sessions blue, the others faint, each dot the best result of a day, the two bests labelled with their values. A
+  benchmark's faster results are drawn higher. One subject is open at a time.
+- **Opening an entry** shows its kind, area, dates ("ongoing" when it has no end), note, and edit and delete. An "I changed it" entry
+  also shows its before and after verdict (designed separately); an "It happened" entry shows none.
+- **Range:** All, Last year, Last 6 months, ending today. Not saved. Entries and lines are clipped to the range; a subject wholly outside
+  it reads "Outside this range".
+- **Add to timeline** opens the entry form.
+- **On the front door,** each row that has a verdict or a move-up (the rows in Up, Down and Not tested since, and a No clear change row
+  when opened) carries a small **See on timeline** link that opens the Timeline with that subject's sessions already shown. A row
+  carries no entry names. Fewer than 6 sessions and Not recent rows carry no link.
+- **An entry never changes a number:** adding, editing or deleting one changes no verdict, pill, label, count or body-context line.
+
 ## Proposed
 
 Awaiting your answers; nothing below is decided.
 
-1. **The rest of the UX.** The timeline view (how entries, open ends and single days are drawn), the list and the edit and delete
-   paths, and how an entry appears beside a verdict. Each is to be mocked up before it is written down.
-2. **What "overlap" means:** the entry's dates intersect the dates from the first session of the previous window to the last session
-   of the recent window.
+1. **The entry's own before and after verdict** (an "I changed it" entry's detail): what it compares and how it is shown.
+2. **The list view and the edit and delete paths** for entries.
 3. **`baselineStart`** (a manual start for the "before" side) stays only if it earns its place.
 4. **Focus lifts** on an entry's detail ("what it was"): chosen by the athlete or derived from the sessions inside the span.
