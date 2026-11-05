@@ -79,8 +79,8 @@ Top to bottom:
 2. **Headline:** the label, the counts sentence, the coverage paragraph (ending "As of Sep 11, 2026.", the date of the
    latest session in the log) and the "How this was counted" link.
 3. **"Logged in" filter** and its "Showing N of 45 subjects." line.
-4. **Subject list,** in the groups above. Body context lives here, on the rows (see below). Each row with a verdict or a move-up
-   carries a small **See on timeline** link (see [`insights-timeline.md`](insights-timeline.md), A1-TLN-26).
+4. **Subject list,** in the groups above. Body context lives here, on the rows (see below). A closed row carries no link: the
+   **See on timeline** link sits inside an opened row, under its chart (see [`insights-timeline.md`](insights-timeline.md), A1-TLN-26).
 5. **Small links at the bottom:** Timeline, and "Add body composition" when there is none.
 
 The order gives the answer first, then the evidence. The filter sits directly above the list it

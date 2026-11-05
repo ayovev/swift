@@ -679,9 +679,9 @@ note, edit and delete, and no verdict. Selecting "Started 5/3/1" (something I ch
 **A1-TLN-25 Range.** As of 2026-09-09, "Last year" starts 2025-09-09 and "Last 6 months" starts 2026-03-09. Entries and lines are
 clipped to the range, and a subject whose two bests both fall outside reads "Outside this range". The range is not saved.
 
-**A1-TLN-26 The link on a row.** A row in Up, Down or Not tested since, and a No clear change row once opened, carries "See on
-timeline". Selecting it opens the Timeline with that subject's sessions shown. Rows in Fewer than 6 sessions and Not recent have no
-link, and no row shows an entry name.
+**A1-TLN-26 The link in an opened row.** A closed row shows no link and no entry name. Opening Front Squat shows its chart and, under it,
+"See on timeline"; selecting it opens the Timeline with Front Squat's sessions already shown. A subject with a facts line (Fewer than
+6 sessions) or a Not recent subject opens to its chart with no link, because it has no lane on the Timeline.
 
 **A1-TLN-27 Words.** The view is titled Timeline, the button reads "Add to timeline", and no copy says "period" or "tag".
 
