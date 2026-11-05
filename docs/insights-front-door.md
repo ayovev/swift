@@ -60,8 +60,8 @@ clearer than a single list sorted by size, and a Down row gets its own heading i
 - **A move up to RX has no percentage,** so it follows the sized rows in Up, most recent first.
 - **If neither Up nor Down has rows,** the list opens with "No lift or benchmark has moved clearly." above the collapsed
   groups.
-- Compared on the bundled sample as of 2026-09-09: Up 8, Down 1 (Nancy Scaled), No clear change 5, Fewer than 6 sessions
-  13, Not recent 20. Cases: A1-GRP-01 to A1-GRP-07.
+- Compared on the bundled sample as of 2026-09-09: Up 8 (including the 2 move-ups to RX), Down 1 (Nancy (Scaled)), No clear
+  change 5, Fewer than 6 sessions 11, Not recent 20; these add to 45. Cases: A1-GRP-01 to A1-GRP-07.
 
 ### Body context is on the rows only
 

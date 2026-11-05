@@ -261,8 +261,8 @@ or benchmark was logged in the last 12 months." and shows no label.
 
 ## Headline (HDL)
 
-**A1-HDL-01 The label.** Counts (up / no clear change / down → label): 3 / 3 / 1 → `Improving`; 2 / 5 / 0 → `Holding
-steady` (net +0.29 but 29% up); 1 / 2 / 0 → `Improving` (exactly a third up); 1 / 3 / 0 → `Steady`; 5 / 0 / 1 →
+**A1-HDL-01 The label.** Counts (up / no clear change / down → label): 3 / 3 / 1 → `Improving`; 2 / 5 / 0 → `Steady`
+(net +0.29 but 29% up); 1 / 2 / 0 → `Improving` (exactly a third up); 1 / 3 / 0 → `Steady`; 5 / 0 / 1 →
 `Improving`; 0 / 5 / 2 → `Steady` (29% down); 1 / 1 / 4 → `Declining`; 1 / 0 / 3 → `Declining`; 3 / 3 / 3 →
 `Steady`; 6 / 5 / 1 → `Improving`. Two counted subjects give no label.
 
@@ -271,8 +271,8 @@ and benchmarks (5 no clear change, 1 down)." A zero part is dropped: 5 up and 1 
 lifts and benchmarks (1 down)."; 4 up of 4 reads "Improving in 4 of 4 lifts and benchmarks."
 
 **A1-HDL-03 The counts sentence, other labels.** `Declining` with 1 up, 4 no clear change and 4 down of 9 reads "Declining in 4 of
-9 lifts and benchmarks (4 no clear change, 1 up)." `Steady` with 2 up and 5 no clear change of 7 reads "Holding
-steady across 7 lifts and benchmarks (2 up, 5 no clear change)."; with 3 up, 6 no clear change and 2 down of 11 it reads
+9 lifts and benchmarks (4 no clear change, 1 up)." `Steady` with 2 up and 5 no clear change of 7 reads "Steady
+across 7 lifts and benchmarks (2 up, 5 no clear change)."; with 3 up, 6 no clear change and 2 down of 11 it reads
 "Steady across 11 lifts and benchmarks (3 up, 6 no clear change, 2 down)." A zero part is dropped.
 
 **A1-HDL-04 The paragraph, full sample** (as of 2026-09-11). Then "Includes 2 that moved up to RX. Left out: 31 with
@@ -401,7 +401,7 @@ Counts are on the bundled sample as of 2026-09-09 (derived, to be confirmed by r
 [`insights-front-door.md`](insights-front-door.md).
 
 **A1-GRP-01 Separate groups, in order.** The groups appear as Up, Down, Not tested since, No clear change, Fewer than 6
-sessions, Not recent. On the sample: Up 8, Down 1, No clear change 5, Fewer than 6 sessions 13, Not recent 20, and no Not
+sessions, Not recent. On the sample: Up 8, Down 1, No clear change 5, Fewer than 6 sessions 11, Not recent 20 (the 2 move-ups to RX are in Up, so the counts add to 45), and no Not
 tested since group.
 
 **A1-GRP-02 Up is sorted by size.** On the sample the order is Power Snatch +16.8%, Power Clean +13.5%, Push Press +9.5%,
