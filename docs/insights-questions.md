@@ -125,6 +125,9 @@ The model, the 12-type replacement and the new names are in [`insights-timeline.
   optional, and the view is renamed Timeline; see [`insights-timeline.md`](insights-timeline.md). The UX is next.
 - **Filter details** for the front door (the Custom range's bounds and default end date are proposed); the control itself is decided, see [`insights-front-door.md`](insights-front-door.md).
 - **Manual weigh-ins**: decided, see [`insights-body-context.md`](insights-body-context.md) and cases A1-WGH-01 to A1-WGH-14.
+- **Merging RX and Scaled for lifts**: open. A lift is measured by the load lifted and the estimate does not read the RX flag, and splitting halves
+  the sessions of an athlete who switches; but merging would reverse the decision that a move up to RX counts as Up, and it makes no
+  sense for benchmarks. Names are decided separately: RX is unmarked and Scaled reads "(Scaled)" (A1-DSP-09). Settle on the real export (A1-MAN-01).
 - **Real data**: one real export exists and is not committed. Anything not tested against it stays
   labelled as unvalidated.
 

@@ -13,7 +13,9 @@ at the end).
 - **Sessions** are written `date value`. For lifts the value is the **estimated 1RM in pounds**, supplied
   directly, so a verdict case does not depend on the estimator (the estimator has its own cases). `*` marks a
   max effort (the workout text names an explicit rep max or a rep ladder). Benchmarks are in seconds, shown as
-  `m:ss`. A subject is RX unless a case says otherwise.
+  `m:ss`. A subject is RX unless a case says otherwise. In a case's inputs a subject is written with its status
+  ("Front Squat RX", "Nancy Scaled") so the status is explicit; **on screen RX is unmarked and Scaled reads "(Scaled)"**
+  (A1-DSP-09).
 - **Rounding.** A percentage is rounded half away from zero to one decimal before it meets a threshold.
   Pounds are rounded half away from zero to a whole pound. Times to the second.
 - **A verdict has these outputs:** `state` (`up`, `no clear change`, `not tested since`, `down`, `not enough
@@ -169,10 +171,16 @@ follows the unrounded rule (here `no clear change`).
 **A1-DSP-08 Long gap.** A recent window from 2024-01-18 to 2026-03-10 (782 days) shows "Recent sessions span 26 months
 (Jan 2024 to Mar 2026)." One of 21 months shows no note. The `state` is unchanged in both.
 
+**A1-DSP-09 Display names.** RX is unmarked and Scaled is the only qualifier. A Back Squat RX subject with no Scaled twin reads "Back
+Squat". Fran with both statuses shows two rows, "Fran" and "Fran (Scaled)". Nancy, logged only as Scaled, reads "Nancy (Scaled)".
+The same names appear on rows, in the facts line, on charts, on the timeline and in "How this was counted". Subjects are still
+separate underneath: sorting, filtering and counting use the status, never the display name, and "Also logged as RX: ..." and "Also
+logged as Scaled: ..." are unchanged. A move up to RX reads "Fran: Moved up to RX in Dec 2025, after 3 Scaled sessions."
+
 ## Facts line (FCT)
 
 **A1-FCT-01 2 to 5 sessions.** Given Hang Power Clean RX with 5 sessions, the last two 2026-03-10 175 and 2026-08-19
-185. Then the line reads "Hang Power Clean (RX): 5 sessions. Latest 185 lb est. (Aug 2026), previous 175 lb est. (Mar
+185. Then the line reads "Hang Power Clean: 5 sessions. Latest 185 lb est. (Aug 2026), previous 175 lb est. (Mar
 2026), +10 lb. Needs 1 more session for a verdict." It shows no verdict word, no percentage and no pill, and is not
 counted in the headline.
 
@@ -182,7 +190,7 @@ counted in the headline.
 more sessions for a verdict."; in the no-headline part "Closest: Back Squat, 1 more session; Clean, 2 more." (only the first
 item spells out "session"). The data holds `{ has, needs }`; no screen shows "(has 5, needs 6)".
 
-**A1-FCT-03 A single session** reads "Back Pause Squat (RX): 1 session (Sep 2023). Needs 5 more sessions for a
+**A1-FCT-03 A single session** reads "Back Pause Squat: 1 session (Sep 2023). Needs 5 more sessions for a
 verdict." with no comparison.
 
 **A1-FCT-04 A time benchmark.** Given Fran Scaled 2023-01-16 456 s, 2023-04-11 392 s, 2025-05-19 457 s. Then "Fran
@@ -396,13 +404,13 @@ Counts are on the bundled sample as of 2026-09-09 (derived, to be confirmed by r
 sessions, Not recent. On the sample: Up 8, Down 1, No clear change 5, Fewer than 6 sessions 13, Not recent 20, and no Not
 tested since group.
 
-**A1-GRP-02 Up is sorted by size.** On the sample the order is Power Snatch RX +16.8%, Power Clean RX +13.5%, Push Press RX
-+9.5%, Front Squat RX +8.8%, Clean RX +7.5%, Deadlift RX +4.4%, then Fran and Grace.
+**A1-GRP-02 Up is sorted by size.** On the sample the order is Power Snatch +16.8%, Power Clean +13.5%, Push Press +9.5%,
+Front Squat +8.8%, Clean +7.5%, Deadlift +4.4%, then Grace and Fran.
 
 **A1-GRP-03 Move-ups follow the sized rows.** Fran (first RX session Dec 2025) and Grace (Mar 2026) have no percentage and
 follow Deadlift, most recent move-up first (Grace, then Fran).
 
-**A1-GRP-04 Down is its own group.** Nancy Scaled (6.0% slower, 13:47 to 14:37) is listed alone under "Down 1" and never
+**A1-GRP-04 Down is its own group.** Nancy (Scaled) (6.0% slower, 13:47 to 14:37) is listed alone under "Down 1" and never
 appears in Up. Within Down, the largest fall comes first.
 
 **A1-GRP-05 An empty group is not shown.** With no `down` and no `not tested since` subject, neither heading appears.
@@ -644,7 +652,8 @@ changed, domain: nutrition, start: 2026-03-03, end: none, name: "Spring cut" }` 
 ## Manual checks (MAN)
 
 **A1-MAN-01 Real export.** Run the rules on the real export and confirm the stability figures in the spec are in the
-same range before any threshold is trusted. Count the Scaled Load rows and the Scaled-to-RX moves.
+same range before any threshold is trusted. Count the Scaled Load rows and the Scaled-to-RX moves, and note which lift verdicts would change if RX and Scaled of one
+lift were merged (an open question; the sample cannot settle it, since its two Scaled lifts have one session each).
 
 **A1-MAN-02 Units.** Confirm on the real export that a lift the athlete logs in kilograms appears in pounds in the file.
 

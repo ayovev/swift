@@ -39,7 +39,7 @@ vocabularies are never mixed: a subject is never "Improving" and the headline is
 
 | Term | Means |
 | --- | --- |
-| subject | One lift or benchmark; RX and Scaled are separate subjects. In copy: "lift" or "benchmark" |
+| subject | One lift or benchmark; RX and Scaled are separate subjects. In copy: "lift" or "benchmark". RX is unmarked and Scaled reads "(Scaled)", as in "Back Squat", "Nancy (Scaled)" |
 | session | One subject on one day (the day's best) |
 | window | The recent sessions and the sessions before them, shown as "Last 4" and "Previous 4" |
 | verdict | A subject's state plus its change (section 2 of the spec) |

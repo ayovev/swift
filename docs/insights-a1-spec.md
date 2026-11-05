@@ -197,7 +197,7 @@ it gets a facts line, which states what was logged and claims nothing about dire
   subject's own unit, and the shortfall. Lifts show estimated 1RM, labelled as an estimate, in pounds.
   Time benchmarks show the logged time with "faster" or "slower". A Rounds + Reps benchmark shows both
   scores, and a difference in reps only where reps per round is known (Cindy: 30).
-  Example: "Hang Power Clean (RX): 5 sessions. Latest 185 lb est. (Aug 2026), previous 175 lb est.
+  Example: "Hang Power Clean: 5 sessions. Latest 185 lb est. (Aug 2026), previous 175 lb est.
   (Mar 2026), +10 lb. Needs 1 more session for a verdict."
 - **What it never shows:** a verdict word (`up`, `no clear change`, `down`), a percentage, or a pill.
   It adds nothing to the headline counts, the label or the "eligible" figure; the "Left out"
@@ -293,6 +293,11 @@ Acceptance cases: `A1-REC` in [`insights-a1-acceptance.md`](insights-a1-acceptan
   paragraph counts such subjects (section 4).
 
 Acceptance cases: `A1-DSP` in [`insights-a1-acceptance.md`](insights-a1-acceptance.md) (display).
+
+- **Display names (decided):** RX is the standard and unmarked; Scaled is the only qualifier, written "(Scaled)". "Back Squat", "Fran",
+  "Nancy (Scaled)". RX and Scaled stay separate subjects underneath, so a movement with both shows two rows ("Fran", "Fran (Scaled)").
+  Merging RX and Scaled for lifts (a lift is measured by the load lifted) stays an open question for the real export (A1-MAN-01).
+  Cases: A1-DSP-09.
 
 ## 3e. The evidence chart (decided)
 
