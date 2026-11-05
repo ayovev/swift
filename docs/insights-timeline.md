@@ -119,14 +119,15 @@ most rows, and text cannot show that. A timeline can, so **rows carry no entry t
   The Timeline is that chart drawn with the entries on the same axis, which is why the link sits there. A row with a facts line
   (Fewer than 6 sessions) or a Not recent row has no lane and its opened chart carries no link. Chosen over a small icon on every row
   (one glyph and a second tap target per row), and not hidden until hover, which would be invisible on touch.
+  **A move-up row does not open:** its Scaled and RX sessions are different tasks, so a chart of them would not be like for like. It has
+  a lane on the Timeline but no link from the front door.
 - **An entry never changes a number:** adding, editing or deleting one changes no verdict, pill, label, count or body-context line.
 
 ## Proposed
 
 Awaiting your answers; nothing below is decided.
 
-1. **What a move-up row opens to.** It has a lane on the Timeline, but its own chart is not specified.
-2. **The entry's own before and after verdict** (an "I changed it" entry's detail): what it compares and how it is shown.
-3. **The list view and the edit and delete paths** for entries.
-4. **`baselineStart`** (a manual start for the "before" side) stays only if it earns its place.
-5. **Focus lifts** on an entry's detail ("what it was"): chosen by the athlete or derived from the sessions inside the span.
+1. **The entry's own before and after verdict** (an "I changed it" entry's detail): what it compares and how it is shown.
+2. **The list view and the edit and delete paths** for entries.
+3. **`baselineStart`** (a manual start for the "before" side) stays only if it earns its place.
+4. **Focus lifts** on an entry's detail ("what it was"): chosen by the athlete or derived from the sessions inside the span.

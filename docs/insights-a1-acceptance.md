@@ -681,7 +681,7 @@ clipped to the range, and a subject whose two bests both fall outside reads "Out
 
 **A1-TLN-26 The link in an opened row.** A closed row shows no link and no entry name. Opening Front Squat shows its chart and, under it,
 "See on timeline"; selecting it opens the Timeline with Front Squat's sessions already shown. A subject with a facts line (Fewer than
-6 sessions) or a Not recent subject opens to its chart with no link, because it has no lane on the Timeline.
+6 sessions) or a Not recent subject opens to its chart with no link, because it has no lane on the Timeline. A move-up row (Fran) does not open and has no link.
 
 **A1-TLN-27 Words.** The view is titled Timeline, the button reads "Add to timeline", and no copy says "period" or "tag".
 
