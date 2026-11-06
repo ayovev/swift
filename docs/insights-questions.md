@@ -129,7 +129,8 @@ The model, the 12-type replacement and the new names are in [`insights-timeline.
 - **Merging RX and Scaled for lifts**: open. A lift is measured by the load lifted and the estimate does not read the RX flag, and splitting halves
   the sessions of an athlete who switches; but merging would reverse the decision that a move up to RX counts as Up, and it makes no
   sense for benchmarks. Names are decided separately: RX is unmarked and Scaled reads "(Scaled)" (A1-DSP-09). Settle on the real export (A1-MAN-01).
-- **Real-export check**: written, see [`insights-real-export-check.md`](insights-real-export-check.md); run on the bundled sample only.
+- **Real-export check**: written and run on the athlete's own export, see [`insights-real-export-check.md`](insights-real-export-check.md). That export is the
+  same athlete as the bundled sample, so the thresholds are still validated on one athlete; a second athlete's export would be the next check.
 - **Real data**: one real export exists and is not committed. Anything not tested against it stays
   labelled as unvalidated.
 

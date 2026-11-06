@@ -1,6 +1,6 @@
 # Real-export check
 
-**Status: written, run on the bundled sample only.** A local script that runs the A1 rules on an athlete's own SugarWOD export (and
+**Status: written and run once on the athlete's own export (2026-11-06); see "First run" below.** A local script that runs the A1 rules on an athlete's own SugarWOD export (and
 optionally an InBody export) and prints what the spec's thresholds do on that data. It is the only validation the thresholds will
 get: the bundled sample is one synthetic-extended athlete, and the one real export is not in the repo. It covers cases A1-MAN-01 and
 A1-MAN-02 and the checks the later decisions added.
@@ -51,3 +51,35 @@ often on the real history.
 - It does not run the flat-athlete simulation behind the spec's false-Up figures; the shuffle test is its version on the athlete's own data.
 - It does not read manual weigh-ins (not built) or the browser's saved timeline entries; entries are passed in by hand.
 - It reports; it never changes a threshold. A finding goes back into the spec as a decision.
+
+## First run: the athlete's own export (2026-11-06)
+
+A SugarWOD export of 1,279 rows (2022-11-21 to 2026-11-04) and an InBody export of 9 scans. **The workouts file contains every unique row of
+the bundled sample plus 70 newer ones, so it is the same athlete as the sample, two months later.** The run is therefore not an independent
+check: the thresholds are still validated on one athlete. Figures only; no names or training content are recorded here, and the export was
+not copied into the repository.
+
+| Check | Result |
+| --- | --- |
+| Subjects | 45; 14 with 6 or more sessions |
+| Groups | Up 9 (2 move-ups to RX), Down 1, Not tested since 2, No clear change 4, Fewer than 6 sessions 13, Not recent 16 |
+| Headline | Improving in 9 of 14 lifts and benchmarks (4 no clear change, 1 down) |
+| Load rows unused | 277 of 571 (49%): 212 no readable rep scheme, 15 outside 1 to 8 reps, 50 no lift named |
+| Max efforts | 91 of 286 lift sessions (32%) |
+| Stability | one more session changed the verdict in 50 of 173 cases (29%), the same as the sample |
+| Shuffle test | real history Up 50%, Down 7%, Not tested since 14%; the same values shuffled in time Up 34%, Down 14%, Not tested since 8% |
+| RX and Scaled for lifts | 2 lifts logged both ways, 1 Scaled session each; merging changes nothing, so the question cannot be settled on this data |
+| Body context (9 InBody scans, median gap 120 days) | 3 of 14 verdict rows have body weight near both bests; 11 would read "No body weight within 21 days"; none of the 3 moved past the 3 lb band |
+
+**Confirmed by the athlete:** the largest estimated 1RMs are in pounds (A1-MAN-02), and the two lifts that read Not tested since are
+mid-cycle with no max effort yet, which is the case the state is for.
+
+**What it shows**
+- **The verdict rules behave on the athlete's real history as they did on the sample:** the stability figure is unchanged at 29%, the new
+  sessions moved some subjects between groups (two lifts became Not tested since) and the headline moved from 8 of 14 to 9 of 14.
+- **Up separates from noise, modestly.** 50% against 34% shuffled is a 16 point gap on 14 subjects. About a third of shuffled histories
+  read Up, because three of the seven sized Ups are record-only (+2.5% to +3.0%): the record rule's cost, already known from the
+  flat-athlete simulation, now seen on real data.
+- **The body-context line will be mostly empty on InBody alone.** Scans months apart reach both bests for about a fifth of rows. This is the
+  case for manual weigh-ins.
+- **Open:** thresholds on a second athlete, and the RX and Scaled merge for lifts, which needs an athlete who logs Scaled lifts.
