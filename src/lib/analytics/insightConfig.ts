@@ -104,7 +104,7 @@ export const RS_MAX_NEAREST_SCAN_DAYS = 21;
 
 // ── Progress verdict (insights/) ────────────────────────────────────────
 // The one real-change rule for a lift or benchmark. All tunable; the reasoning and the measurements behind each value are in
-// tests/progressVerdict.test.ts (the cases) and are checked against an export with `npm run check:export`.
+// tests/progressVerdict.test.ts (the cases).
 
 /** Sessions each side of a verdict needs, so a subject needs twice this many. Fewer gives a facts line, not a weaker verdict. */
 export const PV_MIN_SESSIONS_PER_SIDE = 3;

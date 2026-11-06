@@ -273,7 +273,6 @@ Read each file's header comment before changing it; the cases are `tests/progres
   reference date, always passed in and never read from the clock.
 - **`display.ts`**, **`bodyContext.ts`**, **`period.ts`**, **`chart.ts`**: the words (RX unmarked, Scaled as a qualifier), the body-context lines,
   the "Logged in" filter and the evidence chart's numbers. Body composition never feeds a verdict or a count.
-- `npm run check:export` (`scripts/realExportCheck/`) runs the engine over an export you point it at and prints counts. Exports stay out of the repo.
 
 The InBody noise band (`bodyCompNoise.ts`) is the one older pipeline that remains: `weightBandLb` uses it to decide whether a body-weight change
 is "within normal scan variation".
