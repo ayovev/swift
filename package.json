@@ -19,7 +19,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:export": "vitest run tests/realExportCheck.test.ts --reporter=verbose"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

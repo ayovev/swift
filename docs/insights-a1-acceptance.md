@@ -738,11 +738,12 @@ as the subjects in its before and after list or its facts lines.
 
 ## Manual checks (MAN)
 
-**A1-MAN-01 Real export.** Run the rules on the real export and confirm the stability figures in the spec are in the
-same range before any threshold is trusted. Count the Scaled Load rows and the Scaled-to-RX moves, and note which lift verdicts would change if RX and Scaled of one
+**A1-MAN-01 Real export.** Run `SWIFT_EXPORT=... npm run check:export` ([`insights-real-export-check.md`](insights-real-export-check.md)) on the
+real export and confirm the stability figures in the spec are in the same range before any threshold is trusted. Count the Scaled Load rows and the Scaled-to-RX moves, and note which lift verdicts would change if RX and Scaled of one
 lift were merged (an open question; the sample cannot settle it, since its two Scaled lifts have one session each).
 
-**A1-MAN-02 Units.** Confirm on the real export that a lift the athlete logs in kilograms appears in pounds in the file.
+**A1-MAN-02 Units.** Confirm on the real export that a lift the athlete logs in kilograms appears in pounds in the file (section 4 of the report
+lists the largest estimated 1RM per lift for this check).
 
 ## Open points
 

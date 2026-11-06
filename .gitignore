@@ -26,3 +26,6 @@ coverage/
 # vercel
 .vercel
 .gstack/
+
+# real exports and anything derived from them: never committed
+private/
