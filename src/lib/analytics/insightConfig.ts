@@ -77,7 +77,7 @@ export const DEFAULT_NOISE_BAND: Record<BodyCompMetric, number> = {
   bodyFatPct: 1.5,
 };
 
-// ── Relative strength (relativeStrength.ts) ─────────────────────────────
+// ── Rep schemes and body-weight readings (insights/) ────────────────────
 
 /**
  * Highest rep scheme an e1RM is estimated from. The export carries the top
@@ -85,18 +85,18 @@ export const DEFAULT_NOISE_BAND: Record<BodyCompMetric, number> = {
  * an estimate from one set; above ~8 reps the 1RM formulas diverge badly.
  * Tunable.
  */
-export const RS_MAX_REPS = 8;
+export const PV_MAX_REPS = 8;
 
 /**
- * Two scans bracketing a session are interpolated between only when they are
+ * Two readings bracketing a session are interpolated between only when they are
  * no further apart than this (days). Beyond it the body may well have
  * changed non-linearly between them, so the session falls back to the
- * nearest scan or stays unmatched. Tunable.
+ * nearest reading or stays without one. Tunable.
  */
-export const RS_MAX_INTERPOLATION_GAP_DAYS = 45;
+export const PV_BODY_INTERPOLATION_GAP_DAYS = 45;
 
-/** A session with no bracketing pair uses its nearest scan only if it is within this many days; else unmatched, never extrapolated. Tunable. */
-export const RS_MAX_NEAREST_SCAN_DAYS = 21;
+/** A session with no bracketing pair uses its nearest reading only if it is within this many days; else none, never extrapolated. Tunable. */
+export const PV_BODY_NEAREST_READING_DAYS = 21;
 
 // ── Window comparison (compareWindows.ts) ───────────────────────────────
 

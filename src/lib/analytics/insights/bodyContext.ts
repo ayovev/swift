@@ -3,7 +3,7 @@
  * bests, and how that compares with the lift. They never say why a lift changed, and they never change a verdict, a count or a label.
  *
  * Body weight at a date: that day's reading, else a straight line between the readings either side if they are no further apart than
- * `RS_MAX_INTERPOLATION_GAP_DAYS`, else the nearest reading within `RS_MAX_NEAREST_SCAN_DAYS`, else none; never extrapolated. A change
+ * `PV_BODY_INTERPOLATION_GAP_DAYS`, else the nearest reading within `PV_BODY_NEAREST_READING_DAYS`, else none; never extrapolated. A change
  * smaller than the noise band (`bodyCompNoise.ts`, a 3 lb default) is "within normal scan variation".
  *
  * The sentence relating body weight to a load-scored lift (never a benchmark, a move up to RX or a not-tested-since lift), when body
@@ -13,7 +13,7 @@
  *   gives a share that swings with the next session;
  *   the other way: "Body weight fell 4 lb while the lift rose: relative to body weight, +11.2%."
  */
-import { RS_MAX_INTERPOLATION_GAP_DAYS, RS_MAX_NEAREST_SCAN_DAYS } from "../insightConfig";
+import { PV_BODY_INTERPOLATION_GAP_DAYS, PV_BODY_NEAREST_READING_DAYS } from "../insightConfig";
 import { monthYear } from "./display";
 import type { ProgressSubject } from "./sessions";
 import type { InBodyRow } from "@/types/inbody";
@@ -38,13 +38,13 @@ export function valueAt(date: string, readings: readonly BodyReading[], field: F
   if (exact) return exact[field] as number;
   const before = [...series].reverse().find((r) => dayNumber(r.date) < d);
   const after = series.find((r) => dayNumber(r.date) > d);
-  if (before && after && dayNumber(after.date) - dayNumber(before.date) <= RS_MAX_INTERPOLATION_GAP_DAYS) {
+  if (before && after && dayNumber(after.date) - dayNumber(before.date) <= PV_BODY_INTERPOLATION_GAP_DAYS) {
     const f = (d - dayNumber(before.date)) / (dayNumber(after.date) - dayNumber(before.date));
     return (before[field] as number) + ((after[field] as number) - (before[field] as number)) * f;
   }
   let nearest: BodyReading | null = null;
   for (const r of series) if (!nearest || Math.abs(dayNumber(r.date) - d) < Math.abs(dayNumber(nearest.date) - d)) nearest = r;
-  return nearest && Math.abs(dayNumber(nearest.date) - d) <= RS_MAX_NEAREST_SCAN_DAYS ? (nearest[field] as number) : null;
+  return nearest && Math.abs(dayNumber(nearest.date) - d) <= PV_BODY_NEAREST_READING_DAYS ? (nearest[field] as number) : null;
 }
 
 const MINUS = "−";
@@ -77,7 +77,7 @@ export function bodyContextLines(input: BodyContextInput, readings: readonly Bod
   const a = valueAt(input.from, readings, "weightLb");
   const b = valueAt(input.to, readings, "weightLb");
   if (a === null || b === null) {
-    return { first: `No body weight within ${RS_MAX_NEAREST_SCAN_DAYS} days of ${monthYear(a === null ? input.from : input.to)}.`, relation: null };
+    return { first: `No body weight within ${PV_BODY_NEAREST_READING_DAYS} days of ${monthYear(a === null ? input.from : input.to)}.`, relation: null };
   }
   const delta = b - a;
   if (Math.abs(delta) <= bandLb) return { first: `Body weight ${lb(a)} to ${lb(b)} lb, within normal scan variation.`, relation: null };

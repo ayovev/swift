@@ -3,8 +3,8 @@
  *
  * A **subject** is one lift or one named benchmark, with RX and Scaled kept separate. A **session** is one subject on one calendar day;
  * several entries the same day collapse to the best. A lift's value is its estimated 1RM (the average of Epley and Brzycki, a single
- * used as-is, via `estimateOneRepMax`); a benchmark's value is its raw score, with its direction. Any rep scheme from 1 to `RS_MAX_REPS`
- * counts, which replaces the plateau detector's 1/2/3/5RM rule.
+ * used as-is, via `estimateOneRepMax`); a benchmark's value is its raw score, with its direction. Any rep scheme from 1 to `PV_MAX_REPS`
+ * counts, where the old rule allowed only 1, 2, 3 and 5.
  *
  * Lifts are grouped here and not with `buildLiftSubjects`, because A1 needs per-entry facts that builder drops (whether a session names
  * an explicit rep max or a ladder, and the reason each Load row went unused). `tests/progressVerdict.test.ts` pins that both produce
@@ -14,7 +14,7 @@
  * or rep scheme, so as an "up" signal it turned 11 of 12 subjects up.
  */
 import { buildBenchmarkSubjects, estimateOneRepMax } from "../liftSubjects";
-import { RS_MAX_REPS } from "../insightConfig";
+import { PV_MAX_REPS } from "../insightConfig";
 import { parseRepMax } from "../repMax";
 import { parseNumericField, parseWorkoutDate } from "../scanParsing";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -136,7 +136,7 @@ export function buildProgressSubjects(rows: readonly SugarWodRow[]): { subjects:
     const reps = parseRepMax(`${w.raw.title ?? ""} ${w.raw.description ?? ""}`);
     if (parseNumericField(w.raw.best_result_raw) === null) unused.noValue++;
     else if (reps === null) unused.noScheme++;
-    else if (reps < 1 || reps > RS_MAX_REPS) unused.outsideRange++;
+    else if (reps < 1 || reps > PV_MAX_REPS) unused.outsideRange++;
     else if (!grouped.has(w.raw)) unused.noLiftNamed++;
     else if (w.raw.rx_or_scaled !== "RX" && w.raw.rx_or_scaled !== "SCALED") unused.neitherStatus++;
     else unused.used++;
@@ -151,7 +151,7 @@ export function buildProgressSubjects(rows: readonly SugarWodRow[]): { subjects:
         const value = parseNumericField(raw.best_result_raw);
         const text = `${raw.title ?? ""} ${raw.description ?? ""}`;
         const reps = parseRepMax(text);
-        if (value === null || reps === null || reps < 1 || reps > RS_MAX_REPS) continue;
+        if (value === null || reps === null || reps < 1 || reps > PV_MAX_REPS) continue;
         entries.push({ date: parseWorkoutDate(raw.date).format("YYYY-MM-DD"), value: estimateOneRepMax(value, reps), maxEffort: isMaxEffort(text) });
       }
       if (entries.length === 0) continue;

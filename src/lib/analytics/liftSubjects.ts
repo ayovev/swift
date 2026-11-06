@@ -72,8 +72,8 @@ function estimateLiftValue(raw: SugarWodRow, maxReps?: number): number | null {
 
   const reps = parseRepMax(`${raw.title ?? ""} ${raw.description ?? ""}`);
   if (reps === null) return null;
-  // Default: only the four tracked schemes. `maxReps` (relative strength)
-  // widens that to any scheme up to a cap — high-rep estimates are unreliable.
+  // Default: only the four tracked schemes. `maxReps` (the progress
+  // verdict, via `PV_MAX_REPS`) widens that to any scheme up to a cap — high-rep estimates are unreliable.
   if (maxReps === undefined ? repMaxCategory(reps) === "other" : reps < 1 || reps > maxReps) return null;
   return estimateOneRepMax(rawValue, reps);
 }
