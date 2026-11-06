@@ -5,6 +5,7 @@
  * Percentages are the already-rounded ones from the verdict.
  */
 import { PV_LONG_GAP_DAYS, PV_MIN_SESSIONS_PER_SIDE } from "../insightConfig";
+import type { MoveUp, ProgressHeadline } from "./headline";
 import type { ProgressSession, ProgressSubject } from "./sessions";
 import { REPS_PER_ROUND, parseRoundsReps } from "./sessions";
 import { roundHalfAway, type ProgressVerdict } from "./verdict";
@@ -142,3 +143,44 @@ export function factsLine(subject: ProgressSubject): string {
 
 /** Used by tests and the view to read a Rounds + Reps display. */
 export { parseRoundsReps, roundsReps };
+
+// ── The headline's words ────────────────────────────────────────────────────
+
+const longDate = (iso: string): string => `${monthOf(iso)} ${Number(iso.slice(8, 10))}, ${iso.slice(0, 4)}`;
+export { longDate };
+
+/** "Includes 2 that moved up to RX. Left out: 31 with under 6 sessions. 2 compare sessions over 24 months apart. As of Sep 11, 2026." Clauses appear only above zero. */
+export function coverageParagraph(h: ProgressHeadline, asOfLog: string): string {
+  const parts: string[] = [];
+  if (h.moveUps) parts.push(`Includes ${h.moveUps} that moved up to RX.`);
+  const left = [
+    h.leftOut.under6 ? `${h.leftOut.under6} with under 6 sessions` : "",
+    h.leftOut.notRecent ? `${h.leftOut.notRecent} not logged in 12 months` : "",
+    h.leftOut.notTested ? `${h.leftOut.notTested} not tested recently` : "",
+  ].filter(Boolean);
+  if (left.length) parts.push(`Left out: ${left.join(", ")}.`);
+  if (h.longGaps) parts.push(`${h.longGaps} compare ${h.longGaps === 1 ? "session" : "sessions"} over 24 months apart.`);
+  parts.push(`As of ${longDate(asOfLog)}.`);
+  return parts.join(" ");
+}
+
+/** "No headline yet: needs 3 lifts or benchmarks with a verdict, has 2. Closest: Back Squat, 1 more session; Clean, 2 more." */
+export function noHeadlineText(h: ProgressHeadline): string {
+  const closest = h.closest.map((c, i) => (i === 0 ? `${displayName(c.subject)}, ${c.needs} more ${sessionsWord(c.needs)}` : `${displayName(c.subject)}, ${c.needs} more`));
+  return `No headline yet: needs 3 lifts or benchmarks with a verdict, has ${h.counted}.${closest.length ? ` Closest: ${closest.join("; ")}.` : ""}`;
+}
+
+/** The athlete-facing sentence for a move up to RX. */
+export function moveUpText(m: MoveUp): string {
+  return `Moved up to RX in ${monthYear(m.date)}, after ${m.scaledBefore} Scaled ${m.scaledBefore === 1 ? "session" : "sessions"}.`;
+}
+
+/** "Also logged as RX: 1 session (Dec 2025), 9:13" for a subject with a twin of the other status. Facts only; it counts nothing. */
+export function crossReference(twin: ProgressSubject): string {
+  const n = twin.sessions.length;
+  const first = (twin.sessions[0] as ProgressSession).date;
+  const latest = twin.sessions[n - 1] as ProgressSession;
+  const value = formatSession(twin, latest);
+  const status = twin.status === "SCALED" ? "Scaled" : "RX";
+  return `Also logged as ${status}: ${n} ${sessionsWord(n)} (${monthSpan(first, latest.date)}), ${n === 1 ? value : `latest ${value}`}`;
+}

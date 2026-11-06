@@ -1,317 +1,126 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { LiftsTab } from "@/components/dashboard/LiftsTab";
-import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
-import type { PlateauInsight } from "@/types/plateau";
-import type { LiftRelativeStrength, RelativeStrengthResult } from "@/lib/analytics/relativeStrength";
+import { scanRow, workoutRow } from "./fixtures/rows";
+import { loadSampleRows } from "./fixtures/sampleRows";
 
-function insight(overrides: Partial<PlateauInsight> & { subject: PlateauInsight["subject"] }): PlateauInsight {
-  return {
-    classification: "improving",
-    windowStart: "2024-01-01",
-    windowEnd: "2024-03-01",
-    performanceTrend: {
-      direction: "up",
-      recentPoints: [{ date: "2024-03-01", value: 100 }],
-      valueKind: "raw",
-    },
-    confidence: "medium",
-    ...overrides,
-  };
+/** The Insights front door on the bundled sample. Counts and strings are the ones recorded for it in the design. */
+
+const rows = await loadSampleRows();
+
+function renderSample(asOf = "2026-09-11", scans: Parameters<typeof LiftsTab>[0]["scans"] = []) {
+  return render(<LiftsTab workouts={rows} scans={scans} asOf={asOf} />);
 }
 
-describe("LiftsTab — empty state", () => {
-  it("shows the upload dropzone and forwards a dropped file when no InBody data is loaded", () => {
-    const onBodyCompFile = vi.fn();
-    render(
-      <LiftsTab
-        relativeStrength={null}
-        plateauInsights={null}
-        alignment={null}
-        bodyComp={{ status: "idle" }}
-        onBodyCompFile={onBodyCompFile}
-      />
-    );
+const group = (name: string): HTMLElement => {
+  const heading = screen.getByRole("heading", { name: new RegExp(`^${name}`) });
+  return heading.closest("section") as HTMLElement;
+};
 
-    const dropzone = screen.getByRole("button", { name: "Upload your InBody CSV export" });
-    const file = new File(["date,Weight(lb)\n"], "inbody.csv", { type: "text/csv" });
-    fireEvent.drop(dropzone, { dataTransfer: { files: [file] } });
-
-    expect(onBodyCompFile).toHaveBeenCalledWith(file);
-  });
-
-  it("shows an error alert when the InBody upload failed", () => {
-    const bodyComp: BodyCompState = { status: "error", message: "That file is missing a date column." };
-    render(<LiftsTab relativeStrength={null} plateauInsights={null} alignment={null} bodyComp={bodyComp} onBodyCompFile={vi.fn()} />);
-
-    expect(screen.getByText("That file didn't work")).toBeInTheDocument();
-    expect(screen.getByText("That file is missing a date column.")).toBeInTheDocument();
-  });
-
-  it("never shows a body-comp number before any InBody data has been loaded", () => {
-    render(
-      <LiftsTab relativeStrength={null} plateauInsights={null} alignment={null} bodyComp={{ status: "idle" }} onBodyCompFile={vi.fn()} />
-    );
-    expect(screen.queryByRole("table")).not.toBeInTheDocument();
-  });
-});
-
-describe("LiftsTab — ready state", () => {
-  const insights: PlateauInsight[] = [
-    insight({
-      subject: { type: "lift", name: "Back Squat", status: "RX" },
-      classification: "improving",
-      performanceTrend: {
-        direction: "up",
-        recentPoints: [{ date: "2024-03-01", value: 220 }],
-        valueKind: "estimated_1rm",
-      },
-    }),
-    insight({
-      subject: { type: "lift", name: "Deadlift", status: "RX" },
-      classification: "plateaued_body_comp",
-      performanceTrend: {
-        direction: "down",
-        recentPoints: [{ date: "2024-03-01", value: 90 }],
-        valueKind: "estimated_1rm",
-      },
-      bodyCompTrend: { leanMassDelta: -2, fatMassDelta: 1.5, bodyFatPctDelta: 0.6 },
-    }),
-    insight({
-      subject: { type: "benchmark_wod", name: "Nancy", status: "SCALED" },
-      classification: "plateaued_other",
-      performanceTrend: {
-        direction: "flat",
-        recentPoints: [{ date: "2024-03-01", value: 900 }],
-        valueKind: "raw",
-      },
-      bodyCompTrend: { leanMassDelta: 1, fatMassDelta: -1, bodyFatPctDelta: -0.4 },
-    }),
-    insight({
-      subject: { type: "benchmark_wod", name: "Grace", status: "RX" },
-      classification: "insufficient_data",
-      performanceTrend: {
-        direction: "flat",
-        recentPoints: [{ date: "2024-03-01", value: 291 }],
-        valueKind: "raw",
-      },
-      reason: "needs 1 more logged entry (has 2, needs 3)",
-    }),
-  ];
-
-  it("renders one row per insight with the correct classification label", () => {
-    render(
-      <LiftsTab
-        relativeStrength={null}
-        plateauInsights={insights}
-        alignment={null}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={vi.fn()}
-      />
-    );
-
-    expect(screen.getByText("Back Squat (RX)")).toBeInTheDocument();
+describe("the Insights front door", () => {
+  it("reads the headline and what it left out", () => {
+    renderSample();
     expect(screen.getByText("Improving")).toBeInTheDocument();
-    expect(screen.getByText("Deadlift (RX)")).toBeInTheDocument();
-    expect(screen.getByText("Plateaued — body comp")).toBeInTheDocument();
-    expect(screen.getByText("Nancy (SCALED)")).toBeInTheDocument();
-    expect(screen.getByText("Plateaued — other")).toBeInTheDocument();
-    expect(screen.getByText("Grace (RX)")).toBeInTheDocument();
-    expect(screen.getByText("Not enough data yet")).toBeInTheDocument();
+    expect(screen.getByText("Improving in 8 of 14 lifts and benchmarks (5 no clear change, 1 down).")).toBeInTheDocument();
+    expect(screen.getByText(/Includes 2 that moved up to RX\. Left out: 31 with under 6 sessions\. 2 compare sessions over 24 months apart\. As of Sep 11, 2026\./)).toBeInTheDocument();
   });
 
-  it("shows the specific reason for an insufficient_data row instead of a generic message", () => {
-    render(
-      <LiftsTab
-        relativeStrength={null}
-        plateauInsights={insights}
-        alignment={null}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={vi.fn()}
-      />
+  it("lists Up and Down as separate open groups with their counts, and collapses the rest", () => {
+    renderSample();
+    expect(within(group("Up")).getAllByRole("listitem")).toHaveLength(8);
+    expect(within(group("Down")).getAllByRole("listitem")).toHaveLength(1);
+    for (const [title, n] of [["No clear change", "5"], ["Fewer than 6 sessions", "11"], ["Not recent", "20"]] as const) {
+      const trigger = screen.getByRole("button", { name: new RegExp(`^${title}`) });
+      expect(trigger).toHaveAttribute("aria-expanded", "false");
+      expect(trigger).toHaveTextContent(n);
+    }
+  });
+
+  it("names RX unmarked and Scaled as the qualifier", () => {
+    renderSample();
+    expect(within(group("Up")).getByText("Power Snatch")).toBeInTheDocument();
+    expect(within(group("Down")).getByText("Nancy (Scaled)")).toBeInTheDocument();
+    expect(screen.queryByText(/Power Snatch RX/)).not.toBeInTheDocument();
+  });
+
+  it("writes a verdict with its change in pounds first", () => {
+    renderSample();
+    const row = within(group("Up")).getByText("Power Snatch").closest("li") as HTMLElement;
+    expect(within(row).getByText("+21 lb (124 to 145 lb), +16.8%")).toBeInTheDocument();
+    const nancy = within(group("Down")).getByText("Nancy (Scaled)").closest("li") as HTMLElement;
+    expect(within(nancy).getByText("0:50 slower (13:47 to 14:37), 6.0% slower")).toBeInTheDocument();
+  });
+
+  it("explains a move up to RX and does not open it", () => {
+    renderSample();
+    const fran = within(group("Up")).getByText("Fran").closest("li") as HTMLElement;
+    expect(within(fran).getByText("Moved up to RX in Dec 2025, after 3 Scaled sessions.")).toBeInTheDocument();
+    expect(within(fran).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("opens a row to its chart", () => {
+    renderSample();
+    const row = within(group("Up")).getByText("Front Squat").closest("li") as HTMLElement;
+    expect(within(row).queryByRole("figure")).not.toBeInTheDocument();
+    fireEvent.click(within(row).getByRole("button"));
+    expect(within(row).getByRole("figure")).toBeInTheDocument();
+    expect(within(row).getByText(/Each dot is the best result of a day\. Dark dots are the 4 sessions before the recent 4/)).toBeInTheDocument();
+  });
+
+  it("opens a facts-line subject to dots alone", () => {
+    renderSample();
+    fireEvent.click(screen.getByRole("button", { name: /^Fewer than 6 sessions/ }));
+    const row = screen.getByText(/^Hang Power Clean: 5 sessions\./).closest("li") as HTMLElement;
+    expect(within(row).getByText(/Needs 1 more session for a verdict\./)).toBeInTheDocument();
+    fireEvent.click(within(row).getByRole("button"));
+    expect(within(row).getByText("Each dot is the best result of a day.")).toBeInTheDocument();
+  });
+
+  it("shows no body-context line without body data and one with it", () => {
+    const { unmount } = renderSample();
+    expect(screen.queryByText(/Body weight|No body weight/)).not.toBeInTheDocument();
+    unmount();
+    renderSample("2026-09-11", [scanRow("2023-02-06", { "Weight(lb)": "170" }), scanRow("2026-03-10", { "Weight(lb)": "172" })]);
+    expect(screen.getAllByText(/Body weight 170 to 172 lb, within normal scan variation\./).length).toBeGreaterThan(0);
+  });
+
+  it("filters the list without changing the headline", () => {
+    renderSample("2026-09-09");
+    fireEvent.click(screen.getByRole("button", { name: "Last 3 months" }));
+    expect(screen.getByText("Showing 15 of 45 subjects.")).toBeInTheDocument();
+    expect(screen.getByText("Improving in 8 of 14 lifts and benchmarks (5 no clear change, 1 down).")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Last month" }));
+    expect(screen.getByText("Showing 5 of 45 subjects.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
+  });
+
+  it("says so when a custom period lists nothing, and rejects a start after the end", () => {
+    renderSample();
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    const [from, to] = screen.getAllByDisplayValue(/^$|2026-09-11/);
+    fireEvent.change(from as HTMLElement, { target: { value: "2020-01-01" } });
+    fireEvent.change(to as HTMLElement, { target: { value: "2020-01-31" } });
+    expect(screen.getByText("No lift or benchmark was logged in this period.")).toBeInTheDocument();
+    fireEvent.change(from as HTMLElement, { target: { value: "2021-01-01" } });
+    expect(screen.getByText("The start date is after the end date.")).toBeInTheDocument();
+  });
+
+  it("says nothing moved when neither Up nor Down has a row", () => {
+    const flat = ["01", "02", "03", "04", "05", "06"].map((m) =>
+      workoutRow({ date: `${m}/10/2026`, title: "BACK SQUAT", description: "Back Squat 1RM", barbell_lift: "Back Squat", score_type: "Load", best_result_raw: "200" })
     );
-
-    expect(screen.getByText("needs 1 more logged entry (has 2, needs 3)")).toBeInTheDocument();
+    render(<LiftsTab workouts={flat} scans={[]} asOf="2026-09-11" />);
+    expect(screen.getByText("No lift or benchmark has moved clearly.")).toBeInTheDocument();
+    expect(screen.getByText(/^No headline yet: needs 3 lifts or benchmarks with a verdict, has 1\./)).toBeInTheDocument();
   });
 
-  it("does not render fabricated body-comp numbers for an insufficient_data row", () => {
-    render(
-      <LiftsTab
-        relativeStrength={null}
-        plateauInsights={insights}
-        alignment={null}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={vi.fn()}
-      />
-    );
-
-    const graceRow = screen.getByText("Grace (RX)").closest("tr")!;
-    expect(graceRow).toHaveTextContent("—");
-    expect(graceRow).not.toHaveTextContent("Lean");
-    expect(graceRow).not.toHaveTextContent("Fat mass");
-  });
-});
-
-describe("LiftsTab — context tags and noise", () => {
-  const ready: BodyCompState = { status: "ready", rows: [] };
-
-  it("shows tag notes and the within-noise line on a plateaued row", () => {
-    render(
-      <LiftsTab
-        alignment={null}
-        relativeStrength={null}
-        plateauInsights={[
-          insight({
-            subject: { type: "lift", name: "Back Squat", status: "RX" },
-            classification: "plateaued_other",
-            tagNotes: ['This plateau window overlaps "Winter cut" (cut, Jan 1, 2024 – ongoing); lifts and lean mass often move differently during a cut.'],
-            bodyCompTrend: {
-              leanMassDelta: -1,
-              fatMassDelta: 1,
-              bodyFatPctDelta: 0.3,
-              withinNoise: { leanMass: true, fatMass: true, bodyFatPct: false },
-            },
-          }),
-        ]}
-        bodyComp={ready}
-        onBodyCompFile={() => {}}
-      />
-    );
-    expect(screen.getByText(/overlaps "Winter cut"/)).toBeInTheDocument();
-    expect(screen.getByText("Lean mass and fat mass changes are within normal scan variation.")).toBeInTheDocument();
-  });
-});
-
-describe("LiftsTab — alignment rollup", () => {
-  const alignment = {
-    classification: "tension" as const,
-    performanceSummary: { improvingCount: 2, plateauedCount: 1, classifiedCount: 3 },
-    bodyCompSummary: {
-      leanMassDelta: 1,
-      fatMassDelta: 4,
-      bodyFatPctDelta: 1.5,
-      windowStart: "2024-01-01",
-      windowEnd: "2024-03-01",
-    },
-  };
-
-  it("shows the whole-athlete read above the per-lift table", () => {
-    render(
-      <LiftsTab
-        relativeStrength={null}
-        plateauInsights={[insight({ subject: { type: "lift", name: "Back Squat", status: "RX" } })]}
-        alignment={alignment}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={vi.fn()}
-      />
-    );
-    const badge = screen.getByText("Tension");
-    const table = screen.getByRole("table");
-    expect(badge.compareDocumentPosition(table) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it("shows no rollup when there is none", () => {
-    render(
-      <LiftsTab
-        relativeStrength={null}
-        plateauInsights={[insight({ subject: { type: "lift", name: "Back Squat", status: "RX" } })]}
-        alignment={null}
-        bodyComp={{ status: "ready", rows: [] }}
-        onBodyCompFile={vi.fn()}
-      />
-    );
-    expect(screen.queryByText("Tension")).not.toBeInTheDocument();
-    expect(screen.queryByText("Aligned")).not.toBeInTheDocument();
-  });
-});
-
-describe("LiftsTab — strength alongside plateaus", () => {
-  const ready: BodyCompState = { status: "ready", rows: [] };
-  const squat = insight({
-    subject: { type: "lift", name: "Back Squat", status: "RX" },
-    classification: "plateaued_other",
-  });
-  const bench = insight({ subject: { type: "lift", name: "Bench Press", status: "RX" } });
-  const wod = insight({ subject: { type: "benchmark_wod", name: "Fran", status: "RX" } });
-
-  function strengthLift(overrides: Partial<LiftRelativeStrength> = {}): LiftRelativeStrength {
-    return {
-      lift: "Back Squat",
-      rxStatus: "RX",
-      status: "ok",
-      attribution: "mass-driven",
-      normalizedBy: "bodyweight",
-      reason: "Estimated 1RM up 8% (200 to 216) while bodyweight rose 7%.",
-      series: [
-        { date: "2026-01-05", e1rm: 200, perBodyweight: 1.1, perLeanMass: null, bodyMatch: "exact" },
-        { date: "2026-04-05", e1rm: 216, perBodyweight: 1.12, perLeanMass: null, bodyMatch: "exact" },
-      ],
-      ...overrides,
-    };
-  }
-
-  const result = (lifts: LiftRelativeStrength[]): RelativeStrengthResult => ({ status: "ok", lifts });
-
-  it("shows a lift's strength read on its own plateau row, naming its window", () => {
-    render(
-      <LiftsTab
-        plateauInsights={[squat]}
-        alignment={null}
-        relativeStrength={result([strengthLift()])}
-        bodyComp={ready}
-        onBodyCompFile={vi.fn()}
-      />
-    );
-    const row = screen.getAllByRole("row").find((r) => within(r).queryByText(/Back Squat \(RX\)/) && within(r).queryByText(/Plateaued/))!;
-    expect(within(row).getByText(/Per body mass, last 365 days: Mass/)).toBeInTheDocument();
-  });
-
-  it("leaves the strength line off a lift that did not qualify, a lift with no read, and a benchmark", () => {
-    const { attribution: _dropped, ...rest } = strengthLift();
-    const thin: LiftRelativeStrength = {
-      ...rest,
-      status: "insufficient",
-      reason: "needs 4 more logged sessions in the last 365 days (has 0, needs 4)",
-    };
-    render(
-      <LiftsTab
-        plateauInsights={[squat, bench, wod]}
-        alignment={null}
-        relativeStrength={result([thin])}
-        bodyComp={ready}
-        onBodyCompFile={vi.fn()}
-      />
-    );
-    expect(screen.queryByText(/Per body mass, last/)).not.toBeInTheDocument();
-  });
-
-  it("puts the strength charts under the plateau table, with a heading for each", () => {
-    render(
-      <LiftsTab
-        plateauInsights={[squat]}
-        alignment={null}
-        relativeStrength={result([strengthLift()])}
-        bodyComp={ready}
-        onBodyCompFile={vi.fn()}
-      />
-    );
-    const plateaus = screen.getByRole("heading", { name: "Plateaus" });
-    const strength = screen.getByRole("heading", { name: "Strength per body mass" });
-    expect(plateaus.compareDocumentPosition(strength) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByRole("group", { name: "Back Squat chart view" })).toBeInTheDocument();
-  });
-
-  it("shows one upload prompt for the whole view, not one per section", () => {
-    render(
-      <LiftsTab
-        plateauInsights={null}
-        alignment={null}
-        relativeStrength={null}
-        bodyComp={{ status: "idle" }}
-        onBodyCompFile={vi.fn()}
-      />
-    );
-    expect(screen.getAllByRole("button", { name: "Upload your InBody CSV export" })).toHaveLength(1);
-    expect(screen.queryByRole("heading", { name: "Plateaus" })).not.toBeInTheDocument();
+  it("reads the empty states", () => {
+    const { unmount } = render(<LiftsTab workouts={[]} scans={[]} asOf="2026-09-11" />);
+    expect(screen.getByText("No lift or benchmark has been logged yet.")).toBeInTheDocument();
+    unmount();
+    const old = workoutRow({ date: "01/10/2024", title: "BACK SQUAT", description: "Back Squat 1RM", barbell_lift: "Back Squat", score_type: "Load", best_result_raw: "200" });
+    render(<LiftsTab workouts={[old]} scans={[]} asOf="2026-09-11" />);
+    expect(screen.getByText("No lift or benchmark was logged in the last 12 months.")).toBeInTheDocument();
   });
 });

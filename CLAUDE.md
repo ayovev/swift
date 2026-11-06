@@ -257,6 +257,26 @@ though it cannot change *whether* the domain matched.
 `repMax.ts` parses rep-max notation out of lift titles; it is additive to the Python
 reference, so the parity test strips it before comparing lift series.
 
+## Architecture: the progress verdict (Insights front door)
+
+`src/lib/analytics/insights/` is the engine behind the Progress view (`LiftsTab.tsx`, tab id `lifts`, over `components/dashboard/progress/`).
+It replaces the plateau, alignment and relative-strength views, whose code (and the sections below) stays only until it is removed; nothing
+renders them. Read each file's header comment before changing it; the cases are `tests/progressVerdict.test.ts`, `tests/progressDisplay.test.ts`
+and `tests/LiftsTab.test.tsx`, and every threshold is a `PV_*` constant in `insightConfig.ts`.
+
+- **`sessions.ts`**: a *subject* is one lift or named benchmark with RX and Scaled kept separate; a *session* is one subject on one day (the best
+  of the day). A lift's value is its estimated 1RM (average of Epley and Brzycki) from any 1 to 8 rep scheme; SugarWOD's PR flag is deliberately
+  not read. It mirrors `buildLiftSubjects` (a test pins that) because it also needs per-entry max-effort facts and the reason each Load row went
+  unused.
+- **`verdict.ts`**: session-based. The best of the recent N sessions against the best of the N before them, N = min(4, floor(n / 2)), at least 6
+  sessions. `up` (change of 5% or more, or a record: the recent best 2% above everything before the recent window), `down` (5% or more worse
+  with a max effort in the recent window), `not-tested-since` (the same without one: mid-cycle, never a decline), else `no-clear-change`.
+- **`headline.ts`**: six groups, move-ups to RX (an up vote for 12 months), the label (`Improving`, `Steady`, `Declining` from the counts) and the
+  reference date, always passed in and never read from the clock.
+- **`display.ts`**, **`bodyContext.ts`**, **`period.ts`**, **`chart.ts`**: the words (RX unmarked, Scaled as a qualifier), the body-context lines,
+  the "Logged in" filter and the evidence chart's numbers. Body composition never feeds a verdict or a count.
+- `npm run check:export` (`scripts/realExportCheck/`) runs the engine over an export you point it at and prints counts. Exports stay out of the repo.
+
 ## Architecture: Plateau Detector and Alignment
 
 `src/lib/analytics/plateauDetector.ts` and `src/lib/analytics/alignment.ts` are a second

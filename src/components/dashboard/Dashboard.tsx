@@ -33,12 +33,9 @@ import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
-import type { RelativeStrengthResult } from "@/lib/analytics/relativeStrength";
-import type { AlignmentResult } from "@/types/alignment";
 import type { DateWindow } from "@/types/compare";
 import type { PeriodVerdict } from "@/types/verdict";
 import type { ContextTag } from "@/types/tag";
-import type { PlateauInsight } from "@/types/plateau";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { DataSource } from "@/App";
@@ -59,9 +56,6 @@ interface DashboardProps {
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
-  plateauInsights: PlateauInsight[] | null;
-  alignment: AlignmentResult | null;
-  relativeStrength: RelativeStrengthResult | null;
   tags: ContextTag[];
   onAddTag: (tag: Omit<ContextTag, "id">) => void;
   onUpdateTag: (tag: ContextTag) => void;
@@ -85,9 +79,6 @@ export function Dashboard({
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedTags,
-  plateauInsights,
-  alignment,
-  relativeStrength,
   tags,
   onAddTag,
   onUpdateTag,
@@ -321,13 +312,7 @@ export function Dashboard({
           </TabsContent>
 
           <TabsContent value={LIFTS_TAB}>
-            <LiftsTab
-              plateauInsights={plateauInsights}
-              alignment={alignment}
-              relativeStrength={relativeStrength}
-              bodyComp={bodyComp}
-              onBodyCompFile={onBodyCompFile}
-            />
+            <LiftsTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} />
           </TabsContent>
 
           <TabsContent value={COMPARE_TAB}>

@@ -27,6 +27,8 @@ export interface MoveUp {
   date: string;
   /** Scaled sessions before it. */
   scaledBefore: number;
+  /** The last Scaled session before it. */
+  scaledDate: string;
 }
 
 export interface ProgressRow {
@@ -93,7 +95,8 @@ export function findMoveUps(subjects: readonly ProgressSubject[]): Map<string, M
       ].sort((a, b) => (a.date < b.date ? -1 : 1));
       const previous = earlier[earlier.length - 1];
       if (!previous?.scaled) continue;
-      latest = { date: session.date, scaledBefore: scaled.sessions.filter((s) => s.date < session.date).length };
+      const before = scaled.sessions.filter((s) => s.date < session.date);
+      latest = { date: session.date, scaledBefore: before.length, scaledDate: (before[before.length - 1] as ProgressSession).date };
     }
     if (latest) out.set(rx.key, latest);
   }

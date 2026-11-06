@@ -241,7 +241,7 @@ describe("Scaled to RX and recency (A1-SCL, A1-REC)", () => {
       subject({ name: "Grace", status: "SCALED", kind: "benchmark", lowerIsBetter: true, sessions: [s("2022-11-21", 225, true), s("2023-10-10", 225, true)] }),
       subject({ name: "Grace", status: "RX", kind: "benchmark", lowerIsBetter: true, sessions: [s("2026-03-31", 291, true), s("2026-07-07", 272, true)] }),
     ];
-    expect(findMoveUps(grace).get("grace|RX")).toEqual({ date: "2026-03-31", scaledBefore: 2 });
+    expect(findMoveUps(grace).get("grace|RX")).toEqual({ date: "2026-03-31", scaledBefore: 2, scaledDate: "2023-10-10" });
   });
 
   it("SCL-06 moving down to Scaled votes nothing", () => {

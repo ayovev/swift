@@ -3,14 +3,11 @@ import dayjs from "dayjs";
 import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Landing } from "@/components/landing/Landing";
-import { getAlignment } from "@/lib/analytics/alignment";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
 import { getPeriodVerdict } from "@/lib/analytics/periodVerdict";
 import { hasVerdict } from "@/lib/analytics/contextTags";
 import type { Granularity } from "@/lib/analytics/granularity";
-import { getPlateauInsights } from "@/lib/analytics/plateauDetector";
-import { getRelativeStrength } from "@/lib/analytics/relativeStrength";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
@@ -160,39 +157,7 @@ export default function App() {
     [state, range, granularity]
   );
 
-  // Needs both datasets, so it stays null until an InBody export is loaded
-  // too — like BodyCompTab, it operates on the full unfiltered upload rather
-  // than the dashboard's selected date range (session-count windowing, not
-  // bucket-based, doesn't need one).
-  const plateauInsights = useMemo(
-    () =>
-      state.status === "ready" && bodyComp.status === "ready"
-        ? getPlateauInsights(state.rows, bodyComp.rows, new Date(), { tags })
-        : null,
-    [state, bodyComp, tags]
-  );
-
-  // A rollup of plateauInsights, not a re-derivation — recomputed whenever
-  // plateauInsights or the InBody rows it's rolled up against change.
-  const alignment = useMemo(
-    () =>
-      plateauInsights && bodyComp.status === "ready"
-        ? getAlignment(plateauInsights, bodyComp.rows, new Date(), { tags })
-        : null,
-    [plateauInsights, bodyComp, tags]
-  );
-
-  // Same gate as plateauInsights, same reasoning: the whole unfiltered log as
-  // of today, and both datasets.
-  const relativeStrength = useMemo(
-    () =>
-      state.status === "ready" && bodyComp.status === "ready"
-        ? getRelativeStrength(state.rows, bodyComp.rows, { asOfDate: new Date() })
-        : null,
-    [state, bodyComp]
-  );
-
-  // Same gate as plateauInsights: needs both datasets. Each experiment (a tag
+  // Needs both datasets, so it stays null until an InBody export is loaded. Each experiment (a tag
   // of type "experiment") is analyzed independently (no cross-experiment view
   // in v1), so this is a map keyed by tag id rather than a single derived value.
   const verdicts = useMemo(
@@ -439,9 +404,6 @@ export default function App() {
         onSyncedWorkoutData={handleSyncedWorkoutData}
         onSyncedBodyCompData={handleSyncedBodyCompData}
         onSyncedTags={handleSyncedTags}
-        plateauInsights={plateauInsights}
-        alignment={alignment}
-        relativeStrength={relativeStrength}
         tags={tags}
         onAddTag={addTag}
         onUpdateTag={updateTag}
