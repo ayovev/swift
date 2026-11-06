@@ -113,7 +113,7 @@ export interface EntryResult {
   closest: { name: string; need: number }[];
 }
 
-/** The entry's own before and after (docs/insights-timeline.md): the last N sessions during against the last N before the start. */
+/** The entry's own before and after (see `entryVerdict.ts`): the last N sessions during against the last N before the start. */
 export function entryCheck(subjects: readonly Subject[], spec: EntrySpec, asOf: string): EntryResult {
   const end = spec.end ?? asOf;
   const res: EntryResult = { spec, eligible: 0, up: 0, down: 0, nts: 0, nc: 0, factsOnly: 0, closest: [] };

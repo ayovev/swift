@@ -1,11 +1,10 @@
-import { useMemo, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import dayjs from "dayjs";
-import { entryEnd, packLanes } from "@/lib/analytics/timeline";
+import { entryEnd, entryName } from "@/lib/analytics/timeline";
 import { displayName } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
 import { dayNumber } from "@/lib/analytics/insights/verdict";
 import { cn } from "@/lib/utils";
-import { entryName } from "@/lib/analytics/timeline";
 import type { TimelineEntry } from "@/types/timeline";
 
 export type Selection = { kind: "entry"; id: string } | { kind: "subject"; key: string } | null;
@@ -57,7 +56,39 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
   const pct = (iso: string): number => Math.min(100, Math.max(0, ((dayNumber(iso) - dayNumber(start)) / span) * 100));
 
   const visible = useMemo(() => entries.filter((e) => e.startDate <= end && entryEnd(e, asOf) >= start), [entries, start, end, asOf]);
-  const { placed, lanes } = useMemo(() => packLanes(visible, asOf), [visible, asOf]);
+  // The width of the entries area, so a label's room can be counted in pixels: a lane is free only when neither the bar nor its name
+  // would touch the next entry's.
+  const areaRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(1000);
+  useEffect(() => {
+    const measure = () => setWidth(areaRef.current?.clientWidth || 1000);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+  const { placed, lanes } = useMemo(() => {
+    const px = (iso: string): number => (Math.min(100, Math.max(0, ((dayNumber(iso) - dayNumber(start)) / span) * 100)) / 100) * width;
+    const items = visible
+      .map((entry) => {
+        const a = px(entry.startDate);
+        const b = Math.max(px(entryEnd(entry, asOf)), a + 10);
+        const label = (entryName(entry).length + (entry.endDate === null ? 2 : 0)) * 7 + 8;
+        const inside = b - a >= label + 12;
+        const left = !inside && b + label > width;
+        const lo = !inside && left ? a - label : a;
+        const hi = inside ? b : left ? b : Math.max(b, b + label);
+        return { entry, lo, hi, inside, left };
+      })
+      .sort((x, y) => x.entry.startDate.localeCompare(y.entry.startDate) || x.entry.id.localeCompare(y.entry.id));
+    const ends: number[] = [];
+    const out = items.map((it) => {
+      let lane = ends.findIndex((end) => end + 4 <= it.lo);
+      if (lane === -1) lane = ends.length;
+      ends[lane] = it.hi;
+      return { ...it, lane };
+    });
+    return { placed: out, lanes: ends.length };
+  }, [visible, start, span, width, asOf]);
   const axis = useMemo(() => ticks(start, end), [start, end]);
 
   const verdictLanes = rows.filter((r) => (LANE_GROUPS as readonly string[]).includes(r.group) && (r.verdict || (r.moveUpVotes && r.moveUp)));
@@ -76,17 +107,17 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
         <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Entries</h2>
         {/* Clicking the empty part of this area starts a new entry on that day; the Add to timeline button is the way that always works. */}
         <div
+          ref={areaRef}
           data-testid="entries-area"
           onClick={onEntriesClick}
           className="relative cursor-copy rounded-md border border-border bg-muted/30"
           style={{ height: Math.max(1, lanes) * 28 + 8 }}
         >
           {visible.length === 0 ? <p className="pointer-events-none px-3 py-2 text-sm text-muted-foreground">No entries in this range.</p> : null}
-          {placed.map(({ entry, lane }) => {
+          {placed.map(({ entry, lane, inside, left: labelLeft }) => {
             const left = pct(entry.startDate);
             const right = pct(entryEnd(entry, asOf));
-            const width = Math.max(right - left, 0);
-            const inside = width >= 14;
+            const barWidth = Math.max(right - left, 0);
             const changed = entry.initiation === "changed";
             const isSelected = selected?.kind === "entry" && selected.id === entry.id;
             const name = entryName(entry);
@@ -103,12 +134,12 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
                   changed ? "bg-accent-link text-background" : "border border-dashed border-foreground bg-background text-foreground",
                   isSelected && "ring-2 ring-foreground"
                 )}
-                style={{ top: 4 + lane * 28, left: `${left}%`, width: `max(${width}%, 10px)` }}
+                style={{ top: 4 + lane * 28, left: `${left}%`, width: `max(${barWidth}%, 10px)` }}
               >
                 {inside ? <span className="truncate px-1.5">{name}{ongoing ? " →" : ""}</span> : null}
                 {!inside ? (
                   <span
-                    className={cn("absolute whitespace-nowrap text-foreground", left + width > 75 ? "right-full mr-1.5" : "left-full ml-1.5")}
+                    className={cn("absolute whitespace-nowrap text-foreground", labelLeft ? "right-full mr-1.5" : "left-full ml-1.5")}
                   >
                     {name}
                     {ongoing ? " →" : ""}

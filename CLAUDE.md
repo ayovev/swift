@@ -151,15 +151,14 @@ remote-config features (exception capture, dead clicks, heatmaps, surveys) off i
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 20 views (`tabs.ts` → `ALL_TABS`): Overview,
+- **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
   Workouts, the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
-  (Progress, Compare, Periods), grouped for navigation into
-  four sections (see "Architecture: dashboard layout" below). The views that need an InBody export
-  all share one empty state, `InBodyUploadPrompt.tsx`. A
+  (Progress, Timeline), grouped for navigation into
+  four sections (see "Architecture: dashboard layout" below). A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
   tabs — they differ in data, not structure. Body Comp is its own component (`BodyCompTab.tsx`),
-  always present in the nav even before any InBody data is loaded, and Progress follows
-  the same always-present treatment (see "Architecture: Plateau Detector and Alignment" below).
+  always present in the nav even before any InBody data is loaded, and Progress and Timeline follow
+  the same always-present treatment (they need only the SugarWOD log).
   `buildModalityData`'s output shape deliberately mirrors `buildDashboardData`'s so those two
   components stay near-identical; keep that symmetry.
 
@@ -260,14 +259,13 @@ reference, so the parity test strips it before comparing lift series.
 ## Architecture: the progress verdict (Insights front door)
 
 `src/lib/analytics/insights/` is the engine behind the Progress view (`LiftsTab.tsx`, tab id `lifts`, over `components/dashboard/progress/`).
-It replaces the plateau, alignment and relative-strength views, whose code (and the sections below) stays only until it is removed; nothing
-renders them. Read each file's header comment before changing it; the cases are `tests/progressVerdict.test.ts`, `tests/progressDisplay.test.ts`
-and `tests/LiftsTab.test.tsx`, and every threshold is a `PV_*` constant in `insightConfig.ts`.
+Read each file's header comment before changing it; the cases are `tests/progressVerdict.test.ts`, `tests/progressDisplay.test.ts` and
+`tests/LiftsTab.test.tsx`, and every threshold is a `PV_*` constant in `insightConfig.ts`.
 
 - **`sessions.ts`**: a *subject* is one lift or named benchmark with RX and Scaled kept separate; a *session* is one subject on one day (the best
   of the day). A lift's value is its estimated 1RM (average of Epley and Brzycki) from any 1 to 8 rep scheme; SugarWOD's PR flag is deliberately
-  not read. It mirrors `buildLiftSubjects` (a test pins that) because it also needs per-entry max-effort facts and the reason each Load row went
-  unused.
+  not read. It builds on `liftSubjects.ts` (name normalisation, RX/Scaled split, the 1RM estimate; a test pins the parity) and also keeps
+  per-entry max-effort facts and the reason each Load row went unused.
 - **`verdict.ts`**: session-based. The best of the recent N sessions against the best of the N before them, N = min(4, floor(n / 2)), at least 6
   sessions. `up` (change of 5% or more, or a record: the recent best 2% above everything before the recent window), `down` (5% or more worse
   with a max effort in the recent window), `not-tested-since` (the same without one: mid-cycle, never a decline), else `no-clear-change`.
@@ -277,36 +275,8 @@ and `tests/LiftsTab.test.tsx`, and every threshold is a `PV_*` constant in `insi
   the "Logged in" filter and the evidence chart's numbers. Body composition never feeds a verdict or a count.
 - `npm run check:export` (`scripts/realExportCheck/`) runs the engine over an export you point it at and prints counts. Exports stay out of the repo.
 
-## Architecture: Plateau Detector and Alignment
-
-`src/lib/analytics/plateauDetector.ts` and `src/lib/analytics/alignment.ts` are a second
-insights pipeline, deliberately standalone from `buildInsights.ts` above — they need the
-InBody dataset, which the SugarWOD-only pipeline never touches. Read each file's own header
-comment before changing anything; this section is a map, not a restatement.
-
-- **`getPlateauInsights(workouts, inbodyScans, asOfDate)`** classifies each lift/named-benchmark
-  (split by RX/Scaled) as `improving`, `plateaued_body_comp`, `plateaued_other`, or
-  `insufficient_data`, by comparing a recent session-count window against the previous one (not
-  a calendar lookback — real benchmark logging is too sparse for that) and diffing the InBody
-  scans nearest that window's boundaries. `insufficient_data` always carries a `reason` string
-  naming which eligibility gate failed and by how much (`formatGateShortfall()`) — never a
-  silent "not enough data."
-- **`getAlignment(plateauInsights, inbodyScans, asOfDate)`** rolls that per-subject output up
-  into one whole-athlete read: `aligned` or `tension` (or `insufficient_data`, same `reason`
-  convention). It has its own eligibility gate on top of #1's (at least 3 classified subjects,
-  at least 2 InBody scans in range) and its own window — the union of every classified
-  subject's window, since #1 computes an independent window per subject rather than one shared
-  window. `tension` is reserved for when the two signals contradict each other; a performance
-  decline alongside a declining body comp reads as `aligned` (a consistent, if undesirable,
-  story), never as bad.
-- Both share `isBodyCompDeclining()` (lean mass down and fat mass up) so "declining body comp"
-  means exactly the same thing at the per-lift and whole-athlete level.
-- Both are wired into `App.tsx` behind the same gate: neither runs until both a SugarWOD upload
-  and an InBody upload are `"ready"`. Neither is part of `Insights`/`buildInsights.ts`'s return
-  shape — they're computed separately in `App.tsx` and passed to `Dashboard.tsx` as their own
-  props, rendered together on the Progress view (`LiftsTab.tsx`): `AlignmentSummary.tsx` on top, then
-  `PlateauSection.tsx`. Alignment is a summary above the plateau table, not a tab of its own,
-  because it is only a rollup of that table's output.
+The InBody noise band (`bodyCompNoise.ts`) is the one older pipeline that remains: `weightBandLb` uses it to decide whether a body-weight change
+is "within normal scan variation".
 
 ## Architecture: InBody noise band
 
@@ -320,239 +290,60 @@ reports the metric at all. `isMeaningfulChange(delta, band)` is the one comparis
 - Every threshold lives in `insightConfig.ts` with a comment on how it was chosen, and every one
   is *tunable, validate against real data*: the repo bundles no real InBody history. Do not put a
   bare number in an insight module; add it there.
-- The seam is `computeBodyCompTrend(start, end, bands?)`. With bands it sets `withinNoise` flags
-  on the trend (delta values stay untouched), and `isBodyCompDeclining`/`isBodyCompImproving`
-  treat a within-noise delta as not having moved. Plateaus, Alignment and Experiments all go
-  through those, so none has its own threshold. `describeWithinNoise()` is the one sentence the
-  three tabs show ("... within normal scan variation.").
+- `isMeaningfulChange(delta, band)` is the one comparison, and `insights/bodyReadings.ts` (`weightBandLb`) is its one caller: a body-weight
+  change inside the band reads "within normal scan variation".
 - Bands are estimated from the athlete's whole scan history as of `asOfDate`, never from a
   per-subject window (too few scans). `NO_NOISE_BANDS` (all zero) reproduces the old sign-only
   behaviour exactly.
 
-## Architecture: Relative strength
-
-`src/lib/analytics/relativeStrength.ts` (`getRelativeStrength(workouts, scans, { asOfDate })`)
-divides each load-scored lift's per-session estimated 1RM by body mass, to tell "got stronger"
-from "got bigger". It reuses the Plateau Detector's lift grouping (`buildLiftSubjects`, same
-name normalisation, same RX/Scaled split, Load-scored rows only) and `estimateOneRepMax`; the
-one difference is the rep cap (`RS_MAX_REPS`, any scheme up to it, versus Plateaus' 1/2/3/5RM).
-Body mass at a session is the scan that day, else a straight line between bracketing scans no
-further apart than `RS_MAX_INTERPOLATION_GAP_DAYS`, else the nearest scan within
-`RS_MAX_NEAREST_SCAN_DAYS`, else `unmatched` — never extrapolated. The mass change over the
-window is judged with the noise band, so a change inside normal scan variation is never blamed
-for a lift change. Attribution is `strength-driven | mass-driven | mixed | flat | declined`
-(`declined` is an addition to the original plan's four, which had nowhere to put a fall). Lifts
-failing a gate keep their series and carry a `reason` naming the gate and the shortfall.
-Wired in `App.tsx` behind the same both-uploads gate as Plateaus; rendered by `StrengthSection.tsx`, the third section of the Progress view. `LiftsTab` owns the
-both-uploads gate for all three sections (one upload prompt), and a lift's plateau row carries its
-strength attribution with the strength window named (`RS_WINDOW_DAYS`), because the plateau read
-windows by session count and the strength read by a fixed year and the two must not read as one.
-
-## Architecture: window comparison and periods
-
-`compareWindows.ts` (`compareWindows(workouts, scans, windowA, windowB, options)`) is "select a
-range, see what changed". It reuses the Plateau Detector's subject building unchanged and the
-noise band for body-comp deltas. A lift/benchmark needs `CMP_MIN_OBSERVATIONS_PER_WINDOW` entries
-in *each* window or its row is `comparable: false` with a reason and **no numbers** (never a
-partial comparison); overlapping or inverted windows are `insufficient`. `defaultWindowA()` is
-the equal-length window immediately before B.
-
-- **One data model.** "Save as period" writes window B to a period's `startDate`/`endDate` and window A's
-  start to its optional `baselineStart` (`windowsToPeriodFields`), typed `experiment` by default.
-  `getPeriodVerdict` then compares `[baselineStart, startDate)` against the experiment's own range,
-  so the saved verdict is built on the earlier range the Compare table showed. An experiment with
-  no `baselineStart` (anything added directly on the Periods view without one) compares against all
-  history before its start date. `baselineStart` must be strictly before the start date; otherwise it
-  is ignored, the same defensiveness as an inverted `endDate`. An experiment's "before" side always
-  runs up to its start date, so a custom window A that ends earlier than the day before window B
-  gains the gap when saved; `CompareTab` says so (`windowAIsContiguous`).
-- **Dragging is a convenience, never the only way.** `charts/chartInteraction.tsx` gives a chart a
-  drag-to-select (`useChartInteraction`, fed by a `ChartInteractionProvider` in `Dashboard.tsx`)
-  and shaded period bands (`tagBandSpans`). A selection offers "Compare with the N days before" and "Save as a period";
-  every path also exists as date inputs on the Compare and Periods views. Wired into
-  `ConsistencyChart`, `BodyCompLineChart` and `RelativeStrengthChart`; `LiftChart` (a numeric-axis
-  scatter) has neither bands nor drag.
-- **One view, not three.** The former Compare, Experiments and Cycles views are one Compare view (`CompareTab.tsx`; its page title reads "Compare periods")
-  because they answer one question about a range and differ only in how the range was named. The
-  range (window B, plus the earlier window A) is the only input: typed, dragged out on a chart, or
-  filled in from a saved period in "Something you changed" (its dates and `baselineStart`; one list,
-  "Saved periods", from `getCycles`, which covers every type in *Something you changed*), or opened from a row's Compare
-  button on the Periods view. Every range gets
-  the same three things: a `getCycleReport` for it (`CycleReportBody`), the `compareWindows`
-  tables (`ComparisonTables`), and, when the range came from a saved period that has a verdict, that
-  period's `VerdictSummary`. Typing a date drops the saved-period framing, since the verdict no longer
-  describes what is on screen. The verdict compares against all history before the start
-  date when there is no `baselineStart`, while the tables use the equal-length window before it;
-  the verdict card states which. Compare does **not** gate on InBody: the comparison and the report
-  degrade on their own (body composition says why it can't be compared), and only a period's
-  verdict waits on both uploads, at which point it shows `InBodyUploadPrompt` in its place.
-- **Periods** are user-authored labelled stretches of time. *Period* is the athlete-facing word; the code,
-  storage key and wire/backup name still say *tag* (`types/tag.ts`, `contextTags.ts`,
-  `storage/tagsStorage.ts`, key `"context-tags"`, dataset `"tags"`), because renaming those would need a
-  storage migration and a wire-format change for no benefit to the athlete. They are
-  user-authored, persist only when `source === "upload"`, are wiped by Start over, and have
-  have no export or import of their own (the full backup, below, is the only file route, so there is one
-  way to get data out and back in), and sync between devices (see "Architecture:
-  cross-device sync"). Sample mode seeds a set of them (`generateSampleTags.ts`, one slot per domain of
-  *Something you changed*, so the demo shows verdicts of every kind) so the Periods, Compare and chart-band
-  views aren't empty; they are in memory only, never persisted or synced.
-- **One record for periods and experiments.** An experiment is a period of type `experiment`: something
-  the athlete tried. Every period is stored as a `ContextTag`; what the app derives from it follows its
-  type, and `TAG_GROUPS` (`types/tag.ts`) is the one place that is decided, in the words the type picker
-  shows. **Something you changed** is split into domains, each with a generic catch-all so an unsure
-  athlete can pick it and put the detail in the name: *Nutrition* (nutrition change, cut, bulk, maintain),
-  *Programming* (programming change, new cycle, deload), *Recovery* (recovery change) and *Something
-  else* (experiment, other). **Something that happened** is injury and travel: context only. A type
-  implies its domain, so no extra field is stored; adding a type is a new id in `TagType`,
-  `TAG_TYPE_LABEL` and `TAG_GROUPS`, never a migration (`tests/tagTypes.test.ts` pins that each type
-  sits in exactly one place). The behaviour is **group-driven, not per type**: every period shades
-  charts; cut and injury are named where they overlap a result; every type in *Something you changed*
-  (`CHANGE_TYPES`, `isChangeType`) is a training block (`CYCLE_TAG_TYPES`), can be opened on Compare, and
-  gets a before/after verdict (`hasVerdict` → `getPeriodVerdict`, which takes the period itself). The reason the verdict is not limited to `experiment`: with
-  catch-alls per domain, "Nutrition change" getting a verdict while "Cut" does not would look arbitrary,
-  and "did my lifts hold while body composition improved during the cut?" is the question an athlete asks.
-  A decline during a cut is expected, so a cut's verdict shows `VERDICT_NOTE.cut` under it (the same
-  sentence a cut overlapping a plateau already gets) rather than reading as a grade. Injury and travel
-  never get a verdict. `baselineStart` is optional on any period so changing a type never drops it. The
-  Periods view is the one list and one form (a kind choice, then a type grouped by domain; native
-  controls only, since `<select>` can nest just one level); Compare's "Save as period" writes the same
-  record, offering the types in *Something you changed*.
-- **Periods never change a result.** `getPlateauInsights`/`getAlignment` take `options.tags` and, when
-  a plateaued result's (or the alignment) window overlaps a cut or injury tag, add a `tagNotes`
-  sentence naming the tag. With no tags, or none overlapping, the output is identical to the
-  untagged one (the field is absent, not empty); `tests/insightTags.test.ts` pins that.
-- Analytics: `interaction_used` with a closed `InteractionName` union in `posthog.ts` — a name
-  from that list, never a value.
-
-## Architecture: cycle reports
-
-`cycleReport.ts` gives a retrospective per training block. **Cycles are user-defined only**:
-`getCycles()` turns periods (stored as tags) of every type in *Something you changed* (`CHANGE_TYPES`) into cycles
-(injury and travel are context, not blocks) and `customCycle()` takes typed dates. Automatic segmentation by lift-exposure
-share is *not* built — the plan requires prototyping it on a multi-year history and reviewing it by
-eye first, and none is in the repo. `Cycle.source` keeps `"detected"` so adding it changes no type.
-
-`getCycleReport()` does not recompute earlier phases: lift changes and their attribution come from
-`getRelativeStrength` (window = the cycle), and whether a body-comp change beats scan noise comes
-from `getBodyCompNoiseBands`/`isMeaningfulChange`. Volume is logged workouts per week. A cycle
-under `CYCLE_MIN_DAYS`, empty, or inverted is `insufficient` with a reason. The summary states
-volume, lift changes, then body composition; it never grades them (a test rejects judgement words).
-Injury/travel tags inside the cycle add a sentence naming them. Rendered by `CycleReportBody.tsx` inside the Compare view: a block tag fills the range in, and
-any range gets the same report (a typed range is the same as a block with no tag).
-
 ## Open items: what is unvalidated or undecided
 
-The insight pipelines above (noise band, relative strength, compare, periods, cycles) were built
-against the bundled sample and synthetic InBody data. The repo holds no real InBody history, and
-**the `insightConfig.ts` thresholds have been checked against only one real athlete's export** (the
-next item). Treat them as starting points and check them against more real exports before trusting a
-number. Specifically:
+- **One athlete.** The `PV_*` thresholds were validated on the bundled sample and one real export, which is the same athlete (the real export
+  contains the sample's rows plus newer ones). Check them on another athlete's export before trusting them.
+- **RX and Scaled for lifts** are judged separately; whether to merge them needs an athlete who logs Scaled lifts.
+- **Noise band.** `bodyCompNoise.ts` bands come from `paired-scans`, `residual` or `default`; anyone scanning monthly or less lands on `residual` or
+  `default` (3 lb for weight), which is why manual weigh-ins exist. Lean mass uses Soft Lean Mass where present else Skeletal Muscle Mass.
+- **Weigh-in delete has no confirmation**; an entry delete does.
+- **Entries reach a before and after rarely on sparse logs** (3 of 8 demo entries on the sample), so the facts lines carry weight.
+- **Chart drag-to-select and period bands are gone** with Compare; nothing replaces them on the date-range charts.
+- **Sync.** Verified by unit tests and by hand on two devices, not by an automated two-device test.
+- **Backup encryption.** The iteration count (600,000) and the strength bands are first drafts: measure derive time on a mid-range phone before
+  raising the former. The strength hint is length-only by design, with one guard for fewer than 5 distinct characters; long predictable
+  passphrases rate "Strong" (pinned in `tests/passphrase.test.ts`). Argon2id would be a new `encoding` via `kdf.name`. There is no passphrase
+  recovery, by design.
 
-- **One real export** (about three and a half years of workouts and eight InBody scans, months apart;
-  run locally and never committed, so no figures here). What it showed, recorded and not yet acted on:
-  (1) every noise band fell to the `default` method, because no two scans were within a week and no
-  rolling window of scans fit the 12-week span, so at that scanning cadence the two measured methods
-  are unreachable and the defaults are the whole story; (2) the 365-day relative-strength window
-  qualified only a small share of lifts, and a two-year window qualified noticeably more, so
-  `RS_WINDOW_DAYS` is the first value to revisit; (3) the alignment window is the union of every
-  classified lift's window and can span years, while its copy says "right now", so either cap the
-  window or reword; (4) most plateau rows were "not enough data" (typically one or two logged entries
-  against the three required), which makes the table long: collapsing them, as the strength section
-  already does, would help.
-- **Period types.** The domains and types in `TAG_GROUPS` are a first draft, picked from how an
-  athlete names changes, not measured on real use; the catch-all in each domain is what covers the
-  gaps. The verdict sentence is the same for every type ("... after this started"), and only a cut
-  has its own note. Sample mode seeds a period of every type except experiment, deload and other
-  (`tests/sampleDataFullness.test.ts` pins that the newer ones reach a verdict). An older build rejects a period with a
-  type it doesn't know.
+## Architecture: the Timeline
 
-- **Noise band.** On the synthetic sample the bands came from the `residual` method (weight
-  ±2.9 lb, lean ±2.1, fat mass ±2.3, body fat ±1.3 points) and no existing output changed. The
-  `paired-scans` method needs scans within 7 days of each other, so anyone scanning monthly or
-  less lands on `residual` or `default`; expect `default` under about 8 scans. Lean mass uses Soft
-  Lean Mass where present else Skeletal Muscle Mass; the band is estimated on that same field but
-  `computeBodyCompTrend` chooses per pair of scans, so an export mixing the two would judge a
-  delta in one field against a band from the other. The one behaviour change from bands: a +3 lb fat-mass case that used to read
-  `plateaued_body_comp` is now within the default 3 lb band (the test uses +4 lb and a new case
-  pins the within-band result).
-- **Relative strength.** Not spot-checked by hand against raw CSVs (compute the e1RM from
-  `best_result_raw` and the rep scheme in the title/description, average of Epley and Brzycki,
-  and compare with the chart tooltip; `tests/relativeStrength.test.ts` pins the same arithmetic).
-  On the sample only 4 of 32 lift series qualify — Back Squat has 29 sessions but 2 in the last
-  year — so `RS_WINDOW_DAYS` may be too strict for lifts tested rarely. RX and Scaled are split
-  per lift, as on Plateaus, which halves sessions for anyone who switches; merging load lifts is
-  an open question. A title naming a different scheme than the athlete did will be mis-estimated;
-  that is inherent to the export.
-- **Compare and Periods.** There is no touch dragging on charts (date inputs are the fallback).
-- **Sync.** Periods sync, but like everything in sync they are verified by unit tests and by hand on two
-  devices, not by an automated two-device test. A joiner running an older cached build rejects a
-  manifest naming a dataset it doesn't know (`tags`), so both devices need the current build; a
-  refresh fixes it.
-- **Backup encryption.** The iteration count (600,000) and the strength bands are first drafts: measure
-  derive time on a mid-range phone before raising the former. The strength hint is length-only by design
-  (character classes are ignored on purpose, since composition rules reward `Password1!`), with one
-  guard for fewer than 5 distinct characters. The known gap, pinned in `tests/passphrase.test.ts`, is that
-  long predictable passphrases (`passwordpasswordpassword`, `1234567890123456`) rate "Strong". Left as is
-  because encrypted backups are optional and the hint is not a gate; if it needs to be smarter, the options
-  are cheap pattern checks (repeated chunks, sequences, a short common-passwords list) or a real estimator
-  such as zxcvbn loaded only when the checkbox is ticked. Argon2id would be stronger against GPUs but needs a library; the upgrade path is
-  a new `encoding` via `kdf.name`. There is no passphrase recovery, by design. Not tested by hand on a real
-  password manager beyond the `autocomplete` attributes.
-- **Cycles.** Automatic detection is deferred. First prototype worth trying: a rolling share of
-  lift sessions per lift (about an 8-week window) with a boundary where the leading lifts change,
-  reviewed by eye on a multi-year history before committing to it. A lift can show a change with
-  no attribution when too few scans fall inside its window, and a cycle report only looks inside
-  the cycle (Compare is the before/after).
-- **Copy.** The period sentences (cut, injury) and the cycle-summary phrases ("not explained by body
-  mass", "partly body mass") are first drafts; check them against the voice rules below.
+An entry (`types/timeline.ts`) is something the athlete changed or something that happened: a kind (`initiation`: "changed" or "happened"), an area
+(Training, Nutrition, Health, Travel, Other), an optional name and note (up to 200 characters), a start date and an end date that is null when
+ongoing. In the app they are "entries" on the "Timeline"; "period", "tag", "experiment", "cycle" and "block" do not appear in copy.
+`lib/analytics/timeline.ts` holds the form's rules (`validateEntryInput`: every failing rule as a plain sentence, nothing pre-selected), the check on
+a received list (`validateEntryList`, shape only so another device's clock cannot make a good list unreadable), names, spans, overlap and lanes.
 
-## Architecture: Period verdicts
-
-`src/lib/analytics/periodVerdict.ts` is a third pipeline in the same family as Plateau
-Detector and Alignment above — same before/after performance-vs-body-comp comparison, same two
-datasets required — but anchored to an athlete-logged date instead of a rolling recent/prior
-window.
-
-- **An experiment is a tag** of type `experiment` (see "One record for periods and experiments" above):
-  a `startDate` ("when I tried this"), a `label` ("what I tried"), an optional `endDate` and an
-  optional `baselineStart` (where the "before" side starts; unset means all earlier history). It was
-  once its own IndexedDB dataset (key `"experiments"`); it no longer is. `Experiment`
-  (`src/types/experiment.ts`) survives only as what an older device or backup file still sends, and
-  `experimentToTag` (`experimentToTag.ts`) is the one place it becomes a period. The verdict types are in
-  `types/verdict.ts`. Added, edited and deleted on the Periods view, persisted like
-  every tag (only when `state.source === "upload"`, except what arrives by sync or restore).
-- **Migration** (`storage/legacyExperiments.ts`): on load, `App.tsx` moves anything still stored under
-  `"experiments"` into the tags (a tag already holding the id wins), then removes the old key. It writes
-  the merged tags first and **reads them back before deleting**, because `idbSet` swallows its own
-  failures and a write that didn't land would otherwise look like success and lose the experiments. It
-  is safe to run on every load and to run twice, and a stored list that doesn't validate is left alone.
-  `tests/legacyExperiments.test.ts` pins each of those.
-- **`getPeriodVerdict(period, workouts, inbodyScans, asOfDate)`** reuses #1's subject
-  identification and body-comp-trend helpers unchanged (`buildLiftSubjects`/
-  `buildBenchmarkSubjects`, `parseWorkoutDate`/`parseInBodyDate`, `computeBodyCompTrend`,
-  `isBodyCompDeclining`/`isBodyCompImproving`) — the normalization rules must not drift between
-  the three pipelines — but computes its own before/after split around the period's own
-  `startDate`, since #1's session-count windowing has no reason to land on either side of a date an
-  athlete picked. Its eligibility gate (≥3 subjects with data on both sides, ≥2 InBody scans on
-  each side) is checked independently per side, so `insufficient_data`'s `reason` names exactly
-  which side is thin — same `formatGateShortfall()` convention as #1/#2.
-- Classification is `improved`/`declined`/`no_change`/`mixed`/`insufficient_data` — `mixed` is a
-  strict-majority miss (no more than half of classified subjects agree), the same "informative,
-  not an error state" treatment Plateau Detector/Alignment give their own ambiguous cases.
-- Sample mode seeds periods (`src/lib/sample/generateSampleTags.ts`) at fixed month-offsets from the athlete's first logged workout (never
-  hardcoded calendar dates), chosen only when they leave enough history on both sides to pass the
-  eligibility gate above — the classification itself is never biased toward a rosy outcome; it falls
-  out of whatever the real sample data shows.
-- Wired into `App.tsx` behind the same gate as Plateau Detector/Alignment — neither runs until
-  both uploads are `"ready"` — as a map keyed by tag id for every period with a verdict (`hasVerdict`), and rendered by
-  `VerdictSummary.tsx` when one is picked on the Compare view and as a badge on its row on the Periods view, not
-  part of `Insights`/`buildInsights.ts`'s return shape.
+- **An entry never changes a number, a gate, a label or a verdict anywhere.** The only thing a rule reads is the kind: `insights/entryVerdict.ts`
+  gives an entry the athlete changed a before and after (the last N sessions during it against the last N before its start, N = min(4, during,
+  before), at least 3 per side, with `judgeWindows`' own state rules; a move up to RX inside it is one Up vote); something that happened gets
+  none. With fewer than 3 counted subjects it shows a shortfall sentence and facts lines, never a weaker claim. Body weight appears once over the
+  entry's span (`entryDisplay.ts`), with no sentence relating it to the verdict.
+- **The view** (`TimelineTab.tsx`, tab id `timeline`, over `components/dashboard/timeline/`): entries as bars stacked in lanes above one lane per
+  verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide, one
+  Selected panel, the entry form in a dialog, delete behind a confirmation. A row on Progress opens its lane through "See on timeline" under its
+  opened chart (not for a subject without a lane, nor a move up to RX).
+- **Storage and names.** Key `"timeline-entries"` (`storage/timelineStorage.ts`), persisted only when `source === "upload"`, wiped by Start over,
+  synced and backed up as the `timeline` dataset. Older shapes are read, never written: `storage/legacyTimeline.ts` moves `"context-tags"` (periods)
+  and `"experiments"` into the timeline on load (write, read back, then delete the old keys; safe to run twice), and `tags` and `experiments` on the
+  wire or in a backup are receive-only and folded into `timeline` by `planReceived`, using the table in `lib/analytics/legacyTimeline.ts` (cut, bulk,
+  maintain, nutrition: Nutrition; programming, cycle, deload: Training; recovery: Health; experiment, other: Other; all "changed"; injury: Health
+  and travel: Travel, "happened"). A stored `baselineStart` is ignored. An older build rejects a manifest naming `timeline`, so both devices need the
+  current build.
+- Sample mode seeds entries (`sample/generateSampleTimeline.ts`, at fixed offsets from the first logged workout); they are in memory only.
+- Analytics: `entry_added`, `entry_edited`, `entry_deleted`, `timeline_range_changed`, `timeline_subject_opened`, all value-free.
 
 ## Architecture: manual weigh-ins
 
 A weigh-in (`types/weighIn.ts`) is a date and a weight in pounds (50 to 600), an optional note (up to 200 characters) and `source: "manual"`; one per
 day, so saving a date that has one replaces it. It is a persisted athlete dataset: its own IndexedDB key (`storage/weighInsStorage.ts`, `"weigh-ins"`),
-written only when the data source is an upload (sample mode keeps it in memory, like periods), wiped by Start over, and carried by sync and backup as
+written only when the data source is an upload (sample mode keeps it in memory, like timeline entries), wiped by Start over, and carried by sync and backup as
 the `weighIns` dataset (validated all-or-nothing by `validateWeighInList`, which checks shape only, so another device's clock cannot make a good list
 unreadable; the form alone refuses a date after today). An older build rejects a manifest naming `weighIns`, so both devices need the current build.
 The entry panel is on the Body Comp view (`WeighInsPanel.tsx`), which lists InBody scans (read-only) and weigh-ins together.
@@ -595,9 +386,9 @@ back to one.
   and adding one was scoped out of this feature — see `webrtcTransport.ts`'s header comment.
   Those two paths are verified manually, across two real devices, before any change here ships.
 - **The wire protocol**, once connected: the host sends one small manifest naming which
-  datasets it's about to send — some subset of `["workout", "bodyComp", "weighIns", "tags"]` (experiments travel
-  inside `tags`; `"experiments"` is still a name on the wire, but receive-only, see below), never
-  assumed, since a device might not have InBody data or tags — then for each
+  datasets it's about to send — some subset of `["workout", "bodyComp", "weighIns", "timeline"]` (`"tags"` and `"experiments"` are still
+  names on the wire, but receive-only, see below), never
+  assumed, since a device might not have InBody data or entries — then for each
   dataset in order, `chunkPayload()`'s header followed by its chunks; once every dataset is sent,
   the host closes the channel. The joiner feeds every message after the manifest into a fresh
   `Reassembler` per dataset until each reports done.
@@ -615,22 +406,21 @@ back to one.
   workout log moves `App` to its reveal screen, which unmounts the dashboard and this dialog with it.
   Backup restore uses the same plan.
 - **What syncs: the athlete's data, and only their data.** The workout log, the InBody history, manual weigh-ins
-  and periods (stored as tags; experiments are periods of type `experiment`). Preferences and configuration deliberately do **not** sync: theme
+  and timeline entries. Preferences and configuration deliberately do **not** sync: theme
   (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
   reasonably want different ones. PostHog's anonymous id in `localStorage` doesn't either — it is an
   analytics identifier. This is enforced at the wire, not by convention: `SyncDataset` has exactly
-  five members and `decodeHeader` rejects any other name. One of them, `experiments`, is **receive-only**:
-  an older device (or an older backup file) still sends experiments as their own list, and
-  `planReceived` validates them (`validateExperiments`) and folds them into the tags that arrive with
-  them, so there is one tags conflict and one handler; nothing sends the name any more, and an older
-  build that receives tags containing the `experiment` type rejects that dataset as an unknown type (`tests/chunking.test.ts` pins that
-  `preferences` and `theme` are rejected, `tests/receivedDatasets.test.ts` that old experiments convert). **A new persisted dataset that is the athlete's data must
+  six members and `decodeHeader` rejects any other name. Two of them, `tags` (periods) and `experiments`, are **receive-only**:
+  an older device (or an older backup file) still sends them, and `planReceived` validates them (`validateLegacyTags`,
+  `validateExperiments`), reads them as entries and folds them into the timeline that arrives with
+  them, so there is one timeline conflict and one handler; nothing sends either name any more (`tests/chunking.test.ts` pins that
+  `preferences` and `theme` are rejected, `tests/receivedDatasets.test.ts` that old periods and experiments convert). **A new persisted dataset that is the athlete's data must
   be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a
   case in `planReceived`, an `onSynced*` handler in `App.tsx`), which also adds it to backup, since
   `BackupDatasets` is keyed by `SyncDataset`; a new preference or setting must not.
   **Everything that arrives is validated before anything is written**, to the shape its own parser
   produces (`validateReceived.ts` for the workout log, InBody history and legacy experiments,
-  `validateTagList` for tags). Validation is all-or-nothing for the whole transfer: one bad row rejects
+  `validateEntryList` for the timeline). Validation is all-or-nothing for the whole transfer: one bad row rejects
   its dataset with a reason naming the row, and then nothing at all is applied, the local copy is
   left exactly as it was, and a rejected dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
   columns the app doesn't read are kept, and a payload that isn't valid JSON is reported as
@@ -639,7 +429,7 @@ back to one.
   the transfer as `sync_failed` with the fixed reason `invalid_data`. Datasets that were fine are
   not applied either.
 - **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` (and
-  `handleSyncedTags`) — all are
+  `handleSyncedTimeline`) — all are
   unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
   `SyncDialog` is what gates the call, not the handler. Synced data always carries
   `source: "upload"` (sync's entry points in the dashboard's Settings sheet, `SettingsSheet.tsx`,
@@ -661,7 +451,7 @@ back to one.
 `src/lib/backup/` and `src/components/backup/` let an athlete download everything they have in
 the app as one JSON file and restore it later, after clearing the browser or on another computer.
 The workout and InBody CSVs are already their own backups; what only a backup file preserves is
-**periods (experiments included)**. It reuses sync's validators and planner rather than growing its
+**timeline entries and weigh-ins**. It reuses sync's validators and planner rather than growing its
 own, so the two can't drift on what a valid row is.
 
 - **Format (v1)**: `{ format: "swift-backup", version, exportedAt, encoding: "plain", datasets }`, or
@@ -670,8 +460,8 @@ own, so the two can't drift on what a valid row is.
   keyed by `SyncDataset`. Athlete data
   only: never theme, grouping or date range. Empty datasets are omitted from the file, so a
   backup only ever replaces, never tells a restore to clear something. A file is written with
-  `workout`, `bodyComp` and `tags`; one made before experiments were tags has an `experiments`
-  section, which is still read and folded into the tags on restore. Unknown dataset keys are
+  `workout`, `bodyComp`, `weighIns` and `timeline`; one made before the timeline has `tags` and `experiments`
+  sections, which are still read and folded into the timeline on restore. Unknown dataset keys are
   ignored; a newer `version` or unknown `encoding` is refused with "made by a newer version".
 - **Encryption is optional and off by default** (`encryption.ts`, `passphrase.ts`). PBKDF2-HMAC-SHA-256
   (`KDF_ITERATIONS` = 600,000, OWASP's floor for it) into an AES-256-GCM key, a fresh random 16-byte salt
@@ -709,11 +499,11 @@ own, so the two can't drift on what a valid row is.
   Swift?"), the only place a new browser can reach. The landing page's dropzone and paste handler
   route a `.json` file (`looksLikeBackup`) to restore instead of the CSV parser, which would reject it. The labels are Backup/Restore, not Export/Import, because the athlete's
   goal is getting their data back, because "Import" suggests adding rather than replacing, and
-  because "Export" already means the SugarWOD CSV on the landing page. Periods have no separate
+  because "Export" already means the SugarWOD CSV on the landing page. Timeline entries have no separate
   export or import: they travel in the backup like everything else, which is all-or-nothing and replaces
   rather than merges. Sample data can't be backed up and has nothing to confirm on
   restore (it is never stored). Restore errors stay inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
-  the `onSynced*` handlers. `handleSyncedTags` must not look at `state`: on the landing page
+  the `onSynced*` handlers. `handleSyncedTimeline` must not look at `state`: on the landing page
   it is still the previous screen, which used to make received experiments vanish on reload.
 - **Analytics**: `interaction_used` with `backup_exported`/`backup_imported` (the event names predate the Download/Restore labels and stay as
   they are: a closed vocabulary, not copy), nothing else: no
@@ -728,7 +518,7 @@ home. Read the header comments of the files named here before moving anything be
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains, three
   modalities and Movements — a classification of the same workouts, not separate data), Body (Body Comp) and
-  Insights (Progress, Compare, Periods). The views
+  Insights (Progress, Timeline). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
@@ -737,7 +527,7 @@ home. Read the header comments of the files named here before moving anything be
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
   `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress view
   keeps its earlier internal names (tab id `lifts`, `LiftsTab.tsx`); only its label and page title changed.
-  Compare and Periods are named to match (`compare`/`CompareTab.tsx`, `periods`/`PeriodsTab.tsx`).
+  Timeline is `timeline`/`TimelineTab.tsx`.
 - **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
   under the page title ("Showing all time, grouped by month"), next to the charts they change
   rather than in the global header. It sits in its own row under a thin rule (with "Stored in
@@ -764,9 +554,8 @@ first card doesn't repeat the page title above it.
 
 `src/App.tsx` owns two independent state machines — `AppState` (SugarWOD rows) and
 `BodyCompState` (InBody rows, from `BodyCompTab.tsx`) — that are deliberately never joined as
-one row shape (see the comment above `handleBodyCompFile`). The Plateau Detector and Alignment
-rollup above do read both together, but as two separate inputs to a pure function, never merged
-into one row. Both now sit on top of a browser-local persistence layer, `src/lib/storage/`,
+one row shape (see the comment above `handleBodyCompFile`). The Insights views
+do read both together, but as separate inputs to pure functions, never merged into one row. Both now sit on top of a browser-local persistence layer, `src/lib/storage/`,
 added after the app initially held everything in memory only.
 
 - **`idbStore.ts`** is the only file that touches `indexedDB` directly: one database
@@ -778,13 +567,12 @@ added after the app initially held everything in memory only.
   never a requirement, so a blocked or disabled database must not break the app.
 - **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** /
   are thin typed wrappers, one key each (`"workout-rows"`, `"body-comp-rows"`, `"view-preferences"`,
-  plus `tagsStorage.ts` with `"context-tags"` — see "Architecture: Experiments" and "window comparison
-  and periods" above). `legacyExperiments.ts` is the one remaining reader of the retired
-  `"experiments"` key, a one-way migration into the tags. Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
+  `timelineStorage.ts` with `"timeline-entries"`, `weighInsStorage.ts` with `"weigh-ins"`). `legacyTimeline.ts` is the one remaining reader of the
+  retired `"context-tags"` and `"experiments"` keys, a one-way migration into the timeline. Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
   directly — a new dataset gets its own wrapper file, not a call site that reaches past it.
 - **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
-  existing loading UI — no new component) and a mount-only effect loads all four datasets
-  (workout rows, body-comp rows, view preferences, tags; any old experiments are migrated into the tags
+  existing loading UI — no new component) and a mount-only effect loads all five datasets
+  (workout rows, body-comp rows, view preferences, timeline entries, weigh-ins; anything stored under the older period and experiment keys is migrated into the timeline
   first) from storage in parallel before
   deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
@@ -811,7 +599,7 @@ added after the app initially held everything in memory only.
   picking the same file twice still fires a change event), but without `UploadDropzone`'s
   drag-and-drop box, since this is a small utility action rather than the first-upload call to
   action. Both call the exact same `handleFile`/`handleBodyCompFile` handlers a first upload
-  uses, so a re-upload fully replaces only its own dataset — `tags` and the other dataset
+  uses, so a re-upload fully replaces only its own dataset — the timeline and the other dataset
   are untouched, exactly as they already were before these controls existed; no new
   data-merging logic needed.
 - **What's actually stored isn't the date range** — it's the *preset id* (`DateRangePreset`,
@@ -832,7 +620,7 @@ added after the app initially held everything in memory only.
   calls it (in the Settings sheet) is now gated behind a confirmation `AlertDialog`
   (`src/components/ui/alert-dialog.tsx`) whenever `source === "upload"` — sample mode still
   resets in one click, since nothing persisted is at risk there. The dialog's copy names exactly
-  what gets deleted (workout log, body composition history, weigh-ins, periods with experiments included) so this is the one
+  what gets deleted (workout log, body composition history, weigh-ins, timeline entries) so this is the one
   place all of them are named together.
 - The theme preference remains on its own `localStorage` key (see Theming below), not this
   layer — it needs to be read synchronously before first paint to avoid a flash of the wrong
