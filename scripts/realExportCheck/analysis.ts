@@ -1,5 +1,20 @@
 /** The checks A1-MAN-01 and A1-MAN-02 ask for, and the ones the later decisions added. Pure functions over `Subject[]`. */
-import { A1, bestOf, classify, dayNumber, judge, mulberry32, verdictOf, type Row, type Session, type State, type Subject, type Verdict } from "./a1.ts";
+import { PV_MAX_WINDOW, PV_MIN_SESSIONS_PER_SIDE } from "@/lib/analytics/insightConfig";
+import type { ProgressRow as Row } from "@/lib/analytics/insights/headline";
+import type { ProgressSession as Session, ProgressSubject as Subject } from "@/lib/analytics/insights/sessions";
+import { dayNumber, judgeWindows, progressVerdict as verdictOf, type ProgressVerdict as Verdict, type VerdictState as State } from "@/lib/analytics/insights/verdict";
+
+/** Deterministic PRNG for the shuffle baseline. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 export interface Count { total: number; up: number; down: number; nts: number; nc: number }
 
@@ -16,9 +31,9 @@ export function stability(subjects: readonly Subject[]): { pairs: number; flips:
   let pairs = 0, flips = 0, counted = 0;
   for (const s of subjects) {
     const n = s.sessions.length;
-    if (n < 2 * A1.minPerSide + 1) continue;
+    if (n < 2 * PV_MIN_SESSIONS_PER_SIDE + 1) continue;
     counted++;
-    for (let k = 2 * A1.minPerSide; k < n; k++) {
+    for (let k = 2 * PV_MIN_SESSIONS_PER_SIDE; k < n; k++) {
       const a = verdictOf(s.sessions.slice(0, k), s.lowerIsBetter, s.kind);
       const b = verdictOf(s.sessions.slice(0, k + 1), s.lowerIsBetter, s.kind);
       if (!a || !b) continue;
@@ -106,14 +121,14 @@ export function entryCheck(subjects: readonly Subject[], spec: EntrySpec, asOf: 
   for (const s of subjects) {
     const during = s.sessions.filter((x) => x.date >= spec.start && x.date <= end);
     const before = s.sessions.filter((x) => x.date < spec.start);
-    const N = Math.min(A1.maxWindow, during.length, before.length);
-    if (N >= A1.minPerSide) {
-      const v = judge(before.slice(-N), during.slice(-N), s.sessions.filter((x) => x.date < (during.slice(-N)[0] as Session).date), s.lowerIsBetter, s.kind);
+    const N = Math.min(PV_MAX_WINDOW, during.length, before.length);
+    if (N >= PV_MIN_SESSIONS_PER_SIDE) {
+      const v = judgeWindows(before.slice(-N), during.slice(-N), s.sessions.filter((x) => x.date < (during.slice(-N)[0] as Session).date), s.lowerIsBetter, s.kind);
       res.eligible++;
       if (v.state === "up") res.up++; else if (v.state === "down") res.down++; else if (v.state === "not-tested-since") res.nts++; else res.nc++;
     } else if (during.length >= 1 && before.length >= 1) {
       res.factsOnly++;
-      near.push({ name: s.name, need: Math.max(0, A1.minPerSide - during.length), last: (during[during.length - 1] as Session).date });
+      near.push({ name: s.name, need: Math.max(0, PV_MIN_SESSIONS_PER_SIDE - during.length), last: (during[during.length - 1] as Session).date });
     }
   }
   res.closest = near.sort((a, b) => a.need - b.need || (a.last < b.last ? 1 : -1)).slice(0, 2).map(({ name, need }) => ({ name, need }));
@@ -167,4 +182,3 @@ export function sessionCountBands(subjects: readonly Subject[]): { one: number; 
   };
 }
 
-export { bestOf, classify };

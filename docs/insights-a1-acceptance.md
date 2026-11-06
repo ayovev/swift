@@ -250,7 +250,7 @@ days) it is recent; with the latest on 2025-09-10 (366 days) it is `not recent`.
 **A1-REC-03 A not-recent subject** shows its verdict marked "Not recent: last logged Aug 2025" and is excluded from the
 counts, the label, the front door and the "counted" figure.
 
-**A1-REC-04 The sample drifts with the date** (derived, to be confirmed by running). As of 2027-04-30 Power Snatch
+**A1-REC-04 The sample drifts with the date** (confirmed by `tests/progressVerdict.test.ts`). As of 2027-04-30 Power Snatch
 (last 2026-03-10), Nancy (2026-04-13) and Deadlift (2026-04-29) are `not recent`, the Fran and Grace move-ups have
 passed 12 months, and the headline reads 4 up of 9 (5 no clear change).
 

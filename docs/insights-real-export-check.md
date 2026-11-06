@@ -24,11 +24,12 @@ The report is printed and written to `.vitest/real-export-report.txt`, which git
 the files you name and prints. **Keep the export itself out of the repository** (a `private/` folder is git-ignored for it); the
 check never copies it.
 
-Implementation: `scripts/realExportCheck/` (`a1.ts` the A1 rules, `analysis.ts` the checks, `report.ts` the text) run through
-`tests/realExportCheck.test.ts`. The same test file pins the reference implementation to the spec's figures for the bundled sample
-(45 subjects; 8 up, 1 down, 5 no clear change, 11 fewer than 6, 20 not recent; "Improving in 8 of 14"; 272 of 526 weight entries
-unused, 210 with no readable scheme, 15 outside 1 to 8 reps, 47 no lift named; 89 of 246 lift sessions as max efforts), and checks
-that its lift builder produces the same entries as the app's `buildLiftSubjects`. `npm test` runs those and skips the real-export part.
+Implementation: the report is built from the real engine, `src/lib/analytics/insights/` (sessions, verdict, headline), by
+`scripts/realExportCheck/` (`analysis.ts` the checks, `report.ts` the text) through `tests/realExportCheck.test.ts`. The engine's own cases,
+including the figures the spec records for the bundled sample (45 subjects; 8 up, 1 down, 5 no clear change, 11 fewer than 6, 20 not recent;
+"Improving in 8 of 14"; 272 of 526 weight entries unused, 210 with no readable scheme, 15 outside 1 to 8 reps, 47 no lift named; 89 of 246 lift
+sessions as max efforts), are in `tests/progressVerdict.test.ts`, which also checks that the engine's lift grouping produces the same entries as
+the app's `buildLiftSubjects`. `npm test` runs those and skips the real-export part.
 
 ## What each section tells you, and what to look for
 

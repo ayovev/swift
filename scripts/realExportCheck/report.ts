@@ -1,6 +1,7 @@
 /** Formats the real-export check. Counts and percentages only, unless `names` is true: lift and benchmark names are training content. */
 import { bodyCoverage, entryCheck, mergeCheck, sessionCountBands, shuffleBaseline, stability, type EntrySpec, type Scan } from "./analysis.ts";
-import { classify, type Subject, type Unused } from "./a1.ts";
+import { classifySubjects, headlineSentence } from "@/lib/analytics/insights/headline";
+import type { ProgressSubject as Subject, UnusedLoadRows as Unused } from "@/lib/analytics/insights/sessions";
 
 export interface CheckInput {
   subjects: Subject[];
@@ -15,7 +16,7 @@ const pct = (a: number, b: number): string => (b === 0 ? "n/a" : `${((a / b) * 1
 
 export function buildReport(input: CheckInput): string {
   const { subjects, unused, asOf } = input;
-  const { rows, headline } = classify(subjects, asOf);
+  const { rows, headline } = classifySubjects(subjects, asOf);
   const out: string[] = [];
   const h = (t: string): void => { out.push("", t, "-".repeat(t.length)); };
   out.push(`Swift real-export check (as of ${asOf}). Local only: nothing here was sent anywhere.`);
@@ -33,7 +34,7 @@ export function buildReport(input: CheckInput): string {
   h("2. Verdicts today");
   const g = (k: string): number => rows.filter((r) => r.group === k).length;
   out.push(`Up ${g("up")} (including ${headline.moveUps} that moved up to RX), Down ${g("down")}, Not tested since ${g("not-tested-since")}, No clear change ${g("no-clear-change")}, Fewer than 6 sessions ${g("few")}, Not recent ${g("not-recent")}.`);
-  out.push(`Headline: ${headline.label ?? "none"}. ${headline.sentence}`);
+  out.push(`Headline: ${headline.label ?? "none"}. ${headline.label ? headlineSentence(headline.label, headline.up, headline.down, headline.noClearChange) : "No headline yet"}`);
   out.push(`Left out: ${headline.leftOut.under6} with under 6 sessions, ${headline.leftOut.notRecent} not logged in 12 months, ${headline.leftOut.notTested} not tested since.`);
   const maxEff = subjects.filter((s) => s.kind === "lift").reduce((n, s) => n + s.sessions.filter((x) => x.maxEffort).length, 0);
   const liftSessions = subjects.filter((s) => s.kind === "lift").reduce((n, s) => n + s.sessions.length, 0);

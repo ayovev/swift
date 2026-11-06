@@ -145,3 +145,37 @@ export const CYCLE_MAX_FOCUS_LIFTS = 3;
 
 /** InBody scans inside the cycle needed before its body-composition change is reported. Tunable. */
 export const CYCLE_MIN_SCANS = 2;
+
+// ── Progress verdict (insights/) ────────────────────────────────────────
+// The one real-change rule for a lift or benchmark. All tunable; the reasoning and the measurements behind each value are in
+// tests/progressVerdict.test.ts (the cases) and are checked against an export with `npm run check:export`.
+
+/** Sessions each side of a verdict needs, so a subject needs twice this many. Fewer gives a facts line, not a weaker verdict. */
+export const PV_MIN_SESSIONS_PER_SIDE = 3;
+
+/** Most sessions on each side of a verdict (the recent N against the N before them, N = min(this, floor(sessions / 2))). */
+export const PV_MAX_WINDOW = 4;
+
+/**
+ * Change in the best of each window, in percent, that reads as a real change. Compared after rounding half away from zero to one
+ * decimal. Chosen over 3% because it differs from "3% or a record" on one subject of the sample, where the more conservative reading is right.
+ */
+export const PV_CHANGE_THRESHOLD_PCT = 5;
+
+/**
+ * A record is the recent best at least this far above the best of every session before the recent window. It sits above the estimator's
+ * own error: Epley and Brzycki sit about 1.9% either side of their average, and mixed rep schemes are routine.
+ */
+export const PV_RECORD_MARGIN_PCT = 2;
+
+/** A subject whose latest session is further than this many days before the reference date is "not recent" and is left out of the counts. */
+export const PV_RECENT_DAYS = 365;
+
+/** A move up to RX counts as an up vote for this many days after the first RX session. */
+export const PV_MOVE_UP_VOTE_DAYS = 365;
+
+/** Fewest counted subjects before the headline shows a label. */
+export const PV_HEADLINE_MIN_COUNTED = 3;
+
+/** Compared sessions spanning more than this many days earn a long-gap note (24 months). */
+export const PV_LONG_GAP_DAYS = 730;
