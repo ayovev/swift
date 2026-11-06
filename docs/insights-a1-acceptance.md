@@ -729,6 +729,13 @@ no before and after comparison.", and still shows its body weight line and overl
 
 **A1-TLN-40 A new or edited entry** has its before and after recalculated from the sessions when saved.
 
+**A1-TLN-41 No baseline date.** The entry form and detail have no "before starts" field. An entry stored with a `baselineStart` loads, the
+value is ignored, and a verdict is the same with or without it (the last N sessions before the start). The next save writes the entry
+without it.
+
+**A1-TLN-42 No focus lifts.** An entry's detail shows no focus-lifts line and the form has no such field. The lifts it concerned appear only
+as the subjects in its before and after list or its facts lines.
+
 ## Manual checks (MAN)
 
 **A1-MAN-01 Real export.** Run the rules on the real export and confirm the stability figures in the spec are in the

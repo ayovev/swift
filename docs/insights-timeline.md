@@ -164,9 +164,19 @@ before and after comparison.") but still shows its body weight line and overlaps
 needs, and lowering the per-side gate to 2 changes none of them, because few sessions are logged inside a 3-month span. The facts lines
 exist for that case. The sample is synthetic; the real export is the check (A1-MAN-01).
 
+## Decided: two things removed
+
+- **`baselineStart` is dropped.** It was a manual date for where the "before" side starts. The windows are session-based now (the last N
+  sessions before the entry's start, N at most 4), so there is no long stretch of history to trim; on a sparse log, moving the date later
+  only shrinks the window below the minimum and turns the verdict into a shortfall; it invites tuning the comparison until it looks right,
+  against the app staying descriptive; and the entry form has no such field. Where an athlete wants the "before" to ignore something, the
+  long-gap note and the overlapping entries named in the detail already show it. A stored `baselineStart` is read and ignored and is
+  dropped on the next save; nothing is migrated for the athlete. A1-TLN-41.
+- **Focus lifts are dropped.** The entry detail already shows which lifts it concerned: with a verdict, the list of subjects compared are
+  the lifts trained at least 3 times during the entry; without one, the facts lines list the subjects with a session on each side. A
+  separate chosen field would add a fiddly form control and a derived line would repeat the same names. If it is missed, one derived
+  line ("Trained most during this entry: Snatch (5 sessions), Front Squat (4).") is the smallest thing to add. A1-TLN-42.
+
 ## Proposed
 
-Awaiting your answers; nothing below is decided.
-
-1. **`baselineStart`** (a manual start for the "before" side) stays only if it earns its place.
-2. **Focus lifts** on an entry's detail ("what it was"): chosen by the athlete or derived from the sessions inside the span.
+Nothing in the Timeline awaits an answer. Open elsewhere: the real-export check (A1-MAN-01, A1-MAN-02) and merging RX and Scaled for lifts.

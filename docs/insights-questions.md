@@ -63,13 +63,14 @@ is context for it.
 The model, the 12-type replacement and the new names are in [`insights-timeline.md`](insights-timeline.md). An item is an
 **entry** on a **timeline**; this section keeps the original wording of the decisions.
 
-- An entry's detail view has two parts. **What it was**: its span and its focus lifts (workouts per
-  week was removed: most athletes train about the same amount, so it helps no one). **What it did**:
+- An entry's detail view has two parts. **What it was**: its span and note (workouts per
+  week was removed: most athletes train about the same amount, so it helps no one; focus lifts were dropped, since the verdict's
+  list of subjects already shows which lifts it concerned). **What it did**:
   A1's verdict applied to the period, comparing its sessions with the sessions immediately before it,
   with the body-context line beside it, and stating plainly when body data is absent.
 - The verdict needs SugarWOD only. Body composition is **never folded into the verdict**.
 - "It happened" entries (injury, travel and the like) are context only and get no verdict. The cut note is gone, since a row
-  states body weight. The manual `baselineStart` leaves the normal path and stays only if it earns its place.
+  states body weight. The manual `baselineStart` is dropped (see `insights-timeline.md`).
 - **Context only, for every entry:** a note naming the entry attaches to any verdict (per
   subject or aggregate) whose sessions overlap it. An entry never changes a number or a gate.
 - Cycle reports and automatic cycle detection are not part of this; detection stays deferred.
