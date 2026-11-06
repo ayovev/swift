@@ -28,6 +28,8 @@ export interface ProgressSession {
   value: number;
   /** The workout's title or description names an explicit rep max ("3RM") or a rep ladder. A benchmark is always one. */
   maxEffort: boolean;
+  /** SugarWOD's own display of the score ("14:37", "17+20"), for a benchmark. */
+  display?: string;
 }
 
 export interface ProgressSubject {
@@ -39,6 +41,8 @@ export interface ProgressSubject {
   name: string;
   status: SubjectStatus;
   kind: "lift" | "benchmark";
+  /** How a value is shown: pounds, a clock time, or rounds and reps. */
+  format: "load" | "time" | "rounds-reps";
   lowerIsBetter: boolean;
   /** One per day, ascending. */
   sessions: ProgressSession[];
@@ -55,6 +59,20 @@ export interface UnusedLoadRows {
   outsideRange: number;
   noLiftNamed: number;
   neitherStatus: number;
+}
+
+/** Reps in one round, for the Rounds + Reps benchmarks whose round is fixed (Cindy: 5 + 10 + 15). Without it a difference in reps is not stated. */
+export const REPS_PER_ROUND: Record<string, number> = { cindy: 30 };
+
+/** "17+20" is 17 rounds and 20 reps; "16" is 16 rounds. */
+export function parseRoundsReps(display: string): { rounds: number; reps: number } | null {
+  const m = /^\s*(\d+)(?:\s*\+\s*(\d+))?\s*$/.exec(display);
+  return m ? { rounds: Number(m[1]), reps: Number(m[2] ?? 0) } : null;
+}
+
+function roundsRepsTotal(display: string, repsPerRound: number): number | null {
+  const rr = parseRoundsReps(display);
+  return rr ? rr.rounds * repsPerRound + rr.reps : null;
 }
 
 const EXPLICIT_RM = /(\d+)\s*-?\s*rm\b/i;
@@ -139,17 +157,32 @@ export function buildProgressSubjects(rows: readonly SugarWodRow[]): { subjects:
       if (entries.length === 0) continue;
       entries.sort((a, b) => (a.date < b.date ? -1 : 1));
       const movement = normalizeLiftName(group.displayName);
-      subjects.push({ key: `${movement}|${status}`, movement, name: group.displayName, status, kind: "lift", lowerIsBetter: false, sessions: collapse(entries, false), entries });
+      subjects.push({ key: `${movement}|${status}`, movement, name: group.displayName, status, kind: "lift", format: "load", lowerIsBetter: false, sessions: collapse(entries, false), entries });
     }
   }
 
   for (const candidate of buildBenchmarkSubjects(dated)) {
     const lower = candidate.scoreDirection === "lower_better";
-    const entries = candidate.entries
-      .map((e) => ({ date: e.date.format("YYYY-MM-DD"), value: e.value, maxEffort: true }))
-      .sort((a, b) => (a.date < b.date ? -1 : 1));
     const movement = candidate.subject.name.toLowerCase();
-    subjects.push({ key: `${movement}|${candidate.subject.status}`, movement, name: candidate.subject.name, status: candidate.subject.status, kind: "benchmark", lowerIsBetter: lower, sessions: collapse(entries, lower), entries });
+    const repsPerRound = lower ? null : (REPS_PER_ROUND[movement] ?? null);
+    const displays = new Map<string, string>();
+    for (const w of dated) {
+      if (w.raw.title.trim().toUpperCase() === movement.toUpperCase() && w.raw.rx_or_scaled === candidate.subject.status) {
+        displays.set(`${w.date.format("YYYY-MM-DD")}|${parseNumericField(w.raw.best_result_raw)}`, w.raw.best_result_display);
+      }
+    }
+    const entries = candidate.entries
+      .map((e) => {
+        const date = e.date.format("YYYY-MM-DD");
+        const display = displays.get(`${date}|${e.value}`);
+        // Rounds + Reps are read from the display ("17+20"), never from the raw float, whose encoding varies; with a known number of
+        // reps per round the value is the total reps so a verdict compares like with like.
+        const total = repsPerRound && display ? roundsRepsTotal(display, repsPerRound) : null;
+        return { date, value: total ?? e.value, maxEffort: true, ...(display ? { display } : {}) };
+      })
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+    const format = lower ? "time" : "rounds-reps";
+    subjects.push({ key: `${movement}|${candidate.subject.status}`, movement, name: candidate.subject.name, status: candidate.subject.status, kind: "benchmark", format, lowerIsBetter: lower, sessions: collapse(entries, lower), entries });
   }
   return { subjects, unused };
 }

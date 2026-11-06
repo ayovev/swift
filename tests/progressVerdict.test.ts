@@ -18,7 +18,10 @@ const lift = (...sessions: ProgressSession[]) => progressVerdict(sessions, false
 
 function subject(partial: Partial<ProgressSubject> & { name: string; status: "RX" | "SCALED"; sessions: ProgressSession[] }): ProgressSubject {
   const movement = partial.movement ?? partial.name.toLowerCase();
-  return { key: `${movement}|${partial.status}`, movement, kind: "lift", lowerIsBetter: false, entries: partial.sessions, ...partial };
+  const kind = partial.kind ?? "lift";
+  const lowerIsBetter = partial.lowerIsBetter ?? false;
+  const format = partial.format ?? (kind === "lift" ? "load" : lowerIsBetter ? "time" : "rounds-reps");
+  return { key: `${movement}|${partial.status}`, movement, kind, format, lowerIsBetter, entries: partial.sessions, ...partial };
 }
 
 /** One row of a lift, `date` as YYYY-MM-DD; reps default to a single. */
