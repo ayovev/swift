@@ -3,11 +3,8 @@ import dayjs from "dayjs";
 import {
   describeWithinNoise,
   getBodyCompNoiseBand,
-  getBodyCompNoiseBands,
   isMeaningfulChange,
-  NO_NOISE_BANDS,
 } from "@/lib/analytics/bodyCompNoise";
-import { computeBodyCompTrend, isBodyCompDeclining } from "@/lib/analytics/plateauDetector";
 import { DEFAULT_NOISE_BAND, NOISE_BAND_FLOOR_FRACTION } from "@/lib/analytics/insightConfig";
 import type { InBodyRow } from "@/types/inbody";
 
@@ -166,38 +163,6 @@ describe("isMeaningfulChange", () => {
     expect(isMeaningfulChange(3, 3)).toBe(false);
     expect(isMeaningfulChange(3.1, 3)).toBe(true);
     expect(isMeaningfulChange(-3.1, 3)).toBe(true);
-  });
-});
-
-describe("bands feeding computeBodyCompTrend", () => {
-  const start = scan(at("2026-01-01"), { "Soft Lean Mass(lb)": "140", "Body Fat Mass(lb)": "25", "Percent Body Fat(%)": "15" });
-  const end = scan(at("2026-02-01"), { "Soft Lean Mass(lb)": "138", "Body Fat Mass(lb)": "27", "Percent Body Fat(%)": "15.5" });
-
-  it("flags deltas inside the band and leaves the delta values alone", () => {
-    const trend = computeBodyCompTrend(start, end, getBodyCompNoiseBands([start, end]));
-    expect(trend.leanMassDelta).toBe(-2);
-    expect(trend.fatMassDelta).toBe(2);
-    expect(trend.withinNoise).toEqual({ leanMass: true, fatMass: true, bodyFatPct: true });
-    expect(isBodyCompDeclining(trend)).toBe(false);
-  });
-
-  it("with no bands, keeps the sign-only behaviour and sets no flags", () => {
-    const trend = computeBodyCompTrend(start, end);
-    expect(trend.withinNoise).toBeUndefined();
-    expect(isBodyCompDeclining(trend)).toBe(true);
-  });
-
-  it("NO_NOISE_BANDS reproduces the sign-only result", () => {
-    const trend = computeBodyCompTrend(start, end, NO_NOISE_BANDS);
-    expect(trend.withinNoise).toEqual({ leanMass: false, fatMass: false, bodyFatPct: false });
-    expect(isBodyCompDeclining(trend)).toBe(true);
-  });
-
-  it("does not flag a missing delta as within noise", () => {
-    const noFat = { ...end, "Body Fat Mass(lb)": "-" };
-    const trend = computeBodyCompTrend(start, noFat, getBodyCompNoiseBands([start, noFat]));
-    expect(trend.fatMassDelta).toBeNull();
-    expect(trend.withinNoise?.fatMass).toBe(false);
   });
 });
 

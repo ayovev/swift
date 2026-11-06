@@ -11,5 +11,6 @@ export const DATASET_LABEL: Record<SyncDataset, string> = {
   bodyComp: "body composition history",
   experiments: "list of experiments",
   tags: "list of periods",
+  timeline: "timeline",
   weighIns: "list of weigh-ins",
 };

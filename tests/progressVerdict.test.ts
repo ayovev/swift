@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLiftSubjects, estimateOneRepMax } from "@/lib/analytics/plateauDetector";
+import { buildLiftSubjects, estimateOneRepMax } from "@/lib/analytics/liftSubjects";
 import { classifySubjects, findMoveUps, headlineSentence, labelOf } from "@/lib/analytics/insights/headline";
 import { buildProgressSubjects, type ProgressSession, type ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { progressVerdict, roundHalfAway } from "@/lib/analytics/insights/verdict";

@@ -5,13 +5,13 @@ import { backupFilename, serializeBackup, serializeEncryptedBackup } from "@/lib
 import { downloadTextFile } from "@/lib/download";
 import { capture } from "@/lib/posthog";
 import type { SugarWodRow } from "@/types/sugarwod";
-import type { ContextTag } from "@/types/tag";
+import type { TimelineEntry } from "@/types/timeline";
 import type { WeighIn } from "@/types/weighIn";
 
 interface DownloadBackupButtonProps {
   workoutRows: SugarWodRow[];
   bodyComp: BodyCompState;
-  tags: ContextTag[];
+  timeline: TimelineEntry[];
   weighIns: WeighIn[];
   /** When set, the file is encrypted under it. Held only for the length of the click. */
   passphrase?: string | undefined;
@@ -30,7 +30,7 @@ interface DownloadBackupButtonProps {
 export function DownloadBackupButton({
   workoutRows,
   bodyComp,
-  tags,
+  timeline,
   weighIns,
   passphrase,
   onDownloaded,
@@ -45,7 +45,7 @@ export function DownloadBackupButton({
       const datasets = {
         workout: workoutRows,
         bodyComp: bodyComp.status === "ready" ? bodyComp.rows : [],
-        tags,
+        timeline,
         weighIns,
       };
       const text =

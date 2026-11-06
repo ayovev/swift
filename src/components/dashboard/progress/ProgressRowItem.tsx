@@ -21,6 +21,8 @@ interface ProgressRowItemProps {
   twin: ProgressSubject | null;
   readings: readonly BodyReading[];
   bandLb: number;
+  /** Opens this subject on the Timeline. Offered under the opened chart of a subject that has a lane there. */
+  onSeeOnTimeline?: (subjectKey: string) => void;
 }
 
 /**
@@ -28,7 +30,7 @@ interface ProgressRowItemProps {
  * percentage or a pill; a move up to RX shows its reason and does not open. Body-context lines sit on the rows of Up, Down and Not tested
  * since, and on a No clear change row once it is opened. A row opens to its evidence chart.
  */
-export function ProgressRowItem({ row, twin, readings, bandLb }: ProgressRowItemProps) {
+export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline }: ProgressRowItemProps) {
   const { subject, verdict, group, moveUp, moveUpVotes } = row;
   const [open, setOpen] = useState(false);
   const isMove = !verdict && moveUpVotes && !!moveUp;
@@ -91,6 +93,12 @@ export function ProgressRowItem({ row, twin, readings, bandLb }: ProgressRowItem
       {open && openable ? (
         <div className="pt-2">
           <EvidenceChart subject={subject} verdict={verdict} />
+          {/* A subject has a lane on the Timeline only with a verdict in one of the four open or clear groups: not a facts line, not "not recent". */}
+          {verdict && group !== "not-recent" && group !== "few" && onSeeOnTimeline ? (
+            <button type="button" onClick={() => onSeeOnTimeline(subject.key)} className="mt-1 text-sm text-accent-link underline underline-offset-2">
+              See on timeline
+            </button>
+          ) : null}
         </div>
       ) : null}
     </li>

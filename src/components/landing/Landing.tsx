@@ -15,7 +15,7 @@ import { WhiteboardTexture } from "./WhiteboardTexture";
 import { SwiftMark } from "@/components/SwiftMark";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
-import type { ContextTag } from "@/types/tag";
+import type { TimelineEntry } from "@/types/timeline";
 import type { WeighIn } from "@/types/weighIn";
 
 interface RevealSummary {
@@ -32,7 +32,7 @@ interface LandingProps {
   onDismissError: () => void;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
-  onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedTimeline: (entries: TimelineEntry[]) => void;
   onSyncedWeighIns: (weighIns: WeighIn[]) => void;
 }
 
@@ -45,17 +45,17 @@ export function Landing({
   onDismissError,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
-  onSyncedTags,
+  onSyncedTimeline,
   onSyncedWeighIns,
 }: LandingProps) {
   const busy = loading || reveal !== null;
   // Nothing is stored yet, so a backup restores without asking.
   const backupRestore = useBackupRestore({
-    existing: { workout: null, bodyComp: null, tags: null, weighIns: null },
+    existing: { workout: null, bodyComp: null, timeline: null, weighIns: null },
     handlers: {
       workout: onSyncedWorkoutData,
       bodyComp: onSyncedBodyCompData,
-      tags: onSyncedTags,
+      timeline: onSyncedTimeline,
       weighIns: onSyncedWeighIns,
     },
   });
@@ -145,11 +145,11 @@ export function Landing({
                   role="joiner"
                   existingWorkoutCount={null}
                   existingBodyCompCount={null}
-                  existingTagsCount={null}
+                  existingTimelineCount={null}
                   existingWeighInsCount={null}
                   onSyncedWorkoutData={onSyncedWorkoutData}
                   onSyncedBodyCompData={onSyncedBodyCompData}
-                  onSyncedTags={onSyncedTags}
+                  onSyncedTimeline={onSyncedTimeline}
                   onSyncedWeighIns={onSyncedWeighIns}
                   disabled={busy}
                   variant="ghost"

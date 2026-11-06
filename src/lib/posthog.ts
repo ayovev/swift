@@ -37,13 +37,11 @@ export type SyncRole = "host" | "joiner";
  * else; the type is what keeps an interaction event from carrying content.
  */
 export type InteractionName =
-  | "strength_view_toggled"
-  | "compare_range_selected"
-  | "compare_saved_as_tag"
-  | "tag_compared"
-  | "tag_range_selected"
-  | "tag_created"
-  | "tag_edited"
+  | "entry_added"
+  | "entry_edited"
+  | "entry_deleted"
+  | "timeline_range_changed"
+  | "timeline_subject_opened"
   | "movement_selected"
   | "implement_selected"
   | "backup_exported"

@@ -11,9 +11,7 @@ import { ModalityTab } from "./ModalityTab";
 import { MovementsTab } from "./MovementsTab";
 import { OverviewTab } from "./OverviewTab";
 import { LiftsTab } from "./LiftsTab";
-import { CompareTab } from "./CompareTab";
-import { PeriodsTab } from "./PeriodsTab";
-import { ChartInteractionProvider } from "./charts/chartInteraction";
+import { TimelineTab } from "./TimelineTab";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import {
   ALL_TABS,
@@ -21,8 +19,7 @@ import {
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
   LIFTS_TAB,
-  COMPARE_TAB,
-  PERIODS_TAB,
+  TIMELINE_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
 import { WorkoutsTab } from "./WorkoutsTab";
@@ -33,9 +30,7 @@ import { capture } from "@/lib/posthog";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
-import type { DateWindow } from "@/types/compare";
-import type { PeriodVerdict } from "@/types/verdict";
-import type { ContextTag } from "@/types/tag";
+import type { TimelineEntry } from "@/types/timeline";
 import type { WeighIn } from "@/types/weighIn";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -56,16 +51,15 @@ interface DashboardProps {
   onBodyCompFile: (file: File) => void;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
-  onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedTimeline: (entries: TimelineEntry[]) => void;
   onSyncedWeighIns: (weighIns: WeighIn[]) => void;
   weighIns: WeighIn[];
   onSaveWeighIn: (weighIn: WeighIn) => void;
   onDeleteWeighIn: (date: string) => void;
-  tags: ContextTag[];
-  onAddTag: (tag: Omit<ContextTag, "id">) => void;
-  onUpdateTag: (tag: ContextTag) => void;
-  onDeleteTag: (id: string) => void;
-  verdicts: Map<string, PeriodVerdict> | null;
+  timeline: TimelineEntry[];
+  onAddEntry: (entry: Omit<TimelineEntry, "id">) => string;
+  onUpdateEntry: (entry: TimelineEntry) => void;
+  onDeleteEntry: (id: string) => void;
 }
 
 export function Dashboard({
@@ -83,21 +77,19 @@ export function Dashboard({
   onBodyCompFile,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
-  onSyncedTags,
+  onSyncedTimeline,
   onSyncedWeighIns,
   weighIns,
   onSaveWeighIn,
   onDeleteWeighIn,
-  tags,
-  onAddTag,
-  onUpdateTag,
-  onDeleteTag,
-  verdicts,
+  timeline,
+  onAddEntry,
+  onUpdateEntry,
+  onDeleteEntry,
 }: DashboardProps) {
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
-  // A range dragged out on a chart, waiting for the Compare or Tags view to
-  // pick it up. `nonce` re-keys that view so a second drag replaces the first.
-  const [pendingWindow, setPendingWindow] = useState<{ window: DateWindow | null; tagId: string | null; nonce: number } | null>(null);
+  // A subject to open on the Timeline when it is reached from a row's "See on timeline" link. `nonce` re-keys the view so a second link replaces the first.
+  const [timelineSubject, setTimelineSubject] = useState<{ key: string; nonce: number } | null>(null);
   const { summary } = insights.dashboard;
   // Insights views read the whole history, never the selected range (see App.tsx).
   const usesRange = sectionOf(tab) !== "Insights";
@@ -121,11 +113,11 @@ export function Dashboard({
     if (weighIns.length > 0) {
       outgoing.push({ dataset: "weighIns", json: JSON.stringify(weighIns) });
     }
-    if (tags.length > 0) {
-      outgoing.push({ dataset: "tags", json: JSON.stringify(tags) });
+    if (timeline.length > 0) {
+      outgoing.push({ dataset: "timeline", json: JSON.stringify(timeline) });
     }
     return outgoing;
-  }, [workoutRows, bodyComp, weighIns, tags]);
+  }, [workoutRows, bodyComp, weighIns, timeline]);
 
   // Widening the range out from under an active daily view (via the date
   // picker, not this control) would otherwise leave a chart stuck rendering
@@ -134,32 +126,11 @@ export function Dashboard({
     if (granularity === "daily" && dailyDisabled) onGranularityChange("weekly");
   }, [granularity, dailyDisabled, onGranularityChange]);
 
-  const chartInteraction = useMemo(
-    () => ({
-      tags,
-      onCompare: (window: DateWindow) => {
-        setPendingWindow((p) => ({ window, tagId: null, nonce: (p?.nonce ?? 0) + 1 }));
-        setTab(COMPARE_TAB);
-        capture({ name: "interaction_used", props: { interaction: "compare_range_selected" } });
-        capture({ name: "tab_viewed", props: { tab: "Compare", source } });
-      },
-      onTag: (window: DateWindow) => {
-        setPendingWindow((p) => ({ window, tagId: null, nonce: (p?.nonce ?? 0) + 1 }));
-        setTab(PERIODS_TAB);
-        capture({ name: "interaction_used", props: { interaction: "tag_range_selected" } });
-        capture({ name: "tab_viewed", props: { tab: "Periods", source } });
-      },
-    }),
-    [tags, source]
-  );
-
-  // From a row on the Tags view: open Compare with that tag's range filled in.
-  const onCompareTag = useCallback(
-    (tagId: string) => {
-      setPendingWindow((p) => ({ window: null, tagId, nonce: (p?.nonce ?? 0) + 1 }));
-      setTab(COMPARE_TAB);
-      capture({ name: "interaction_used", props: { interaction: "tag_compared" } });
-      capture({ name: "tab_viewed", props: { tab: "Compare", source } });
+  const onSeeOnTimeline = useCallback(
+    (key: string) => {
+      setTimelineSubject((p) => ({ key, nonce: (p?.nonce ?? 0) + 1 }));
+      setTab(TIMELINE_TAB);
+      capture({ name: "tab_viewed", props: { tab: "Timeline", source } });
     },
     [source]
   );
@@ -167,7 +138,7 @@ export function Dashboard({
   const onTabChange = useCallback(
     (value: string) => {
       setTab(value);
-      setPendingWindow(null);
+      setTimelineSubject(null);
       const label = ALL_TABS.find((t) => t.value === value)?.label ?? value;
       capture({ name: "tab_viewed", props: { tab: label, source } });
     },
@@ -175,7 +146,6 @@ export function Dashboard({
   );
 
   return (
-    <ChartInteractionProvider value={chartInteraction}>
     <div className="min-h-svh bg-background">
       {/* The one sample-mode indicator: a full-width strip above the header,
           rather than a chip in it or notes scattered through the page. */}
@@ -226,12 +196,12 @@ export function Dashboard({
               onWorkoutFile={onWorkoutFile}
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
-              tags={tags}
+              timeline={timeline}
               weighIns={weighIns}
               syncOutgoing={syncOutgoing}
               onSyncedWorkoutData={onSyncedWorkoutData}
               onSyncedBodyCompData={onSyncedBodyCompData}
-              onSyncedTags={onSyncedTags}
+              onSyncedTimeline={onSyncedTimeline}
               onSyncedWeighIns={onSyncedWeighIns}
               onReset={onReset}
             />
@@ -272,7 +242,7 @@ export function Dashboard({
                 dailyDisabled={dailyDisabled}
               />
             ) : (
-              // Progress and Compare are computed in App.tsx
+              // Progress and Timeline are computed in App.tsx
               // from the full, unfiltered history as of today — saying so
               // beats showing a date control that silently does nothing here.
               <p className="text-base text-muted-foreground">
@@ -329,35 +299,20 @@ export function Dashboard({
           </TabsContent>
 
           <TabsContent value={LIFTS_TAB}>
-            <LiftsTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} />
+            <LiftsTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} onSeeOnTimeline={onSeeOnTimeline} />
           </TabsContent>
 
-          <TabsContent value={COMPARE_TAB}>
-            <CompareTab
-              key={pendingWindow?.nonce ?? 0}
+          <TabsContent value={TIMELINE_TAB}>
+            <TimelineTab
+              key={timelineSubject?.nonce ?? 0}
               workouts={workoutRows}
               scans={bodyComp.status === "ready" ? bodyComp.rows : []}
-              tags={tags}
-              verdicts={verdicts}
-              bodyComp={bodyComp}
-              onBodyCompFile={onBodyCompFile}
-              initialWindowB={pendingWindow?.window ?? null}
-              initialTagId={pendingWindow?.tagId ?? null}
-              onAddTag={onAddTag}
-            />
-          </TabsContent>
-
-          <TabsContent value={PERIODS_TAB}>
-            <PeriodsTab
-              key={pendingWindow?.nonce ?? 0}
-              tags={tags}
-              source={source}
-              verdicts={verdicts}
-              onCompareTag={onCompareTag}
-              initialWindow={pendingWindow?.window ?? null}
-              onAdd={onAddTag}
-              onUpdate={onUpdateTag}
-              onDelete={onDeleteTag}
+              weighIns={weighIns}
+              timeline={timeline}
+              onAddEntry={onAddEntry}
+              onUpdateEntry={onUpdateEntry}
+              onDeleteEntry={onDeleteEntry}
+              initialSubjectKey={timelineSubject?.key ?? null}
             />
           </TabsContent>
         </Tabs>
@@ -381,6 +336,5 @@ export function Dashboard({
         </footer>
       </main>
     </div>
-    </ChartInteractionProvider>
   );
 }

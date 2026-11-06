@@ -13,7 +13,7 @@
  * SugarWOD's own PR flag is deliberately not read: 22% of the sample's lift sessions carry it, because it flags a best at any new title
  * or rep scheme, so as an "up" signal it turned 11 of 12 subjects up.
  */
-import { buildBenchmarkSubjects, estimateOneRepMax } from "../plateauDetector";
+import { buildBenchmarkSubjects, estimateOneRepMax } from "../liftSubjects";
 import { RS_MAX_REPS } from "../insightConfig";
 import { parseRepMax } from "../repMax";
 import { parseNumericField, parseWorkoutDate } from "../scanParsing";

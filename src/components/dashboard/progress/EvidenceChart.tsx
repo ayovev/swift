@@ -15,12 +15,13 @@ const PAD = { l: 10, r: 44, t: 22, b: 22 };
  * efforts only for a `down` or `not tested since` verdict; a record carries a larger accent dot with "new best". A subject without a
  * verdict (a facts line) gets the dots alone. A faster time is drawn higher, so up always reads as up.
  */
-export function EvidenceChart({ subject, verdict }: { subject: ProgressSubject; verdict: ProgressVerdict | null }) {
+export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressSubject; verdict: ProgressVerdict | null; domain?: { start: string; end: string } }) {
   const model = useMemo(() => {
     const sessions = subject.sessions;
     const days = sessions.map((s) => dayNumber(s.date));
-    const x0 = Math.min(...days);
-    const x1 = Math.max(...days);
+    // On the Timeline the axis is the timeline's own, so a dot sits where it does above.
+    const x0 = domain ? dayNumber(domain.start) : Math.min(...days);
+    const x1 = domain ? dayNumber(domain.end) : Math.max(...days);
     const values = sessions.map((s) => s.value);
     const v0 = Math.min(...values);
     const v1 = Math.max(...values);
@@ -41,7 +42,7 @@ export function EvidenceChart({ subject, verdict }: { subject: ProgressSubject; 
       newBest = { x: X(dayNumber(verdict.recentBest.date)), y: Y(verdict.recentBest.value), label: `${value} · new best +${pct.toFixed(1)}%` };
     }
     return { sessions, X, Y, previous, recent, trend, newBest };
-  }, [subject, verdict]);
+  }, [subject, verdict, domain]);
 
   const rings = verdict && (verdict.state === "down" || verdict.state === "not-tested-since");
   const { X, Y } = model;

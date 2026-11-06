@@ -39,11 +39,11 @@ function setup(existing: { workout?: number | null; bodyComp?: number | null } =
     role: "joiner" as const,
     existingWorkoutCount: existing.workout ?? null,
     existingBodyCompCount: existing.bodyComp ?? null,
-    existingTagsCount: null,
+    existingTimelineCount: null,
     existingWeighInsCount: null,
     onSyncedWorkoutData: vi.fn(),
     onSyncedBodyCompData: vi.fn(),
-    onSyncedTags: vi.fn(),
+    onSyncedTimeline: vi.fn(),
     onSyncedWeighIns: vi.fn(),
   };
   const ui = () => <SyncDialog {...props} />;

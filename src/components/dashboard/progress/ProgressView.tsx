@@ -31,13 +31,15 @@ interface ProgressViewProps {
   weighIns?: readonly WeighIn[];
   /** YYYY-MM-DD; today unless a test says otherwise. */
   asOf?: string;
+  /** Opens a subject on the Timeline (the link under an opened row's chart). */
+  onSeeOnTimeline?: (subjectKey: string) => void;
 }
 
 /**
  * The Insights front door: the headline (a label and the counts behind it), the "Logged in" filter, and every lift and benchmark in one
  * of six groups. It reads the whole unfiltered log as of today; the filter only chooses which subjects are listed.
  */
-export function ProgressView({ workouts, scans, weighIns = [], asOf }: ProgressViewProps) {
+export function ProgressView({ workouts, scans, weighIns = [], asOf, onSeeOnTimeline }: ProgressViewProps) {
   const today = useMemo(() => asOf ?? dayjs().format("YYYY-MM-DD"), [asOf]);
   const { subjects, unused } = useMemo(() => buildProgressSubjects(workouts), [workouts]);
   const { rows, headline } = useMemo(() => classifySubjects(subjects, today), [subjects, today]);
@@ -112,7 +114,7 @@ export function ProgressView({ workouts, scans, weighIns = [], asOf }: ProgressV
           const list = (
             <ul>
               {items.map((r) => (
-                <ProgressRowItem key={r.subject.key} row={r} twin={twins.get(r.subject.key) ?? null} readings={readings} bandLb={band} />
+                <ProgressRowItem key={r.subject.key} row={r} twin={twins.get(r.subject.key) ?? null} readings={readings} bandLb={band} {...(onSeeOnTimeline ? { onSeeOnTimeline } : {})} />
               ))}
             </ul>
           );

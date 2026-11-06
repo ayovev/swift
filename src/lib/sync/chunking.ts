@@ -13,9 +13,9 @@
  * file) still does, and the header is accepted so it can be converted to tags
  * (receivedDatasets.ts) instead of being refused.
  */
-export type SyncDataset = "workout" | "bodyComp" | "experiments" | "tags" | "weighIns";
+export type SyncDataset = "workout" | "bodyComp" | "experiments" | "tags" | "weighIns" | "timeline";
 
-const SYNC_DATASETS: readonly SyncDataset[] = ["workout", "bodyComp", "experiments", "tags", "weighIns"];
+const SYNC_DATASETS: readonly SyncDataset[] = ["workout", "bodyComp", "experiments", "tags", "weighIns", "timeline"];
 
 /**
  * Ceiling on a single dataset's declared size. A real workout log is a few MB;

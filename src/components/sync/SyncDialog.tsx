@@ -9,7 +9,7 @@ import { planTransfer, type TransferPlan } from "@/lib/sync/planTransfer";
 import type { SkippedDataset } from "@/lib/sync/receivedDatasets";
 import type { OutgoingDataset, SyncFailureReason } from "@/lib/sync/syncSession";
 import type { InBodyRow } from "@/types/inbody";
-import type { ContextTag } from "@/types/tag";
+import type { TimelineEntry } from "@/types/timeline";
 import type { WeighIn } from "@/types/weighIn";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { HostQrView } from "./HostQrView";
@@ -25,11 +25,11 @@ export interface SyncDialogProps {
   /** Joiner role only: existing local counts, so a conflicting dataset can be confirmed before overwriting. `null` means nothing local to conflict with. */
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
-  existingTagsCount: number | null;
+  existingTimelineCount: number | null;
   existingWeighInsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
-  onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedTimeline: (entries: TimelineEntry[]) => void;
   onSyncedWeighIns: (weighIns: WeighIn[]) => void;
 }
 
@@ -59,7 +59,7 @@ function captureJoinerSuccess(received: Partial<Record<SyncDataset, unknown>>) {
     name: "sync_succeeded",
     props: {
       role: "joiner",
-      rows: bucketRowCount(count(received.workout) || count(received.bodyComp) || count(received.tags) || count(received.weighIns)),
+      rows: bucketRowCount(count(received.workout) || count(received.bodyComp) || count(received.timeline) || count(received.weighIns)),
     },
   });
 }
@@ -70,7 +70,7 @@ function captureJoinerSuccess(received: Partial<Record<SyncDataset, unknown>>) {
  * and — once a joiner's transfer finishes — treats it as all or nothing:
  * any rejected dataset means none is applied, and anything that would
  * overwrite local data is confirmed once for the whole transfer before
- * onSyncedWorkoutData/onSyncedBodyCompData/onSyncedTags
+ * onSyncedWorkoutData/onSyncedBodyCompData/onSyncedTimeline
  * are called (planTransfer.ts). See CLAUDE.md's "Architecture: app state and local
  * persistence" for why those handlers are unconditional writers: this
  * dialog is what gates them.
@@ -82,11 +82,11 @@ export function SyncDialog({
   outgoing,
   existingWorkoutCount,
   existingBodyCompCount,
-  existingTagsCount,
+  existingTimelineCount,
   existingWeighInsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
-  onSyncedTags,
+  onSyncedTimeline,
   onSyncedWeighIns,
 }: SyncDialogProps) {
   const [received, setReceived] = useState<Partial<Record<SyncDataset, unknown>>>({});
@@ -170,13 +170,13 @@ export function SyncDialog({
       {
         workout: existingWorkoutCount,
         bodyComp: existingBodyCompCount,
-        tags: existingTagsCount,
+        timeline: existingTimelineCount,
         weighIns: existingWeighInsCount,
       },
       {
         workout: onSyncedWorkoutData,
         bodyComp: onSyncedBodyCompData,
-        tags: onSyncedTags,
+        timeline: onSyncedTimeline,
         weighIns: onSyncedWeighIns,
       },
       unreadable
@@ -204,11 +204,11 @@ export function SyncDialog({
     unreadable,
     existingWorkoutCount,
     existingBodyCompCount,
-    existingTagsCount,
+    existingTimelineCount,
     existingWeighInsCount,
     onSyncedWorkoutData,
     onSyncedBodyCompData,
-    onSyncedTags,
+    onSyncedTimeline,
     onSyncedWeighIns,
     onOpenChange,
   ]);

@@ -5,27 +5,24 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Landing } from "@/components/landing/Landing";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
-import { getPeriodVerdict } from "@/lib/analytics/periodVerdict";
-import { hasVerdict } from "@/lib/analytics/contextTags";
 import type { Granularity } from "@/lib/analytics/granularity";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
 import { parseInBodyCsv } from "@/lib/csv/parseInBodyCsv";
 import { bucketDuration, bucketRowCount, capture } from "@/lib/posthog";
 import { extendSampleRows } from "@/lib/sample/extendSample";
 import { generateSampleBodyComp } from "@/lib/sample/generateSampleBodyComp";
-import { generateSampleTags } from "@/lib/sample/generateSampleTags";
+import { generateSampleTimeline } from "@/lib/sample/generateSampleTimeline";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
-import { migrateLegacyExperiments } from "@/lib/storage/legacyExperiments";
-import { loadTags, saveTags } from "@/lib/storage/tagsStorage";
+import { migrateLegacyTimeline } from "@/lib/storage/legacyTimeline";
+import { loadTimeline, saveTimeline } from "@/lib/storage/timelineStorage";
 import { loadWeighIns, saveWeighIns } from "@/lib/storage/weighInsStorage";
 import { removeWeighIn, upsertWeighIn } from "@/lib/analytics/weighIns";
 import type { WeighIn } from "@/types/weighIn";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
-import type { PeriodVerdict } from "@/types/verdict";
 import type { InBodyRow } from "@/types/inbody";
-import type { ContextTag } from "@/types/tag";
+import type { TimelineEntry } from "@/types/timeline";
 import type { SugarWodRow } from "@/types/sugarwod";
 
 export type DataSource = "upload" | "sample";
@@ -82,7 +79,7 @@ export default function App() {
   const [rangePreset, setRangePreset] = useState<DateRangePreset>("all_time");
   const [granularity, setGranularity] = useState<Granularity>("monthly");
   const [bodyComp, setBodyComp] = useState<BodyCompState>({ status: "idle" });
-  const [tags, setTags] = useState<ContextTag[]>([]);
+  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [weighIns, setWeighIns] = useState<WeighIn[]>([]);
 
   // Restore whatever was uploaded last time — persistence is local-only (see
@@ -91,13 +88,13 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [rows, bodyRows, viewPrefs, storedTags, storedWeighIns] = await Promise.all([
+      const [rows, bodyRows, viewPrefs, storedTimeline, storedWeighIns] = await Promise.all([
         loadWorkoutRows(),
         loadBodyCompRows(),
         loadViewPreferences(),
-        // Experiments are tags now; anything still stored as the old list is
-        // moved into the tags first (legacyExperiments.ts), then read as one.
-        migrateLegacyExperiments().then((migrated) => migrated ?? loadTags()),
+        // Periods and experiments are timeline entries now; anything still stored under
+        // the older keys is moved into the timeline first (legacyTimeline.ts), then read as one.
+        migrateLegacyTimeline().then((migrated) => migrated ?? loadTimeline()),
         loadWeighIns(),
       ]);
       if (cancelled) return;
@@ -107,7 +104,7 @@ export default function App() {
         setState({ status: "idle" });
       }
       if (bodyRows && bodyRows.length > 0) setBodyComp({ status: "ready", rows: bodyRows });
-      if (storedTags) setTags(storedTags);
+      if (storedTimeline) setTimeline(storedTimeline);
       if (storedWeighIns) setWeighIns(storedWeighIns);
       if (viewPrefs) {
         setGranularity(viewPrefs.granularity);
@@ -163,21 +160,6 @@ export default function App() {
     [state, range, granularity]
   );
 
-  // Needs both datasets, so it stays null until an InBody export is loaded. Each experiment (a tag
-  // of type "experiment") is analyzed independently (no cross-experiment view
-  // in v1), so this is a map keyed by tag id rather than a single derived value.
-  const verdicts = useMemo(
-    () =>
-      state.status === "ready" && bodyComp.status === "ready"
-        ? new Map<string, PeriodVerdict>(
-            tags
-              .filter(hasVerdict)
-              .map((t) => [t.id, getPeriodVerdict(t, state.rows, bodyComp.rows, new Date())])
-          )
-        : null,
-    [state, bodyComp, tags]
-  );
-
   // Hold on "reveal" just long enough for UploadReveal's numbers to chalk
   // themselves in before handing off to the dashboard.
   useEffect(() => {
@@ -207,17 +189,16 @@ export default function App() {
       void saveWorkoutRows(rows);
       void saveViewPreferences({ granularity: "monthly", rangePreset: "all_time", customRange: null });
     } else {
-      // Fill in the datasets the Progress, Compare and Tags views need, so
+      // Fill in the datasets the Progress, Timeline and Body Comp views need, so
       // sample mode has something for them to show instead of their empty
       // states — entirely in memory, never persisted (see the generators' own
       // header comments). The functional setState form means a
-      // previously-restored *real* InBody upload or real tags are never
+      // previously-restored *real* InBody upload or real entries are never
       // clobbered: sample data only fills in what's genuinely still empty.
       const generatedBodyComp = generateSampleBodyComp(rows);
       setBodyComp((prev) => (prev.status === "ready" ? prev : { status: "ready", rows: generatedBodyComp }));
-      // Sample experiments are tags of type "experiment", like real ones.
-      const generatedTags = generateSampleTags(rows);
-      setTags((prev) => (prev.length > 0 ? prev : generatedTags));
+      const generatedTimeline = generateSampleTimeline(rows);
+      setTimeline((prev) => (prev.length > 0 ? prev : generatedTimeline));
     }
     setState({
       status: "reveal",
@@ -329,27 +310,30 @@ export default function App() {
     void saveBodyCompRows(rows);
   }, []);
 
-  // Context tags (experiments included): user-authored state, not derived from
-  // an upload — its own IndexedDB key (see tagsStorage.ts), persisted in full on
-  // every change, except in sample mode (see handleBodyCompFile's comment
-  // above: a tag added or deleted while sample data is loaded must not leave
-  // anything in IndexedDB for a later real session to stumble on).
-  const commitTags = useCallback(
-    (update: (prev: ContextTag[]) => ContextTag[]) => {
-      setTags((prev) => {
+  // Timeline entries: user-authored state, not derived from an upload — its own IndexedDB key (see
+  // timelineStorage.ts), persisted in full on every change, except in sample mode (see
+  // handleBodyCompFile's comment above: an entry added or deleted while sample data is loaded must
+  // not leave anything in IndexedDB for a later real session to stumble on).
+  const commitTimeline = useCallback(
+    (update: (prev: TimelineEntry[]) => TimelineEntry[]) => {
+      setTimeline((prev) => {
         const next = update(prev);
-        if (state.status === "ready" && state.source === "upload") void saveTags(next);
+        if (state.status === "ready" && state.source === "upload") void saveTimeline(next);
         return next;
       });
     },
     [state]
   );
-  const addTag = useCallback((tag: Omit<ContextTag, "id">) => commitTags((prev) => [...prev, { ...tag, id: crypto.randomUUID() }]), [commitTags]);
-  const updateTag = useCallback((tag: ContextTag) => commitTags((prev) => prev.map((t) => (t.id === tag.id ? tag : t))), [commitTags]);
-  const deleteTag = useCallback((id: string) => commitTags((prev) => prev.filter((t) => t.id !== id)), [commitTags]);
+  const addEntry = useCallback((entry: Omit<TimelineEntry, "id">): string => {
+    const id = crypto.randomUUID();
+    commitTimeline((prev) => [...prev, { ...entry, id }]);
+    return id;
+  }, [commitTimeline]);
+  const updateEntry = useCallback((entry: TimelineEntry) => commitTimeline((prev) => prev.map((e) => (e.id === entry.id ? entry : e))), [commitTimeline]);
+  const deleteEntry = useCallback((id: string) => commitTimeline((prev) => prev.filter((e) => e.id !== id)), [commitTimeline]);
 
   // Manual weigh-ins: user-authored, one per day, its own IndexedDB key (see weighInsStorage.ts). Persisted on every change except in
-  // sample mode, for the same reason as the tags above.
+  // sample mode, for the same reason as the timeline above.
   const commitWeighIns = useCallback(
     (update: (prev: WeighIn[]) => WeighIn[]) => {
       setWeighIns((prev) => {
@@ -369,13 +353,12 @@ export default function App() {
     void saveWeighIns(incoming);
   }, []);
 
-  // Sync's tags handler, alongside the two above: an unconditional writer,
-  // gated by SyncDialog. An experiment arrives as a tag (or, from an older
-  // device, is converted to one before this runs). Tags always persist for the same reason
-  // handleSyncedBodyCompData does — synced data is never sample data.
-  const handleSyncedTags = useCallback((incoming: ContextTag[]) => {
-    setTags(incoming);
-    void saveTags(incoming);
+  // Sync's timeline handler, alongside the others: an unconditional writer, gated by SyncDialog.
+  // Periods and experiments from an older device are read as entries before this runs. Entries always
+  // persist for the same reason handleSyncedBodyCompData does — synced data is never sample data.
+  const handleSyncedTimeline = useCallback((incoming: TimelineEntry[]) => {
+    setTimeline(incoming);
+    void saveTimeline(incoming);
   }, []);
 
   const handleSample = useCallback(
@@ -406,7 +389,7 @@ export default function App() {
     setRangePreset("all_time");
     setGranularity("monthly");
     setBodyComp({ status: "idle" });
-    setTags([]);
+    setTimeline([]);
     setWeighIns([]);
     // "Start over" is also the one clear-my-data control: without wiping
     // storage here, a reload would silently restore the data this button
@@ -431,16 +414,15 @@ export default function App() {
         onBodyCompFile={handleBodyCompFile}
         onSyncedWorkoutData={handleSyncedWorkoutData}
         onSyncedBodyCompData={handleSyncedBodyCompData}
-        onSyncedTags={handleSyncedTags}
+        onSyncedTimeline={handleSyncedTimeline}
         onSyncedWeighIns={handleSyncedWeighIns}
         weighIns={weighIns}
         onSaveWeighIn={saveWeighIn}
         onDeleteWeighIn={deleteWeighIn}
-        tags={tags}
-        onAddTag={addTag}
-        onUpdateTag={updateTag}
-        onDeleteTag={deleteTag}
-        verdicts={verdicts}
+        timeline={timeline}
+        onAddEntry={addEntry}
+        onUpdateEntry={updateEntry}
+        onDeleteEntry={deleteEntry}
       />
     );
   }
@@ -455,7 +437,7 @@ export default function App() {
       onDismissError={reset}
       onSyncedWorkoutData={handleSyncedWorkoutData}
       onSyncedBodyCompData={handleSyncedBodyCompData}
-      onSyncedTags={handleSyncedTags}
+      onSyncedTimeline={handleSyncedTimeline}
       onSyncedWeighIns={handleSyncedWeighIns}
     />
   );

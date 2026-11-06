@@ -4,9 +4,9 @@ import App from "@/App";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { readBackup, serializeEncryptedBackup } from "@/lib/backup/backup";
 import { idbClearAll } from "@/lib/storage/idbStore";
-import { loadTags, saveTags } from "@/lib/storage/tagsStorage";
+import { loadTimeline, saveTimeline } from "@/lib/storage/timelineStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
-import type { ContextTag } from "@/types/tag";
+import type { TimelineEntry } from "@/types/timeline";
 import { workoutRow } from "./fixtures/rows";
 
 const posthog = vi.hoisted(() => ({ capture: vi.fn() }));
@@ -14,7 +14,7 @@ vi.mock("@/lib/posthog", async (orig) => ({ ...(await orig<typeof import("@/lib/
 
 const rowsA = [workoutRow({ date: "03/05/2024", title: "FRAN" }), workoutRow({ date: "03/06/2024", title: "GRACE" })];
 const rowsB = [workoutRow({ date: "01/02/2025", title: "CINDY" })];
-const tags: ContextTag[] = [{ id: "t1", type: "cut", label: "Spring cut", startDate: "2024-03-01", endDate: null }];
+const entries: TimelineEntry[] = [{ id: "t1", initiation: "changed", area: "nutrition", name: "Spring cut", startDate: "2024-03-01", endDate: null }];
 const PASS = "correct horse battery";
 const now = new Date("2026-09-30T12:00:00Z");
 
@@ -52,7 +52,7 @@ afterEach(async () => {
 describe("restoring an encrypted backup", () => {
   it("asks for the passphrase, keeps the prompt open on a wrong one, then restores on the right one", { timeout: 20000 }, async () => {
     renderApp();
-    await pickWhenReady(await encryptedFile({ workout: rowsA, tags }));
+    await pickWhenReady(await encryptedFile({ workout: rowsA, timeline: entries }));
 
     const dialog = await screen.findByRole("dialog", { name: /this backup is encrypted/i });
     // Nothing is written while it is locked.
@@ -69,7 +69,7 @@ describe("restoring an encrypted backup", () => {
     await screen.findByRole("button", { name: "Settings" }, { timeout: 5000 });
     await waitFor(async () => {
       expect(await loadWorkoutRows()).toEqual(rowsA);
-      expect(await loadTags()).toEqual(tags);
+      expect(await loadTimeline()).toEqual(entries);
     });
   });
 
@@ -146,7 +146,7 @@ describe("downloading an encrypted backup", () => {
 
   async function openBackupSection() {
     await saveWorkoutRows(rowsA);
-    await saveTags(tags);
+    await saveTimeline(entries);
     renderApp();
     fireEvent.click(await screen.findByRole("button", { name: "Settings" }));
     await screen.findByRole("dialog", { name: "Settings" });
@@ -197,7 +197,7 @@ describe("downloading an encrypted backup", () => {
     expect(text).not.toContain(PASS);
     expect(await readBackup(text)).toEqual({ status: "needs_passphrase" });
     const read = await readBackup(text, { passphrase: PASS });
-    expect(read.status === "ok" && read.datasets).toEqual({ workout: rowsA, tags });
+    expect(read.status === "ok" && read.datasets).toEqual({ workout: rowsA, timeline: entries });
 
     // Cleared once the file is saved.
     await waitFor(() => expect(within(backup).getByLabelText("Passphrase")).toHaveValue(""));

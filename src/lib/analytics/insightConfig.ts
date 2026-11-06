@@ -1,17 +1,12 @@
 /**
  * Every tunable threshold the insight pipelines added after v1 read lives
- * here, each with how it was chosen. Nothing in `bodyCompNoise.ts` (or the
- * later relative-strength / comparison / cycle modules) hard-codes a bare
- * number.
+ * here, each with how it was chosen. Nothing in `bodyCompNoise.ts` or the
+ * progress verdict (`insights/`) hard-codes a bare number.
  *
  * EVERY value below is a starting point — *tunable, validate against real
  * data*. The repo bundles no real InBody history (only a synthetic fixture and
  * a synthetic sample generator), so none of these has yet been checked against
  * a real athlete's scans.
- *
- * The pre-existing thresholds (`TREND_THRESHOLD`, the MIN_* eligibility gates
- * in plateauDetector.ts / alignment.ts / periodVerdict.ts) stay where they
- * are: they are documented in place and moving them is out of Phase 1's scope.
  */
 
 export type BodyCompMetric = "weight" | "leanMass" | "fatMass" | "bodyFatPct";
@@ -92,18 +87,6 @@ export const DEFAULT_NOISE_BAND: Record<BodyCompMetric, number> = {
  */
 export const RS_MAX_REPS = 8;
 
-/** Look-back for one lift's attribution window, in days, ending at `asOfDate`. Tunable. */
-export const RS_WINDOW_DAYS = 365;
-
-/** Fewest sessions (dates with a usable e1RM) a lift needs inside the window. Tunable. */
-export const RS_MIN_SESSIONS = 4;
-
-/** Fewest of those sessions that must have a body-composition match. Tunable. */
-export const RS_MIN_MATCHED_SESSIONS = 3;
-
-/** Fewest InBody scans overlapping the window. Tunable. */
-export const RS_MIN_SCANS_IN_WINDOW = 2;
-
 /**
  * Two scans bracketing a session are interpolated between only when they are
  * no further apart than this (days). Beyond it the body may well have
@@ -115,36 +98,9 @@ export const RS_MAX_INTERPOLATION_GAP_DAYS = 45;
 /** A session with no bracketing pair uses its nearest scan only if it is within this many days; else unmatched, never extrapolated. Tunable. */
 export const RS_MAX_NEAREST_SCAN_DAYS = 21;
 
-/** Sessions averaged at each end of the window when comparing start to end. Capped at half the sessions. Tunable. */
-export const RS_END_SEGMENT_SESSIONS = 3;
-
 // ── Window comparison (compareWindows.ts) ───────────────────────────────
 
-/** Sessions a lift or benchmark needs inside EACH window before its two averages are compared. Tunable. */
-export const CMP_MIN_OBSERVATIONS_PER_WINDOW = 2;
-
-/** InBody scans a window needs before a body-comp metric is compared (the window's scans are averaged). Tunable. */
-export const CMP_MIN_SCANS_PER_WINDOW = 1;
-
-/** The two windows are called out as different lengths when they differ by more than this fraction of the longer one. Tunable. */
-export const CMP_LENGTH_MISMATCH_RATIO = 0.25;
-
 // ── Cycle reports (cycleReport.ts) ──────────────────────────────────────
-
-/** A cycle shorter than this many days is too short to say anything about. Tunable. */
-export const CYCLE_MIN_DAYS = 14;
-
-/** Sessions a lift needs inside the cycle before its estimated-1RM change is reported. Tunable. */
-export const CYCLE_MIN_SESSIONS_PER_LIFT = 3;
-
-/** A lift is a "focus" lift when it is at least this share of the cycle's logged lift sessions. Tunable. */
-export const CYCLE_FOCUS_MIN_SHARE = 0.15;
-
-/** At most this many focus lifts are named per cycle. Tunable. */
-export const CYCLE_MAX_FOCUS_LIFTS = 3;
-
-/** InBody scans inside the cycle needed before its body-composition change is reported. Tunable. */
-export const CYCLE_MIN_SCANS = 2;
 
 // ── Progress verdict (insights/) ────────────────────────────────────────
 // The one real-change rule for a lift or benchmark. All tunable; the reasoning and the measurements behind each value are in

@@ -110,8 +110,8 @@ describe("pooling with InBody scans (WGH-05 to WGH-08)", () => {
 });
 
 describe("sync and backup (WGH-11 to WGH-13)", () => {
-  const none: ExistingCounts = { workout: null, bodyComp: null, tags: null, weighIns: null };
-  const handlers = (): ReceivedHandlers => ({ workout: vi.fn(), bodyComp: vi.fn(), tags: vi.fn(), weighIns: vi.fn() });
+  const none: ExistingCounts = { workout: null, bodyComp: null, timeline: null, weighIns: null };
+  const handlers = (): ReceivedHandlers => ({ workout: vi.fn(), bodyComp: vi.fn(), timeline: vi.fn(), weighIns: vi.fn() });
 
   it("carries weighIns on the wire", () => {
     const json = JSON.stringify([w("2026-09-01", 180)]);
