@@ -84,6 +84,23 @@ describe("the Insights front door", () => {
     expect(screen.getAllByText(/Body weight 170 to 172 lb, within normal scan variation\./).length).toBeGreaterThan(0);
   });
 
+  it("draws the body-weight lines from manual weigh-ins alone", () => {
+    render(
+      <LiftsTab
+        workouts={rows}
+        scans={[]}
+        weighIns={[
+          { date: "2023-02-06", weightLb: 170, source: "manual" },
+          { date: "2026-03-10", weightLb: 180, source: "manual" },
+        ]}
+        asOf="2026-09-11"
+      />
+    );
+    const row = within(group("Up")).getByText("Power Snatch").closest("li") as HTMLElement;
+    expect(within(row).getByText("Body weight 170 to 180 lb (+10 lb) over the same span.")).toBeInTheDocument();
+    expect(within(row).getByText("About half of this change is body weight.")).toBeInTheDocument();
+  });
+
   it("filters the list without changing the headline", () => {
     renderSample("2026-09-09");
     fireEvent.click(screen.getByRole("button", { name: "Last 3 months" }));

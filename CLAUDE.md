@@ -548,6 +548,20 @@ window.
   `VerdictSummary.tsx` when one is picked on the Compare view and as a badge on its row on the Periods view, not
   part of `Insights`/`buildInsights.ts`'s return shape.
 
+## Architecture: manual weigh-ins
+
+A weigh-in (`types/weighIn.ts`) is a date and a weight in pounds (50 to 600), an optional note (up to 200 characters) and `source: "manual"`; one per
+day, so saving a date that has one replaces it. It is a persisted athlete dataset: its own IndexedDB key (`storage/weighInsStorage.ts`, `"weigh-ins"`),
+written only when the data source is an upload (sample mode keeps it in memory, like periods), wiped by Start over, and carried by sync and backup as
+the `weighIns` dataset (validated all-or-nothing by `validateWeighInList`, which checks shape only, so another device's clock cannot make a good list
+unreadable; the form alone refuses a date after today). An older build rejects a manifest naming `weighIns`, so both devices need the current build.
+The entry panel is on the Body Comp view (`WeighInsPanel.tsx`), which lists InBody scans (read-only) and weigh-ins together.
+
+`lib/analytics/weighIns.ts` pools weigh-ins with InBody scans into one body-weight series: on a day with both, the scan is used and the weigh-in is kept,
+listed as "Not used: an InBody scan the same day". Lean and fat mass come from scans only. The noise band is measured from the pooled series (as scan
+rows carrying only a weight, `pooledScanRows`), so frequent weigh-ins reach a measured band where scans months apart fell to the 3 lb default. No
+smoothing. Analytics: `weigh_in_saved` and `weigh_in_deleted`, value-free like every other interaction.
+
 ## Architecture: cross-device sync
 
 `src/lib/sync/` moves a dataset from one device to another (issue #15) without ever relaxing
@@ -581,7 +595,7 @@ back to one.
   and adding one was scoped out of this feature — see `webrtcTransport.ts`'s header comment.
   Those two paths are verified manually, across two real devices, before any change here ships.
 - **The wire protocol**, once connected: the host sends one small manifest naming which
-  datasets it's about to send — some subset of `["workout", "bodyComp", "tags"]` (experiments travel
+  datasets it's about to send — some subset of `["workout", "bodyComp", "weighIns", "tags"]` (experiments travel
   inside `tags`; `"experiments"` is still a name on the wire, but receive-only, see below), never
   assumed, since a device might not have InBody data or tags — then for each
   dataset in order, `chunkPayload()`'s header followed by its chunks; once every dataset is sent,
@@ -600,12 +614,12 @@ back to one.
   queues every write and `flush()` applies them with the workout log last, because applying the
   workout log moves `App` to its reveal screen, which unmounts the dashboard and this dialog with it.
   Backup restore uses the same plan.
-- **What syncs: the athlete's data, and only their data.** The workout log, the InBody history
+- **What syncs: the athlete's data, and only their data.** The workout log, the InBody history, manual weigh-ins
   and periods (stored as tags; experiments are periods of type `experiment`). Preferences and configuration deliberately do **not** sync: theme
   (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
   reasonably want different ones. PostHog's anonymous id in `localStorage` doesn't either — it is an
   analytics identifier. This is enforced at the wire, not by convention: `SyncDataset` has exactly
-  four members and `decodeHeader` rejects any other name. The fourth, `experiments`, is **receive-only**:
+  five members and `decodeHeader` rejects any other name. One of them, `experiments`, is **receive-only**:
   an older device (or an older backup file) still sends experiments as their own list, and
   `planReceived` validates them (`validateExperiments`) and folds them into the tags that arrive with
   them, so there is one tags conflict and one handler; nothing sends the name any more, and an older
@@ -818,7 +832,7 @@ added after the app initially held everything in memory only.
   calls it (in the Settings sheet) is now gated behind a confirmation `AlertDialog`
   (`src/components/ui/alert-dialog.tsx`) whenever `source === "upload"` — sample mode still
   resets in one click, since nothing persisted is at risk there. The dialog's copy names exactly
-  what gets deleted (workout log, body composition history, periods with experiments included) so this is the one
+  what gets deleted (workout log, body composition history, weigh-ins, periods with experiments included) so this is the one
   place all of them are named together.
 - The theme preference remains on its own `localStorage` key (see Theming below), not this
   layer — it needs to be read synchronously before first paint to avoid a flash of the wrong

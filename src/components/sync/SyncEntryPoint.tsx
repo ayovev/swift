@@ -6,6 +6,7 @@ import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
+import type { WeighIn } from "@/types/weighIn";
 import { SyncDialog } from "./SyncDialog";
 
 interface SyncEntryPointProps extends VariantProps<typeof buttonVariants> {
@@ -15,9 +16,11 @@ interface SyncEntryPointProps extends VariantProps<typeof buttonVariants> {
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
   existingTagsCount: number | null;
+  existingWeighInsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedWeighIns: (weighIns: WeighIn[]) => void;
   disabled?: boolean;
   className?: string;
   children: ReactNode;
@@ -34,9 +37,11 @@ export function SyncEntryPoint({
   existingWorkoutCount,
   existingBodyCompCount,
   existingTagsCount,
+  existingWeighInsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedTags,
+  onSyncedWeighIns,
   disabled,
   variant = "outline",
   size = "sm",
@@ -58,9 +63,11 @@ export function SyncEntryPoint({
         existingWorkoutCount={existingWorkoutCount}
         existingBodyCompCount={existingBodyCompCount}
         existingTagsCount={existingTagsCount}
+        existingWeighInsCount={existingWeighInsCount}
         onSyncedWorkoutData={onSyncedWorkoutData}
         onSyncedBodyCompData={onSyncedBodyCompData}
         onSyncedTags={onSyncedTags}
+        onSyncedWeighIns={onSyncedWeighIns}
       />
     </>
   );

@@ -9,7 +9,7 @@
  * theme, grouping or date range). `BackupDatasets` is keyed by `SyncDataset`,
  * so adding a new persisted dataset fails to compile here until backup is
  * updated, the same rule sync already has. A backup is written with the
- * workout log, InBody history and tags (an experiment is a tag of type
+ * workout log, InBody history, weigh-ins and tags (an experiment is a tag of type
  * "experiment"); a file made before that has an `experiments` section, which
  * is still read and is folded into the tags on restore (receivedDatasets.ts).
  *
@@ -108,7 +108,7 @@ export async function serializeEncryptedBackup(
   return JSON.stringify(file, null, 2);
 }
 
-const DATASET_KEYS: Record<SyncDataset, true> = { workout: true, bodyComp: true, experiments: true, tags: true };
+const DATASET_KEYS: Record<SyncDataset, true> = { workout: true, bodyComp: true, experiments: true, tags: true, weighIns: true };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);

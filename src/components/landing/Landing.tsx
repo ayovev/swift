@@ -16,6 +16,7 @@ import { SwiftMark } from "@/components/SwiftMark";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
+import type { WeighIn } from "@/types/weighIn";
 
 interface RevealSummary {
   workoutCount: number;
@@ -32,6 +33,7 @@ interface LandingProps {
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedWeighIns: (weighIns: WeighIn[]) => void;
 }
 
 export function Landing({
@@ -44,15 +46,17 @@ export function Landing({
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedTags,
+  onSyncedWeighIns,
 }: LandingProps) {
   const busy = loading || reveal !== null;
   // Nothing is stored yet, so a backup restores without asking.
   const backupRestore = useBackupRestore({
-    existing: { workout: null, bodyComp: null, tags: null },
+    existing: { workout: null, bodyComp: null, tags: null, weighIns: null },
     handlers: {
       workout: onSyncedWorkoutData,
       bodyComp: onSyncedBodyCompData,
       tags: onSyncedTags,
+      weighIns: onSyncedWeighIns,
     },
   });
 
@@ -142,9 +146,11 @@ export function Landing({
                   existingWorkoutCount={null}
                   existingBodyCompCount={null}
                   existingTagsCount={null}
+                  existingWeighInsCount={null}
                   onSyncedWorkoutData={onSyncedWorkoutData}
                   onSyncedBodyCompData={onSyncedBodyCompData}
                   onSyncedTags={onSyncedTags}
+                  onSyncedWeighIns={onSyncedWeighIns}
                   disabled={busy}
                   variant="ghost"
                   className="gap-2"

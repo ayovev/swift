@@ -22,6 +22,9 @@ import { REQUIRED_COLUMNS as SUGARWOD_REQUIRED, type SugarWodRow } from "@/types
  * columns this version happens to use.
  */
 
+import type { WeighIn } from "@/types/weighIn";
+import { validateWeighInList } from "@/lib/analytics/weighIns";
+
 export type Validated<T> = { status: "ok"; value: T } | { status: "invalid"; reason: string };
 
 const invalid = (reason: string): { status: "invalid"; reason: string } => ({ status: "invalid", reason });
@@ -119,4 +122,10 @@ export function validateExperiments(raw: unknown): Validated<Experiment[]> {
     });
   }
   return { status: "ok", value: out };
+}
+
+/** A received weigh-in list: one bad record rejects the list, naming it. */
+export function validateWeighIns(raw: unknown): Validated<WeighIn[]> {
+  const result = validateWeighInList(raw);
+  return result.status === "ok" ? { status: "ok", value: result.weighIns } : invalid(result.reason);
 }

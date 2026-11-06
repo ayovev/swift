@@ -16,6 +16,7 @@
 import { RS_MAX_INTERPOLATION_GAP_DAYS, RS_MAX_NEAREST_SCAN_DAYS } from "../insightConfig";
 import { monthYear } from "./display";
 import type { ProgressSubject } from "./sessions";
+import type { InBodyRow } from "@/types/inbody";
 import { dayNumber, roundHalfAway, type ProgressVerdict } from "./verdict";
 
 export interface BodyReading {
@@ -105,4 +106,18 @@ export function bodyContextLines(input: BodyContextInput, readings: readonly Bod
     }
   }
   return { first, relation };
+}
+
+/** A reading as a scan row carrying only a weight, so the noise-band methods that read scans can be run over a pooled series. */
+export function inbodyRowFromReading(r: BodyReading): InBodyRow {
+  return {
+    date: `${r.date.replaceAll("-", "")}120000`,
+    "Weight(lb)": String(r.weightLb),
+    "Skeletal Muscle Mass(lb)": "-",
+    "Soft Lean Mass(lb)": "-",
+    "Body Fat Mass(lb)": "-",
+    "Percent Body Fat(%)": "-",
+    "BMI(kg/m²)": "-",
+    "InBody Score": "-",
+  };
 }

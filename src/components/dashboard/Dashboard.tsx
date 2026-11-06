@@ -36,6 +36,7 @@ import type { Insights } from "@/lib/analytics/buildInsights";
 import type { DateWindow } from "@/types/compare";
 import type { PeriodVerdict } from "@/types/verdict";
 import type { ContextTag } from "@/types/tag";
+import type { WeighIn } from "@/types/weighIn";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { DataSource } from "@/App";
@@ -56,6 +57,10 @@ interface DashboardProps {
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedWeighIns: (weighIns: WeighIn[]) => void;
+  weighIns: WeighIn[];
+  onSaveWeighIn: (weighIn: WeighIn) => void;
+  onDeleteWeighIn: (date: string) => void;
   tags: ContextTag[];
   onAddTag: (tag: Omit<ContextTag, "id">) => void;
   onUpdateTag: (tag: ContextTag) => void;
@@ -79,6 +84,10 @@ export function Dashboard({
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedTags,
+  onSyncedWeighIns,
+  weighIns,
+  onSaveWeighIn,
+  onDeleteWeighIn,
   tags,
   onAddTag,
   onUpdateTag,
@@ -109,11 +118,14 @@ export function Dashboard({
     if (bodyComp.status === "ready") {
       outgoing.push({ dataset: "bodyComp", json: JSON.stringify(bodyComp.rows) });
     }
+    if (weighIns.length > 0) {
+      outgoing.push({ dataset: "weighIns", json: JSON.stringify(weighIns) });
+    }
     if (tags.length > 0) {
       outgoing.push({ dataset: "tags", json: JSON.stringify(tags) });
     }
     return outgoing;
-  }, [workoutRows, bodyComp, tags]);
+  }, [workoutRows, bodyComp, weighIns, tags]);
 
   // Widening the range out from under an active daily view (via the date
   // picker, not this control) would otherwise leave a chart stuck rendering
@@ -215,10 +227,12 @@ export function Dashboard({
               bodyComp={bodyComp}
               onBodyCompFile={onBodyCompFile}
               tags={tags}
+              weighIns={weighIns}
               syncOutgoing={syncOutgoing}
               onSyncedWorkoutData={onSyncedWorkoutData}
               onSyncedBodyCompData={onSyncedBodyCompData}
               onSyncedTags={onSyncedTags}
+              onSyncedWeighIns={onSyncedWeighIns}
               onReset={onReset}
             />
           </div>
@@ -308,11 +322,14 @@ export function Dashboard({
               range={range}
               onFile={onBodyCompFile}
               dashboard={insights.dashboard}
+              weighIns={weighIns}
+              onSaveWeighIn={onSaveWeighIn}
+              onDeleteWeighIn={onDeleteWeighIn}
             />
           </TabsContent>
 
           <TabsContent value={LIFTS_TAB}>
-            <LiftsTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} />
+            <LiftsTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} />
           </TabsContent>
 
           <TabsContent value={COMPARE_TAB}>

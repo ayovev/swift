@@ -6,11 +6,13 @@ import { downloadTextFile } from "@/lib/download";
 import { capture } from "@/lib/posthog";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
+import type { WeighIn } from "@/types/weighIn";
 
 interface DownloadBackupButtonProps {
   workoutRows: SugarWodRow[];
   bodyComp: BodyCompState;
   tags: ContextTag[];
+  weighIns: WeighIn[];
   /** When set, the file is encrypted under it. Held only for the length of the click. */
   passphrase?: string | undefined;
   /** Called once the file has been handed to the browser, so the form can clear the passphrase. */
@@ -29,6 +31,7 @@ export function DownloadBackupButton({
   workoutRows,
   bodyComp,
   tags,
+  weighIns,
   passphrase,
   onDownloaded,
   disabled,
@@ -43,6 +46,7 @@ export function DownloadBackupButton({
         workout: workoutRows,
         bodyComp: bodyComp.status === "ready" ? bodyComp.rows : [],
         tags,
+        weighIns,
       };
       const text =
         passphrase === undefined

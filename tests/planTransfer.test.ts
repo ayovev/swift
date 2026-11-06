@@ -3,7 +3,7 @@ import { planTransfer } from "@/lib/sync/planTransfer";
 import type { ExistingCounts, ReceivedHandlers } from "@/lib/sync/receivedDatasets";
 import { scanRow, workoutRow } from "./fixtures/rows";
 
-const none: ExistingCounts = { workout: null, bodyComp: null, tags: null };
+const none: ExistingCounts = { workout: null, bodyComp: null, tags: null, weighIns: null };
 const datasets = {
   workout: [workoutRow({ date: "03/05/2024", title: "FRAN" })],
   bodyComp: [scanRow("2026-04-01")],
@@ -16,6 +16,7 @@ function handlers() {
     workout: vi.fn(() => void calls.push("workout")),
     bodyComp: vi.fn(() => void calls.push("bodyComp")),
     tags: vi.fn(() => void calls.push("tags")),
+    weighIns: vi.fn(() => void calls.push("weighIns")),
   };
   return { h, calls };
 }
@@ -32,7 +33,7 @@ describe("planTransfer", () => {
 
   it("lists every dataset that would overwrite local data, with both counts", () => {
     const { h, calls } = handlers();
-    const plan = planTransfer(datasets, { workout: 10, bodyComp: null, tags: 2 }, h);
+    const plan = planTransfer(datasets, { workout: 10, bodyComp: null, tags: 2, weighIns: null }, h);
     expect(plan.conflicts.map((c) => [c.dataset, c.existingCount, c.incomingCount])).toEqual([
       ["workout", 10, 1],
       ["tags", 2, 1],
@@ -43,7 +44,7 @@ describe("planTransfer", () => {
 
   it("applies a conflicting dataset only once its apply has run, still with the workout log last", () => {
     const { h, calls } = handlers();
-    const plan = planTransfer(datasets, { workout: 10, bodyComp: 5, tags: null }, h);
+    const plan = planTransfer(datasets, { workout: 10, bodyComp: 5, tags: null, weighIns: null }, h);
     for (const conflict of plan.conflicts) conflict.apply();
     plan.flush();
     expect(calls).toEqual(["tags", "bodyComp", "workout"]);

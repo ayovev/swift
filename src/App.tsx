@@ -17,6 +17,9 @@ import { generateSampleTags } from "@/lib/sample/generateSampleTags";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { migrateLegacyExperiments } from "@/lib/storage/legacyExperiments";
 import { loadTags, saveTags } from "@/lib/storage/tagsStorage";
+import { loadWeighIns, saveWeighIns } from "@/lib/storage/weighInsStorage";
+import { removeWeighIn, upsertWeighIn } from "@/lib/analytics/weighIns";
+import type { WeighIn } from "@/types/weighIn";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
 import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
@@ -80,6 +83,7 @@ export default function App() {
   const [granularity, setGranularity] = useState<Granularity>("monthly");
   const [bodyComp, setBodyComp] = useState<BodyCompState>({ status: "idle" });
   const [tags, setTags] = useState<ContextTag[]>([]);
+  const [weighIns, setWeighIns] = useState<WeighIn[]>([]);
 
   // Restore whatever was uploaded last time — persistence is local-only (see
   // CLAUDE.md) and lasts until "Start over" clears it. Sample data is never
@@ -87,13 +91,14 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [rows, bodyRows, viewPrefs, storedTags] = await Promise.all([
+      const [rows, bodyRows, viewPrefs, storedTags, storedWeighIns] = await Promise.all([
         loadWorkoutRows(),
         loadBodyCompRows(),
         loadViewPreferences(),
         // Experiments are tags now; anything still stored as the old list is
         // moved into the tags first (legacyExperiments.ts), then read as one.
         migrateLegacyExperiments().then((migrated) => migrated ?? loadTags()),
+        loadWeighIns(),
       ]);
       if (cancelled) return;
       if (rows && rows.length > 0) {
@@ -103,6 +108,7 @@ export default function App() {
       }
       if (bodyRows && bodyRows.length > 0) setBodyComp({ status: "ready", rows: bodyRows });
       if (storedTags) setTags(storedTags);
+      if (storedWeighIns) setWeighIns(storedWeighIns);
       if (viewPrefs) {
         setGranularity(viewPrefs.granularity);
         setRangePreset(viewPrefs.rangePreset);
@@ -342,6 +348,27 @@ export default function App() {
   const updateTag = useCallback((tag: ContextTag) => commitTags((prev) => prev.map((t) => (t.id === tag.id ? tag : t))), [commitTags]);
   const deleteTag = useCallback((id: string) => commitTags((prev) => prev.filter((t) => t.id !== id)), [commitTags]);
 
+  // Manual weigh-ins: user-authored, one per day, its own IndexedDB key (see weighInsStorage.ts). Persisted on every change except in
+  // sample mode, for the same reason as the tags above.
+  const commitWeighIns = useCallback(
+    (update: (prev: WeighIn[]) => WeighIn[]) => {
+      setWeighIns((prev) => {
+        const next = update(prev);
+        if (state.status === "ready" && state.source === "upload") void saveWeighIns(next);
+        return next;
+      });
+    },
+    [state]
+  );
+  const saveWeighIn = useCallback((weighIn: WeighIn) => commitWeighIns((prev) => upsertWeighIn(prev, weighIn)), [commitWeighIns]);
+  const deleteWeighIn = useCallback((date: string) => commitWeighIns((prev) => removeWeighIn(prev, date)), [commitWeighIns]);
+
+  // Sync's weigh-ins handler: an unconditional writer, gated by SyncDialog, and always persisted (synced data is never sample data).
+  const handleSyncedWeighIns = useCallback((incoming: WeighIn[]) => {
+    setWeighIns(incoming);
+    void saveWeighIns(incoming);
+  }, []);
+
   // Sync's tags handler, alongside the two above: an unconditional writer,
   // gated by SyncDialog. An experiment arrives as a tag (or, from an older
   // device, is converted to one before this runs). Tags always persist for the same reason
@@ -380,6 +407,7 @@ export default function App() {
     setGranularity("monthly");
     setBodyComp({ status: "idle" });
     setTags([]);
+    setWeighIns([]);
     // "Start over" is also the one clear-my-data control: without wiping
     // storage here, a reload would silently restore the data this button
     // just appeared to discard.
@@ -404,6 +432,10 @@ export default function App() {
         onSyncedWorkoutData={handleSyncedWorkoutData}
         onSyncedBodyCompData={handleSyncedBodyCompData}
         onSyncedTags={handleSyncedTags}
+        onSyncedWeighIns={handleSyncedWeighIns}
+        weighIns={weighIns}
+        onSaveWeighIn={saveWeighIn}
+        onDeleteWeighIn={deleteWeighIn}
         tags={tags}
         onAddTag={addTag}
         onUpdateTag={updateTag}
@@ -424,6 +456,7 @@ export default function App() {
       onSyncedWorkoutData={handleSyncedWorkoutData}
       onSyncedBodyCompData={handleSyncedBodyCompData}
       onSyncedTags={handleSyncedTags}
+      onSyncedWeighIns={handleSyncedWeighIns}
     />
   );
 }

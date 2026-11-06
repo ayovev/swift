@@ -4,9 +4,10 @@ import { experimentToTag } from "@/lib/analytics/experimentToTag";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
+import type { WeighIn } from "@/types/weighIn";
 import type { SyncDataset } from "./chunking";
 import { DATASET_LABEL } from "./datasetLabels";
-import { validateBodyCompRows, validateExperiments, validateWorkoutRows, type Validated } from "./validateReceived";
+import { validateBodyCompRows, validateExperiments, validateWeighIns, validateWorkoutRows, type Validated } from "./validateReceived";
 
 /**
  * What a joiner does with the datasets that arrived: nothing is applied
@@ -16,7 +17,7 @@ import { validateBodyCompRows, validateExperiments, validateWorkoutRows, type Va
  * connection.
  *
  * Sync carries the athlete's data and nothing else: the workout log, the
- * InBody history and context tags (an experiment is a tag of type
+ * InBody history, manual weigh-ins and context tags (an experiment is a tag of type
  * "experiment"). How the app looks or is configured (theme, grouping, date
  * range) stays on each device.
  *
@@ -38,12 +39,14 @@ export interface ExistingCounts {
   workout: number | null;
   bodyComp: number | null;
   tags: number | null;
+  weighIns: number | null;
 }
 
 export interface ReceivedHandlers {
   workout: (rows: SugarWodRow[]) => void;
   bodyComp: (rows: InBodyRow[]) => void;
   tags: (tags: ContextTag[]) => void;
+  weighIns: (weighIns: WeighIn[]) => void;
 }
 
 export interface ConflictItem {
@@ -98,6 +101,8 @@ export function planReceived(
 
   offer<SugarWodRow>("workout", received.workout, validateWorkoutRows, existing.workout, handlers.workout);
   offer<InBodyRow>("bodyComp", received.bodyComp, validateBodyCompRows, existing.bodyComp, handlers.bodyComp);
+
+  offer<WeighIn>("weighIns", received.weighIns, validateWeighIns, existing.weighIns, handlers.weighIns);
 
   // Experiments from an older sender become tags, joined with any tags that
   // came alongside them, so the tags dataset is offered (and conflicts are

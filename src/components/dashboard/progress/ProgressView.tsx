@@ -8,6 +8,8 @@ import { classifySubjects, headlineSentence, type ProgressGroup, type ProgressRo
 import { filterRowsByPeriod, periodRange, type PeriodPreset } from "@/lib/analytics/insights/period";
 import { buildProgressSubjects } from "@/lib/analytics/insights/sessions";
 import { parseWorkoutDate } from "@/lib/analytics/scanParsing";
+import { pooledReadings, pooledScanRows } from "@/lib/analytics/weighIns";
+import type { WeighIn } from "@/types/weighIn";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { PeriodFilter } from "./PeriodFilter";
@@ -25,6 +27,8 @@ const GROUPS: { id: ProgressGroup; title: string; open: boolean }[] = [
 interface ProgressViewProps {
   workouts: readonly SugarWodRow[];
   scans: readonly InBodyRow[];
+  /** Manual weigh-ins, pooled with the scans for the body-context lines. */
+  weighIns?: readonly WeighIn[];
   /** YYYY-MM-DD; today unless a test says otherwise. */
   asOf?: string;
 }
@@ -33,12 +37,12 @@ interface ProgressViewProps {
  * The Insights front door: the headline (a label and the counts behind it), the "Logged in" filter, and every lift and benchmark in one
  * of six groups. It reads the whole unfiltered log as of today; the filter only chooses which subjects are listed.
  */
-export function ProgressView({ workouts, scans, asOf }: ProgressViewProps) {
+export function ProgressView({ workouts, scans, weighIns = [], asOf }: ProgressViewProps) {
   const today = useMemo(() => asOf ?? dayjs().format("YYYY-MM-DD"), [asOf]);
   const { subjects, unused } = useMemo(() => buildProgressSubjects(workouts), [workouts]);
   const { rows, headline } = useMemo(() => classifySubjects(subjects, today), [subjects, today]);
-  const readings = useMemo(() => readingsFromInBody(scans), [scans]);
-  const band = useMemo(() => weightBandLb(scans), [scans]);
+  const readings = useMemo(() => pooledReadings(readingsFromInBody(scans), weighIns), [scans, weighIns]);
+  const band = useMemo(() => weightBandLb(pooledScanRows(scans, weighIns)), [scans, weighIns]);
   const [preset, setPreset] = useState<PeriodPreset>("all");
   const [custom, setCustom] = useState({ start: "", end: today });
 

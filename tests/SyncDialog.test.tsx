@@ -40,9 +40,11 @@ function setup(existing: { workout?: number | null; bodyComp?: number | null } =
     existingWorkoutCount: existing.workout ?? null,
     existingBodyCompCount: existing.bodyComp ?? null,
     existingTagsCount: null,
+    existingWeighInsCount: null,
     onSyncedWorkoutData: vi.fn(),
     onSyncedBodyCompData: vi.fn(),
     onSyncedTags: vi.fn(),
+    onSyncedWeighIns: vi.fn(),
   };
   const ui = () => <SyncDialog {...props} />;
   const utils = render(ui());

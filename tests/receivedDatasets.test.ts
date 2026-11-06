@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { planReceived, type ExistingCounts, type ReceivedHandlers } from "@/lib/sync/receivedDatasets";
 
-const none: ExistingCounts = { workout: null, bodyComp: null, tags: null };
+const none: ExistingCounts = { workout: null, bodyComp: null, tags: null, weighIns: null };
 import { scanRow, workoutRow } from "./fixtures/rows";
 
 const wRow = workoutRow({ date: "03/05/2024", title: "FRAN" });
@@ -15,6 +15,7 @@ function handlers() {
     workout: vi.fn(() => void calls.push("workout")),
     bodyComp: vi.fn(() => void calls.push("bodyComp")),
     tags: vi.fn(() => void calls.push("tags")),
+    weighIns: vi.fn(() => void calls.push("weighIns")),
   };
   return { h, calls };
 }
@@ -31,7 +32,7 @@ describe("planReceived", () => {
     const { h, calls } = handlers();
     const plan = planReceived(
       { workout: [wRow, wRow], bodyComp: [bRow], tags: [tag] },
-      { workout: 10, bodyComp: null, tags: 2 },
+      { workout: 10, bodyComp: null, tags: 2, weighIns: null },
       h
     );
     expect(calls).toEqual(["bodyComp"]);

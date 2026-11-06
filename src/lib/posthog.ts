@@ -47,7 +47,9 @@ export type InteractionName =
   | "movement_selected"
   | "implement_selected"
   | "backup_exported"
-  | "backup_imported";
+  | "backup_imported"
+  | "weigh_in_saved"
+  | "weigh_in_deleted";
 
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }

@@ -10,6 +10,7 @@ import type { SkippedDataset } from "@/lib/sync/receivedDatasets";
 import type { OutgoingDataset, SyncFailureReason } from "@/lib/sync/syncSession";
 import type { InBodyRow } from "@/types/inbody";
 import type { ContextTag } from "@/types/tag";
+import type { WeighIn } from "@/types/weighIn";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { HostQrView } from "./HostQrView";
 import { JoinerScanView } from "./JoinerScanView";
@@ -25,9 +26,11 @@ export interface SyncDialogProps {
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
   existingTagsCount: number | null;
+  existingWeighInsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedWeighIns: (weighIns: WeighIn[]) => void;
 }
 
 function failureMessage(reason: SyncFailureReason): string {
@@ -56,7 +59,7 @@ function captureJoinerSuccess(received: Partial<Record<SyncDataset, unknown>>) {
     name: "sync_succeeded",
     props: {
       role: "joiner",
-      rows: bucketRowCount(count(received.workout) || count(received.bodyComp) || count(received.tags)),
+      rows: bucketRowCount(count(received.workout) || count(received.bodyComp) || count(received.tags) || count(received.weighIns)),
     },
   });
 }
@@ -80,9 +83,11 @@ export function SyncDialog({
   existingWorkoutCount,
   existingBodyCompCount,
   existingTagsCount,
+  existingWeighInsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
   onSyncedTags,
+  onSyncedWeighIns,
 }: SyncDialogProps) {
   const [received, setReceived] = useState<Partial<Record<SyncDataset, unknown>>>({});
   // The one confirmation for the whole transfer, when anything would be overwritten.
@@ -166,11 +171,13 @@ export function SyncDialog({
         workout: existingWorkoutCount,
         bodyComp: existingBodyCompCount,
         tags: existingTagsCount,
+        weighIns: existingWeighInsCount,
       },
       {
         workout: onSyncedWorkoutData,
         bodyComp: onSyncedBodyCompData,
         tags: onSyncedTags,
+        weighIns: onSyncedWeighIns,
       },
       unreadable
     );
@@ -198,9 +205,11 @@ export function SyncDialog({
     existingWorkoutCount,
     existingBodyCompCount,
     existingTagsCount,
+    existingWeighInsCount,
     onSyncedWorkoutData,
     onSyncedBodyCompData,
     onSyncedTags,
+    onSyncedWeighIns,
     onOpenChange,
   ]);
 

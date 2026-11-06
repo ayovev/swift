@@ -18,10 +18,12 @@ function renderSheet(source: DataSource, onReset = vi.fn()) {
         bodyComp={{ status: "idle" }}
         onBodyCompFile={vi.fn()}
         tags={[]}
+        weighIns={[]}
         syncOutgoing={[]}
         onSyncedWorkoutData={vi.fn()}
         onSyncedBodyCompData={vi.fn()}
         onSyncedTags={vi.fn()}
+        onSyncedWeighIns={vi.fn()}
         onReset={onReset}
       />
     </ThemeProvider>

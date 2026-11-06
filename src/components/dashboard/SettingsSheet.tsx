@@ -42,6 +42,7 @@ import type { DataSource } from "@/App";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { ContextTag } from "@/types/tag";
+import type { WeighIn } from "@/types/weighIn";
 
 const MODES: { value: ModePreference; label: string; Icon: typeof Sun }[] = [
   { value: "light", label: "Light", Icon: Sun },
@@ -56,11 +57,13 @@ interface SettingsSheetProps {
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
   tags: ContextTag[];
+  weighIns: WeighIn[];
   /** Host role only: what this device would send. Built once in Dashboard.tsx. */
   syncOutgoing: OutgoingDataset[];
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
   onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedWeighIns: (weighIns: WeighIn[]) => void;
   onReset: () => void;
 }
 
@@ -133,11 +136,13 @@ export function SettingsSheet(props: SettingsSheetProps) {
       workout: upload ? props.workoutRows.length : null,
       bodyComp: upload && props.bodyComp.status === "ready" ? props.bodyComp.rows.length : null,
       tags: upload && props.tags.length > 0 ? props.tags.length : null,
+      weighIns: upload && props.weighIns.length > 0 ? props.weighIns.length : null,
     },
     handlers: {
       workout: props.onSyncedWorkoutData,
       bodyComp: props.onSyncedBodyCompData,
       tags: props.onSyncedTags,
+      weighIns: props.onSyncedWeighIns,
     },
   });
 
@@ -225,6 +230,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
                   workoutRows={props.workoutRows}
                   bodyComp={props.bodyComp}
                   tags={props.tags}
+                  weighIns={props.weighIns}
                   passphrase={protect ? passphrase : undefined}
                   onDownloaded={clearPassphrase}
                   disabled={!canDownload}
@@ -281,9 +287,11 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 existingWorkoutCount={null}
                 existingBodyCompCount={null}
                 existingTagsCount={null}
+                existingWeighInsCount={null}
                 onSyncedWorkoutData={props.onSyncedWorkoutData}
                 onSyncedBodyCompData={props.onSyncedBodyCompData}
                 onSyncedTags={props.onSyncedTags}
+                onSyncedWeighIns={props.onSyncedWeighIns}
                 disabled={!upload}
                 className="h-10 gap-2"
               >
@@ -295,9 +303,11 @@ export function SettingsSheet(props: SettingsSheetProps) {
                 existingWorkoutCount={props.workoutRows.length}
                 existingBodyCompCount={props.bodyComp.status === "ready" ? props.bodyComp.rows.length : null}
                 existingTagsCount={props.tags.length > 0 ? props.tags.length : null}
+                existingWeighInsCount={props.weighIns.length > 0 ? props.weighIns.length : null}
                 onSyncedWorkoutData={props.onSyncedWorkoutData}
                 onSyncedBodyCompData={props.onSyncedBodyCompData}
                 onSyncedTags={props.onSyncedTags}
+                onSyncedWeighIns={props.onSyncedWeighIns}
                 disabled={!upload}
                 className="h-10 gap-2"
               >
@@ -376,7 +386,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
             <div className="flex items-center gap-4">
               <p className="grow text-[13px] leading-relaxed text-muted-foreground">
                 {upload
-                  ? "Deletes your workout log, body composition history and periods, experiments included, from this browser."
+                  ? "Deletes your workout log, body composition history, weigh-ins and periods, experiments included, from this browser."
                   : "Leaves the sample and goes back to the upload screen."}
               </p>
               {upload ? (
@@ -390,7 +400,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Start over?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This deletes your uploaded workout log, body composition history, and any
+                        This deletes your uploaded workout log, body composition history, weigh-ins, and any
                         periods you've added, experiments included. This can't be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
