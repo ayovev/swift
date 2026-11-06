@@ -123,11 +123,50 @@ most rows, and text cannot show that. A timeline can, so **rows carry no entry t
   a lane on the Timeline but no link from the front door.
 - **An entry never changes a number:** adding, editing or deleting one changes no verdict, pill, label, count or body-context line.
 
+## Decided: the Timeline page composition
+
+Mockup: the Timeline View artifact. Cases A1-TLN-28 to A1-TLN-31.
+
+- **One page, one detail slot.** The chart is at full width and a single **Selected** panel sits beneath it (on a phone it scrolls into
+  view when something is selected). The panel holds one thing at a time: a hint when nothing is selected ("Select an entry or a
+  subject on the chart, or add to the timeline."), an entry's detail, or a subject's detail.
+- **The form is a dialog.** "Add to timeline" opens it, and Edit in an entry's detail opens the same dialog prefilled. Saving closes it
+  and selects the entry. On a phone it is full-screen. Cancel, Escape and a click outside close it without saving.
+- **Delete is behind a confirmation** that names the entry and says the workouts are not affected, as "Start over" does.
+- **A click on an empty spot in the entries area** opens the form with that day as the start date. It is a shortcut, never the only way.
+- Rejected: separate pages for detail and form (they lose the axis, and reading an entry's verdict while seeing where it sits among the
+  others is the point), everything inline (the overcrowding the old Periods tab had), and a side panel (it squeezes the axis).
+
+## Decided: an entry's own before and after verdict
+
+Only an "I changed it" entry has one. Mockup: the Timeline Entry Detail artifact. Cases A1-TLN-32 to A1-TLN-40.
+
+1. **Windows.** For each subject, **during** is the sessions dated from the entry's start to its end (to the reference date for an ongoing
+   entry, which reads "so far") and **before** is the sessions dated before its start. `N = min(4, during, before)`; the last N sessions
+   on each side are compared and the subject needs `N` of at least 3. State, change, record and the Down versus Not tested since rule are
+   A1's, unchanged. No separate recency rule is needed, since a subject needs 3 sessions inside the entry to qualify. A move up to RX
+   dated inside the entry counts as one Up vote.
+2. **The summary** reuses the headline label and counts sentence: "Improving in 3 of 4 lifts and benchmarks (1 no clear change).",
+   with Not tested since subjects left out ("Left out: 1 not tested since."). Fewer than 3 counted subjects give no label.
+3. **When there is no verdict,** "No before and after yet", a shortfall sentence ("Needs 3 lifts or benchmarks with at least 3 sessions
+   during this entry and 3 before it, has 2. Closest: Fran (Scaled), 2 more during; Nancy (Scaled), 2 more during."), and **facts
+   lines** (no pill or percentage) for subjects with a session on each side, five shown and "and N more".
+4. **Body weight, once,** over the entry's own span, with the existing reading rule and noise band and no sentence relating it to the
+   verdict. This is allowed here and not on the headline because an entry has one span.
+5. **Overlapping entries are named** ("Overlaps: Two weeks abroad"), because one entry has one span. Overlap means the entry's dates
+   intersect this entry's (to today for an ongoing one).
+
+An "It happened" entry shows no before and after ("None. Something that happened is shown beside your results for context and gets no
+before and after comparison.") but still shows its body weight line and overlaps.
+
+**Measured on the sample** (8 demo "I changed it" entries, all 45 subjects): First bulk 3 subjects reach a verdict, First cut 4, Started
+5/3/1 5, 5/3/1 cycle 2 0, Maintenance block 0, Protein-forward diet 2, Tracking sleep 0, Current block 1. Only 3 of 8 reach the 3 a summary
+needs, and lowering the per-side gate to 2 changes none of them, because few sessions are logged inside a 3-month span. The facts lines
+exist for that case. The sample is synthetic; the real export is the check (A1-MAN-01).
+
 ## Proposed
 
 Awaiting your answers; nothing below is decided.
 
-1. **The entry's own before and after verdict** (an "I changed it" entry's detail): what it compares and how it is shown.
-2. **The list view and the edit and delete paths** for entries.
-3. **`baselineStart`** (a manual start for the "before" side) stays only if it earns its place.
-4. **Focus lifts** on an entry's detail ("what it was"): chosen by the athlete or derived from the sessions inside the span.
+1. **`baselineStart`** (a manual start for the "before" side) stays only if it earns its place.
+2. **Focus lifts** on an entry's detail ("what it was"): chosen by the athlete or derived from the sessions inside the span.

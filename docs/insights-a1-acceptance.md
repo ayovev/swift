@@ -685,6 +685,50 @@ clipped to the range, and a subject whose two bests both fall outside reads "Out
 
 **A1-TLN-27 Words.** The view is titled Timeline, the button reads "Add to timeline", and no copy says "period" or "tag".
 
+**A1-TLN-28 One page, one slot.** The Timeline shows the chart at full width and one Selected panel beneath it. With nothing selected the
+panel reads "Select an entry or a subject on the chart, or add to the timeline." Selecting an entry shows its detail; selecting a
+verdict lane shows that subject's detail and replaces the entry; only one is shown at a time.
+
+**A1-TLN-29 The form is a dialog.** "Add to timeline" opens the entry form in a dialog. Edit in an entry's detail opens the same dialog
+prefilled with that entry. Saving closes it and selects the saved entry. Cancel, Escape and a click outside close it and save nothing. On a
+phone it is full-screen.
+
+**A1-TLN-30 Delete is confirmed.** Delete on "Started 5/3/1" asks: Delete "Started 5/3/1"? This removes the entry from your timeline. Your
+workouts are not affected. Delete removes it and clears the panel; Cancel leaves it.
+
+**A1-TLN-31 A click on the axis.** A click on an empty spot in the entries area at 2025-01-15 opens the form with the start date 2025-01-15
+filled in. A click on a verdict lane selects that subject instead. The button remains the main route.
+
+**A1-TLN-32 The windows.** For "Started 5/3/1" (2024-02-21 to 2024-05-14): Snatch has 3 sessions during and at least 3 before, so N is 3.
+Its best before is 124 lb est. (Feb 2024) and its best during is 140 lb est. (Mar 2024), +12.8%, Up. A subject with fewer than 3 on
+either side is not compared. Back Squat 220 to 230 lb (+4.5%) is No clear change; Front Squat 194 to 184 lb (-5.3%) with no max effort
+is Not tested since.
+
+**A1-TLN-33 The summary.** "Started 5/3/1" reads "Improving in 3 of 4 lifts and benchmarks (1 no clear change)." with "Left out: 1 not
+tested since." The label uses the headline rule; fewer than 3 counted subjects give no label.
+
+**A1-TLN-34 No verdict.** "Protein-forward diet" (2025-03-21 to 2025-06-26) has 2 compared subjects, so it reads "No before and after
+yet" and "Needs 3 lifts or benchmarks with at least 3 sessions during this entry and 3 before it, has 2. Closest: Fran (Scaled), 2 more
+during; Nancy (Scaled), 2 more during." Facts lines follow for the 7 subjects with a session on each side, five shown and "and 2 more",
+for example "Nancy (Scaled): During, 14:37 (Apr 2025, 1 session). Before, best 13:47 (Nov 2024). 0:50 slower." No pill or percentage.
+
+**A1-TLN-35 Ongoing.** "Current block" (ongoing since 2026-07-01) reads with "So far:" before its sentence, and its shortfall says "so far
+in this entry".
+
+**A1-TLN-36 Body weight once.** One line over the entry's span, by the existing reading rule: "Body weight 180.9 to 179.3 lb, within normal
+scan variation." for "Started 5/3/1", and "No body weight within 21 days of Mar 2025." for "Protein-forward diet". No sentence relates it
+to the verdict.
+
+**A1-TLN-37 Overlaps.** "Protein-forward diet" reads "Overlaps: Two weeks abroad". An entry with none reads "Nothing else on your
+timeline during this entry." Overlap means the dates intersect.
+
+**A1-TLN-38 Something that happened.** "Shoulder tweak" shows "None. Something that happened is shown beside your results for context and gets
+no before and after comparison.", and still shows its body weight line and overlaps.
+
+**A1-TLN-39 A move up inside an entry** counts as one Up vote in the summary (derived: none of the sample's demo entries contains one).
+
+**A1-TLN-40 A new or edited entry** has its before and after recalculated from the sessions when saved.
+
 ## Manual checks (MAN)
 
 **A1-MAN-01 Real export.** Run the rules on the real export and confirm the stability figures in the spec are in the

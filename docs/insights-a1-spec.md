@@ -452,8 +452,9 @@ run, not re-run.
 The same function serves every consumer, with only the sessions chosen differently:
 
 - **Subject list and headline**: the most recent sessions of each subject.
-- **Entry verdict (D1)**: an "I changed it" timeline entry's own sessions as **recent**, and the sessions immediately before
-  its start as **previous**, same window size cap, same threshold, same minimum. An entry with no end runs to the reference date.
+- **Entry verdict (D1, decided)**: for an "I changed it" timeline entry, the last N sessions dated within the entry are **recent** and the last N
+  sessions dated before its start are **previous**, with `N = min(4, during, before)` and at least 3 per side; same threshold, record rule
+  and states. An entry with no end runs to the reference date and reads "so far". See `insights-timeline.md` and A1-TLN-32 to A1-TLN-40.
 - **Front door "Logged in the last" filter (decided)**: replaces the earlier fixed-period recompute, which was
   measured on the sample and left every row empty (no subject has 6 sessions inside 30, 60 or 90 days). The filter
   chooses which subjects are *listed* and changes no verdict, label, count or paragraph. It applies to the subject
