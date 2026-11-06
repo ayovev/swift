@@ -4,8 +4,7 @@ import {
   LIFTS_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
-  COMPARE_TAB,
-  PERIODS_TAB,
+  TIMELINE_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
 import { CROSSFIT_DEFINITIONS, DOMAIN_LIST } from "@/types/dashboard";
@@ -21,13 +20,13 @@ interface SubGroup {
 }
 
 /**
- * Twenty views, grouped the way an athlete actually moves between them:
+ * Nineteen views, grouped the way an athlete actually moves between them:
  * what I did (Training), what it was made of (Breakdown — the ten GPP
  * domains, three modalities and the movements themselves, which are a *classification* of the same
  * workouts rather than separate data), what my body did (Body), and what
- * the two datasets say together (Insights — Progress, Compare and
- * Periods: how lifts and body composition moved, over which stretches, and the
- * labelled stretches the athlete saves).
+ * the two datasets say together (Insights — Progress and Timeline:
+ * whether each lift and benchmark is moving, and the things the athlete changed or that
+ * happened, laid beside those verdicts).
  *
  * Two levels, never a dropdown: the section row sits in the page header and
  * the views inside a section are a plain row of tabs under the page title,
@@ -45,7 +44,7 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
     ],
   },
   { id: "Body", groups: [{ values: [BODY_COMP_TAB] }] },
-  { id: "Insights", groups: [{ values: [LIFTS_TAB, COMPARE_TAB, PERIODS_TAB] }] },
+  { id: "Insights", groups: [{ values: [LIFTS_TAB, TIMELINE_TAB] }] },
 ];
 
 export function sectionOf(value: string): Section {
@@ -68,7 +67,6 @@ export function pageTitleOf(value: string): string {
   const modality = MODALITY_LIST.find((m) => value === `modality:${m}`);
   if (modality) return MODALITY_NAMES[modality];
   if (value === BODY_COMP_TAB) return "Body composition";
-  if (value === COMPARE_TAB) return "Compare periods";
   return labelOf(value);
 }
 

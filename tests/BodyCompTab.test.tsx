@@ -83,3 +83,14 @@ describe("BodyCompTab — date range", () => {
     expect(screen.getByText(/Fewer than two scans fall in this date range/)).toBeInTheDocument();
   });
 });
+
+describe("BodyCompTab: weigh-ins", () => {
+  it("shows the Weigh-ins panel before any InBody file is loaded, and not when no weigh-in props are given", () => {
+    const dashboard = { days_buckets: [] } as unknown as Parameters<typeof BodyCompTab>[0]["dashboard"];
+    const { rerender } = render(<BodyCompTab state={{ status: "idle" }} granularity="monthly" range={null} onFile={vi.fn()} dashboard={dashboard} />);
+    expect(screen.queryByText("Weigh-ins")).not.toBeInTheDocument();
+    rerender(<BodyCompTab state={{ status: "idle" }} granularity="monthly" range={null} onFile={vi.fn()} dashboard={dashboard} weighIns={[]} onSaveWeighIn={vi.fn()} onDeleteWeighIn={vi.fn()} />);
+    expect(screen.getByText("Weigh-ins")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save weigh-in" })).toBeInTheDocument();
+  });
+});

@@ -26,7 +26,7 @@ export interface TransferPlan {
   flush: () => void;
 }
 
-const APPLY_ORDER: SyncDataset[] = ["tags", "bodyComp", "workout"];
+const APPLY_ORDER: SyncDataset[] = ["timeline", "weighIns", "bodyComp", "workout"];
 
 export function planTransfer(
   received: Partial<Record<SyncDataset, unknown>>,
@@ -42,7 +42,8 @@ export function planTransfer(
   const collectors: ReceivedHandlers = {
     workout: collect("workout", handlers.workout),
     bodyComp: collect("bodyComp", handlers.bodyComp),
-    tags: collect("tags", handlers.tags),
+    timeline: collect("timeline", handlers.timeline),
+    weighIns: collect("weighIns", handlers.weighIns),
   };
 
   const { conflicts, skipped } = planReceived(received, existing, collectors, unreadable);

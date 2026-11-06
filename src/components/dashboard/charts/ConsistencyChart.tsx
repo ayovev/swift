@@ -9,9 +9,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { AXIS_PROPS, AXIS_TICK_COUNT, NUM_AXIS_WIDTH, mergeBucketCounts, niceAxisTicks } from "./chartUtils";
-import { useChartInteraction } from "./chartInteraction";
 import {
-  bucketRange,
   bucketTickInterval,
   formatBucketLabel,
   GRANULARITY_NOUN,
@@ -64,13 +62,6 @@ export function ConsistencyChart({
     label: formatBucketLabel(b.bucket, granularity),
   }));
 
-  const interaction = useChartInteraction(
-    data.flatMap((d) => {
-      const r = bucketRange(d.bucket, granularity);
-      return r ? [{ label: d.label, ...r }] : [];
-    })
-  );
-
   const best = Math.max(
     1,
     ...buckets.map((b) => b.count),
@@ -90,8 +81,7 @@ export function ConsistencyChart({
   return (
     <>
     <ChartContainer config={config} className={className} role="img" aria-label={ariaLabel}>
-      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} {...interaction.handlers}>
-        {interaction.overlays}
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis
           dataKey="label"
@@ -128,7 +118,6 @@ export function ConsistencyChart({
         {dual ? <ChartLegend content={<ChartLegendContent onActiveKeyChange={setActiveKey} />} /> : null}
       </BarChart>
     </ChartContainer>
-    {interaction.footer}
     </>
   );
 }

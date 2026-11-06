@@ -5,7 +5,8 @@ import type { SyncRole } from "@/lib/posthog";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
-import type { ContextTag } from "@/types/tag";
+import type { TimelineEntry } from "@/types/timeline";
+import type { WeighIn } from "@/types/weighIn";
 import { SyncDialog } from "./SyncDialog";
 
 interface SyncEntryPointProps extends VariantProps<typeof buttonVariants> {
@@ -14,10 +15,12 @@ interface SyncEntryPointProps extends VariantProps<typeof buttonVariants> {
   outgoing?: OutgoingDataset[];
   existingWorkoutCount: number | null;
   existingBodyCompCount: number | null;
-  existingTagsCount: number | null;
+  existingTimelineCount: number | null;
+  existingWeighInsCount: number | null;
   onSyncedWorkoutData: (rows: SugarWodRow[]) => void;
   onSyncedBodyCompData: (rows: InBodyRow[]) => void;
-  onSyncedTags: (tags: ContextTag[]) => void;
+  onSyncedTimeline: (entries: TimelineEntry[]) => void;
+  onSyncedWeighIns: (weighIns: WeighIn[]) => void;
   disabled?: boolean;
   className?: string;
   children: ReactNode;
@@ -33,10 +36,12 @@ export function SyncEntryPoint({
   outgoing,
   existingWorkoutCount,
   existingBodyCompCount,
-  existingTagsCount,
+  existingTimelineCount,
+  existingWeighInsCount,
   onSyncedWorkoutData,
   onSyncedBodyCompData,
-  onSyncedTags,
+  onSyncedTimeline,
+  onSyncedWeighIns,
   disabled,
   variant = "outline",
   size = "sm",
@@ -57,10 +62,12 @@ export function SyncEntryPoint({
         {...(outgoing ? { outgoing } : {})}
         existingWorkoutCount={existingWorkoutCount}
         existingBodyCompCount={existingBodyCompCount}
-        existingTagsCount={existingTagsCount}
+        existingTimelineCount={existingTimelineCount}
+        existingWeighInsCount={existingWeighInsCount}
         onSyncedWorkoutData={onSyncedWorkoutData}
         onSyncedBodyCompData={onSyncedBodyCompData}
-        onSyncedTags={onSyncedTags}
+        onSyncedTimeline={onSyncedTimeline}
+        onSyncedWeighIns={onSyncedWeighIns}
       />
     </>
   );
