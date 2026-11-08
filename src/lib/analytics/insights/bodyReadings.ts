@@ -1,8 +1,8 @@
 /** InBody scans as the body readings the context lines read. Lean mass is Soft Lean Mass where present, else Skeletal Muscle Mass. */
 import type { InBodyRow } from "@/types/inbody";
-import { getBodyCompNoiseBands } from "../bodyCompNoise";
-import { DEFAULT_NOISE_BAND } from "../insightConfig";
+import { NOISE_DEFAULT_WEIGHT_BAND_LB } from "../insightConfig";
 import { parseInBodyDate, parseNumericField } from "../scanParsing";
+import { getWeightNoiseBand } from "../weightNoiseBand";
 import type { BodyReading } from "./bodyContext";
 
 export function readingsFromInBody(rows: readonly InBodyRow[]): BodyReading[] {
@@ -20,6 +20,6 @@ export function readingsFromInBody(rows: readonly InBodyRow[]): BodyReading[] {
 
 /** The weight noise band: measured from the scans where possible, else the 3 lb default. */
 export function weightBandLb(rows: readonly InBodyRow[]): number {
-  const band = getBodyCompNoiseBands([...rows]).weight;
-  return band.status === "ok" ? band.band : DEFAULT_NOISE_BAND.weight;
+  const band = getWeightNoiseBand([...rows]);
+  return band.status === "ok" ? band.band : NOISE_DEFAULT_WEIGHT_BAND_LB;
 }

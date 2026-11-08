@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { WeighInsPanel } from "@/components/dashboard/WeighInsPanel";
-import { getBodyCompNoiseBand } from "@/lib/analytics/bodyCompNoise";
+import { getWeightNoiseBand } from "@/lib/analytics/weightNoiseBand";
 import { bodyContextLines, type BodyReading } from "@/lib/analytics/insights/bodyContext";
 import { readingsFromInBody } from "@/lib/analytics/insights/bodyReadings";
 import { bodyWeightRows, pooledReadings, pooledScanRows, removeWeighIn, upsertWeighIn, validateWeighIn, validateWeighInList } from "@/lib/analytics/weighIns";
@@ -98,9 +98,9 @@ describe("pooling with InBody scans (WGH-05 to WGH-08)", () => {
   it("WGH-08 reaches a measured noise band with frequent weigh-ins, where scans months apart used the default", () => {
     const weekly = Array.from({ length: 12 }, (_, i) => w(`2026-0${i < 4 ? 6 : i < 8 ? 7 : 8}-${String((i % 4) * 7 + 1).padStart(2, "0")}`, 180 + (i % 2 ? 0.8 : -0.8)));
     const rows = pooledScanRows([], weekly);
-    expect(getBodyCompNoiseBand(rows, "weight").method).not.toBe("default");
+    expect(getWeightNoiseBand(rows).method).not.toBe("default");
     const sparse = pooledScanRows([scanRow("2026-01-01", { "Weight(lb)": "180" }), scanRow("2026-05-01", { "Weight(lb)": "182" })], []);
-    expect(getBodyCompNoiseBand(sparse, "weight").method).toBe("default");
+    expect(getWeightNoiseBand(sparse).method).toBe("default");
   });
 
   it("reads InBody scans as readings with lean and fat", () => {

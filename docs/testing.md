@@ -20,7 +20,7 @@ Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather t
 - `progressVerdict.test.ts`, `progressDisplay.test.ts`, `LiftsTab.test.tsx` — the Insights engine and the Progress view: the verdict rules as cases, the words, the groups and the headline, pinned on the bundled sample.
 - `timeline.test.ts`, `entryVerdict.test.ts`, `TimelineTab.test.tsx`, `generateSampleTimeline` via `sampleDataFullness.test.ts` — the entry form's rules, an entry's before and after, and the Timeline view (lanes, selection, the entry dialog, confirmed delete).
 - `weighIns.test.tsx` — manual weigh-ins: validation, pooling with scans, storage, sync and the panel.
-- `bodyCompNoise.test.ts` — the InBody noise band: the paired-scans, rolling-median and default methods and the fallback ladder between them.
+- `weightNoiseBand.test.ts` — the weight noise band: the paired-scans, rolling-median and default methods and the fallback ladder between them.
 - `parseInBodyCsv.test.ts` — InBody's own required-columns/empty/malformed-date failure paths.
 - `idbStore.test.ts` — the generic IndexedDB primitives: get/set/delete/clear round trips, isolated per test with a `fake-indexeddb` polyfill since jsdom has no native IndexedDB.
 - `workoutStorage.test.ts` / `bodyCompStorage.test.ts` / `viewPreferencesStorage.test.ts` — save/load/clear round trips for each persisted dataset, using real parsed rows.

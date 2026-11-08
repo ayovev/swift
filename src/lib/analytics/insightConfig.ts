@@ -1,6 +1,6 @@
 /**
  * Every tunable threshold the insight pipelines added after v1 read lives
- * here, each with how it was chosen. Nothing in `bodyCompNoise.ts` or the
+ * here, each with how it was chosen. Nothing in `weightNoiseBand.ts` or the
  * progress verdict (`insights/`) hard-codes a bare number.
  *
  * EVERY value below is a starting point — *tunable, validate against real
@@ -9,14 +9,10 @@
  * a real athlete's scans.
  */
 
-export type BodyCompMetric = "weight" | "leanMass" | "fatMass" | "bodyFatPct";
-
-export const BODY_COMP_METRICS: readonly BodyCompMetric[] = ["weight", "leanMass", "fatMass", "bodyFatPct"];
-
 /**
  * Two scans this close together (calendar days, inclusive) are treated as the
  * same physiological state measured twice, so their difference is noise
- * rather than change. A week is short enough that real lean/fat change is
+ * rather than change. A week is short enough that real weight change is
  * small next to hydration swings, long enough that a typical athlete has
  * some pairs. Tunable.
  */
@@ -56,7 +52,7 @@ export const NOISE_BAND_MULTIPLIER = 2;
 export const MAD_TO_SD = 1.4826;
 
 /**
- * A measured band is never allowed below this fraction of the metric's
+ * A measured band is never allowed below this fraction of the
  * default. A history of scans that happen to agree closely (or a tiny
  * sample) would otherwise produce a band near zero and call everything real.
  * Tunable.
@@ -64,18 +60,12 @@ export const MAD_TO_SD = 1.4826;
 export const NOISE_BAND_FLOOR_FRACTION = 0.5;
 
 /**
- * Last-resort band per metric: the size of a change between two scans that is
- * still ordinary variation from hydration, meal timing and time of day. Units
- * are lb, except body fat which is percentage points. These are conservative
- * round numbers in line with commonly cited InBody test-retest variation —
- * NOT measured on any athlete. Tunable.
+ * Last-resort weight band: the size of a change between two readings that is
+ * still ordinary variation from hydration, meal timing and time of day. lb.
+ * A conservative round number in line with commonly cited InBody test-retest
+ * variation, NOT measured on any athlete. Tunable.
  */
-export const DEFAULT_NOISE_BAND: Record<BodyCompMetric, number> = {
-  weight: 3,
-  leanMass: 3,
-  fatMass: 3,
-  bodyFatPct: 1.5,
-};
+export const NOISE_DEFAULT_WEIGHT_BAND_LB = 3;
 
 // ── Rep schemes and body-weight readings (insights/) ────────────────────
 

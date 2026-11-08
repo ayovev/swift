@@ -8,7 +8,7 @@
  *
  * **One body-weight series.** InBody scans and weigh-ins pool into one series for "body weight at a date"; on a day with both, the InBody
  * scan is used and the weigh-in is kept, listed as not used, and used again if the scan goes away. Lean and fat mass come from scans
- * only. The noise band is estimated from the pooled series (`bodyCompNoise.ts`), so frequent weigh-ins reach a measured band where
+ * only. The noise band is estimated from the pooled series (`weightNoiseBand.ts`), so frequent weigh-ins reach a measured band where
  * scans months apart fell to the 3 lb default. No smoothing: a reading is used as entered.
  */
 import { WEIGH_IN_MAX_LB, WEIGH_IN_MIN_LB, WEIGH_IN_NOTE_MAX, type WeighIn } from "@/types/weighIn";

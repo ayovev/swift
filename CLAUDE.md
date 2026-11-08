@@ -274,33 +274,31 @@ Read each file's header comment before changing it; the cases are `tests/progres
 - **`display.ts`**, **`bodyContext.ts`**, **`period.ts`**, **`chart.ts`**: the words (RX unmarked, Scaled as a qualifier), the body-context lines,
   the "Logged in" filter and the evidence chart's numbers. Body composition never feeds a verdict or a count.
 
-The InBody noise band (`bodyCompNoise.ts`) is the one older pipeline that remains: `weightBandLb` uses it to decide whether a body-weight change
+The weight noise band (`weightNoiseBand.ts`) is the one older pipeline that remains: `weightBandLb` uses it to decide whether a body-weight change
 is "within normal scan variation".
 
-## Architecture: InBody noise band
+## Architecture: the weight noise band
 
-`src/lib/analytics/bodyCompNoise.ts` answers "is this change between two scans bigger than
-scan-to-scan noise?" so no body-composition claim rests on sign alone. `getBodyCompNoiseBand()`
-estimates a band per metric (`weight`, `leanMass`, `fatMass`, `bodyFatPct`) on a ladder — scans
-within a week of each other (`paired-scans`), else spread around a rolling median (`residual`),
-else a labelled per-metric `default` — and returns `status: "insufficient"` only when no scan
-reports the metric at all.
+`src/lib/analytics/weightNoiseBand.ts` answers "is this change in body weight between two readings bigger than reading-to-reading noise?" so no
+body-weight sentence rests on sign alone. `getWeightNoiseBand()` estimates one band on a ladder — readings within a week of each other
+(`paired-scans`), else spread around a rolling median (`residual`), else a labelled `default` (3 lb) — and returns `status: "insufficient"` only
+when no reading reports a weight. Only weight is estimated: it is the one body measurement the Insights views state. Lean mass, fat mass and
+body fat have no band, because nothing compares them.
 
-- Every threshold lives in `insightConfig.ts` with a comment on how it was chosen, and every one
-  is *tunable, validate against real data*: the repo bundles no real InBody history. Do not put a
-  bare number in an insight module; add it there.
+- Every threshold lives in `insightConfig.ts` with a comment on how it was chosen, and every one is *tunable, validate against real data*: the
+  repo bundles no real InBody history. Do not put a bare number in an insight module; add it there.
 - `insights/bodyReadings.ts` (`weightBandLb`) is the one reader of the band: a body-weight change no bigger than it reads "within normal scan
-  variation" (`bodyContext.ts`, `entryDisplay.ts`). Only the weight band is used; the lean mass, fat mass and body fat bands are measured but nothing reads them.
-- Bands are estimated from the athlete's whole scan history as of `asOfDate`, never from a
-  per-subject window (too few scans).
+  variation" (`bodyContext.ts`, `entryDisplay.ts`). It is fed the pooled scans and weigh-ins (`weighIns.ts`), so frequent weigh-ins reach a measured
+  band where scans months apart fall to the default.
+- The band is estimated from the athlete's whole history as of today, never from a per-subject window (too few readings).
 
 ## Open items: what is unvalidated or undecided
 
 - **One athlete.** The `PV_*` thresholds were validated on the bundled sample and one real export, which is the same athlete (the real export
   contains the sample's rows plus newer ones). Check them on another athlete's export before trusting them.
 - **RX and Scaled for lifts** are judged separately; whether to merge them needs an athlete who logs Scaled lifts.
-- **Noise band.** `bodyCompNoise.ts` bands come from `paired-scans`, `residual` or `default`; anyone scanning monthly or less lands on `residual` or
-  `default` (3 lb for weight), which is why manual weigh-ins exist. Lean mass uses Soft Lean Mass where present else Skeletal Muscle Mass.
+- **Noise band.** `weightNoiseBand.ts`'s band comes from `paired-scans`, `residual` or `default`; anyone scanning monthly or less lands on `residual` or
+  `default` (3 lb for weight), which is why manual weigh-ins exist.
 - **Weigh-in delete has no confirmation**; an entry delete does.
 - **Entries reach a before and after rarely on sparse logs** (3 of 8 demo entries on the sample), so the facts lines carry weight.
 - **Chart drag-to-select and period bands are gone** with Compare; nothing replaces them on the date-range charts.

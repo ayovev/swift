@@ -5,7 +5,7 @@ dayjs.extend(customParseFormat);
 
 /**
  * Cell/timestamp parsing shared by every pipeline that reads raw rows.
- * Lives in its own file so `bodyCompNoise.ts` can use them without a
+ * Lives in its own file so `weightNoiseBand.ts` can use them without a
  * circular import.
  */
 

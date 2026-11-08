@@ -1,27 +1,25 @@
 import type { Dayjs } from "dayjs";
 import {
-  BODY_COMP_METRICS,
-  DEFAULT_NOISE_BAND,
   MAD_TO_SD,
   NOISE_BAND_FLOOR_FRACTION,
   NOISE_BAND_MULTIPLIER,
+  NOISE_DEFAULT_WEIGHT_BAND_LB,
   NOISE_MIN_PAIRS,
   NOISE_MIN_RESIDUALS,
   NOISE_PAIR_MAX_GAP_DAYS,
   NOISE_RESIDUAL_HALF_WINDOW,
   NOISE_RESIDUAL_MAX_SPAN_DAYS,
-  type BodyCompMetric,
 } from "./insightConfig";
 import { parseInBodyDate, parseNumericField } from "./scanParsing";
 import type { InBodyRow } from "@/types/inbody";
 
 /**
- * How big does a change between two InBody scans have to be before it is more
- * than scan-to-scan noise? InBody readings move with hydration, meal timing
- * and time of day, so every body-composition claim is only as trustworthy as
- * the answer to that question.
+ * How big does a change in body weight between two readings have to be before it is more
+ * than reading-to-reading noise? Weight moves with hydration, meal timing and time of day,
+ * so a sentence about it is only as trustworthy as the answer to that question. Only weight
+ * is estimated: it is the one body measurement the Insights views state.
  *
- * The band is the magnitude of a change *between two scans* below which the
+ * The band is the magnitude of a change *between two readings* below which the
  * change is treated as noise. It is estimated from the athlete's own history
  * where the history allows, on a ladder — first method with enough data wins:
  *
@@ -33,7 +31,7 @@ import type { InBodyRow } from "@/types/inbody";
  *      the noise in ONE scan, so it is scaled by √2 to be comparable to a
  *      two-scan difference. Real curvature in the history inflates it, which
  *      errs toward calling less "meaningful" — the safe direction.
- *   3. `default`: a conservative per-metric constant, labelled as such.
+ *   3. `default`: a conservative constant (`NOISE_DEFAULT_WEIGHT_BAND_LB`), labelled as such.
  *
  * Spread is a robust one (median absolute deviation), not a standard
  * deviation: one scan taken after a big meal would otherwise widen the band
@@ -46,7 +44,7 @@ import type { InBodyRow } from "@/types/inbody";
 
 export type NoiseMethod = "paired-scans" | "residual" | "default";
 
-export interface BodyCompNoiseBand {
+export interface WeightNoiseBand {
   status: "ok" | "insufficient";
   /** Magnitude below which a change is treated as noise. 0 when `status` is "insufficient". */
   band: number;
@@ -57,8 +55,6 @@ export interface BodyCompNoiseBand {
   reason?: string;
 }
 
-export type BodyCompNoiseBands = Record<BodyCompMetric, BodyCompNoiseBand>;
-
 export interface NoiseBandOptions {
   pairMaxGapDays?: number;
   minPairs?: number;
@@ -67,7 +63,7 @@ export interface NoiseBandOptions {
   minResiduals?: number;
   multiplier?: number;
   floorFraction?: number;
-  defaultBand?: Partial<Record<BodyCompMetric, number>>;
+  defaultBand?: number;
 }
 
 interface Reading {
@@ -76,46 +72,15 @@ interface Reading {
 }
 
 const WEIGHT_FIELD = "Weight(lb)";
-const FAT_MASS_FIELD = "Body Fat Mass(lb)";
-const BODY_FAT_PCT_FIELD = "Percent Body Fat(%)";
-const SOFT_LEAN_FIELD = "Soft Lean Mass(lb)";
-const SMM_FIELD = "Skeletal Muscle Mass(lb)";
 
-type ScalarField = typeof WEIGHT_FIELD | typeof FAT_MASS_FIELD | typeof BODY_FAT_PCT_FIELD | typeof SOFT_LEAN_FIELD | typeof SMM_FIELD;
-
-function readingsFor(scans: InBodyRow[], field: ScalarField): Reading[] {
+function weightReadings(scans: InBodyRow[]): Reading[] {
   const out: Reading[] = [];
   for (const raw of scans) {
     const date = parseInBodyDate(raw.date);
-    const value = parseNumericField(raw[field]);
+    const value = parseNumericField(raw[WEIGHT_FIELD]);
     if (date.isValid() && value !== null) out.push({ date, value });
   }
   return out.sort((a, b) => a.date.valueOf() - b.date.valueOf());
-}
-
-/**
- * Lean mass is Soft Lean Mass where the export carries it, else Skeletal
- * Muscle Mass — the same preference `computeBodyCompTrend` applies to a pair
- * of scans. Picked per *series* here (whichever field has more readings,
- * Soft Lean on a tie) so the band's units match the deltas it will judge.
- */
-function leanReadings(scans: InBodyRow[]): Reading[] {
-  const soft = readingsFor(scans, SOFT_LEAN_FIELD);
-  const smm = readingsFor(scans, SMM_FIELD);
-  return soft.length >= smm.length ? soft : smm;
-}
-
-export function readingsForMetric(scans: InBodyRow[], metric: BodyCompMetric): Reading[] {
-  switch (metric) {
-    case "weight":
-      return readingsFor(scans, WEIGHT_FIELD);
-    case "fatMass":
-      return readingsFor(scans, FAT_MASS_FIELD);
-    case "bodyFatPct":
-      return readingsFor(scans, BODY_FAT_PCT_FIELD);
-    case "leanMass":
-      return leanReadings(scans);
-  }
 }
 
 function median(values: number[]): number {
@@ -155,11 +120,8 @@ function residuals(readings: Reading[], halfWindow: number, maxSpanDays: number)
   return out;
 }
 
-export function getBodyCompNoiseBand(
-  scans: InBodyRow[],
-  metric: BodyCompMetric,
-  options: NoiseBandOptions = {}
-): BodyCompNoiseBand {
+/** The weight noise band for these readings (scans, or the pooled scans and weigh-ins). */
+export function getWeightNoiseBand(scans: InBodyRow[], options: NoiseBandOptions = {}): WeightNoiseBand {
   const pairMaxGapDays = options.pairMaxGapDays ?? NOISE_PAIR_MAX_GAP_DAYS;
   const minPairs = options.minPairs ?? NOISE_MIN_PAIRS;
   const halfWindow = options.residualHalfWindow ?? NOISE_RESIDUAL_HALF_WINDOW;
@@ -167,17 +129,17 @@ export function getBodyCompNoiseBand(
   const minResiduals = options.minResiduals ?? NOISE_MIN_RESIDUALS;
   const multiplier = options.multiplier ?? NOISE_BAND_MULTIPLIER;
   const floorFraction = options.floorFraction ?? NOISE_BAND_FLOOR_FRACTION;
-  const defaultBand = options.defaultBand?.[metric] ?? DEFAULT_NOISE_BAND[metric];
+  const defaultBand = options.defaultBand ?? NOISE_DEFAULT_WEIGHT_BAND_LB;
   const floor = floorFraction * defaultBand;
 
-  const readings = readingsForMetric(scans, metric);
+  const readings = weightReadings(scans);
   if (readings.length === 0) {
     return {
       status: "insufficient",
       band: 0,
       method: "default",
       sampleSize: 0,
-      reason: "none of the scans report this measurement",
+      reason: "none of the readings report a weight",
     };
   }
 
@@ -198,7 +160,7 @@ export function getBodyCompNoiseBand(
       band: Math.max(floor, multiplier * Math.SQRT2 * robustSd(resid)),
       method: "residual",
       sampleSize: resid.length,
-      reason: `only ${diffs.length} of ${minPairs} scan pairs within ${pairMaxGapDays} days, so the band comes from spread around a rolling median`,
+      reason: `only ${diffs.length} of ${minPairs} reading pairs within ${pairMaxGapDays} days, so the band comes from spread around a rolling median`,
     };
   }
 
@@ -208,12 +170,7 @@ export function getBodyCompNoiseBand(
     method: "default",
     sampleSize: readings.length,
     reason:
-      `only ${diffs.length} of ${minPairs} scan pairs within ${pairMaxGapDays} days and ` +
+      `only ${diffs.length} of ${minPairs} reading pairs within ${pairMaxGapDays} days and ` +
       `${resid.length} of ${minResiduals} usable rolling windows, so a standard band is used`,
   };
-}
-
-export function getBodyCompNoiseBands(scans: InBodyRow[], options: NoiseBandOptions = {}): BodyCompNoiseBands {
-  const entries = BODY_COMP_METRICS.map((m) => [m, getBodyCompNoiseBand(scans, m, options)] as const);
-  return Object.fromEntries(entries) as BodyCompNoiseBands;
 }
