@@ -16,7 +16,8 @@ function renderLanding(over: { loading?: boolean; error?: string | null } = {}) 
         onDismissError={vi.fn()}
         onSyncedWorkoutData={vi.fn()}
         onSyncedBodyCompData={vi.fn()}
-        onSyncedTags={vi.fn()}
+        onSyncedTimeline={vi.fn()}
+        onSyncedWeighIns={vi.fn()}
       />
     </ThemeProvider>
   );
