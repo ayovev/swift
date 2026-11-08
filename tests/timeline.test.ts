@@ -8,7 +8,6 @@ import {
   entrySpanText,
   inputFromEntry,
   overlappingEntries,
-  packLanes,
   validateEntryInput,
   validateEntryList,
   type EntryInput,
@@ -93,14 +92,6 @@ describe("names, spans and overlap", () => {
     expect(overlappingEntries(c, [a, b, c], TODAY).map((e) => e.id)).toEqual(["b"]);
   });
 
-  it("stacks overlapping entries into separate lanes and reuses a lane once it is free", () => {
-    const a = entry({ id: "a", startDate: "2026-01-01", endDate: "2026-03-01" });
-    const b = entry({ id: "b", startDate: "2026-02-01", endDate: "2026-04-01" });
-    const c = entry({ id: "c", startDate: "2026-03-02", endDate: "2026-05-01" });
-    const { placed, lanes } = packLanes([c, b, a], TODAY);
-    expect(placed.map((p) => [p.entry.id, p.lane])).toEqual([["a", 0], ["b", 1], ["c", 0]]);
-    expect(lanes).toBe(2);
-  });
 });
 
 describe("a list that arrives (validateEntryList)", () => {

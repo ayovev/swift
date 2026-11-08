@@ -50,7 +50,7 @@ on the landing page.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/progress-dark.png">
-  <img alt="The Progress page: a whole-athlete read of whether performance and body composition agree." src="docs/images/progress-light.png">
+  <img alt="The Progress page: a headline across all lifts and benchmarks, then a verdict and the evidence for each." src="docs/images/progress-light.png">
 </picture>
 
 </td>

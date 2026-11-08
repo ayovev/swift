@@ -351,8 +351,7 @@ export default function App() {
   }, []);
 
   // Sync's timeline handler, alongside the others: an unconditional writer, gated by SyncDialog.
-  // Periods and experiments from an older device are read as entries before this runs. Entries always
-  // persist for the same reason handleSyncedBodyCompData does — synced data is never sample data.
+  // Entries always persist for the same reason handleSyncedBodyCompData does — synced data is never sample data.
   const handleSyncedTimeline = useCallback((incoming: TimelineEntry[]) => {
     setTimeline(incoming);
     void saveTimeline(incoming);

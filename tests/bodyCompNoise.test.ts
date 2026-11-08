@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import dayjs from "dayjs";
 import {
-  describeWithinNoise,
   getBodyCompNoiseBand,
-  isMeaningfulChange,
 } from "@/lib/analytics/bodyCompNoise";
 import { DEFAULT_NOISE_BAND, NOISE_BAND_FLOOR_FRACTION } from "@/lib/analytics/insightConfig";
 import type { InBodyRow } from "@/types/inbody";
@@ -153,36 +151,5 @@ describe("lean mass field choice", () => {
       NOISE_BAND_FLOOR_FRACTION * DEFAULT_NOISE_BAND.leanMass,
       5
     );
-  });
-});
-
-describe("isMeaningfulChange", () => {
-  it("requires the magnitude to exceed the band, in either direction", () => {
-    expect(isMeaningfulChange(2, 3)).toBe(false);
-    expect(isMeaningfulChange(-2, 3)).toBe(false);
-    expect(isMeaningfulChange(3, 3)).toBe(false);
-    expect(isMeaningfulChange(3.1, 3)).toBe(true);
-    expect(isMeaningfulChange(-3.1, 3)).toBe(true);
-  });
-});
-
-describe("describeWithinNoise", () => {
-  const base = { leanMassDelta: 1, fatMassDelta: -1, bodyFatPctDelta: 0.2 };
-  it("is null without bands or when nothing is within noise", () => {
-    expect(describeWithinNoise(base)).toBeNull();
-    expect(describeWithinNoise({ ...base, withinNoise: { leanMass: false, fatMass: false, bodyFatPct: false } })).toBeNull();
-  });
-  it("names what is within normal scan variation, plainly", () => {
-    expect(describeWithinNoise({ ...base, withinNoise: { leanMass: true, fatMass: false, bodyFatPct: false } })).toBe(
-      "Lean mass change is within normal scan variation."
-    );
-    expect(describeWithinNoise({ ...base, withinNoise: { leanMass: true, fatMass: true, bodyFatPct: true } })).toBe(
-      "Lean mass, fat mass and body fat changes are within normal scan variation."
-    );
-  });
-  it("ignores measurements with no delta", () => {
-    expect(
-      describeWithinNoise({ leanMassDelta: null, fatMassDelta: 1, bodyFatPctDelta: null, withinNoise: { leanMass: false, fatMass: true, bodyFatPct: false } })
-    ).toBe("Fat mass change is within normal scan variation.");
   });
 });

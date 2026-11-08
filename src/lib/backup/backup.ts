@@ -42,8 +42,6 @@ export interface EncryptedBackupFile extends BackupEnvelope, EncryptedPayload {
   encoding: typeof ENCRYPTED_ENCODING;
 }
 
-export type BackupFile = PlainBackupFile | EncryptedBackupFile;
-
 export const ENCRYPTED_ENCODING = "aes-256-gcm";
 
 export type ReadBackupResult =

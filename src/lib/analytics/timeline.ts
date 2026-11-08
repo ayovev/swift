@@ -106,29 +106,6 @@ export function overlappingEntries(entry: TimelineEntry, all: readonly TimelineE
     .sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
 }
 
-export interface PlacedEntry {
-  entry: TimelineEntry;
-  lane: number;
-}
-
-/**
- * Stacks entries into lanes so none overlaps another in its lane: each entry takes the first lane whose last entry ended
- * before this one starts. Earliest start first, so the result is stable and nothing computes "overlap" for the reader to
- * trust; the stacking shows it.
- */
-export function packLanes(entries: readonly TimelineEntry[], asOf: string): { placed: PlacedEntry[]; lanes: number } {
-  const sorted = [...entries].sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id.localeCompare(b.id));
-  const laneEnds: string[] = [];
-  const placed: PlacedEntry[] = [];
-  for (const entry of sorted) {
-    let lane = laneEnds.findIndex((end) => end < entry.startDate);
-    if (lane === -1) lane = laneEnds.length;
-    laneEnds[lane] = entryEnd(entry, asOf);
-    placed.push({ entry, lane });
-  }
-  return { placed, lanes: laneEnds.length };
-}
-
 // ── Validation of a received list ───────────────────────────────────────
 
 export type EntryListResult = { status: "ok"; entries: TimelineEntry[] } | { status: "invalid"; reason: string };
