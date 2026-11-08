@@ -7,16 +7,38 @@ import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/l
 const W = 560;
 const H = 170;
 const PAD = { l: 52, r: 44, t: 22, b: 30 };
-const X_TICKS = 4;
+const MAX_X_TICKS = 8;
+const TICK_STEPS_MONTHS = [1, 2, 3, 6, 12, 24, 36, 60];
 /** Every dot is the same size: colour alone says which group it is in. */
 const DOT_R = 3.5;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** "Oct 2026" from a day number (days since 1970-01-01, as `dayNumber` gives). */
 const monthYearOfDay = (d: number): string => {
-  const iso = new Date(Math.round(d) * 86_400_000).toISOString();
-  return `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
+  const date = new Date(Math.round(d) * 86_400_000);
+  return `${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 };
+
+/**
+ * Ticks on the first of a month, on a calendar-aligned step (every month, quarter, half year, year...): the smallest step that gives
+ * at most `MAX_X_TICKS` ticks across the span, so a short history reads month by month and a long one year by year. A span too short
+ * for even one tick falls back to its two ends.
+ */
+function xTickDays(x0: number, x1: number): { day: number; label: string }[] {
+  const first = new Date(Math.round(x0) * 86_400_000);
+  const startIndex = first.getUTCFullYear() * 12 + first.getUTCMonth();
+  const endDate = new Date(Math.round(x1) * 86_400_000);
+  const endIndex = endDate.getUTCFullYear() * 12 + endDate.getUTCMonth();
+  for (const step of TICK_STEPS_MONTHS) {
+    const ticks: { day: number; label: string }[] = [];
+    for (let m = Math.ceil(startIndex / step) * step; m <= endIndex; m += step) {
+      const day = Date.UTC(Math.floor(m / 12), m % 12, 1) / 86_400_000;
+      if (day < x0 || day > x1) continue;
+      ticks.push({ day, label: step >= 12 && m % 12 === 0 ? String(Math.floor(m / 12)) : monthYearOfDay(day) });
+    }
+    if (ticks.length <= MAX_X_TICKS) return ticks.length >= 2 ? ticks : [{ day: x0, label: monthYearOfDay(x0) }, { day: x1, label: monthYearOfDay(x1) }];
+  }
+  return [];
+}
 
 /**
  * The chart that opens from a subject's row: one dot per day (the best result of that day, the same series the verdict reads), the
@@ -51,14 +73,11 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
       const value = formatSession(subject, verdict.recentBest).replace(" lb", "");
       newBest = { x: X(dayNumber(verdict.recentBest.date)), y: Y(verdict.recentBest.value), label: `${value} · new best +${pct.toFixed(1)}%` };
     }
-    // Axis ticks: the lowest and highest dot on y (named by the sessions themselves, so a score keeps its own wording), evenly spaced dates on x.
+    // Axis ticks: the lowest and highest dot on y (named by the sessions themselves, so a score keeps its own wording), calendar-aligned dates on x (`xTickDays`).
     const lo = sessions.reduce((a, b) => (b.value < a.value ? b : a));
     const hi = sessions.reduce((a, b) => (b.value > a.value ? b : a));
     const yTicks = (lo === hi ? [lo] : [lo, hi]).map((t) => ({ y: Y(t.value), label: formatSession(subject, t) }));
-    const xTicks = Array.from({ length: x1 > x0 ? X_TICKS : 1 }, (_, i) => {
-      const d = x0 + ((x1 - x0) * i) / (X_TICKS - 1);
-      return { x: X(d), label: monthYearOfDay(d) };
-    });
+    const xTicks = xTickDays(x0, x1).map((t) => ({ x: X(t.day), label: t.label }));
     return { sessions, X, Y, previous, recent, trend, newBest, yTicks, xTicks };
   }, [subject, verdict, domain]);
 
