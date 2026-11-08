@@ -11,11 +11,8 @@ const MAX_X_TICKS = 8;
 const TICK_STEPS_MONTHS = [1, 2, 3, 6, 12, 24, 36, 60];
 /** Every dot is the same size: colour alone says which group it is in. */
 const DOT_R = 3.5;
-const MAX_Y_TICKS = 6;
-/** Round steps for a lift's pounds, and for a time's seconds. */
-const Y_STEPS = { load: [1, 2, 5, 10, 20, 25, 50, 100, 200, 500], time: [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600] } as const;
-/** A tick must sit at least this share of the chart's height from the lowest or highest dot's own label, or the two would overprint. */
-const Y_LABEL_CLEARANCE = 0.1;
+/** Labels on the y-axis for a load or a time: the lowest and highest dot and evenly spaced values between them. */
+const Y_TICKS = 5;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const monthYearOfDay = (d: number): string => {
@@ -78,17 +75,16 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
       const value = formatSession(subject, verdict.recentBest).replace(" lb", "");
       newBest = { x: X(dayNumber(verdict.recentBest.date)), y: Y(verdict.recentBest.value), label: `${value} · new best +${pct.toFixed(1)}%` };
     }
-    // Axis ticks: the lowest and highest dot on y (named by the sessions themselves, so a score keeps its own wording), plus round values between them for a load or a time, calendar-aligned dates on x (`xTickDays`).
+    // Axis ticks: the lowest and highest dot on y (named by the sessions themselves, so a score keeps its own wording), plus evenly spaced values between them for a load or a time, calendar-aligned dates on x (`xTickDays`).
     const lo = sessions.reduce((a, b) => (b.value < a.value ? b : a));
     const hi = sessions.reduce((a, b) => (b.value > a.value ? b : a));
     const yTicks = (lo === hi ? [lo] : [lo, hi]).map((t) => ({ y: Y(t.value), label: formatSession(subject, t) }));
-    // A load or a time also gets round values between the two ends (a score such as "17+20" has no value to print between, so it keeps the two).
+    // A load or a time gets evenly spaced values between the two ends (a score such as "17+20" has no value to print between, so it keeps the two).
     if (subject.format !== "rounds-reps" && v1 > v0) {
-      const steps = Y_STEPS[subject.format];
-      const step = steps.find((st) => Math.floor(v1 / st) - Math.ceil(v0 / st) + 1 <= MAX_Y_TICKS - 2) ?? (steps[steps.length - 1] as number);
-      const clear = (v: number): boolean => Math.abs(Y(v) - Y(v0)) >= Y_LABEL_CLEARANCE * (H - PAD.t - PAD.b) && Math.abs(Y(v) - Y(v1)) >= Y_LABEL_CLEARANCE * (H - PAD.t - PAD.b);
-      for (let v = Math.ceil(v0 / step) * step; v <= v1; v += step) {
-        if (clear(v)) yTicks.push({ y: Y(v), label: subject.format === "load" ? `${v} lb` : formatClock(v) });
+      yTicks.length = 0;
+      for (let i = 0; i < Y_TICKS; i++) {
+        const v = v0 + ((v1 - v0) * i) / (Y_TICKS - 1);
+        yTicks.push({ y: Y(v), label: subject.format === "load" ? `${Math.round(v)} lb` : formatClock(v) });
       }
     }
     const xTicks = xTickDays(x0, x1).map((t) => ({ x: X(t.day), label: t.label }));
