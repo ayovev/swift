@@ -16,13 +16,13 @@ describe("serializeBackup / readBackup", () => {
 
   it("keeps every dataset it is given", async () => {
     const entry = { id: "t", initiation: "changed", area: "nutrition", name: "Cut", startDate: "2024-03-01", endDate: null };
-    const datasets = { workout: [wRow], bodyComp: [scanRow("2026-04-01")], experiments: [{ id: "e", date: "2024-05-01", label: "x" }], timeline: [entry] };
+    const datasets = { workout: [wRow], bodyComp: [scanRow("2026-04-01")], weighIns: [{ date: "2026-04-01", weightLb: 180, source: "manual" }], timeline: [entry] };
     const read = await readBackup(serializeBackup(datasets, now));
     expect(read.status === "ok" && read.datasets).toEqual(datasets);
   });
 
   it("omits empty datasets so a backup never tells an import to clear something", () => {
-    const file = JSON.parse(serializeBackup({ workout: [wRow], timeline: [], experiments: [] }, now));
+    const file = JSON.parse(serializeBackup({ workout: [wRow], timeline: [], weighIns: [] }, now));
     expect(Object.keys(file.datasets)).toEqual(["workout"]);
   });
 

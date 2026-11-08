@@ -13,7 +13,6 @@ import { extendSampleRows } from "@/lib/sample/extendSample";
 import { generateSampleBodyComp } from "@/lib/sample/generateSampleBodyComp";
 import { generateSampleTimeline } from "@/lib/sample/generateSampleTimeline";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
-import { migrateLegacyTimeline } from "@/lib/storage/legacyTimeline";
 import { loadTimeline, saveTimeline } from "@/lib/storage/timelineStorage";
 import { loadWeighIns, saveWeighIns } from "@/lib/storage/weighInsStorage";
 import { removeWeighIn, upsertWeighIn } from "@/lib/analytics/weighIns";
@@ -92,9 +91,7 @@ export default function App() {
         loadWorkoutRows(),
         loadBodyCompRows(),
         loadViewPreferences(),
-        // Periods and experiments are timeline entries now; anything still stored under
-        // the older keys is moved into the timeline first (legacyTimeline.ts), then read as one.
-        migrateLegacyTimeline().then((migrated) => migrated ?? loadTimeline()),
+        loadTimeline(),
         loadWeighIns(),
       ]);
       if (cancelled) return;

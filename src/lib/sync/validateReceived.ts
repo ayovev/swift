@@ -1,7 +1,5 @@
-import { isIsoDay } from "@/lib/analytics/scanParsing";
 import { DATE_SHAPE as SUGARWOD_DATE_SHAPE } from "@/lib/csv/parseCsv";
 import { DATE_SHAPE as INBODY_DATE_SHAPE } from "@/lib/csv/parseInBodyCsv";
-import type { Experiment } from "@/types/experiment";
 import { REQUIRED_COLUMNS as INBODY_REQUIRED, type InBodyRow } from "@/types/inbody";
 import { REQUIRED_COLUMNS as SUGARWOD_REQUIRED, type SugarWodRow } from "@/types/sugarwod";
 
@@ -93,35 +91,6 @@ export function validateBodyCompRows(raw: unknown): Validated<InBodyRow[]> {
     "date",
     INBODY_DATE_SHAPE
   );
-}
-
-export function validateExperiments(raw: unknown): Validated<Experiment[]> {
-  if (!Array.isArray(raw)) return invalid("The list of experiments isn't a list.");
-
-  const out: Experiment[] = [];
-  const seen = new Set<string>();
-  for (const [i, entry] of raw.entries()) {
-    const n = i + 1;
-    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) return invalid(`Experiment ${n} isn't an object.`);
-    const e = entry as Record<string, unknown>;
-    if (typeof e.id !== "string" || e.id === "") return invalid(`Experiment ${n} has no id.`);
-    if (seen.has(e.id)) return invalid(`Experiment ${n} repeats an id used by an earlier experiment.`);
-    if (!isIsoDay(e.date)) return invalid(`Experiment ${n} has no valid start date.`);
-    if (typeof e.label !== "string" || e.label.trim() === "") return invalid(`Experiment ${n} has no label.`);
-    if (e.endDate !== undefined && !isIsoDay(e.endDate)) return invalid(`Experiment ${n} has an end date that isn't a date.`);
-    if (e.baselineStart !== undefined && !isIsoDay(e.baselineStart)) {
-      return invalid(`Experiment ${n} has an earlier-range start that isn't a date.`);
-    }
-    seen.add(e.id);
-    out.push({
-      id: e.id,
-      date: e.date,
-      label: e.label,
-      ...(typeof e.endDate === "string" ? { endDate: e.endDate } : {}),
-      ...(typeof e.baselineStart === "string" ? { baselineStart: e.baselineStart } : {}),
-    });
-  }
-  return { status: "ok", value: out };
 }
 
 /** A received weigh-in list: one bad record rejects the list, naming it. */

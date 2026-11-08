@@ -316,6 +316,7 @@ reports the metric at all. `isMeaningfulChange(delta, band)` is the one comparis
 An entry (`types/timeline.ts`) is something the athlete changed or something that happened: a kind (`initiation`: "changed" or "happened"), an area
 (Training, Nutrition, Health, Travel, Other), an optional name and note (up to 200 characters), a start date and an end date that is null when
 ongoing. In the app they are "entries" on the "Timeline"; "period", "tag", "experiment", "cycle" and "block" do not appear in copy.
+Periods and experiments from earlier builds are not read: nothing migrates them, and a stored list under the old keys is ignored.
 `lib/analytics/timeline.ts` holds the form's rules (`validateEntryInput`: every failing rule as a plain sentence, nothing pre-selected), the check on
 a received list (`validateEntryList`, shape only so another device's clock cannot make a good list unreadable), names, spans, overlap and lanes.
 
@@ -329,11 +330,7 @@ a received list (`validateEntryList`, shape only so another device's clock canno
   Selected panel, the entry form in a dialog, delete behind a confirmation. A row on Progress opens its lane through "See on timeline" under its
   opened chart (not for a subject without a lane, nor a move up to RX).
 - **Storage and names.** Key `"timeline-entries"` (`storage/timelineStorage.ts`), persisted only when `source === "upload"`, wiped by Start over,
-  synced and backed up as the `timeline` dataset. Older shapes are read, never written: `storage/legacyTimeline.ts` moves `"context-tags"` (periods)
-  and `"experiments"` into the timeline on load (write, read back, then delete the old keys; safe to run twice), and `tags` and `experiments` on the
-  wire or in a backup are receive-only and folded into `timeline` by `planReceived`, using the table in `lib/analytics/legacyTimeline.ts` (cut, bulk,
-  maintain, nutrition: Nutrition; programming, cycle, deload: Training; recovery: Health; experiment, other: Other; all "changed"; injury: Health
-  and travel: Travel, "happened"). A stored `baselineStart` is ignored. An older build rejects a manifest naming `timeline`, so both devices need the
+  synced and backed up as the `timeline` dataset. An older build rejects a manifest naming `timeline`, so both devices need the
   current build.
 - Sample mode seeds entries (`sample/generateSampleTimeline.ts`, at fixed offsets from the first logged workout); they are in memory only.
 - Analytics: `entry_added`, `entry_edited`, `entry_deleted`, `timeline_range_changed`, `timeline_subject_opened`, all value-free.
@@ -385,8 +382,7 @@ back to one.
   and adding one was scoped out of this feature — see `webrtcTransport.ts`'s header comment.
   Those two paths are verified manually, across two real devices, before any change here ships.
 - **The wire protocol**, once connected: the host sends one small manifest naming which
-  datasets it's about to send — some subset of `["workout", "bodyComp", "weighIns", "timeline"]` (`"tags"` and `"experiments"` are still
-  names on the wire, but receive-only, see below), never
+  datasets it's about to send — some subset of `["workout", "bodyComp", "weighIns", "timeline"]`, never
   assumed, since a device might not have InBody data or entries — then for each
   dataset in order, `chunkPayload()`'s header followed by its chunks; once every dataset is sent,
   the host closes the channel. The joiner feeds every message after the manifest into a fresh
@@ -409,16 +405,13 @@ back to one.
   (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
   reasonably want different ones. PostHog's anonymous id in `localStorage` doesn't either — it is an
   analytics identifier. This is enforced at the wire, not by convention: `SyncDataset` has exactly
-  six members and `decodeHeader` rejects any other name. Two of them, `tags` (periods) and `experiments`, are **receive-only**:
-  an older device (or an older backup file) still sends them, and `planReceived` validates them (`validateLegacyTags`,
-  `validateExperiments`), reads them as entries and folds them into the timeline that arrives with
-  them, so there is one timeline conflict and one handler; nothing sends either name any more (`tests/chunking.test.ts` pins that
-  `preferences` and `theme` are rejected, `tests/receivedDatasets.test.ts` that old periods and experiments convert). **A new persisted dataset that is the athlete's data must
+  four members and `decodeHeader` rejects any other name (`tests/chunking.test.ts` pins that
+  `preferences` and `theme` are rejected). **A new persisted dataset that is the athlete's data must
   be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a
   case in `planReceived`, an `onSynced*` handler in `App.tsx`), which also adds it to backup, since
   `BackupDatasets` is keyed by `SyncDataset`; a new preference or setting must not.
   **Everything that arrives is validated before anything is written**, to the shape its own parser
-  produces (`validateReceived.ts` for the workout log, InBody history and legacy experiments,
+  produces (`validateReceived.ts` for the workout log and InBody history, `validateWeighIns`,
   `validateEntryList` for the timeline). Validation is all-or-nothing for the whole transfer: one bad row rejects
   its dataset with a reason naming the row, and then nothing at all is applied, the local copy is
   left exactly as it was, and a rejected dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
@@ -459,8 +452,7 @@ own, so the two can't drift on what a valid row is.
   keyed by `SyncDataset`. Athlete data
   only: never theme, grouping or date range. Empty datasets are omitted from the file, so a
   backup only ever replaces, never tells a restore to clear something. A file is written with
-  `workout`, `bodyComp`, `weighIns` and `timeline`; one made before the timeline has `tags` and `experiments`
-  sections, which are still read and folded into the timeline on restore. Unknown dataset keys are
+  `workout`, `bodyComp`, `weighIns` and `timeline`. Unknown dataset keys are
   ignored; a newer `version` or unknown `encoding` is refused with "made by a newer version".
 - **Encryption is optional and off by default** (`encryption.ts`, `passphrase.ts`). PBKDF2-HMAC-SHA-256
   (`KDF_ITERATIONS` = 600,000, OWASP's floor for it) into an AES-256-GCM key, a fresh random 16-byte salt
@@ -503,7 +495,7 @@ own, so the two can't drift on what a valid row is.
   rather than merges. Sample data can't be backed up and has nothing to confirm on
   restore (it is never stored). Restore errors stay inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
   the `onSynced*` handlers. `handleSyncedTimeline` must not look at `state`: on the landing page
-  it is still the previous screen, which used to make received experiments vanish on reload.
+  it is still the previous screen, which used to make received entries vanish on reload.
 - **Analytics**: `interaction_used` with `backup_exported`/`backup_imported` (the event names predate the Download/Restore labels and stay as
   they are: a closed vocabulary, not copy), nothing else: no
   filename, counts or failure text, and not whether a backup was encrypted (`tests/backupPassphrase.test.tsx` pins that the passphrase and the word "encrypted" never reach a payload).
@@ -566,20 +558,18 @@ added after the app initially held everything in memory only.
   never a requirement, so a blocked or disabled database must not break the app.
 - **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** /
   are thin typed wrappers, one key each (`"workout-rows"`, `"body-comp-rows"`, `"view-preferences"`,
-  `timelineStorage.ts` with `"timeline-entries"`, `weighInsStorage.ts` with `"weigh-ins"`). `legacyTimeline.ts` is the one remaining reader of the
-  retired `"context-tags"` and `"experiments"` keys, a one-way migration into the timeline. Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
+  `timelineStorage.ts` with `"timeline-entries"`, `weighInsStorage.ts` with `"weigh-ins"`). Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
   directly — a new dataset gets its own wrapper file, not a call site that reaches past it.
 - **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
   existing loading UI — no new component) and a mount-only effect loads all five datasets
-  (workout rows, body-comp rows, view preferences, timeline entries, weigh-ins; anything stored under the older period and experiment keys is migrated into the timeline
-  first) from storage in parallel before
+  (workout rows, body-comp rows, view preferences, timeline entries, weigh-ins) from storage in parallel before
   deciding whether to show the dashboard or the upload screen.
 - **Write points**: a successful SugarWOD parse persists only when `source === "upload"` — the
   bundled sample file is deliberately never cached, so demo mode never leaves anything behind. A
   successful InBody parse always persists (there's no sample-data concept for it). Data that arrives
   by sync or backup restore (the `handleSynced*` handlers) always persists too, since it is an upload
   by definition; those handlers must never look at `state`, because on the landing page it is still the
-  previous screen, and checking it once made restored experiments vanish on reload. `range` and
+  previous screen, and checking it once made restored entries vanish on reload. `range` and
   `granularity` persist from exactly two call sites in `App.tsx` — `persistRangeSelection`
   (passed to `DateRangePicker` as `onSelect`) and `persistGranularity` (passed to `ScopeLine`'s
   grouping menu/the daily-auto-downgrade effect as `onGranularityChange`) — rather than a

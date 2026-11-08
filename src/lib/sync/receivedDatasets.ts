@@ -1,12 +1,11 @@
-import { validateEntryList, mergeEntriesById } from "@/lib/analytics/timeline";
-import { experimentToEntry, validateLegacyTags } from "@/lib/analytics/legacyTimeline";
+import { validateEntryList } from "@/lib/analytics/timeline";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { TimelineEntry } from "@/types/timeline";
 import type { WeighIn } from "@/types/weighIn";
 import type { SyncDataset } from "./chunking";
 import { DATASET_LABEL } from "./datasetLabels";
-import { validateBodyCompRows, validateExperiments, validateWeighIns, validateWorkoutRows, type Validated } from "./validateReceived";
+import { validateBodyCompRows, validateWeighIns, validateWorkoutRows, type Validated } from "./validateReceived";
 
 /**
  * What a joiner does with the datasets that arrived: nothing is applied
@@ -18,12 +17,6 @@ import { validateBodyCompRows, validateExperiments, validateWeighIns, validateWo
  * Sync carries the athlete's data and nothing else: the workout log, the
  * InBody history, manual weigh-ins and the timeline. How the app looks or is
  * configured (theme, grouping, date range) stays on each device.
- *
- * `tags` (periods) and `experiments` are still names on the wire, but only for
- * receiving: an older device, or an older backup file, sends them. They are
- * validated, read as timeline entries (`legacyTimeline.ts`) and folded into the
- * entries that arrive with them, so this device only ever holds one list.
- * Nothing sends either any more.
  *
  * Every payload is validated first (`validateReceived.ts`, and
  * `validateEntryList` for the timeline): one that fails, or that arrived
@@ -103,30 +96,16 @@ export function planReceived(
 
   offer<WeighIn>("weighIns", received.weighIns, validateWeighIns, existing.weighIns, handlers.weighIns);
 
-  // Periods and experiments from an older sender become entries, joined with
-  // any timeline that came alongside them, so the timeline is offered (and
-  // conflicts are counted) once, as the one list it now is.
-  let legacy: TimelineEntry[] = [];
-  if (received.experiments !== undefined) {
-    const checked = validateExperiments(received.experiments);
-    if (checked.status === "invalid") skipped.push({ dataset: "experiments", reason: checked.reason });
-    else legacy = checked.value.map(experimentToEntry);
-  }
-  if (received.tags !== undefined) {
-    const checked = validateLegacyTags(received.tags);
-    if (checked.status === "invalid") skipped.push({ dataset: "tags", reason: checked.reason });
-    else legacy = mergeEntriesById(legacy, checked.entries);
-  }
-
-  const validateTimeline = (raw: unknown): Validated<TimelineEntry[]> => {
-    const result = validateEntryList(raw);
-    return result.status === "ok" ? { status: "ok", value: mergeEntriesById(legacy, result.entries) } : { status: "invalid", reason: result.reason };
-  };
-  if (received.timeline !== undefined) {
-    offer<TimelineEntry>("timeline", received.timeline, validateTimeline, existing.timeline, handlers.timeline);
-  } else if (legacy.length > 0) {
-    offer<TimelineEntry>("timeline", legacy, (raw) => ({ status: "ok", value: raw as TimelineEntry[] }), existing.timeline, handlers.timeline);
-  }
+  offer<TimelineEntry>(
+    "timeline",
+    received.timeline,
+    (raw) => {
+      const result = validateEntryList(raw);
+      return result.status === "ok" ? { status: "ok", value: result.entries } : { status: "invalid", reason: result.reason };
+    },
+    existing.timeline,
+    handlers.timeline
+  );
 
   return { conflicts, skipped };
 }

@@ -9,8 +9,6 @@ import type { SyncDataset } from "./chunking";
 export const DATASET_LABEL: Record<SyncDataset, string> = {
   workout: "workout log",
   bodyComp: "body composition history",
-  experiments: "list of experiments",
-  tags: "list of periods",
   timeline: "timeline",
   weighIns: "list of weigh-ins",
 };

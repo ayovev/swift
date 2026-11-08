@@ -77,12 +77,6 @@ export function inputFromEntry(entry: TimelineEntry): EntryInput {
   };
 }
 
-/** `incoming` wins on a shared id; everything else is kept, in order. */
-export function mergeEntriesById(existing: readonly TimelineEntry[], incoming: readonly TimelineEntry[]): TimelineEntry[] {
-  const replaced = new Set(incoming.map((e) => e.id));
-  return [...existing.filter((e) => !replaced.has(e.id)), ...incoming];
-}
-
 /** The entry's own name, or its area ("Nutrition") when it has none. */
 export function entryName(entry: TimelineEntry): string {
   return entry.name?.trim() ? entry.name.trim() : AREA_LABEL[entry.area];
