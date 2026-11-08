@@ -11,8 +11,8 @@ import type { SugarWodRow } from "@/types/sugarwod";
  * disk, or based on a real person's body-composition history — see
  * `tests/fixtures/sampleInBodyRows.ts`'s own header comment for why no real
  * InBody export is bundled the way the SugarWOD one is. This exists so a
- * first-time visitor sees the Body Comp, Progress and Compare views
- * actually populated, not stuck on their empty states.
+ * first-time visitor sees Body Comp and the body-weight lines on Progress
+ * and the Timeline actually populated, not stuck on their empty states.
  *
  * Scans land roughly every two weeks (with jitter, so the cadence doesn't
  * look robotic) from shortly after the athlete's first logged workout
@@ -24,12 +24,8 @@ import type { SugarWodRow } from "@/types/sugarwod";
  *
  * The trend across the whole span is a deliberate three-phase story —
  * improve, then a mid-span plateau/regression, then improve again, ending
- * better than the start — rather than a straight line. A straight-line
- * improvement would mean `isBodyCompDeclining()` (see plateauDetector.ts)
- * is never true anywhere in the generated history, so the Plateau Detector
- * could only ever show `improving`/`plateaued_other`, never
- * `plateaued_body_comp`. The dip in the middle is what makes all three
- * plateau classifications reachable.
+ * better than the start — rather than a straight line, so the demo's body
+ * weight and composition rise, dip and recover the way a real history does.
  *
  * Fields are derived from each other rather than independently randomized
  * so the export reads as internally consistent: body fat mass is computed

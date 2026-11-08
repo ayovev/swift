@@ -15,14 +15,14 @@ describe("serializeBackup / readBackup", () => {
   });
 
   it("keeps every dataset it is given", async () => {
-    const tag = { id: "t", type: "cut", label: "Cut", startDate: "2024-03-01", endDate: null };
-    const datasets = { workout: [wRow], bodyComp: [scanRow("2026-04-01")], experiments: [{ id: "e", date: "2024-05-01", label: "x" }], tags: [tag] };
+    const entry = { id: "t", initiation: "changed", area: "nutrition", name: "Cut", startDate: "2024-03-01", endDate: null };
+    const datasets = { workout: [wRow], bodyComp: [scanRow("2026-04-01")], weighIns: [{ date: "2026-04-01", weightLb: 180, source: "manual" }], timeline: [entry] };
     const read = await readBackup(serializeBackup(datasets, now));
     expect(read.status === "ok" && read.datasets).toEqual(datasets);
   });
 
   it("omits empty datasets so a backup never tells an import to clear something", () => {
-    const file = JSON.parse(serializeBackup({ workout: [wRow], tags: [], experiments: [] }, now));
+    const file = JSON.parse(serializeBackup({ workout: [wRow], timeline: [], weighIns: [] }, now));
     expect(Object.keys(file.datasets)).toEqual(["workout"]);
   });
 
@@ -44,7 +44,7 @@ describe("serializeBackup / readBackup", () => {
     ["a missing version", envelope({ version: undefined }), /no readable version/],
     ["no datasets", envelope({ datasets: undefined }), /no datasets/],
     ["a dataset that isn't a list", envelope({ datasets: { workout: { a: 1 } } }), /workout section.*isn't a list/],
-    ["no workout log", envelope({ datasets: { tags: [] } }), /no workout log/],
+    ["no workout log", envelope({ datasets: { timeline: [] } }), /no workout log/],
     ["an empty workout log", envelope({ datasets: { workout: [] } }), /no workout log/],
   ])("rejects %s", async (_name, text, reason) => {
     const read = await readBackup(text);

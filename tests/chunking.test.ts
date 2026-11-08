@@ -48,18 +48,10 @@ describe("chunkPayload", () => {
     expect(reassembler.feed(payload.headerBytes)).toEqual({ done: true, dataset: "bodyComp", json: "" });
   });
 
-  it("round-trips an experiments payload", () => {
-    const json = JSON.stringify([{ id: "1", date: "2024-01-01", label: "Started 5/3/1" }]);
-    const payload = chunkPayload("experiments", json, 1024);
-
-    const results = feedAll(payload);
-    expect(results.at(-1)).toEqual({ done: true, dataset: "experiments", json });
-  });
-
-  it("round-trips a tags payload, including one spanning several chunks", () => {
-    const tags = JSON.stringify([{ id: "a", type: "cut", startDate: "2024-03-01", endDate: null }]);
-    expect(feedAll(chunkPayload("tags", tags, 1024)).at(-1)).toEqual({ done: true, dataset: "tags", json: tags });
-    expect(feedAll(chunkPayload("tags", tags, 16)).at(-1)).toEqual({ done: true, dataset: "tags", json: tags });
+  it("round-trips a timeline payload, including one spanning several chunks", () => {
+    const timeline = JSON.stringify([{ id: "a", initiation: "changed", area: "nutrition", startDate: "2024-03-01", endDate: null }]);
+    expect(feedAll(chunkPayload("timeline", timeline, 1024)).at(-1)).toEqual({ done: true, dataset: "timeline", json: timeline });
+    expect(feedAll(chunkPayload("timeline", timeline, 16)).at(-1)).toEqual({ done: true, dataset: "timeline", json: timeline });
   });
 
   it("rejects a dataset name it doesn't know, including ones that describe preferences rather than data", () => {

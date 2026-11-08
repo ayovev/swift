@@ -26,7 +26,7 @@ dayjs.extend(customParseFormat);
 
 /**
  * "The girls" plus a couple of heroes. Matched on exact uppercased title.
- * Exported so the plateau detector (`plateauDetector.ts`) reuses this one
+ * Exported so the Insights engine (`liftSubjects.ts`) reuses this one
  * allowlist rather than declaring a second one that could drift.
  */
 export const NAMED_BENCHMARKS = [

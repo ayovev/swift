@@ -11,6 +11,9 @@ import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity"
 import type { BodyCompPoint } from "@/types/bodyComp";
 import type { BucketCount, DashboardData } from "@/types/dashboard";
 import type { InBodyRow } from "@/types/inbody";
+import type { WeighIn } from "@/types/weighIn";
+import { readingsFromInBody } from "@/lib/analytics/insights/bodyReadings";
+import { WeighInsPanel } from "./WeighInsPanel";
 
 export type BodyCompState =
   | { status: "idle" }
@@ -33,6 +36,10 @@ interface BodyCompTabProps {
    * other side.
    */
   dashboard: DashboardData;
+  /** Manual weigh-ins and how to change them; the panel is hidden when these are not given. */
+  weighIns?: readonly WeighIn[];
+  onSaveWeighIn?: (weighIn: WeighIn) => void;
+  onDeleteWeighIn?: (date: string) => void;
 }
 
 const METRICS: { key: Exclude<keyof BodyCompPoint, "bucket">; label: string; unit: string }[] = [
@@ -66,7 +73,10 @@ function InBodySourceMark() {
  * it reads `dashboard.days_buckets` for the same bucket keys the scan data
  * already uses, never a specific InBody row against a specific workout row.
  */
-export function BodyCompTab({ state, granularity, range, onFile, dashboard }: BodyCompTabProps) {
+export function BodyCompTab({ state, granularity, range, onFile, dashboard, weighIns, onSaveWeighIn, onDeleteWeighIn }: BodyCompTabProps) {
+  const scanReadings = useMemo(() => (state.status === "ready" ? readingsFromInBody(state.rows) : []), [state]);
+  const weighInsPanel =
+    weighIns && onSaveWeighIn && onDeleteWeighIn ? <WeighInsPanel scans={scanReadings} weighIns={weighIns} onSave={onSaveWeighIn} onDelete={onDeleteWeighIn} /> : null;
   const data = useMemo(
     () =>
       state.status === "ready"
@@ -77,12 +87,15 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard }: Bo
 
   if (!data) {
     return (
-      <InBodyUploadPrompt state={state} onFile={onFile}
-        header={<InBodySourceMark />}>
-        Add your InBody export to see weight, body fat, and skeletal muscle mass trends
-            alongside your training. This is entirely separate from your SugarWOD log — nothing
-            is matched between the two files, they just share the same kind of timeline.
-      </InBodyUploadPrompt>
+      <div className="flex flex-col gap-6">
+        <InBodyUploadPrompt state={state} onFile={onFile}
+          header={<InBodySourceMark />}>
+          Add your InBody export to see weight, body fat, and skeletal muscle mass trends
+              alongside your training. This is entirely separate from your SugarWOD log — nothing
+              is matched between the two files, they just share the same kind of timeline.
+        </InBodyUploadPrompt>
+        {weighInsPanel}
+      </div>
     );
   }
 
@@ -118,6 +131,8 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard }: Bo
           </p>
         </CardContent>
       </Card>
+
+      {weighInsPanel}
 
       <Card>
         <CardHeader className="pb-2">

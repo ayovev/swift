@@ -43,7 +43,7 @@ describe("SyncSession", () => {
     expect(received).toEqual([{ dataset: "workout", json: workoutJson }]);
   });
 
-  it("transfers workout, body comp, and experiments, in order, when the host offers all three", async () => {
+  it("transfers workout, body comp, and timeline, in order, when the host offers all three", async () => {
     const { hostFactory, joinerFactory } = createFakeConnectionFactoryPair();
     const received: Array<{ dataset: string; json: string }> = [];
 
@@ -54,11 +54,11 @@ describe("SyncSession", () => {
 
     const workoutJson = JSON.stringify([{ id: 1 }]);
     const bodyCompJson = JSON.stringify([{ scanDate: "2024-01-01" }]);
-    const experimentsJson = JSON.stringify([{ id: "1", date: "2024-01-01", label: "Started 5/3/1" }]);
+    const timelineJson = JSON.stringify([{ id: "1", initiation: "changed", area: "training", name: "Started 5/3/1", startDate: "2024-01-01", endDate: null }]);
     await host.startHost([
       { dataset: "workout", json: workoutJson },
       { dataset: "bodyComp", json: bodyCompJson },
-      { dataset: "experiments", json: experimentsJson },
+      { dataset: "timeline", json: timelineJson },
     ]);
 
     const offerState = host.getState();
@@ -77,11 +77,11 @@ describe("SyncSession", () => {
     expect(received).toEqual([
       { dataset: "workout", json: workoutJson },
       { dataset: "bodyComp", json: bodyCompJson },
-      { dataset: "experiments", json: experimentsJson },
+      { dataset: "timeline", json: timelineJson },
     ]);
   });
 
-  it("transfers tags after the other datasets, in the order the host lists them", async () => {
+  it("transfers the timeline after the other datasets, in the order the host lists them", async () => {
     const { hostFactory, joinerFactory } = createFakeConnectionFactoryPair();
     const received: Array<{ dataset: string; json: string }> = [];
 
@@ -92,7 +92,7 @@ describe("SyncSession", () => {
 
     const outgoing = [
       { dataset: "workout" as const, json: JSON.stringify([{ id: 1 }]) },
-      { dataset: "tags" as const, json: JSON.stringify([{ id: "t", type: "cut", startDate: "2024-03-01", endDate: null }]) },
+      { dataset: "timeline" as const, json: JSON.stringify([{ id: "t", initiation: "changed", area: "nutrition", startDate: "2024-03-01", endDate: null }]) },
     ];
     await host.startHost(outgoing);
 

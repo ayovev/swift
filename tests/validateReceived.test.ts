@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateBodyCompRows, validateExperiments, validateWorkoutRows } from "@/lib/sync/validateReceived";
-import type { Experiment } from "@/types/experiment";
+import { validateBodyCompRows, validateWorkoutRows } from "@/lib/sync/validateReceived";
 import { loadSampleInBodyRows } from "./fixtures/sampleInBodyRows";
 import { loadSampleRows } from "./fixtures/sampleRows";
 import { scanRow, workoutRow } from "./fixtures/rows";
@@ -71,39 +70,6 @@ describe("validateBodyCompRows", () => {
     ["a numeric cell", [{ date: "20260401093000", "Weight(lb)": 180 }], /"Weight\(lb\)" that isn't text/],
   ])("rejects %s", (_name, input, message) => {
     const result = validateBodyCompRows(input);
-    expect(result.status).toBe("invalid");
-    expect(result.status === "invalid" && result.reason).toMatch(message);
-  });
-});
-
-describe("validateExperiments", () => {
-  const exp = (over: Record<string, unknown> = {}) => ({ id: "a", date: "2024-05-01", label: "5/3/1", ...over });
-
-  it("accepts experiments with and without an end date and a baseline, and rebuilds them without stray keys", () => {
-    const list: Experiment[] = [
-      { id: "a", date: "2024-05-01", label: "One" },
-      { id: "b", date: "2024-06-01", endDate: "2024-07-01", baselineStart: "2024-04-01", label: "Two" },
-    ];
-    expect(validateExperiments(wire(list))).toEqual({ status: "ok", value: list });
-    expect(validateExperiments([exp({ secret: "x" })])).toEqual({ status: "ok", value: [{ id: "a", date: "2024-05-01", label: "5/3/1" }] });
-  });
-
-  it("accepts an empty list", () => {
-    expect(validateExperiments([])).toEqual({ status: "ok", value: [] });
-  });
-
-  it.each([
-    ["not a list", "x", /isn't a list/],
-    ["a non-object", [null], /Experiment 1 isn't an object/],
-    ["no id", [exp({ id: "" })], /no id/],
-    ["a repeated id", [exp(), exp()], /Experiment 2 repeats an id/],
-    ["a bad start date", [exp({ date: "5/1/2024" })], /no valid start date/],
-    ["an impossible date", [exp({ date: "2024-02-31" })], /no valid start date/],
-    ["no label", [exp({ label: "  " })], /no label/],
-    ["a bad end date", [exp({ endDate: "soon" })], /end date that isn't a date/],
-    ["a bad baseline", [exp({ baselineStart: 5 })], /earlier-range start that isn't a date/],
-  ])("rejects %s", (_name, input, message) => {
-    const result = validateExperiments(input);
     expect(result.status).toBe("invalid");
     expect(result.status === "invalid" && result.reason).toMatch(message);
   });

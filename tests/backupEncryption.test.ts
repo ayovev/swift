@@ -35,7 +35,7 @@ describe("encrypted backup round trip", () => {
   });
 
   it("omits empty datasets, like a plain backup", async () => {
-    const text = await serializeEncryptedBackup({ workout: [wRow], tags: [], experiments: [] }, now, PASS, FAST);
+    const text = await serializeEncryptedBackup({ workout: [wRow], timeline: [], weighIns: [] }, now, PASS, FAST);
     const read = await readBackup(text, { passphrase: PASS });
     expect(read.status === "ok" && Object.keys(read.datasets)).toEqual(["workout"]);
   });

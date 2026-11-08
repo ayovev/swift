@@ -24,13 +24,13 @@ There is no account to make and no server to send your file to.
 - **What your training is made of.** A breakdown across the ten CrossFit
   general physical skills (the GPP domains), and the proportional mix of
   metabolic conditioning, weightlifting and gymnastics (M/W/G) in your log.
-- **Body composition, if you add it.** Upload an InBody export and Swift flags
-  which lifts have plateaued and whether body composition is moving alongside
-  them. It only counts a change that is bigger than normal scan-to-scan
-  variation, estimated from your own scans.
-- **Before and after.** Select a range, or mark a stretch like a cut or a new
-  program, and compare lifts, benchmarks and body composition against what came
-  before.
+- **Is each lift moving?** A verdict for every lift and benchmark (Up, Down,
+  Not tested since, No clear change), a headline across them, and the evidence
+  behind each. Body weight, from an InBody export or weigh-ins you enter, is
+  stated beside a verdict and never changes it.
+- **A timeline.** Add the things you changed (a program, a cut) and the things
+  that happened (an injury, a trip) and see them on one axis beside your
+  verdicts, with a before and after for each thing you changed.
 
 It is for one athlete looking at their own training. There are no coach views
 and no multi-athlete comparisons. Try it without a file using the sample data
@@ -50,14 +50,14 @@ on the landing page.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/progress-dark.png">
-  <img alt="The Progress page: a whole-athlete read of whether performance and body composition agree." src="docs/images/progress-light.png">
+  <img alt="The Progress page: a headline across all lifts and benchmarks, then a verdict and the evidence for each." src="docs/images/progress-light.png">
 </picture>
 
 </td>
   </tr>
   <tr>
     <td align="center"><sub>Breakdown: one of ten GPP domains</sub></td>
-    <td align="center"><sub>Progress: performance against body composition</sub></td>
+    <td align="center"><sub>Progress: a verdict for each lift and benchmark</sub></td>
   </tr>
 </table>
 
@@ -69,7 +69,7 @@ Your file never leaves your browser. There is no account and no server.
 
 | | |
 | --- | --- |
-| **Stays in your browser** | Your workout log, InBody history, periods, and your view settings, cached in the browser's own IndexedDB so a reload doesn't need a re-upload. **Start over** in Settings deletes all of it. |
+| **Stays in your browser** | Your workout log, InBody history, weigh-ins, timeline entries, and your view settings, cached in the browser's own IndexedDB so a reload doesn't need a re-upload. **Start over** in Settings deletes all of it. |
 | **Can leave your browser** | Anonymous usage events (page opened, upload succeeded, tab viewed) with fixed names and coarse buckets, and only when an analytics key is configured. Connection setup for device sync touches a public STUN server. |
 | **Never leaves your browser** | Workout text, movement names, notes, filenames, exact row counts, body-composition values, or any identifier for you. |
 
@@ -135,15 +135,16 @@ the CSV on Swift's upload area. Swift expects SugarWOD's own export columns
 which one is missing if a file doesn't fit.
 
 An InBody scan-history export is a separate, optional upload. It unlocks the
-body-composition view and the Insights views that compare it with your lifts.
+body-composition view and adds body-weight context to the Insights views. You can
+also enter weigh-ins by hand.
 
 [docs/guide.md](docs/guide.md) covers the rest: replacing a file, backing up and
 restoring (with optional passphrase encryption), syncing to a second device, and
-how Periods work.
+how the Timeline works.
 
 ## Documentation
 
-- [Using Swift](docs/guide.md): data in, backups, sync, periods
+- [Using Swift](docs/guide.md): data in, backups, sync, the timeline
 - [Privacy: the details](docs/privacy.md)
 - [Architecture](docs/architecture.md): how the code is organised
 - [How classification works](docs/classification.md): the GPP and M/W/G logic
@@ -155,13 +156,13 @@ dayjs, and the browser's native WebRTC and Web Crypto.
 
 ## Known limitations
 
-The body-composition insights (noise band, **Strength**, **Compare**, **Cycles**) are tuned on the
-bundled sample and synthetic scans, not on real InBody histories, so their thresholds are starting
+The progress verdict and the body-weight noise band are tuned on the
+bundled sample and one real export, so their thresholds are starting
 points. They are all in `src/lib/analytics/insightConfig.ts`, each with a note on how it was
 chosen. Check them against your own history before trusting a number.
 
-Other things to know: training blocks for **Compare** come from periods or typed dates, not automatic
-detection; and dragging on a chart is mouse-only, with date inputs as the alternative.
+Other things to know: RX and Scaled lifts are judged separately, and an entry on the timeline is
+context only: it never changes a verdict.
 
 ## Deployment
 

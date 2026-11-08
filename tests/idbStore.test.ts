@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { idbClearAll, idbDelete, idbGet, idbSet } from "@/lib/storage/idbStore";
+import { idbClearAll, idbGet, idbSet } from "@/lib/storage/idbStore";
 
 afterEach(async () => {
   await idbClearAll();
@@ -19,14 +19,6 @@ describe("idbStore", () => {
     await idbSet("a", "first");
     await idbSet("a", "second");
     expect(await idbGet("a")).toBe("second");
-  });
-
-  it("removes a single key with idbDelete without touching others", async () => {
-    await idbSet("a", "keep");
-    await idbSet("b", "gone");
-    await idbDelete("b");
-    expect(await idbGet("a")).toBe("keep");
-    expect(await idbGet("b")).toBeUndefined();
   });
 
   it("removes every key with idbClearAll", async () => {
