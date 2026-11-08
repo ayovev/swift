@@ -284,16 +284,15 @@ scan-to-scan noise?" so no body-composition claim rests on sign alone. `getBodyC
 estimates a band per metric (`weight`, `leanMass`, `fatMass`, `bodyFatPct`) on a ladder — scans
 within a week of each other (`paired-scans`), else spread around a rolling median (`residual`),
 else a labelled per-metric `default` — and returns `status: "insufficient"` only when no scan
-reports the metric at all. `isMeaningfulChange(delta, band)` is the one comparison.
+reports the metric at all.
 
 - Every threshold lives in `insightConfig.ts` with a comment on how it was chosen, and every one
   is *tunable, validate against real data*: the repo bundles no real InBody history. Do not put a
   bare number in an insight module; add it there.
-- `isMeaningfulChange(delta, band)` is the one comparison, and `insights/bodyReadings.ts` (`weightBandLb`) is its one caller: a body-weight
-  change inside the band reads "within normal scan variation".
+- `insights/bodyReadings.ts` (`weightBandLb`) is the one reader of the band: a body-weight change no bigger than it reads "within normal scan
+  variation" (`bodyContext.ts`, `entryDisplay.ts`). Only the weight band is used; the lean mass, fat mass and body fat bands are measured but nothing reads them.
 - Bands are estimated from the athlete's whole scan history as of `asOfDate`, never from a
-  per-subject window (too few scans). `NO_NOISE_BANDS` (all zero) reproduces the old sign-only
-  behaviour exactly.
+  per-subject window (too few scans).
 
 ## Open items: what is unvalidated or undecided
 

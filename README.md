@@ -57,7 +57,7 @@ on the landing page.
   </tr>
   <tr>
     <td align="center"><sub>Breakdown: one of ten GPP domains</sub></td>
-    <td align="center"><sub>Progress: performance against body composition</sub></td>
+    <td align="center"><sub>Progress: a verdict for each lift and benchmark</sub></td>
   </tr>
 </table>
 
