@@ -8,6 +8,8 @@ const W = 560;
 const H = 170;
 const PAD = { l: 52, r: 44, t: 22, b: 30 };
 const X_TICKS = 4;
+/** Every dot is the same size: colour alone says which group it is in. */
+const DOT_R = 3.5;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** "Oct 2026" from a day number (days since 1970-01-01, as `dayNumber` gives). */
@@ -18,9 +20,9 @@ const monthYearOfDay = (d: number): string => {
 
 /**
  * The chart that opens from a subject's row: one dot per day (the best result of that day, the same series the verdict reads), the
- * previous window's dots dark, the recent window's dots in the accent, every other dot faint. No bands, legend or controls. A dashed
+ * previous window's dots dark, the recent window's dots in the accent, every other dot faint grey, all one size. No bands, legend or controls. A dashed
  * trend line through the best of each quarter appears with four or more quarters and carries no number or direction; rings mark max
- * efforts only for a `down` or `not tested since` verdict; a record carries a larger accent dot with "new best". A subject without a
+ * efforts only for a `down` or `not tested since` verdict; a record carries a "new best" label on its (ordinary, accent) dot. A subject without a
  * verdict (a facts line) gets the dots alone. A faster time is drawn higher, so up always reads as up.
  */
 export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressSubject; verdict: ProgressVerdict | null; domain?: { start: string; end: string } }) {
@@ -63,7 +65,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
   const rings = verdict && (verdict.state === "down" || verdict.state === "not-tested-since");
   const { X, Y } = model;
   const caption = verdict
-    ? `Each dot is the best result of a day. Dark dots are the ${verdict.window} sessions before the recent ${verdict.window}; accent dots are the recent ${verdict.window}, which are compared.${model.trend ? " The dashed line is the long-run trend." : ""}${rings ? " Rings mark max efforts." : ""}`
+    ? `Each dot is the best result of a day. Dark dots are the ${verdict.window} sessions before the recent ${verdict.window}; accent dots are the recent ${verdict.window}, which are compared. Grey dots are other sessions.${model.trend ? " The dashed line is the long-run trend." : ""}${rings ? " Rings mark max efforts." : ""}`
     : "Each dot is the best result of a day.";
 
   return (
@@ -112,7 +114,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
           return (
             <g key={s.date}>
               {rings && s.maxEffort ? <circle cx={cx} cy={cy} r={7} className="fill-none stroke-accent-link" strokeWidth={1.25} /> : null}
-              <circle cx={cx} cy={cy} r={isRecent || isPrevious ? 3.5 : 2.5} className={fill}>
+              <circle cx={cx} cy={cy} r={DOT_R} className={fill}>
                 <title>{`${s.date} · ${formatSession(subject, s)}${subject.kind === "lift" ? " est." : ""}${s.maxEffort && subject.kind === "lift" ? " · max effort" : ""}`}</title>
               </circle>
             </g>
@@ -129,7 +131,6 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
           : null}
         {model.newBest ? (
           <g>
-            <circle cx={model.newBest.x} cy={model.newBest.y} r={5.5} className="fill-accent-link" />
             <text x={model.newBest.x} y={model.newBest.y - 10} textAnchor="end" className="fill-accent-link text-[10px] font-medium">
               {model.newBest.label}
             </text>
