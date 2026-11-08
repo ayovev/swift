@@ -552,13 +552,13 @@ added after the app initially held everything in memory only.
 - **`idbStore.ts`** is the only file that touches `indexedDB` directly: one database
   (`"swift"`), one object store (`"csv-uploads"`), keyed by string. A single store rather than
   one per dataset means a future dataset is just a new key — never a version bump or an
-  `onupgradeneeded` migration. Every exported function (`idbGet`/`idbSet`/`idbDelete`/
+  `onupgradeneeded` migration. Every exported function (`idbGet`/`idbSet`/
   `idbClearAll`) swallows its own failures and resolves to a safe default, mirroring
   `readStored`/`writeStored` in `src/lib/theme/useTheme.ts` — persistence is a convenience,
   never a requirement, so a blocked or disabled database must not break the app.
 - **`workoutStorage.ts`** / **`bodyCompStorage.ts`** / **`viewPreferencesStorage.ts`** /
   are thin typed wrappers, one key each (`"workout-rows"`, `"body-comp-rows"`, `"view-preferences"`,
-  `timelineStorage.ts` with `"timeline-entries"`, `weighInsStorage.ts` with `"weigh-ins"`). Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`/`idbDelete`
+  `timelineStorage.ts` with `"timeline-entries"`, `weighInsStorage.ts` with `"weigh-ins"`). Nothing outside `src/lib/storage/` calls `idbGet`/`idbSet`
   directly — a new dataset gets its own wrapper file, not a call site that reaches past it.
 - **Restore-on-mount**: `App.tsx` starts in `{ status: "loading" }` (reusing `Landing`'s
   existing loading UI — no new component) and a mount-only effect loads all five datasets

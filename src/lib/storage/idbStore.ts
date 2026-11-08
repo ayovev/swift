@@ -60,14 +60,6 @@ export async function idbSet(key: string, value: unknown): Promise<void> {
   }
 }
 
-export async function idbDelete(key: string): Promise<void> {
-  try {
-    await runTx("readwrite", (store) => store.delete(key));
-  } catch {
-    /* non-fatal, see file header */
-  }
-}
-
 export async function idbClearAll(): Promise<void> {
   try {
     await runTx("readwrite", (store) => store.clear());
