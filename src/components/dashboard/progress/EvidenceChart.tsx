@@ -27,9 +27,9 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
   const model = useMemo(() => {
     const sessions = subject.sessions;
     const days = sessions.map((s) => dayNumber(s.date));
-    // On the Timeline the axis is the timeline's own, so a dot sits where it does above.
-    const x0 = domain ? dayNumber(domain.start) : Math.min(...days);
-    const x1 = domain ? dayNumber(domain.end) : Math.max(...days);
+    // On the Timeline the axis starts from the timeline's own range, stretched to take in any session outside it so no dot falls off the axis.
+    const x0 = Math.min(...days, ...(domain ? [dayNumber(domain.start)] : []));
+    const x1 = Math.max(...days, ...(domain ? [dayNumber(domain.end)] : []));
     const values = sessions.map((s) => s.value);
     const v0 = Math.min(...values);
     const v1 = Math.max(...values);
