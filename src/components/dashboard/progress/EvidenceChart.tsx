@@ -6,7 +6,15 @@ import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/l
 
 const W = 560;
 const H = 170;
-const PAD = { l: 10, r: 44, t: 22, b: 22 };
+const PAD = { l: 52, r: 44, t: 22, b: 30 };
+const X_TICKS = 4;
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Oct 2026" from a day number (days since 1970-01-01, as `dayNumber` gives). */
+const monthYearOfDay = (d: number): string => {
+  const iso = new Date(Math.round(d) * 86_400_000).toISOString();
+  return `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
+};
 
 /**
  * The chart that opens from a subject's row: one dot per day (the best result of that day, the same series the verdict reads), the
@@ -41,7 +49,15 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
       const value = formatSession(subject, verdict.recentBest).replace(" lb", "");
       newBest = { x: X(dayNumber(verdict.recentBest.date)), y: Y(verdict.recentBest.value), label: `${value} · new best +${pct.toFixed(1)}%` };
     }
-    return { sessions, X, Y, previous, recent, trend, newBest };
+    // Axis ticks: the lowest and highest dot on y (named by the sessions themselves, so a score keeps its own wording), evenly spaced dates on x.
+    const lo = sessions.reduce((a, b) => (b.value < a.value ? b : a));
+    const hi = sessions.reduce((a, b) => (b.value > a.value ? b : a));
+    const yTicks = (lo === hi ? [lo] : [lo, hi]).map((t) => ({ y: Y(t.value), label: formatSession(subject, t) }));
+    const xTicks = Array.from({ length: x1 > x0 ? X_TICKS : 1 }, (_, i) => {
+      const d = x0 + ((x1 - x0) * i) / (X_TICKS - 1);
+      return { x: X(d), label: monthYearOfDay(d) };
+    });
+    return { sessions, X, Y, previous, recent, trend, newBest, yTicks, xTicks };
   }, [subject, verdict, domain]);
 
   const rings = verdict && (verdict.state === "down" || verdict.state === "not-tested-since");
@@ -53,7 +69,24 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
   return (
     <figure className="flex flex-col gap-1">
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Sessions of ${subject.name}`}>
+        <line x1={PAD.l} x2={PAD.l} y1={PAD.t - 6} y2={H - PAD.b + 6} className="stroke-border" strokeWidth={1} />
         <line x1={PAD.l} x2={W - PAD.r} y1={H - PAD.b + 6} y2={H - PAD.b + 6} className="stroke-border" strokeWidth={1} />
+        {model.yTicks.map((t) => (
+          <g key={t.label}>
+            <line x1={PAD.l} x2={W - PAD.r} y1={t.y} y2={t.y} className="stroke-border" strokeWidth={0.5} strokeDasharray="2 3" />
+            <text x={PAD.l - 6} y={t.y + 3} textAnchor="end" className="fill-muted-foreground text-[10px]">
+              {t.label}
+            </text>
+          </g>
+        ))}
+        {model.xTicks.map((t) => (
+          <g key={t.x}>
+            <line x1={t.x} x2={t.x} y1={H - PAD.b + 6} y2={H - PAD.b + 10} className="stroke-border" strokeWidth={1} />
+            <text x={t.x} y={H - PAD.b + 21} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+              {t.label}
+            </text>
+          </g>
+        ))}
         {model.trend ? (
           <g>
             <line
