@@ -94,6 +94,8 @@ export function Dashboard({
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   // A subject to open on the Timeline when it is reached from a row's "See on timeline" link. `nonce` re-keys the view so a second link replaces the first.
   const [timelineSubject, setTimelineSubject] = useState<{ key: string; nonce: number } | null>(null);
+  // A subject to open on Progress when it is reached from a row in Overview's "What moved"; `nonce` re-keys the view the same way.
+  const [progressSubject, setProgressSubject] = useState<{ key: string; nonce: number } | null>(null);
   const { summary } = insights.dashboard;
   // Overview and the Insights views read the whole history as of today, never
   // the selected range (see App.tsx and docs/overview.md).
@@ -141,10 +143,20 @@ export function Dashboard({
     [source]
   );
 
+  const onOpenProgressSubject = useCallback(
+    (key: string) => {
+      setProgressSubject((p) => ({ key, nonce: (p?.nonce ?? 0) + 1 }));
+      setTab(LIFTS_TAB);
+      capture({ name: "tab_viewed", props: { tab: "Progress", source } });
+    },
+    [source]
+  );
+
   const onTabChange = useCallback(
     (value: string) => {
       setTab(value);
       setTimelineSubject(null);
+      setProgressSubject(null);
       const label = ALL_TABS.find((t) => t.value === value)?.label ?? value;
       capture({ name: "tab_viewed", props: { tab: label, source } });
     },
@@ -282,11 +294,12 @@ export function Dashboard({
           <TabsContent value={OVERVIEW_TAB}>
             <OverviewTab
               insights={insights}
-              granularity={granularity}
               workouts={workoutRows}
               scans={bodyComp.status === "ready" ? bodyComp.rows : []}
               weighIns={weighIns}
+              timeline={timeline}
               onNavigate={onTabChange}
+              onOpenProgressSubject={onOpenProgressSubject}
             />
           </TabsContent>
 
@@ -328,7 +341,7 @@ export function Dashboard({
           </TabsContent>
 
           <TabsContent value={LIFTS_TAB}>
-            <LiftsTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} onSeeOnTimeline={onSeeOnTimeline} />
+            <LiftsTab key={progressSubject?.nonce ?? 0} workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} onSeeOnTimeline={onSeeOnTimeline} focusSubjectKey={progressSubject?.key ?? null} />
           </TabsContent>
 
           <TabsContent value={TIMELINE_TAB}>

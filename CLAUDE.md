@@ -523,13 +523,19 @@ home. Read the header comments of the files named here before moving anything be
   Timeline is `timeline`/`TimelineTab.tsx`. Lifts is `lift-history`/`LiftHistoryTab.tsx` (not `lifts`,
   which is Progress's id); its page title is "Lifts and benchmarks". It is the record (every session,
   SugarWOD's PR flag as logged), Progress is the verdict, and neither restates the other.
-  Overview is being redesigned as a full-history front door, in the steps `docs/overview.md` lists.
-  Its totals row is done: days trained, most recent PR, body weight and the Progress headline, from
-  `lib/analytics/overview.ts` (pure, `today` passed in, the recent window is `OVERVIEW_RECENT_DAYS` in
-  `insightConfig.ts`). It reads `Insights.allRows` and `Insights.overall`, the same parse as every
-  other view with no range applied, never a second `parseRows()`. The Progress label comes from
-  `classifySubjects` exactly as Progress computes it, and body weight uses the pooled series and its
-  noise band, as the Insights views do.
+  Overview is the full-history front door (`docs/overview.md` holds the acceptance criteria and their
+  reasons). A totals row (days trained, most recent PR, body weight, the Progress headline), then three
+  panels (`overview/OverviewPanels.tsx`), each the evidence for one stat with a link into its section:
+  Training (days trained per calendar month over the last 12 months, the current month drawn lighter,
+  then the last 90 days' M/W/G split beside the 90 before and the three most-trained domains; least
+  trained is left out on purpose), Insights (Progress's up and down rows, at most five, most recently
+  logged first, each opening its own row on Progress through `focusSubjectKey`, plus the latest Timeline
+  entry) and Body (the pooled weight line). The numbers come from `lib/analytics/overview.ts` (pure,
+  `today` passed in, the recent window is `OVERVIEW_RECENT_DAYS` in `insightConfig.ts`), which reads
+  `Insights.allRows`, the same parse as every other view with no range applied, never a second
+  `parseRows()`; the chart's months come from row dates, not `ParsedRow.bucket`, so Overview ignores the
+  grouping too. The Progress label and rows come from `classifySubjects` exactly as Progress computes
+  them, and body weight uses the pooled series and its noise band, as the Insights views do.
 - **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
   under the page title ("Showing all time, grouped by month"), next to the charts they change
   rather than in the global header. It sits in its own row under a thin rule (with "Stored in

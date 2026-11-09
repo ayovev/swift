@@ -20,12 +20,6 @@ export interface Insights {
    * today (docs/overview.md). Never a second `parseRows()` call.
    */
   allRows: ParsedRow[];
-  /**
-   * `dashboard` and `modality` over the full history, for Overview's charts.
-   * The same objects as above when no range is set; otherwise built from
-   * `allRows`, which re-aggregates but never re-parses.
-   */
-  overall: { dashboard: DashboardData; modality: ModalityData };
 }
 
 /**
@@ -51,16 +45,11 @@ export function buildInsights(
   const parsed = parseRows(rows, granularity);
   const dateBounds = getDateBounds(parsed);
   const filtered = filterParsedRowsByRange(parsed, range);
-  const dashboard = buildFromParsedRows(filtered);
-  const modality = buildModalityData(filtered);
   return {
-    dashboard,
-    modality,
+    dashboard: buildFromParsedRows(filtered),
+    modality: buildModalityData(filtered),
     movements: buildMovementData(filtered),
     dateBounds,
     allRows: parsed,
-    overall: range
-      ? { dashboard: buildFromParsedRows(parsed), modality: buildModalityData(parsed) }
-      : { dashboard, modality },
   };
 }

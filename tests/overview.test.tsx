@@ -2,7 +2,11 @@ import dayjs from "dayjs";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { OverviewTab } from "@/components/dashboard/OverviewTab";
-import { BODY_COMP_TAB, LIFTS_TAB, LIFT_HISTORY_TAB } from "@/components/dashboard/tabs";
+import { LiftsTab } from "@/components/dashboard/LiftsTab";
+import { classifySubjects } from "@/lib/analytics/insights/headline";
+import { buildProgressSubjects } from "@/lib/analytics/insights/sessions";
+import { displayName } from "@/lib/analytics/insights/display";
+import { BODY_COMP_TAB, LIFTS_TAB, LIFT_HISTORY_TAB, TIMELINE_TAB, WORKOUTS_TAB } from "@/components/dashboard/tabs";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { OVERVIEW_RECENT_DAYS } from "@/lib/analytics/insightConfig";
 import type { BodyReading } from "@/lib/analytics/insights/bodyContext";
@@ -11,16 +15,22 @@ import {
   bodyWeightStat,
   daysTrainedStat,
   latestPrStat,
+  latestTimelineEntry,
+  monthlyDaysTrained,
   overviewScopeSentence,
   progressStat,
   recentWindow,
+  trainingMix,
   weightChangeText,
+  whatMoved,
 } from "@/lib/analytics/overview";
+import type { ProgressRow } from "@/lib/analytics/insights/headline";
+import type { TimelineEntry } from "@/types/timeline";
 import { liftRow, logRow } from "./fixtures/rows";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
-// Step 2 of docs/overview.md: Overview's totals row and scope sentence, from
-// the full history as of today. `today` is always passed in.
+// Steps 2 and 3 of docs/overview.md: Overview's totals row, scope sentence and
+// panels, from the full history as of today. `today` is always passed in.
 
 const TODAY = "2026-11-09";
 const parsed = (rows: Parameters<typeof buildInsights>[0]) => buildInsights(rows).allRows;
@@ -173,7 +183,7 @@ describe("progressStat", () => {
 describe("OverviewTab totals", () => {
   it("shows days trained, most recent PR, body weight and progress, in that order", async () => {
     const rows = await loadSampleRows();
-    render(<OverviewTab insights={buildInsights(rows)} granularity="monthly" workouts={rows} asOf={TODAY} />);
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} />);
     const totals = screen.getByRole("region", { name: "Totals" });
     const labels = ["days trained", "most recent PR", "body weight", "progress"].map((l) => within(totals).getByText(l));
     for (let i = 1; i < labels.length; i++) {
@@ -189,10 +199,166 @@ describe("OverviewTab totals", () => {
   it("opens each stat's section: PRs on Lifts, body weight on Body Comp, the headline on Progress", async () => {
     const rows = await loadSampleRows();
     const onNavigate = vi.fn();
-    render(<OverviewTab insights={buildInsights(rows)} granularity="monthly" workouts={rows} asOf={TODAY} onNavigate={onNavigate} />);
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} onNavigate={onNavigate} />);
     fireEvent.click(screen.getByText("most recent PR"));
     fireEvent.click(screen.getByText("body weight"));
     fireEvent.click(screen.getByText("progress"));
     expect(onNavigate.mock.calls.map((c) => c[0])).toEqual([LIFT_HISTORY_TAB, BODY_COMP_TAB, LIFTS_TAB]);
+  });
+});
+
+describe("monthlyDaysTrained", () => {
+  it("covers the last 12 calendar months, ending with the current one, marked partial", () => {
+    const months = monthlyDaysTrained(parsed([logRow("01/15/2024", "A"), logRow("11/02/2026", "B"), logRow("11/02/2026", "C")]), TODAY);
+    expect(months).toHaveLength(12);
+    expect(months[0]!.month).toBe("2025-12");
+    expect(months.at(-1)).toEqual({ month: "2026-11", days: 1, partial: true });
+    expect(months.slice(0, -1).every((m) => !m.partial && m.days === 0)).toBe(true);
+  });
+
+  it("starts at the first logged month when the log is younger than a year", () => {
+    const months = monthlyDaysTrained(parsed([logRow("08/20/2026", "A"), logRow("08/21/2026", "B"), logRow("10/01/2026", "C")]), TODAY);
+    expect(months.map((m) => [m.month, m.days])).toEqual([
+      ["2026-08", 2],
+      ["2026-09", 0],
+      ["2026-10", 1],
+      ["2026-11", 0],
+    ]);
+  });
+
+  it("follows each row's date, not the athlete's grouping", () => {
+    const rows = [logRow("10/01/2026", "A"), logRow("10/20/2026", "B")];
+    const weekly = buildInsights(rows, null, "weekly").allRows;
+    expect(monthlyDaysTrained(weekly, TODAY).find((m) => m.month === "2026-10")?.days).toBe(2);
+  });
+});
+
+describe("trainingMix", () => {
+  it("splits each window across M/W/G to 100, leaving unclassified workouts out", () => {
+    const mix = trainingMix(
+      parsed([
+        logRow(daysAgo(5), "RUN", "5k run"),
+        logRow(daysAgo(6), "FRAN", "21-15-9Thrusters (65/95 lb)Pull-ups"),
+        logRow(daysAgo(7), "REST DAY", "mobility notes only"),
+        logRow(daysAgo(120), "ROW", "2000m row"),
+      ]),
+      TODAY
+    );
+    expect(mix.recent?.workouts).toBe(2);
+    expect(mix.recent!.split.M + mix.recent!.split.W + mix.recent!.split.G).toBeCloseTo(100, 5);
+    expect(mix.recent!.split.M).toBe(50);
+    expect(mix.prior).toEqual({ split: { M: 100, W: 0, G: 0 }, workouts: 1 });
+  });
+
+  it("names at most three most-trained domains, and nothing for an empty window", () => {
+    const mix = trainingMix(parsed([logRow(daysAgo(5), "FRAN", "21-15-9Thrusters (65/95 lb)Pull-ups")]), TODAY);
+    expect(mix.mostTrained.length).toBeGreaterThan(0);
+    expect(mix.mostTrained.length).toBeLessThanOrEqual(3);
+    expect(trainingMix(parsed([logRow(daysAgo(300), "FRAN")]), TODAY)).toEqual({ recent: null, prior: null, mostTrained: [] });
+  });
+});
+
+describe("whatMoved", () => {
+  const row = (key: string, group: ProgressRow["group"], latest: string) => ({ subject: { key }, group, latest }) as unknown as ProgressRow;
+
+  it("keeps up and down only, most recently logged first, at most five", () => {
+    const rows = [
+      row("a", "up", "2026-01-01"),
+      row("b", "no-clear-change", "2026-11-01"),
+      row("c", "down", "2026-10-01"),
+      row("d", "up", "2026-09-01"),
+      row("e", "up", "2026-08-01"),
+      row("f", "up", "2026-07-01"),
+      row("g", "down", "2026-06-01"),
+      row("h", "few", "2026-11-05"),
+    ];
+    expect(whatMoved(rows).map((r) => r.subject.key)).toEqual(["c", "d", "e", "f", "g"]);
+  });
+});
+
+describe("latestTimelineEntry", () => {
+  const entry = (id: string, startDate: string, endDate: string | null): TimelineEntry => ({ id, initiation: "changed", area: "nutrition", startDate, endDate });
+
+  it("prefers the ongoing entry that started most recently, and counts the other ongoing ones", () => {
+    const got = latestTimelineEntry([entry("a", "2026-01-01", null), entry("b", "2026-09-02", null), entry("c", "2026-10-01", "2026-10-20")], TODAY);
+    expect(got).toEqual({ entry: expect.objectContaining({ id: "b" }), moreOngoing: 1 });
+  });
+
+  it("falls back to the entry that ended most recently, and ignores one starting after today", () => {
+    const got = latestTimelineEntry([entry("a", "2026-01-01", "2026-02-01"), entry("b", "2026-05-01", "2026-06-01"), entry("z", "2026-12-01", null)], TODAY);
+    expect(got).toEqual({ entry: expect.objectContaining({ id: "b" }), moreOngoing: 0 });
+    expect(latestTimelineEntry([], TODAY)).toBeNull();
+  });
+});
+
+describe("OverviewTab panels", () => {
+  it("replaces the range-driven charts with the three panels", async () => {
+    const rows = await loadSampleRows();
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} />);
+    expect(screen.getByText("Showing up")).toBeInTheDocument();
+    expect(screen.getByText("Last 12 months, by month")).toBeInTheDocument();
+    expect(screen.getByText("What moved")).toBeInTheDocument();
+    expect(screen.getByText("Body weight")).toBeInTheDocument();
+    expect(screen.queryByText("Where your training went")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cardio, weights, gymnastics")).not.toBeInTheDocument();
+  });
+
+  it("says what's missing in one line each, and still offers the sections", () => {
+    const rows = [logRow(daysAgo(200), "FRAN")];
+    const onNavigate = vi.fn();
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} onNavigate={onNavigate} />);
+    expect(screen.getByText("No workouts in the last 90 days.")).toBeInTheDocument();
+    expect(screen.getByText("No lift or benchmark has changed enough to call.")).toBeInTheDocument();
+    expect(screen.getByText("No timeline entries yet.")).toBeInTheDocument();
+    expect(screen.getByText("Upload an InBody export or add a weigh-in.")).toBeInTheDocument();
+    for (const name of ["See workouts", "See progress", "See timeline", "See body composition"]) {
+      fireEvent.click(screen.getByRole("button", { name }));
+    }
+    expect(onNavigate.mock.calls.map((c) => c[0])).toEqual([WORKOUTS_TAB, LIFTS_TAB, TIMELINE_TAB, BODY_COMP_TAB]);
+  });
+
+  it("shows a single body reading with its date and no line", () => {
+    const rows = [logRow(daysAgo(2), "FRAN")];
+    render(
+      <OverviewTab
+        insights={buildInsights(rows)}
+        workouts={rows}
+        asOf={TODAY}
+        weighIns={[{ date: "2026-11-01", weightLb: 183.4, source: "manual" }]}
+      />
+    );
+    expect(screen.getByText("183.4 lb on Nov 1.")).toBeInTheDocument();
+  });
+
+  it("names the latest timeline entry by name and area", () => {
+    const rows = [logRow(daysAgo(2), "FRAN")];
+    const timeline: TimelineEntry[] = [{ id: "1", initiation: "changed", area: "nutrition", name: "Cut", startDate: "2026-09-02", endDate: null }];
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} timeline={timeline} />);
+    expect(screen.getByText("Ongoing since Sep 2: Cut, Nutrition.")).toBeInTheDocument();
+  });
+
+  it("opens a moved lift's own row on Progress", async () => {
+    const rows = await loadSampleRows();
+    const onOpenProgressSubject = vi.fn();
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} onOpenProgressSubject={onOpenProgressSubject} />);
+    const moved = screen.getByText("What moved").closest("[data-slot=card]") as HTMLElement;
+    const first = within(moved).getAllByRole("listitem")[0]!;
+    fireEvent.click(within(first).getByRole("button"));
+    expect(onOpenProgressSubject).toHaveBeenCalledTimes(1);
+    expect(typeof onOpenProgressSubject.mock.calls[0]![0]).toBe("string");
+  });
+});
+
+describe("Progress, reached from What moved", () => {
+  it("opens the chosen row and leaves the others closed", async () => {
+    const rows = await loadSampleRows();
+    const moved = whatMoved(classifySubjects(buildProgressSubjects(rows).subjects, TODAY).rows).filter((r) => r.verdict);
+    expect(moved.length).toBeGreaterThan(1);
+    const [target, other] = moved;
+    render(<LiftsTab workouts={rows} scans={[]} asOf={TODAY} focusSubjectKey={target!.subject.key} />);
+    const button = (r: ProgressRow) =>
+      screen.getAllByRole("button", { expanded: true }).concat(screen.getAllByRole("button", { expanded: false })).find((b) => b.textContent?.startsWith(displayName(r.subject)))!;
+    expect(button(target!)).toHaveAttribute("aria-expanded", "true");
+    expect(button(other!)).toHaveAttribute("aria-expanded", "false");
   });
 });

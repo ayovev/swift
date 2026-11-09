@@ -5,13 +5,19 @@
  *
  * Four stats, one per area: days trained, the most recent PR, body weight and
  * the Progress headline. Each reports all time and the recent window
- * (OVERVIEW_RECENT_DAYS ending today) where a pair makes sense.
+ * (OVERVIEW_RECENT_DAYS ending today) where a pair makes sense. Below them, the
+ * evidence for three panels: days trained by month, the recent M/W/G mix and
+ * most-trained domains, what moved on Progress, and the latest Timeline entry.
  */
 import dayjs from "dayjs";
 import type { ParsedRow } from "./buildDashboardData";
 import { OVERVIEW_RECENT_DAYS } from "./insightConfig";
 import type { BodyReading } from "./insights/bodyContext";
-import type { ProgressHeadline } from "./insights/headline";
+import type { ProgressHeadline, ProgressRow } from "./insights/headline";
+import { classifyMovements, sharesTo100 } from "@/lib/classify/classifyModality";
+import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
+import { MODALITY_LIST, type Modality, type ModalitySplit } from "@/types/modality";
+import type { TimelineEntry } from "@/types/timeline";
 import { noHeadlineText } from "./insights/display";
 
 const MINUS = "−";
@@ -219,4 +225,130 @@ export function progressStat(h: ProgressHeadline): ProgressStat {
     return { value: "Declining", lines: [`Down in ${h.down} of ${lifts}`, ...(others ? [others] : [])] };
   }
   return { value: "Steady", lines: [`Across ${lifts}`, rest([[h.up, "up"], [h.noClearChange, "no clear change"], [h.down, "down"]])] };
+}
+
+// ── Training panel ────────────────────────────────────────────────────────
+
+/** The Training panel's chart span in calendar months, ending with the current one. */
+export const OVERVIEW_CHART_MONTHS = 12;
+
+export interface MonthDays {
+  /** YYYY-MM */
+  month: string;
+  days: number;
+  /** The current month, still under way. */
+  partial: boolean;
+}
+
+/**
+ * Days trained per calendar month over the last 12 months, ending with the
+ * current (partial) month. Bars start at the first logged month when the log is
+ * younger than that, so no empty months are drawn before training began. The
+ * month comes from each row's date, not `ParsedRow.bucket`, which follows the
+ * athlete's chosen grouping.
+ */
+export function monthlyDaysTrained(rows: readonly ParsedRow[], today: string): MonthDays[] {
+  const current = dayjs(today).startOf("month");
+  const earliest = current.subtract(OVERVIEW_CHART_MONTHS - 1, "month");
+  const daysByMonth = new Map<string, Set<string>>();
+  let first: string | null = null;
+  for (const r of rows) {
+    const d = iso(r);
+    if (d > today) continue;
+    if (first === null || d < first) first = d;
+    const m = d.slice(0, 7);
+    if (!daysByMonth.has(m)) daysByMonth.set(m, new Set());
+    daysByMonth.get(m)!.add(d);
+  }
+  if (first === null) return [];
+  let start = dayjs(first).startOf("month");
+  if (start.isBefore(earliest)) start = earliest;
+  const out: MonthDays[] = [];
+  for (let m = start; !m.isAfter(current); m = m.add(1, "month")) {
+    const key = m.format("YYYY-MM");
+    out.push({ month: key, days: daysByMonth.get(key)?.size ?? 0, partial: m.isSame(current) });
+  }
+  return out;
+}
+
+export interface WindowMix {
+  /** The window's M/W/G split, summing to 100 (largest-remainder rounding, as everywhere else). */
+  split: ModalitySplit;
+  /** Classified workouts in the window; unclassified ones are excluded, never counted as zeroes. */
+  workouts: number;
+}
+
+export interface TrainingMix {
+  recent: WindowMix | null;
+  prior: WindowMix | null;
+  /** Up to three GPP domains tagged on the most workouts in the recent window, most first. */
+  mostTrained: Domain[];
+}
+
+function windowMix(rows: readonly ParsedRow[]): WindowMix | null {
+  const weights: Record<Modality, number> = { M: 0, W: 0, G: 0 };
+  let workouts = 0;
+  for (const r of rows) {
+    const c = classifyMovements(r.movements);
+    if (!c.classified) continue;
+    workouts++;
+    for (const m of MODALITY_LIST) weights[m] += c.split[m];
+  }
+  if (workouts === 0) return null;
+  return { split: sharesTo100(weights, MODALITY_LIST.reduce((n, m) => n + weights[m], 0)), workouts };
+}
+
+/**
+ * What the recent window was made of: its M/W/G split beside the window
+ * before, built the same way the modality stack is (each workout's split
+ * summed, then normalised to 100), and the three most-trained domains. Least
+ * trained is left out on purpose for now (docs/overview.md).
+ */
+export function trainingMix(rows: readonly ParsedRow[], today: string): TrainingMix {
+  const w = recentWindow(today);
+  const recentRows = rows.filter((r) => iso(r) >= w.recentStart && iso(r) <= today);
+  const priorRows = rows.filter((r) => iso(r) >= w.priorStart && iso(r) < w.recentStart);
+  const counts = new Map<Domain, number>();
+  for (const r of recentRows) for (const d of r.domains) counts.set(d, (counts.get(d) ?? 0) + 1);
+  const mostTrained = DOMAIN_LIST.filter((d) => (counts.get(d) ?? 0) > 0)
+    .sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0))
+    .slice(0, 3);
+  return { recent: windowMix(recentRows), prior: windowMix(priorRows), mostTrained };
+}
+
+// ── Insights panel ────────────────────────────────────────────────────────
+
+/** Most rows the Insights panel lists. */
+export const OVERVIEW_MOVED_MAX = 5;
+
+/**
+ * The lifts and benchmarks Progress calls up or down (a move up to RX is in
+ * "up", as on Progress), most recently logged first, at most five.
+ */
+export function whatMoved(rows: readonly ProgressRow[]): ProgressRow[] {
+  return rows
+    .filter((r) => r.group === "up" || r.group === "down")
+    .sort((a, b) => (a.latest < b.latest ? 1 : a.latest > b.latest ? -1 : 0))
+    .slice(0, OVERVIEW_MOVED_MAX);
+}
+
+export interface LatestEntry {
+  entry: TimelineEntry;
+  /** Other entries ongoing today besides this one. */
+  moreOngoing: number;
+}
+
+/**
+ * The Timeline entry to show: the ongoing one that started most recently, else
+ * the one that ended most recently. Entries starting after today are ignored.
+ */
+export function latestTimelineEntry(entries: readonly TimelineEntry[], today: string): LatestEntry | null {
+  const started = entries.filter((e) => e.startDate <= today);
+  const ongoing = started.filter((e) => e.endDate === null || e.endDate >= today);
+  if (ongoing.length) {
+    const entry = [...ongoing].sort((a, b) => (a.startDate < b.startDate ? 1 : -1))[0]!;
+    return { entry, moreOngoing: ongoing.length - 1 };
+  }
+  const ended = [...started].sort((a, b) => ((a.endDate ?? "") < (b.endDate ?? "") ? 1 : -1))[0];
+  return ended ? { entry: ended, moreOngoing: 0 } : null;
 }

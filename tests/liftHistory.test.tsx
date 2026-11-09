@@ -39,7 +39,7 @@ describe("Training → Lifts", () => {
   });
 
   it("no longer appear on Overview", () => {
-    render(<OverviewTab insights={insights} granularity="monthly" workouts={rows} />);
+    render(<OverviewTab insights={insights} workouts={rows} />);
     for (const t of MOVED_CARDS) expect(screen.queryByText(t)).not.toBeInTheDocument();
     expect(screen.getByText("Showing up")).toBeInTheDocument();
   });

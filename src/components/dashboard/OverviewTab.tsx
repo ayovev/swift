@@ -1,10 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConsistencyChart } from "./charts/ConsistencyChart";
-import { StackedShareChart } from "./charts/StackedShareChart";
-import { DOMAIN_CHART_CONFIG, MODALITY_FIXED_CHART_CONFIG } from "./charts/chartUtils";
 import { useMemo } from "react";
 import dayjs from "dayjs";
-import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
 import { readingsFromInBody, weightBandLb } from "@/lib/analytics/insights/bodyReadings";
 import { classifySubjects } from "@/lib/analytics/insights/headline";
 import { buildProgressSubjects } from "@/lib/analytics/insights/sessions";
@@ -12,20 +7,24 @@ import {
   bodyWeightStat,
   daysTrainedStat,
   latestPrStat,
+  latestTimelineEntry,
+  monthlyDaysTrained,
   progressStat,
   shortDate,
   weightChangeText,
+  trainingMix,
   weightText,
+  whatMoved,
 } from "@/lib/analytics/overview";
 import { pooledReadings, pooledScanRows } from "@/lib/analytics/weighIns";
 import { OVERVIEW_RECENT_DAYS } from "@/lib/analytics/insightConfig";
 import { cn } from "@/lib/utils";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
+import type { TimelineEntry } from "@/types/timeline";
 import type { WeighIn } from "@/types/weighIn";
-import { BODY_COMP_TAB, LIFTS_TAB, LIFT_HISTORY_TAB } from "./tabs";
-import { DOMAIN_LIST } from "@/types/dashboard";
-import { MODALITY_LIST } from "@/types/modality";
+import { BodyPanel, InsightsPanel, TrainingPanel } from "./overview/OverviewPanels";
+import { BODY_COMP_TAB, LIFTS_TAB, LIFT_HISTORY_TAB, TIMELINE_TAB, WORKOUTS_TAB } from "./tabs";
 import type { Insights } from "@/lib/analytics/buildInsights";
 
 /**
@@ -86,45 +85,52 @@ function Stat({
 /**
  * The Overview tab: where things stand now, from the full history as of today
  * (docs/overview.md). The totals row carries one figure per area: days trained,
- * the most recent PR, body weight and the Progress headline. The panels below
- * are being rebuilt in the next step; until then the remaining charts read the
- * full history too (`insights.overall`), so nothing on the page follows the
- * date range.
+ * the most recent PR, body weight and the Progress headline. Below it, three
+ * panels (OverviewPanels.tsx), each the evidence for one stat with a link into
+ * its section. Nothing on the page follows the date range or the grouping.
  */
 export function OverviewTab({
   insights,
-  granularity,
   workouts,
   scans = [],
   weighIns = [],
+  timeline = [],
   asOf,
   onNavigate,
+  onOpenProgressSubject,
 }: {
   insights: Insights;
-  granularity: Granularity;
   /** The raw log, for the Progress headline (computed exactly as Progress computes it). */
   workouts: readonly SugarWodRow[];
   scans?: readonly InBodyRow[];
   weighIns?: readonly WeighIn[];
   /** YYYY-MM-DD; today unless a test says otherwise. */
   asOf?: string;
-  /** Opens another view; a stat with a section behind it links there. */
+  /** Timeline entries, for the latest-entry line. */
+  timeline?: readonly TimelineEntry[];
+  /** Opens another view; a stat or panel with a section behind it links there. */
   onNavigate?: (tab: string) => void;
+  /** Opens one lift or benchmark's row on Progress. */
+  onOpenProgressSubject?: (key: string) => void;
 }) {
   const today = useMemo(() => asOf ?? dayjs().format("YYYY-MM-DD"), [asOf]);
-  const { dashboard, modality } = insights.overall;
-  const noun = GRANULARITY_NOUN[granularity];
 
   const days = useMemo(() => daysTrainedStat(insights.allRows, today), [insights.allRows, today]);
   const pr = useMemo(() => latestPrStat(insights.allRows, today), [insights.allRows, today]);
+  const readings = useMemo(() => pooledReadings(readingsFromInBody(scans), weighIns).filter((r) => r.date <= today), [scans, weighIns, today]);
   const body = useMemo(
-    () => bodyWeightStat(pooledReadings(readingsFromInBody(scans), weighIns), weightBandLb(pooledScanRows(scans, weighIns)), today),
-    [scans, weighIns, today]
+    () => bodyWeightStat(readings, weightBandLb(pooledScanRows(scans, weighIns)), today),
+    [readings, scans, weighIns, today]
   );
-  const progress = useMemo(
-    () => progressStat(classifySubjects(buildProgressSubjects(workouts).subjects, today).headline),
-    [workouts, today]
-  );
+  // Classified once, exactly as Progress does: the headline feeds the totals
+  // row and the rows feed "What moved".
+  const classified = useMemo(() => classifySubjects(buildProgressSubjects(workouts).subjects, today), [workouts, today]);
+  const progress = progressStat(classified.headline);
+  const moved = useMemo(() => whatMoved(classified.rows), [classified]);
+  const months = useMemo(() => monthlyDaysTrained(insights.allRows, today), [insights.allRows, today]);
+  const mix = useMemo(() => trainingMix(insights.allRows, today), [insights.allRows, today]);
+  const latestEntry = useMemo(() => latestTimelineEntry(timeline, today), [timeline, today]);
+  const go = (tab: string) => (onNavigate ? () => onNavigate(tab) : undefined);
 
   const open = (tab: string) => (onNavigate ? { onOpen: () => onNavigate(tab) } : {});
   const recent = `the last ${OVERVIEW_RECENT_DAYS} days`;
@@ -198,56 +204,18 @@ export function OverviewTab({
         />
       </section>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Showing up</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ConsistencyChart
-            buckets={dashboard.buckets}
-            granularity={granularity}
-            {...(granularity !== "daily" ? { secondaryBuckets: dashboard.days_buckets } : {})}
-          />
-        </CardContent>
-      </Card>
+      <TrainingPanel months={months} mix={mix} onSeeWorkouts={go(WORKOUTS_TAB)} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Where your training went</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">
-              The ten general physical skills as a share of each {noun}'s training.
-            </p>
-            <StackedShareChart
-              data={dashboard.stacked.bucket_shares}
-              keys={DOMAIN_LIST}
-              config={DOMAIN_CHART_CONFIG}
-              label="Normalized stacked area chart of the ten physical skills over time"
-              granularity={granularity}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Cardio, weights, gymnastics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-sm text-muted-foreground">
-              How each {noun} split across the three CrossFit modalities.
-            </p>
-            <StackedShareChart
-              data={modality.modality_stacked.bucket_shares as unknown as Record<string, string | number>[]}
-              keys={MODALITY_LIST}
-              config={MODALITY_FIXED_CHART_CONFIG}
-              label="Normalized stacked bar chart of metabolic, weightlifting and gymnastics work over time"
-              granularity={granularity}
-              variant="bar"
-            />
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <InsightsPanel
+          moved={moved}
+          latest={latestEntry}
+          today={today}
+          onOpenSubject={onOpenProgressSubject}
+          onSeeProgress={go(LIFTS_TAB)}
+          onSeeTimeline={go(TIMELINE_TAB)}
+        />
+        <BodyPanel readings={readings} today={today} onSeeBody={go(BODY_COMP_TAB)} />
       </div>
     </div>
   );

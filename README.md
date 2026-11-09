@@ -13,7 +13,7 @@ There is no account to make and no server to send your file to.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png">
-  <img alt="Swift's Overview page: totals for workouts logged, days trained and personal records, and a month-by-month attendance chart." src="docs/images/overview-light.png">
+  <img alt="Swift's Overview page: totals for days trained, the most recent PR, body weight and the Progress headline, then days trained per month over the last year and the recent cardio, weights and gymnastics mix." src="docs/images/overview-light.png">
 </picture>
 
 
@@ -146,7 +146,7 @@ how the Timeline works.
 
 - [Using Swift](docs/guide.md): data in, backups, sync, the timeline
 - [Privacy: the details](docs/privacy.md)
-- [The Overview page (in progress)](docs/overview.md)
+- [The Overview page](docs/overview.md)
 - [Architecture](docs/architecture.md): how the code is organised
 - [How classification works](docs/classification.md): the GPP and M/W/G logic
 - [Testing](docs/testing.md)
