@@ -13,7 +13,7 @@ There is no account to make and no server to send your file to.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png">
-  <img alt="Swift's Overview page: totals for workouts logged, days trained and personal records, and a month-by-month attendance chart." src="docs/images/overview-light.png">
+  <img alt="Swift's Overview page: totals for days trained, the most recent PR, body weight and the Progress headline, then days trained and the cardio, weightlifting and gymnastics split for each of the last 12 months." src="docs/images/overview-light.png">
 </picture>
 
 
@@ -42,7 +42,7 @@ on the landing page.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/breakdown-dark.png">
-  <img alt="The Strength page in the Breakdown section: share of workouts that train strength, month by month." src="docs/images/breakdown-light.png">
+  <img alt="The Strength page in the Training section: share of workouts that train strength, month by month." src="docs/images/breakdown-light.png">
 </picture>
 
 </td>
@@ -56,7 +56,7 @@ on the landing page.
 </td>
   </tr>
   <tr>
-    <td align="center"><sub>Breakdown: one of ten GPP domains</sub></td>
+    <td align="center"><sub>Training: one of ten GPP domains</sub></td>
     <td align="center"><sub>Progress: a verdict for each lift and benchmark</sub></td>
   </tr>
 </table>
@@ -146,6 +146,7 @@ how the Timeline works.
 
 - [Using Swift](docs/guide.md): data in, backups, sync, the timeline
 - [Privacy: the details](docs/privacy.md)
+- [The Overview page](docs/overview.md)
 - [Architecture](docs/architecture.md): how the code is organised
 - [How classification works](docs/classification.md): the GPP and M/W/G logic
 - [Testing](docs/testing.md)

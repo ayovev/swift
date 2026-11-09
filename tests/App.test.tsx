@@ -31,6 +31,15 @@ function findDashboard(timeout?: number) {
   return screen.findByRole("button", { name: "Settings" }, timeout ? { timeout } : undefined);
 }
 
+/**
+ * The dashboard opens on Overview, which reads the full history and has no
+ * date range or grouping control (docs/overview.md); Training has both.
+ */
+async function findRangeView() {
+  await findDashboard();
+  fireEvent.click(screen.getByRole("button", { name: "Training" }));
+}
+
 /** Start over, the file pickers and sync live in the Settings sheet (SettingsSheet.tsx). */
 async function openSettings() {
   fireEvent.click(await findDashboard());
@@ -281,7 +290,7 @@ describe("App — local persistence", () => {
     });
 
     renderApp();
-    await findDashboard();
+    await findRangeView();
 
     expect(screen.getByRole("button", { name: "Grouped by week" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /last 3 months/i })).toBeInTheDocument();
@@ -294,7 +303,7 @@ describe("App — local persistence", () => {
     await saveWorkoutRows(rows);
 
     const { unmount } = renderApp();
-    await findDashboard();
+    await findRangeView();
 
     fireEvent.click(screen.getByRole("button", { name: /all time/i }));
     fireEvent.click(await screen.findByRole("button", { name: /last month/i }));
@@ -306,7 +315,7 @@ describe("App — local persistence", () => {
     unmount();
     renderApp();
 
-    await findDashboard();
+    await findRangeView();
     expect(await screen.findByRole("button", { name: /last month/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Grouped by day" })).toBeInTheDocument();
   });
@@ -318,11 +327,20 @@ describe("App — view scope", () => {
     renderApp();
     await findDashboard();
 
+    // Overview is where things stand now: full history as of today, with the
+    // last logged date and no range or grouping control (docs/overview.md).
+    expect(screen.getByText(/^Uses your full history, as of today\. Last workout logged /)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^all time/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Grouped by/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Training" }));
     expect(screen.getByRole("button", { name: /^all time/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Grouped by month" })).toBeInTheDocument();
 
     // A domain page carries CrossFit's definition of the skill under its heading.
-    fireEvent.click(screen.getByRole("button", { name: "Breakdown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Training" }));
+    const domains = await screen.findByRole("group", { name: "Domains" });
+    fireEvent.click(within(domains).getByRole("button", { name: "Cardio" }));
     const heading = await screen.findByRole("heading", { level: 1, name: "Cardiovascular/Respiratory Endurance" });
     expect(heading.nextElementSibling).toHaveTextContent(
       "The ability of the body’s systems to gather, process, and deliver oxygen."
@@ -346,7 +364,7 @@ describe("App — daily granularity gating", () => {
   it("disables Daily at a multi-year all-time range, and enables it once the range narrows", async () => {
     await saveWorkoutRows(rows);
     renderApp();
-    await findDashboard();
+    await findRangeView();
 
     const menu = await openGroupingMenu();
     expect(within(menu).getByRole("menuitemradio", { name: /^Daily/ })).toHaveAttribute("aria-disabled", "true");
@@ -366,7 +384,7 @@ describe("App — daily granularity gating", () => {
   it("falls back to Weekly when the range widens back out from under an active Daily view", async () => {
     await saveWorkoutRows(rows);
     renderApp();
-    await findDashboard();
+    await findRangeView();
 
     // Narrow first so Daily is selectable, then select it.
     fireEvent.click(screen.getByRole("button", { name: /all time/i }));

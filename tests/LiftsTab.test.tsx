@@ -95,7 +95,7 @@ describe("the Insights front door", () => {
     expect(screen.queryByText(/Body weight|No body weight/)).not.toBeInTheDocument();
     unmount();
     renderSample("2026-09-11", [scanRow("2023-02-06", { "Weight(lb)": "170" }), scanRow("2026-03-10", { "Weight(lb)": "172" })]);
-    expect(screen.getAllByText(/Body weight 170 to 172 lb, within normal scan variation\./).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Body weight 170 to 172 lb, within normal variation\./).length).toBeGreaterThan(0);
   });
 
   it("draws the body-weight lines from manual weigh-ins alone", () => {

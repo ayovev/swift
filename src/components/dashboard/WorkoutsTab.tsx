@@ -8,8 +8,28 @@ import { FIXED_MODALITY_COLORS, formatShortDate } from "./charts/chartUtils";
 import { formatWorkoutDescription, isLevelLabel } from "@/lib/format/workoutDescription";
 import { cn } from "@/lib/utils";
 import { MODALITY_LIST, MODALITY_SHORT_LABELS, type ModalityData } from "@/types/modality";
+import type { DashboardSummary } from "@/types/dashboard";
 
 const PAGE_SIZE = 50;
+
+/**
+ * The summary line at the top of Workouts, for the selected range: workouts
+ * logged, the share done as prescribed, and the scaled count. These were
+ * Overview's totals until Overview became the full-history front door
+ * (docs/overview.md); they describe the range, so they live with the list.
+ * The RX share is left out when nothing is marked RX or Scaled, rather than
+ * shown as a misleading 0%.
+ */
+export function workoutsSummaryParts(summary: DashboardSummary): string[] {
+  const logged = summary.total_logged;
+  const parts = [`${logged.toLocaleString()} ${logged === 1 ? "workout" : "workouts"} logged`];
+  const marked = summary.rx_count + summary.scaled_count;
+  if (marked > 0) {
+    parts.push(`${Math.round((summary.rx_count / marked) * 100)}% as prescribed`);
+    parts.push(`${summary.scaled_count.toLocaleString()} scaled`);
+  }
+  return parts;
+}
 
 /**
  * The running list of every logged workout, each row paired with its M/W/G
@@ -21,7 +41,7 @@ const PAGE_SIZE = 50;
  * data already sitting in ParsedRow.raw and unused elsewhere in this tab, so
  * no new parsing or fetch is involved, just surfacing it on click.
  */
-export function WorkoutsTab({ data }: { data: ModalityData }) {
+export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: DashboardSummary }) {
   const [query, setQuery] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -53,6 +73,9 @@ export function WorkoutsTab({ data }: { data: ModalityData }) {
     <div className="flex flex-col gap-6">
       <Card>
         <CardContent className="flex flex-col gap-4">
+          <p className="text-sm font-medium tabular">
+            {workoutsSummaryParts(summary).join(" · ")}
+          </p>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Every workout in this export, most recent first, with its proportional split across
             metabolic conditioning, weightlifting and gymnastics.

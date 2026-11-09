@@ -116,6 +116,8 @@ export interface PrTimelineEntry {
   title: string;
   display: string;
   barbell_lift: string | null;
+  /** ADDITIVE (not in the Python reference): SugarWOD's score type ("Load", "Reps", ...), so a score can be shown with its unit (withScoreUnit). */
+  score_type: string;
 }
 
 export interface DomainTrendPoint {

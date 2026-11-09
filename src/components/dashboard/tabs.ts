@@ -3,6 +3,8 @@ import { MODALITY_LIST, MODALITY_SHORT_LABELS } from "@/types/modality";
 
 export const OVERVIEW_TAB = "overview";
 export const WORKOUTS_TAB = "workouts";
+/** Training → Lifts. Not `lifts`: that id is Progress's, kept from before its rename. */
+export const LIFT_HISTORY_TAB = "lift-history";
 export const BODY_COMP_TAB = "body-comp";
 export const LIFTS_TAB = "lifts";
 export const TIMELINE_TAB = "timeline";
@@ -14,6 +16,7 @@ export interface TabDescriptor {
   group:
     | "Overview"
     | "Workouts"
+    | "Lifts"
     | "Domains"
     | "Modalities"
     | "Movements"
@@ -28,7 +31,8 @@ export interface TabDescriptor {
  * identity of each view (its value and short label), which analytics
  * (`tab_viewed`) and the tab content in Dashboard.tsx key off.
  *
- * All 19 tabs: Overview, the running Workouts list, ten GPP domains, three
+ * All 20 tabs: Overview, the running Workouts list, Lifts (every lift and
+ * benchmark session and every PR, for the selected range; see LiftHistoryTab), ten GPP domains, three
  * modalities, Movements (any one movement, or a family of them, across the
  * log; see MovementsTab), Body Comp — built from a wholly separate InBody upload,
  * always present in the nav even before any InBody data is loaded (see
@@ -39,6 +43,7 @@ export interface TabDescriptor {
 export const ALL_TABS: TabDescriptor[] = [
   { value: OVERVIEW_TAB, label: "Overview", group: "Overview" },
   { value: WORKOUTS_TAB, label: "Workouts", group: "Workouts" },
+  { value: LIFT_HISTORY_TAB, label: "Lifts", group: "Lifts" },
   ...DOMAIN_LIST.map((d) => ({
     value: `domain:${d}`,
     label: DOMAIN_SHORT_LABELS[d],

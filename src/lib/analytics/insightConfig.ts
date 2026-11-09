@@ -67,6 +67,18 @@ export const NOISE_BAND_FLOOR_FRACTION = 0.5;
  */
 export const NOISE_DEFAULT_WEIGHT_BAND_LB = 3;
 
+// ── Overview (overview.ts) ───────────────────────────────────────────────
+
+/**
+ * Overview's "recent" window: the last N days ending today, compared with the
+ * N days before that (docs/overview.md). 90 is long enough to absorb a travel
+ * week or a sick week without reading as a collapse, and short enough that a
+ * real change in training shows within a season. Anchored to today, never to
+ * the last logged workout, so "the last 90 days" means the same dates on a
+ * given day. Tunable.
+ */
+export const OVERVIEW_RECENT_DAYS = 90;
+
 // ── Rep schemes and body-weight readings (insights/) ────────────────────
 
 /**

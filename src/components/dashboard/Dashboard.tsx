@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlaskConical } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -10,6 +11,7 @@ import { DomainTab } from "./DomainTab";
 import { ModalityTab } from "./ModalityTab";
 import { MovementsTab } from "./MovementsTab";
 import { OverviewTab } from "./OverviewTab";
+import { LiftHistoryTab } from "./LiftHistoryTab";
 import { LiftsTab } from "./LiftsTab";
 import { TimelineTab } from "./TimelineTab";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
@@ -18,6 +20,7 @@ import {
   BODY_COMP_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
+  LIFT_HISTORY_TAB,
   LIFTS_TAB,
   TIMELINE_TAB,
   WORKOUTS_TAB,
@@ -27,6 +30,7 @@ import { formatDate } from "./charts/chartUtils";
 import type { DateRange, DateRangePreset } from "@/lib/analytics/dateRange";
 import { dailyGranularityFits, type Granularity } from "@/lib/analytics/granularity";
 import { capture } from "@/lib/posthog";
+import { overviewScopeSentence } from "@/lib/analytics/overview";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
@@ -90,9 +94,13 @@ export function Dashboard({
   const [tab, setTab] = useState<string>(OVERVIEW_TAB);
   // A subject to open on the Timeline when it is reached from a row's "See on timeline" link. `nonce` re-keys the view so a second link replaces the first.
   const [timelineSubject, setTimelineSubject] = useState<{ key: string; nonce: number } | null>(null);
+  // A subject to open on Progress when it is reached from a row in Overview's "What moved"; `nonce` re-keys the view the same way.
+  const [progressSubject, setProgressSubject] = useState<{ key: string; nonce: number } | null>(null);
   const { summary } = insights.dashboard;
-  // Insights views read the whole history, never the selected range (see App.tsx).
-  const usesRange = sectionOf(tab) !== "Insights";
+  // Overview and the Insights views read the whole history as of today, never
+  // the selected range (see App.tsx and docs/overview.md).
+  const usesRange = sectionOf(tab) !== "Insights" && sectionOf(tab) !== "Overview";
+  const today = dayjs().format("YYYY-MM-DD");
 
   // "All time" (range === null) has no explicit span of its own, so it falls
   // back to the log's own full bounds — the same span DateRangePicker uses
@@ -135,10 +143,20 @@ export function Dashboard({
     [source]
   );
 
+  const onOpenProgressSubject = useCallback(
+    (key: string) => {
+      setProgressSubject((p) => ({ key, nonce: (p?.nonce ?? 0) + 1 }));
+      setTab(LIFTS_TAB);
+      capture({ name: "tab_viewed", props: { tab: "Progress", source } });
+    },
+    [source]
+  );
+
   const onTabChange = useCallback(
     (value: string) => {
       setTab(value);
       setTimelineSubject(null);
+      setProgressSubject(null);
       const label = ALL_TABS.find((t) => t.value === value)?.label ?? value;
       capture({ name: "tab_viewed", props: { tab: label, source } });
     },
@@ -214,10 +232,18 @@ export function Dashboard({
           <div className="flex flex-col gap-2.5">
             <div className="font-mono text-xs tracking-[0.08em] text-muted-foreground uppercase">
               Training log <span className="text-muted-foreground/50">/</span> {sectionOf(tab)}
-              {summary.total_logged > 0 ? (
+              {/* The span the page covers: the selected range where it applies,
+                  else the whole log. */}
+              {usesRange && summary.total_logged > 0 ? (
                 <span className="hidden normal-case tracking-normal sm:inline">
                   {"  ·  "}
                   {formatDate(summary.date_start)} – {formatDate(summary.date_end)}
+                </span>
+              ) : !usesRange && insights.dateBounds ? (
+                <span className="hidden normal-case tracking-normal sm:inline">
+                  {"  ·  "}
+                  {formatDate(insights.dateBounds.start.format("YYYY-MM-DD"))} –{" "}
+                  {formatDate(insights.dateBounds.end.format("YYYY-MM-DD"))}
                 </span>
               ) : null}
             </div>
@@ -241,6 +267,10 @@ export function Dashboard({
                 onGranularityChange={onGranularityChange}
                 dailyDisabled={dailyDisabled}
               />
+            ) : sectionOf(tab) === "Overview" ? (
+              // Overview is where things stand now. The last logged date explains
+              // low recent numbers on an old export without a stat of its own.
+              <p className="text-base text-muted-foreground">{overviewScopeSentence(insights.allRows, today)}</p>
             ) : (
               // Progress and Timeline are computed in App.tsx
               // from the full, unfiltered history as of today — saying so
@@ -262,11 +292,23 @@ export function Dashboard({
 
         <Tabs value={tab} onValueChange={onTabChange} className="gap-6">
           <TabsContent value={OVERVIEW_TAB}>
-            <OverviewTab insights={insights} granularity={granularity} />
+            <OverviewTab
+              insights={insights}
+              workouts={workoutRows}
+              scans={bodyComp.status === "ready" ? bodyComp.rows : []}
+              weighIns={weighIns}
+              timeline={timeline}
+              onNavigate={onTabChange}
+              onOpenProgressSubject={onOpenProgressSubject}
+            />
           </TabsContent>
 
           <TabsContent value={WORKOUTS_TAB}>
-            <WorkoutsTab data={insights.modality} />
+            <WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} />
+          </TabsContent>
+
+          <TabsContent value={LIFT_HISTORY_TAB}>
+            <LiftHistoryTab dashboard={insights.dashboard} />
           </TabsContent>
 
           {DOMAIN_LIST.map((domain: Domain) => (
@@ -299,7 +341,7 @@ export function Dashboard({
           </TabsContent>
 
           <TabsContent value={LIFTS_TAB}>
-            <LiftsTab workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} onSeeOnTimeline={onSeeOnTimeline} />
+            <LiftsTab key={progressSubject?.nonce ?? 0} workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} onSeeOnTimeline={onSeeOnTimeline} focusSubjectKey={progressSubject?.key ?? null} />
           </TabsContent>
 
           <TabsContent value={TIMELINE_TAB}>

@@ -10,6 +10,7 @@ import {
 import {
   ALL_TABS,
   BODY_COMP_TAB,
+  LIFT_HISTORY_TAB,
   LIFTS_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
@@ -23,8 +24,8 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, GPP domain, modality, Movements, Body Comp, Progress and Timeline", () => {
-    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
+  it("has one entry per Overview, Workouts, Lifts, GPP domain, modality, Movements, Body Comp, Progress and Timeline", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
   });
 });
 
@@ -36,11 +37,13 @@ describe("SECTIONS", () => {
   });
 
   it("groups views by what they're about", () => {
-    expect(sectionOf(OVERVIEW_TAB)).toBe("Training");
+    expect(sectionOf(OVERVIEW_TAB)).toBe("Overview");
     expect(sectionOf(WORKOUTS_TAB)).toBe("Training");
-    expect(sectionOf(strengthTab.value)).toBe("Breakdown");
-    expect(sectionOf(gymnasticsTab.value)).toBe("Breakdown");
-    expect(sectionOf(MOVEMENTS_TAB)).toBe("Breakdown");
+    expect(sectionOf(LIFT_HISTORY_TAB)).toBe("Training");
+    expect(sectionOf(strengthTab.value)).toBe("Training");
+    expect(sectionOf(gymnasticsTab.value)).toBe("Training");
+    expect(sectionOf(MOVEMENTS_TAB)).toBe("Training");
+    expect(sectionOf("not-a-tab")).toBe("Overview");
     expect(sectionOf(BODY_COMP_TAB)).toBe("Body");
     expect(sectionOf(LIFTS_TAB)).toBe("Insights");
     expect(sectionOf(TIMELINE_TAB)).toBe("Insights");
@@ -54,6 +57,7 @@ describe("pageTitleOf", () => {
     );
     expect(pageTitleOf(gymnasticsTab.value)).toBe(MODALITY_NAMES.G);
     expect(pageTitleOf(BODY_COMP_TAB)).toBe("Body composition");
+    expect(pageTitleOf(LIFT_HISTORY_TAB)).toBe("Lifts and benchmarks");
     expect(pageTitleOf(OVERVIEW_TAB)).toBe("Overview");
     expect(pageTitleOf(TIMELINE_TAB)).toBe("Timeline");
     expect(pageTitleOf(LIFTS_TAB)).toBe("Progress");
@@ -65,8 +69,19 @@ describe("SectionLinks", () => {
     const onValueChange = vi.fn();
     render(<SectionLinks value={strengthTab.value} onValueChange={onValueChange} />);
 
-    expect(screen.getByRole("button", { name: "Breakdown" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("button", { name: "Training" })).not.toHaveAttribute("aria-current");
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([
+      "Overview",
+      "Training",
+      "Body",
+      "Insights",
+    ]);
+    expect(screen.getByRole("button", { name: "Training" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Overview" })).not.toHaveAttribute("aria-current");
+
+    fireEvent.click(screen.getByRole("button", { name: "Training" }));
+    expect(onValueChange).toHaveBeenCalledWith(WORKOUTS_TAB);
+    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
+    expect(onValueChange).toHaveBeenCalledWith(OVERVIEW_TAB);
 
     fireEvent.click(screen.getByRole("button", { name: "Insights" }));
     expect(onValueChange).toHaveBeenCalledWith(LIFTS_TAB);
@@ -76,7 +91,7 @@ describe("SectionLinks", () => {
 });
 
 describe("SubNav", () => {
-  it("shows every domain and modality at once in Breakdown, as two labelled groups", () => {
+  it("shows Workouts and Lifts first in Training, then every domain and modality at once as two labelled groups, then Movements", () => {
     const onValueChange = vi.fn();
     render(<SubNav value={strengthTab.value} onValueChange={onValueChange} />);
 
@@ -88,6 +103,12 @@ describe("SubNav", () => {
 
     fireEvent.click(within(modalities).getByRole("button", { name: "Gymnastics" }));
     expect(onValueChange).toHaveBeenCalledWith(gymnasticsTab.value);
+
+    const nav = screen.getByRole("navigation", { name: "Training views" });
+    const all = within(nav).getAllByRole("button").map((b) => b.textContent);
+    expect(all.slice(0, 2)).toEqual(["Workouts", "Lifts"]);
+    expect(all.at(-1)).toBe("Movements");
+    expect(all).toHaveLength(2 + DOMAIN_LIST.length + MODALITY_LIST.length + 1);
   });
 
   it("puts each group's label above its tabs, not in line with them", () => {
@@ -112,7 +133,10 @@ describe("SubNav", () => {
   });
 
   it("renders nothing for a single-view section", () => {
-    const { container } = render(<SubNav value={BODY_COMP_TAB} onValueChange={vi.fn()} />);
-    expect(container).toBeEmptyDOMElement();
+    for (const value of [OVERVIEW_TAB, BODY_COMP_TAB]) {
+      const { container, unmount } = render(<SubNav value={value} onValueChange={vi.fn()} />);
+      expect(container).toBeEmptyDOMElement();
+      unmount();
+    }
   });
 });

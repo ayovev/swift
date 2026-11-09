@@ -4,7 +4,7 @@
  *
  * Body weight at a date: that day's reading, else a straight line between the readings either side if they are no further apart than
  * `PV_BODY_INTERPOLATION_GAP_DAYS`, else the nearest reading within `PV_BODY_NEAREST_READING_DAYS`, else none; never extrapolated. A change
- * smaller than the noise band (`weightNoiseBand.ts`, a 3 lb default) is "within normal scan variation".
+ * smaller than the noise band (`weightNoiseBand.ts`, a 3 lb default) is "within normal variation".
  *
  * The sentence relating body weight to a load-scored lift (never a benchmark, a move up to RX or a not-tested-since lift), when body
  * weight moved past the band:
@@ -80,7 +80,7 @@ export function bodyContextLines(input: BodyContextInput, readings: readonly Bod
     return { first: `No body weight within ${PV_BODY_NEAREST_READING_DAYS} days of ${monthYear(a === null ? input.from : input.to)}.`, relation: null };
   }
   const delta = b - a;
-  if (Math.abs(delta) <= bandLb) return { first: `Body weight ${lb(a)} to ${lb(b)} lb, within normal scan variation.`, relation: null };
+  if (Math.abs(delta) <= bandLb) return { first: `Body weight ${lb(a)} to ${lb(b)} lb, within normal variation.`, relation: null };
 
   const lean = [valueAt(input.from, readings, "leanLb"), valueAt(input.to, readings, "leanLb")];
   const fat = [valueAt(input.from, readings, "fatLb"), valueAt(input.to, readings, "fatLb")];
