@@ -54,6 +54,13 @@ function PanelHeader({ title, caption }: { title: string; caption?: string }) {
 // ── Training ──────────────────────────────────────────────────────────────
 
 /**
+ * Widest a month's bar gets, on both Training charts. A full year gives each
+ * month about 90px on a desktop; a log two months old would otherwise stretch
+ * each bar across half the card. The same cap on both keeps the columns lined up.
+ */
+const MAX_BAR_PX = 72;
+
+/**
  * The fill that marks a month still under way: a single-direction 45° hatch in the
  * accent over a faint wash of it. A pattern rather than a lighter shade, so
  * "in progress" reads as a different kind of bar, not a smaller amount, and
@@ -113,7 +120,7 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
       : "Bar chart of days trained per month";
   return (
     <ChartContainer config={config} className="h-[200px] w-full min-w-0" role="img" aria-label={aria}>
-      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} maxBarSize={MAX_BAR_PX}>
         <defs>
           <InProgressPattern id={patternId} />
         </defs>
@@ -177,7 +184,7 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
       : "Stacked bar chart of each month's cardio, weightlifting and gymnastics share";
   return (
     <ChartContainer config={MODALITY_FIXED_CHART_CONFIG} className="h-[160px] w-full min-w-0" role="img" aria-label={aria}>
-      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} maxBarSize={MAX_BAR_PX}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...AXIS_PROPS} />
         <YAxis
@@ -240,8 +247,16 @@ export function TrainingPanel({
       <PanelHeader title="Showing up" caption={`Last ${OVERVIEW_CHART_MONTHS} months, by month`} />
       <CardContent className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <MonthlyDaysChart months={months} />
-          {months.some((m) => m.partial && m.days > 0) ? <InProgressKey /> : null}
+          {months.some((m) => m.days > 0) ? (
+            <>
+              <MonthlyDaysChart months={months} />
+              {months.some((m) => m.partial && m.days > 0) ? <InProgressKey /> : null}
+            </>
+          ) : (
+            // Twelve empty months on a 0 to 1 axis say nothing a sentence doesn't.
+            // The scope line above already names the last logged workout.
+            <p className="text-sm text-muted-foreground">No workouts in the last {OVERVIEW_CHART_MONTHS} months.</p>
+          )}
         </div>
         <section aria-label="What it was made of" className="flex flex-col gap-2 border-t border-border pt-4">
           <h3 className="text-sm font-medium">Cardio, weightlifting, gymnastics</h3>
@@ -283,6 +298,7 @@ function movedText(row: ProgressRow): string {
 
 export function InsightsPanel({
   moved,
+  emptyText = "No lift or benchmark has changed enough to call.",
   latest,
   today,
   onOpenSubject,
@@ -290,6 +306,8 @@ export function InsightsPanel({
   onSeeTimeline,
 }: {
   moved: ProgressRow[];
+  /** Why nothing is listed (whatMovedEmptyText): nothing moved, or nothing could be compared yet. */
+  emptyText?: string;
   latest: LatestEntry | null;
   today: string;
   onOpenSubject?: ((key: string) => void) | undefined;
@@ -333,7 +351,7 @@ export function InsightsPanel({
             })}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No lift or benchmark has changed enough to call.</p>
+          <p className="text-sm text-muted-foreground">{emptyText}</p>
         )}
 
         <div className="flex flex-col gap-1 border-t border-border pt-4">
@@ -418,13 +436,11 @@ export function bodySourcesCaption(fromScans: number, fromWeighIns: number): str
 export function BodyPanel({
   readings,
   sources = null,
-  today,
   onSeeBody,
 }: {
   readings: BodyReading[];
   /** The caption naming what the line is drawn from (bodySourcesCaption). */
   sources?: string | null;
-  today: string;
   onSeeBody?: (() => void) | undefined;
 }) {
   return (
@@ -435,7 +451,7 @@ export function BodyPanel({
           <WeightChart readings={readings} />
         ) : readings.length === 1 ? (
           <p className="text-sm">
-            {weightText(readings[0]!.weightLb)} on {shortDate(readings[0]!.date, today)}.
+            One reading so far. A second draws the line.
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">Upload an InBody export or add a weigh-in.</p>

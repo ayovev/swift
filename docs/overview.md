@@ -77,7 +77,8 @@ A ruled row, as today, with four stats in this order. Each has a large figure an
 20. Only weight appears on Overview. Lean mass, fat mass and body fat stay on Body Comp.
     - Why: weight is the one body measurement with a noise band, so it is the only one whose change can be qualified
       rather than read from its direction alone.
-21. With no scans or weigh-ins: *"No body data yet"*, linking to Body Comp.
+21. With no scans or weigh-ins: *"No body data yet"*, linking to Body Comp. No line under it: the Body panel says how
+    to add some, so the prompt appears once.
 22. With exactly one reading: the reading and its date, with no change lines.
 
 ### Progress
@@ -86,7 +87,8 @@ A ruled row, as today, with four stats in this order. Each has a large figure an
     it. There is no separate logic.
 24. Under it: the counts behind the label, in the same terms Progress uses (for example, *"5 of 8 lifts and benchmarks
     up"*). The exact copy is pinned by a test when it is built.
-25. With no label yet: *"No headline yet"*, and under it what it is waiting for, in Progress's existing wording.
+25. With no label yet: *"No headline yet"*, and under it why, in Progress's own words: *"No lift or benchmark has been
+    logged yet."*, *"No lift or benchmark was logged in the last 12 months."*, or what it is still waiting for.
 26. The stat links to Insights → Progress.
 27. Body weight never feeds this stat, as everywhere else.
 
@@ -108,7 +110,11 @@ a phone.
     rather than a lighter shade, so it reads as a different kind of bar rather than a smaller amount, without relying
     on colour. One direction of lines was chosen over a diamond cross-hatch (busier, harder to read the bar's top) and a
     fine pinstripe (blurred into a flat tint at phone width and in the 12px key), after comparing them side by side.
-31. With under 12 months of history, bars start at the first logged month. No empty months are drawn before it.
+31. With under 12 months of history, bars start at the first logged month. No empty months are drawn before it. A bar
+    is never wider than 72px, on both Training charts, so a two-month log looks like the same chart rather than two
+    slabs, and the columns stay lined up.
+    - With no training in the 12 months (an old export), the chart is replaced by *"No workouts in the last 12
+      months."* The scope line above already names the last logged workout.
 32. No 90-day marker on the chart. 90 days rarely falls on a month boundary, so shading whole bars would mark a
     different period from the one the totals count.
 33. **What it was made of**, a second chart under Showing up: each month's M/W/G split as a stacked bar summing to
@@ -129,7 +135,10 @@ a phone.
     most recently logged first.
     - Each row shows the name, the verdict and the change, all in Progress's own words.
     - Each row opens that subject's row on Progress.
-37. With nothing up or down, one line says no lift or benchmark has changed enough to call, linking to Progress.
+37. With nothing up or down, one line says why, linking to Progress. *"No lift or benchmark has changed enough to
+    call."* only once something got a verdict; before that, *"Nothing to compare yet: a lift or benchmark needs 6
+    sessions."*, *"No lift or benchmark was logged in the last 12 months."* or *"No lift or benchmark has been logged
+    yet."* Saying nothing moved before anything could be compared would claim a steadiness nobody measured.
 38. **Latest Timeline entry:** the ongoing entry that started most recently. With none ongoing, the entry that ended
     most recently. Shown with its name, area and dates (*"Ongoing since Sep 2: Cut, Nutrition"*).
     - With more than one ongoing, add *"and ⟨n⟩ more ongoing"*.
@@ -145,7 +154,8 @@ a phone.
       weigh-ins"*. A weigh-in on a day with a scan isn't used, so it doesn't count as a source.
 42. With no data, the chart is replaced by one line: *"Upload an InBody export or add a weigh-in"*, linking to Body
     Comp.
-43. With exactly one reading: that reading and its date, with no line.
+43. With exactly one reading: *"One reading so far. A second draws the line."* The number and date are in the totals
+    stat above, so the panel doesn't repeat them.
 44. Link: *"See body composition"* → Body → Body Comp.
 
 ## What moves out of Overview

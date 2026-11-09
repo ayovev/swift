@@ -19,11 +19,13 @@ import {
   latestTimelineEntry,
   monthlyDaysTrained,
   overviewScopeSentence,
+  progressState,
   progressStat,
   recentWindow,
   monthlyModalityMix,
   weightChangeText,
   whatMoved,
+  whatMovedEmptyText,
 } from "@/lib/analytics/overview";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
 import type { TimelineEntry } from "@/types/timeline";
@@ -330,16 +332,19 @@ describe("OverviewTab panels", () => {
     const onNavigate = vi.fn();
     render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} onNavigate={onNavigate} />);
     expect(screen.getByText("No classified workouts in the last 12 months.")).toBeInTheDocument();
-    expect(screen.getByText("No lift or benchmark has changed enough to call.")).toBeInTheDocument();
+    // No lift logged at all: nothing moved is not the same as nothing measured.
+    expect(screen.getAllByText("No lift or benchmark has been logged yet.")).toHaveLength(2); // the stat and the panel
+    expect(screen.queryByText("No lift or benchmark has changed enough to call.")).not.toBeInTheDocument();
     expect(screen.getByText("No timeline entries yet.")).toBeInTheDocument();
-    expect(screen.getByText("Upload an InBody export or add a weigh-in.")).toBeInTheDocument();
+    // The prompt is said once, in the panel; the totals stat doesn't repeat it.
+    expect(screen.getAllByText(/Upload an InBody export or add a weigh-in/)).toHaveLength(1);
     for (const name of ["See workouts", "See progress", "See timeline", "See body composition"]) {
       fireEvent.click(screen.getByRole("button", { name }));
     }
     expect(onNavigate.mock.calls.map((c) => c[0])).toEqual([WORKOUTS_TAB, LIFTS_TAB, TIMELINE_TAB, BODY_COMP_TAB]);
   });
 
-  it("shows a single body reading with its date and no line", () => {
+  it("shows a single body reading's number and date once, in the totals, and no line", () => {
     const rows = [logRow(daysAgo(2), "FRAN")];
     render(
       <OverviewTab
@@ -349,7 +354,17 @@ describe("OverviewTab panels", () => {
         weighIns={[{ date: "2026-11-01", weightLb: 183.4, source: "manual" }]}
       />
     );
-    expect(screen.getByText("183.4 lb on Nov 1.")).toBeInTheDocument();
+    expect(screen.getByText("Read Nov 1")).toBeInTheDocument();
+    expect(screen.getAllByText(/183\.4 lb/)).toHaveLength(1);
+    expect(screen.getByText("One reading so far. A second draws the line.")).toBeInTheDocument();
+  });
+
+  it("replaces an empty year of Showing up with one line, not blank axes", () => {
+    const rows = [logRow(daysAgo(500), "5K RUN", "5k run")];
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} />);
+    expect(screen.getByText("No workouts in the last 12 months.")).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /days trained per month/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("This month so far")).not.toBeInTheDocument();
   });
 
   it("names the latest timeline entry by name and area", () => {
@@ -391,5 +406,28 @@ describe("bodySourcesCaption", () => {
     expect(bodySourcesCaption(0, 5)).toBe("Weigh-ins");
     expect(bodySourcesCaption(12, 5)).toBe("InBody scans and weigh-ins");
     expect(bodySourcesCaption(0, 0)).toBeNull();
+  });
+});
+
+describe("progressState and the empty-state words", () => {
+  const h = (counted: number) => ({ label: null, up: 0, down: 0, noClearChange: counted, counted, moveUps: 0, leftOut: { under6: 0, notRecent: 0, notTested: 0 }, longGaps: 0, closest: [] }) as ProgressHeadline;
+  const r = (group: ProgressRow["group"]) => ({ group }) as ProgressRow;
+
+  it("tells nothing logged, nothing recent, too few to compare and nothing moved apart", () => {
+    expect(progressState([], h(0))).toBe("none-logged");
+    expect(progressState([r("not-recent"), r("not-recent")], h(0))).toBe("not-recent");
+    expect(progressState([r("few"), r("not-recent")], h(0))).toBe("too-few");
+    expect(progressState([r("no-clear-change"), r("few")], h(1))).toBe("counted");
+  });
+
+  it("only says nothing changed once something could be compared", () => {
+    expect(whatMovedEmptyText("counted")).toBe("No lift or benchmark has changed enough to call.");
+    expect(whatMovedEmptyText("too-few")).toBe("Nothing to compare yet: a lift or benchmark needs 6 sessions.");
+    expect(whatMovedEmptyText("not-recent")).toBe("No lift or benchmark was logged in the last 12 months.");
+    expect(whatMovedEmptyText("none-logged")).toBe("No lift or benchmark has been logged yet.");
+  });
+
+  it("gives an old log the same reason Progress gives, not a session count", () => {
+    expect(progressStat(h(0), "not-recent")).toEqual({ value: "No headline yet", lines: ["No lift or benchmark was logged in the last 12 months."] });
   });
 });

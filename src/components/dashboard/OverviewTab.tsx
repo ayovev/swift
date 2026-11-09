@@ -10,11 +10,13 @@ import {
   latestTimelineEntry,
   monthlyDaysTrained,
   monthlyModalityMix,
+  progressState,
   progressStat,
   shortDate,
   weightChangeText,
   weightText,
   whatMoved,
+  whatMovedEmptyText,
 } from "@/lib/analytics/overview";
 import { pooledReadings, pooledScanRows } from "@/lib/analytics/weighIns";
 import { OVERVIEW_RECENT_DAYS } from "@/lib/analytics/insightConfig";
@@ -132,7 +134,8 @@ export function OverviewTab({
   // Classified once, exactly as Progress does: the headline feeds the totals
   // row and the rows feed "What moved".
   const classified = useMemo(() => classifySubjects(buildProgressSubjects(workouts).subjects, today), [workouts, today]);
-  const progress = progressStat(classified.headline);
+  const state = progressState(classified.rows, classified.headline);
+  const progress = progressStat(classified.headline, state);
   const moved = useMemo(() => whatMoved(classified.rows), [classified]);
   const months = useMemo(() => monthlyDaysTrained(insights.allRows, today), [insights.allRows, today]);
   const mix = useMemo(() => monthlyModalityMix(insights.allRows, today), [insights.allRows, today]);
@@ -196,7 +199,6 @@ export function OverviewTab({
             value="No body data yet"
             numeric={false}
             label="body weight"
-            lines={["Upload an InBody export or add a weigh-in"]}
             {...open(BODY_COMP_TAB)}
             openLabel="See body composition"
           />
@@ -216,13 +218,14 @@ export function OverviewTab({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <InsightsPanel
           moved={moved}
+          emptyText={whatMovedEmptyText(state)}
           latest={latestEntry}
           today={today}
           onOpenSubject={onOpenProgressSubject}
           onSeeProgress={go(LIFTS_TAB)}
           onSeeTimeline={go(TIMELINE_TAB)}
         />
-        <BodyPanel readings={readings} sources={bodySources} today={today} onSeeBody={go(BODY_COMP_TAB)} />
+        <BodyPanel readings={readings} sources={bodySources} onSeeBody={go(BODY_COMP_TAB)} />
       </div>
     </div>
   );

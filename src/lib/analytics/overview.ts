@@ -11,7 +11,7 @@
  */
 import dayjs from "dayjs";
 import type { ParsedRow } from "./buildDashboardData";
-import { OVERVIEW_RECENT_DAYS } from "./insightConfig";
+import { OVERVIEW_RECENT_DAYS, PV_MIN_SESSIONS_PER_SIDE } from "./insightConfig";
 import type { BodyReading } from "./insights/bodyContext";
 import type { ProgressHeadline, ProgressRow } from "./insights/headline";
 import { classifyMovements, sharesTo100 } from "@/lib/classify/classifyModality";
@@ -196,6 +196,39 @@ export function weightText(lb: number): string {
 
 // ── Progress ──────────────────────────────────────────────────────────────
 
+/**
+ * Where the lifts and benchmarks stand, for the words Overview uses when there
+ * is nothing to show: none logged at all, none logged in the last 12 months
+ * (Progress's own "not recent"), some logged but none with enough sessions for
+ * a verdict yet, or verdicts counted. "Nothing moved" is only true in the last
+ * case; saying it before anything could be compared would claim a steadiness
+ * nobody measured.
+ */
+export type ProgressState = "none-logged" | "not-recent" | "too-few" | "counted";
+
+export function progressState(rows: readonly ProgressRow[], h: ProgressHeadline): ProgressState {
+  if (rows.length === 0) return "none-logged";
+  if (rows.every((r) => r.group === "not-recent")) return "not-recent";
+  return h.counted === 0 ? "too-few" : "counted";
+}
+
+const NEEDED_SESSIONS = 2 * PV_MIN_SESSIONS_PER_SIDE;
+
+/** The Insights panel's line when nothing is up or down, by why. */
+export function whatMovedEmptyText(state: ProgressState): string {
+  switch (state) {
+    case "none-logged":
+      return "No lift or benchmark has been logged yet.";
+    case "not-recent":
+      // PV_RECENT_DAYS is 365; Progress words it as 12 months too.
+      return "No lift or benchmark was logged in the last 12 months.";
+    case "too-few":
+      return `Nothing to compare yet: a lift or benchmark needs ${NEEDED_SESSIONS} sessions.`;
+    case "counted":
+      return "No lift or benchmark has changed enough to call.";
+  }
+}
+
 export interface ProgressStat {
   /** "Improving", "Steady", "Declining", or "No headline yet". */
   value: string;
@@ -205,10 +238,12 @@ export interface ProgressStat {
 /**
  * The Progress headline as computed by Progress itself (`classifySubjects`),
  * restated in two short lines: the count that earned the label, then the rest.
- * Body weight never feeds it.
+ * Without a label, the line says why, as Progress does: nothing logged, nothing
+ * recent, or what it is still waiting for. Body weight never feeds it.
  */
-export function progressStat(h: ProgressHeadline): ProgressStat {
+export function progressStat(h: ProgressHeadline, state: ProgressState = "counted"): ProgressStat {
   if (!h.label) {
+    if (state === "none-logged" || state === "not-recent") return { value: "No headline yet", lines: [whatMovedEmptyText(state)] };
     return { value: "No headline yet", lines: [noHeadlineText(h).replace(/^No headline yet: n/, "N")] };
   }
   const n = h.counted;
