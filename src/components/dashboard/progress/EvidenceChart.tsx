@@ -17,7 +17,7 @@ const DAY_MS = 86_400_000;
  * previous window's dots dark, the recent window's dots in the accent, every other dot faint grey, all one size. No bands, legend or controls. A dashed
  * trend line through the best of each quarter appears with four or more quarters and carries no number or direction; rings mark max
  * efforts only for a `down` or `not tested since` verdict; a record carries a "new best" label on its (ordinary, accent) dot. A subject without a
- * verdict (a facts line) gets the dots alone. A faster time is drawn higher, so up always reads as up.
+ * verdict (a facts line) gets the dots alone. The y-axis is a plain number line, larger values on top, for a time as for a load: a faster time is drawn lower.
  */
 export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressSubject; verdict: ProgressVerdict | null; domain?: { start: string; end: string } }) {
   const model = useMemo(() => {
@@ -35,7 +35,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
     const X = (d: number): number => PAD.l + ((d - x0) / (x1 - x0 || 1)) * (W - PAD.l - PAD.r);
     const Y = (v: number): number => {
       const f = (v - v0) / (v1 - v0 || 1);
-      return PAD.t + (subject.lowerIsBetter ? f : 1 - f) * (H - PAD.t - PAD.b);
+      return PAD.t + (1 - f) * (H - PAD.t - PAD.b);
     };
     const previous = new Set(verdict?.previous.map((s) => s.date));
     const recent = new Set(verdict?.recent.map((s) => s.date));
