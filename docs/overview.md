@@ -2,7 +2,7 @@
 
 Acceptance criteria for the redesigned Overview, and the reasons behind them. Back to the [README](../README.md).
 
-**Status: draft for review.** Nothing here is built yet. Once a part ships, its reasons move into the code
+**Status: approved; step 1 of the build order is done.** Once a part ships, its reasons move into the code
 comments and tests next to it, as with everything else in this repo, and this page is trimmed to what stays useful.
 
 ## What the page is for
@@ -181,7 +181,7 @@ a phone.
 
 ## Build order
 
-1. **Moves:** the Lifts view and the Workouts summary line. Overview loses those cards but keeps working.
+1. **Moves:** the Lifts view and the Workouts summary line. Overview loses those cards but keeps working. *Done.*
 2. **Full-history data, scope sentence and the new totals row.**
 3. **The three panels.**
 

@@ -151,8 +151,9 @@ remote-config features (exception capture, dead clicks, heatmaps, surveys) off i
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
-  Workouts, the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
+- **components**: `Dashboard.tsx` renders 20 views (`tabs.ts` → `ALL_TABS`): Overview,
+  Workouts, Lifts (`LiftHistoryTab.tsx`, tab id `lift-history`: the lift, benchmark and PR cards,
+  for the selected range), the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
   (Progress, Timeline), grouped for navigation into
   four sections (see "Architecture: dashboard layout" below). A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
@@ -504,22 +505,25 @@ home. Read the header comments of the files named here before moving anything be
 
 - **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header, at its true
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
-  onto their own row). Overview (the front page, on its own), Training (Workouts, then the ten GPP
+  onto their own row). Overview (the front page, on its own), Training (Workouts and Lifts, then the ten GPP
   domains, three modalities and Movements — a classification of those same workouts, not separate
   data, which is what their group headers are there to say), Body (Body Comp) and Insights
   (Progress, Timeline). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
-  header — in line with them it read as one more tab. Workouts and Movements are groups of one,
-  so they have no header of their own (it would only repeat the tab's name); Workouts comes
-  first, so selecting Training opens the log. Training is the long row (15 tabs) and scrolls
+  header — in line with them it read as one more tab. Workouts and Lifts share an unlabelled
+  group (the record of what was done) and Movements is a group of one, so neither has a header;
+  Workouts comes first, so selecting Training opens the log. Training is the long row (16 tabs) and scrolls
   sideways on a phone; a third nav level for it would break "never a dropdown", so it hasn't
   been added. `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
   `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress view
   keeps its earlier internal names (tab id `lifts`, `LiftsTab.tsx`); only its label and page title changed.
-  Timeline is `timeline`/`TimelineTab.tsx`.
+  Timeline is `timeline`/`TimelineTab.tsx`. Lifts is `lift-history`/`LiftHistoryTab.tsx` (not `lifts`,
+  which is Progress's id); its page title is "Lifts and benchmarks". It is the record (every session,
+  SugarWOD's PR flag as logged), Progress is the verdict, and neither restates the other.
+  Overview is being redesigned as a full-history front door, in the steps `docs/overview.md` lists.
 - **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
   under the page title ("Showing all time, grouped by month"), next to the charts they change
   rather than in the global header. It sits in its own row under a thin rule (with "Stored in

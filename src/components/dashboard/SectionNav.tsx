@@ -1,6 +1,7 @@
 import {
   ALL_TABS,
   BODY_COMP_TAB,
+  LIFT_HISTORY_TAB,
   LIFTS_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
@@ -20,9 +21,9 @@ interface SubGroup {
 }
 
 /**
- * Nineteen views, grouped the way an athlete actually moves between them:
+ * Twenty views, grouped the way an athlete actually moves between them:
  * the front page (Overview), what I did and what it was made of (Training —
- * the workout list, then the ten GPP domains, three modalities and the
+ * the workout list and the lift and benchmark record, then the ten GPP domains, three modalities and the
  * movements themselves, which are a *classification* of those same workouts
  * rather than separate data, hence their group headers), what my body did
  * (Body), and what the two datasets say together (Insights — Progress and
@@ -39,7 +40,7 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
   {
     id: "Training",
     groups: [
-      { values: [WORKOUTS_TAB] },
+      { values: [WORKOUTS_TAB, LIFT_HISTORY_TAB] },
       { label: "Domains", values: ALL_TABS.filter((t) => t.group === "Domains").map((t) => t.value) },
       { label: "Modalities", values: ALL_TABS.filter((t) => t.group === "Modalities").map((t) => t.value) },
       { values: [MOVEMENTS_TAB] },
@@ -69,6 +70,7 @@ export function pageTitleOf(value: string): string {
   const modality = MODALITY_LIST.find((m) => value === `modality:${m}`);
   if (modality) return MODALITY_NAMES[modality];
   if (value === BODY_COMP_TAB) return "Body composition";
+  if (value === LIFT_HISTORY_TAB) return "Lifts and benchmarks";
   return labelOf(value);
 }
 

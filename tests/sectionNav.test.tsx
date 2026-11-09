@@ -10,6 +10,7 @@ import {
 import {
   ALL_TABS,
   BODY_COMP_TAB,
+  LIFT_HISTORY_TAB,
   LIFTS_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
@@ -23,8 +24,8 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, GPP domain, modality, Movements, Body Comp, Progress and Timeline", () => {
-    expect(ALL_TABS).toHaveLength(1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
+  it("has one entry per Overview, Workouts, Lifts, GPP domain, modality, Movements, Body Comp, Progress and Timeline", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
   });
 });
 
@@ -38,6 +39,7 @@ describe("SECTIONS", () => {
   it("groups views by what they're about", () => {
     expect(sectionOf(OVERVIEW_TAB)).toBe("Overview");
     expect(sectionOf(WORKOUTS_TAB)).toBe("Training");
+    expect(sectionOf(LIFT_HISTORY_TAB)).toBe("Training");
     expect(sectionOf(strengthTab.value)).toBe("Training");
     expect(sectionOf(gymnasticsTab.value)).toBe("Training");
     expect(sectionOf(MOVEMENTS_TAB)).toBe("Training");
@@ -55,6 +57,7 @@ describe("pageTitleOf", () => {
     );
     expect(pageTitleOf(gymnasticsTab.value)).toBe(MODALITY_NAMES.G);
     expect(pageTitleOf(BODY_COMP_TAB)).toBe("Body composition");
+    expect(pageTitleOf(LIFT_HISTORY_TAB)).toBe("Lifts and benchmarks");
     expect(pageTitleOf(OVERVIEW_TAB)).toBe("Overview");
     expect(pageTitleOf(TIMELINE_TAB)).toBe("Timeline");
     expect(pageTitleOf(LIFTS_TAB)).toBe("Progress");
@@ -88,7 +91,7 @@ describe("SectionLinks", () => {
 });
 
 describe("SubNav", () => {
-  it("shows Workouts first in Training, then every domain and modality at once as two labelled groups, then Movements", () => {
+  it("shows Workouts and Lifts first in Training, then every domain and modality at once as two labelled groups, then Movements", () => {
     const onValueChange = vi.fn();
     render(<SubNav value={strengthTab.value} onValueChange={onValueChange} />);
 
@@ -103,9 +106,9 @@ describe("SubNav", () => {
 
     const nav = screen.getByRole("navigation", { name: "Training views" });
     const all = within(nav).getAllByRole("button").map((b) => b.textContent);
-    expect(all[0]).toBe("Workouts");
+    expect(all.slice(0, 2)).toEqual(["Workouts", "Lifts"]);
     expect(all.at(-1)).toBe("Movements");
-    expect(all).toHaveLength(1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1);
+    expect(all).toHaveLength(2 + DOMAIN_LIST.length + MODALITY_LIST.length + 1);
   });
 
   it("puts each group's label above its tabs, not in line with them", () => {

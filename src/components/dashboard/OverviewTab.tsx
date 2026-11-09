@@ -1,77 +1,11 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BenchmarkCards } from "./charts/BenchmarkCards";
 import { ConsistencyChart } from "./charts/ConsistencyChart";
-import { LiftGrid, type RepMaxFilter } from "./charts/LiftChart";
-import { PrTimeline } from "./charts/PrTimeline";
-import { RepMaxPrTable } from "./charts/RepMaxPrTable";
-import { SegmentedControl, type SegmentedControlOption } from "./SegmentedControl";
 import { StackedShareChart } from "./charts/StackedShareChart";
-import {
-  DOMAIN_CHART_CONFIG,
-  FIXED_REPMAX_COLORS,
-  MODALITY_FIXED_CHART_CONFIG,
-  REP_MAX_CATEGORY_ORDER,
-} from "./charts/chartUtils";
+import { DOMAIN_CHART_CONFIG, MODALITY_FIXED_CHART_CONFIG } from "./charts/chartUtils";
 import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
 import { DOMAIN_LIST } from "@/types/dashboard";
 import { MODALITY_LIST } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
-
-const REP_MAX_CATEGORY_LABELS = {
-  "1RM": "1-rep max",
-  "2RM": "2-rep max",
-  "3RM": "3-rep max",
-  "5RM": "5-rep max",
-} as const;
-
-const REP_MAX_FILTER_OPTIONS: readonly SegmentedControlOption<RepMaxFilter>[] = [
-  { id: "all", label: "All" },
-  ...REP_MAX_CATEGORY_ORDER.map((category) => ({ id: category, label: category })),
-];
-
-function RepMaxLegend({
-  repMaxFilter,
-  onRepMaxFilterChange,
-}: {
-  repMaxFilter: RepMaxFilter;
-  onRepMaxFilterChange: (filter: RepMaxFilter) => void;
-}) {
-  return (
-    <div className="mb-4 flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <SegmentedControl
-          value={repMaxFilter}
-          onChange={onRepMaxFilterChange}
-          options={REP_MAX_FILTER_OPTIONS}
-          ariaLabel="Filter by rep-max scheme"
-        />
-      </div>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        {REP_MAX_CATEGORY_ORDER.map((category) => (
-          <span key={category} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ backgroundColor: FIXED_REPMAX_COLORS[category] }}
-            />
-            {REP_MAX_CATEGORY_LABELS[category]}
-          </span>
-        ))}
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span
-            className="h-2 w-2 shrink-0 rounded-full"
-            style={{ backgroundColor: FIXED_REPMAX_COLORS.other }}
-          />
-          other
-        </span>
-        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="h-2 w-2 shrink-0 rotate-45 bg-muted-foreground" />
-          personal record
-        </span>
-      </div>
-    </div>
-  );
-}
 
 function Stat({ value, label, sub }: { value: string; label: string; sub?: string }) {
   return (
@@ -85,7 +19,11 @@ function Stat({ value, label, sub }: { value: string; label: string; sub?: strin
   );
 }
 
-/** The Overview tab. */
+/**
+ * The Overview tab. Being redesigned as the full-history front door, in the
+ * steps listed in docs/overview.md; the lift, benchmark and PR cards have
+ * already moved to Training → Lifts (LiftHistoryTab).
+ */
 export function OverviewTab({
   insights,
   granularity,
@@ -96,7 +34,6 @@ export function OverviewTab({
   const { dashboard, modality } = insights;
   const { summary } = dashboard;
   const noun = GRANULARITY_NOUN[granularity];
-  const [repMaxFilter, setRepMaxFilter] = useState<RepMaxFilter>("all");
 
   const rxShare =
     summary.rx_count + summary.scaled_count > 0
@@ -175,44 +112,6 @@ export function OverviewTab({
               granularity={granularity}
               variant="bar"
             />
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">What got heavier</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="mb-3 text-sm text-muted-foreground">
-            Each point is one logged effort, colored by rep scheme; a diamond marks a personal
-            record.
-          </p>
-          <RepMaxPrTable lifts={dashboard.lifts} />
-          <RepMaxLegend
-            repMaxFilter={repMaxFilter}
-            onRepMaxFilterChange={setRepMaxFilter}
-          />
-          <LiftGrid lifts={dashboard.lifts} repMaxFilter={repMaxFilter} />
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Benchmarks, revisited</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BenchmarkCards benchmarks={dashboard.benchmarks} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Personal records</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PrTimeline prs={dashboard.pr_timeline} />
           </CardContent>
         </Card>
       </div>

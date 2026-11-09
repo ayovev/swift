@@ -10,6 +10,7 @@ import { DomainTab } from "./DomainTab";
 import { ModalityTab } from "./ModalityTab";
 import { MovementsTab } from "./MovementsTab";
 import { OverviewTab } from "./OverviewTab";
+import { LiftHistoryTab } from "./LiftHistoryTab";
 import { LiftsTab } from "./LiftsTab";
 import { TimelineTab } from "./TimelineTab";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
@@ -18,6 +19,7 @@ import {
   BODY_COMP_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
+  LIFT_HISTORY_TAB,
   LIFTS_TAB,
   TIMELINE_TAB,
   WORKOUTS_TAB,
@@ -266,7 +268,11 @@ export function Dashboard({
           </TabsContent>
 
           <TabsContent value={WORKOUTS_TAB}>
-            <WorkoutsTab data={insights.modality} />
+            <WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} />
+          </TabsContent>
+
+          <TabsContent value={LIFT_HISTORY_TAB}>
+            <LiftHistoryTab dashboard={insights.dashboard} />
           </TabsContent>
 
           {DOMAIN_LIST.map((domain: Domain) => (
