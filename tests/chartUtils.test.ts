@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
 import {
   CLOCK_STEPS,
+  ROUNDS_REPS_STEPS,
   formatTimeTick,
   mergeBucketCounts,
   niceAxisTicks,
@@ -52,6 +53,13 @@ describe("niceAxisTicks", () => {
     expect(domain[1]).toBeGreaterThanOrEqual(402);
     expect(new Set(stepSizes(ticks)).size).toBe(1);
     expect(CLOCK_STEPS).toContain(stepSizes(ticks)[0]);
+  });
+
+  it("steps a rounds + reps total (30 reps a round) by half rounds or whole rounds, never an odd rep count", () => {
+    // 14+22 to 17+2 at 30 reps a round: 442 to 512 reps.
+    const { domain, ticks } = niceAxisTicks(442, 512, 6, false, ROUNDS_REPS_STEPS);
+    expect(domain).toEqual([435, 525]);
+    expect(stepSizes(ticks)).toEqual([15, 15, 15, 15, 15, 15]);
   });
 
   it("handles a zero-width range without dividing by zero", () => {

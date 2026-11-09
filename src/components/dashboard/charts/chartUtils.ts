@@ -98,6 +98,9 @@ export const NUM_AXIS_WIDTH = 52;
  */
 export const AXIS_TICK_COUNT = 6;
 
+/** Round steps for a rounds + reps total in reps, for `niceAxisTicks`' `steps`: whole rounds' worth of reps (30 to a round) and fractions of one. */
+export const ROUNDS_REPS_STEPS: readonly number[] = [1, 2, 5, 10, 15, 30, 60, 90, 150, 300];
+
 /** Round steps for a time in seconds (m:ss), for `niceAxisTicks`' `steps`. */
 export const CLOCK_STEPS: readonly number[] = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200];
 

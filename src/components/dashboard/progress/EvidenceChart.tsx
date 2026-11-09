@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { trendLine } from "@/lib/analytics/insights/chart";
-import { AXIS_TICK_COUNT, CLOCK_STEPS, formatDate, formatTimeTick, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
-import { formatClock, formatSession } from "@/lib/analytics/insights/display";
-import type { ProgressSession, ProgressSubject } from "@/lib/analytics/insights/sessions";
+import { AXIS_TICK_COUNT, CLOCK_STEPS, ROUNDS_REPS_STEPS, formatDate, formatTimeTick, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
+import { formatClock, formatSession, roundsReps } from "@/lib/analytics/insights/display";
+import { REPS_PER_ROUND, type ProgressSession, type ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/lib/analytics/insights/verdict";
 
 const W = 560;
@@ -33,7 +33,13 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
     const values = sessions.map((s) => s.value);
     // The same axis rule as every other chart (`niceAxisTicks`): the ends round out to a round step and every label is a multiple of it, evenly spaced.
     // A score such as "17+20" has no value to print between its ends, so it keeps the lowest and highest dot's own.
-    const nice = subject.format === "rounds-reps" ? null : niceAxisTicks(Math.min(...values), Math.max(...values), AXIS_TICK_COUNT, false, subject.format === "time" ? CLOCK_STEPS : undefined);
+    // A rounds + reps score is only a number to step through when the round is a known size (Cindy: 30 reps), which makes its value a total of reps;
+    // otherwise (the raw score's encoding varies) it keeps the lowest and highest dot's own score.
+    const repsPerRound = subject.format === "rounds-reps" ? (REPS_PER_ROUND[subject.movement] ?? null) : null;
+    const nice =
+      subject.format === "rounds-reps" && !repsPerRound
+        ? null
+        : niceAxisTicks(Math.min(...values), Math.max(...values), AXIS_TICK_COUNT, false, subject.format === "time" ? CLOCK_STEPS : subject.format === "rounds-reps" ? ROUNDS_REPS_STEPS : undefined);
     const v0 = nice ? nice.domain[0] : Math.min(...values);
     const v1 = nice ? nice.domain[1] : Math.max(...values);
     const X = (d: number): number => PAD.l + ((d - x0) / (x1 - x0 || 1)) * (W - PAD.l - PAD.r);
@@ -53,7 +59,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
       newBest = { x: X(dayNumber(verdict.recentBest.date)), y: Y(verdict.recentBest.value), label: `${value} · new best +${pct.toFixed(1)}%` };
     }
     const yTicks = nice
-      ? nice.ticks.map((v) => ({ y: Y(v), label: subject.format === "load" ? `${v} lb` : formatClock(v) }))
+      ? nice.ticks.map((v) => ({ y: Y(v), label: subject.format === "load" ? `${v} lb` : repsPerRound ? roundsReps(v, repsPerRound) : formatClock(v) }))
       : (() => {
           const lo = sessions.reduce((a, b) => (b.value < a.value ? b : a));
           const hi = sessions.reduce((a, b) => (b.value > a.value ? b : a));
