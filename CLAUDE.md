@@ -151,8 +151,9 @@ remote-config features (exception capture, dead clicks, heatmaps, surveys) off i
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 19 views (`tabs.ts` → `ALL_TABS`): Overview,
-  Workouts, the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
+- **components**: `Dashboard.tsx` renders 20 views (`tabs.ts` → `ALL_TABS`): Overview,
+  Workouts, Lifts (`LiftHistoryTab.tsx`, tab id `lift-history`: the lift, benchmark and PR cards,
+  for the selected range), the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
   (Progress, Timeline), grouped for navigation into
   four sections (see "Architecture: dashboard layout" below). A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
@@ -162,7 +163,7 @@ remote-config features (exception capture, dead clicks, heatmaps, surveys) off i
   `buildModalityData`'s output shape deliberately mirrors `buildDashboardData`'s so those two
   components stay near-identical; keep that symmetry.
 
-The **Movements** view (`MovementsTab.tsx`, under Breakdown) lists what the lexicon can recognise: families
+The **Movements** view (`MovementsTab.tsx`, under Training) lists what the lexicon can recognise: families
 (`movementFamilies.ts`, every variant counts) and single movements, picked by id. It reads
 `Insights.movements` (`buildMovementData.ts`), a thin reduction of the same `ParsedRow.movements`
 `buildModalityData` uses, so nothing is classified twice. The workout list shows the phrase that matched,
@@ -264,7 +265,7 @@ Read each file's header comment before changing it; the cases are `tests/progres
 
 - **`sessions.ts`**: a *subject* is one lift or named benchmark with RX and Scaled kept separate; a *session* is one subject on one day (the best
   of the day). A lift's value is its estimated 1RM (average of Epley and Brzycki) from any 1 to 8 rep scheme; SugarWOD's PR flag is deliberately
-  not read. It builds on `liftSubjects.ts` (name normalisation, RX/Scaled split, the 1RM estimate; a test pins the parity) and also keeps
+  not read (Overview's "most recent PR" stat is the one reader of the flag, as a logged fact, and feeds nothing here). It builds on `liftSubjects.ts` (name normalisation, RX/Scaled split, the 1RM estimate; a test pins the parity) and also keeps
   per-entry max-effort facts and the reason each Load row went unused.
 - **`verdict.ts`**: session-based. The best of the recent N sessions against the best of the N before them, N = min(4, floor(n / 2)), at least 6
   sessions. `up` (change of 5% or more, or a record: the recent best 2% above everything before the recent window), `down` (5% or more worse
@@ -275,7 +276,7 @@ Read each file's header comment before changing it; the cases are `tests/progres
   the "Logged in" filter and the evidence chart's numbers. Body composition never feeds a verdict or a count.
 
 The weight noise band (`weightNoiseBand.ts`) is the one older pipeline that remains: `weightBandLb` uses it to decide whether a body-weight change
-is "within normal scan variation".
+is "within normal variation".
 
 ## Architecture: the weight noise band
 
@@ -287,9 +288,10 @@ body fat have no band, because nothing compares them.
 
 - Every threshold lives in `insightConfig.ts` with a comment on how it was chosen, and every one is *tunable, validate against real data*: the
   repo bundles no real InBody history. Do not put a bare number in an insight module; add it there.
-- `insights/bodyReadings.ts` (`weightBandLb`) is the one reader of the band: a body-weight change no bigger than it reads "within normal scan
-  variation" (`bodyContext.ts`, `entryDisplay.ts`). It is fed the pooled scans and weigh-ins (`weighIns.ts`), so frequent weigh-ins reach a measured
-  band where scans months apart fall to the default.
+- `insights/bodyReadings.ts` (`weightBandLb`) is the one reader of the band: a body-weight change no bigger than it reads "within normal
+  variation" (`bodyContext.ts`, `entryDisplay.ts`, `overview.ts`). It is fed the pooled scans and weigh-ins (`weighIns.ts`), so frequent weigh-ins reach a measured
+  band where scans months apart fall to the default. The words name no source ("scan variation" read wrong on weigh-ins): the band is the
+  swing between readings taken close together, whatever took them.
 - The band is estimated from the athlete's whole history as of today, never from a per-subject window (too few readings).
 
 ## Open items: what is unvalidated or undecided
@@ -504,18 +506,37 @@ home. Read the header comments of the files named here before moving anything be
 
 - **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header, at its true
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
-  onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains, three
-  modalities and Movements — a classification of the same workouts, not separate data), Body (Body Comp) and
-  Insights (Progress, Timeline). The views
+  onto their own row). Overview (the front page, on its own), Training (Workouts and Lifts, then the ten GPP
+  domains, three modalities and Movements — a classification of those same workouts, not separate
+  data, which is what their group headers are there to say), Body (Body Comp) and Insights
+  (Progress, Timeline). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
-  view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
-  header — in line with them it read as one more tab. Movements is a group of one, so it has no
-  header of its own (it would only repeat the tab's name). `tabs.ts` stays the flat identity list
+  view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
+  header — in line with them it read as one more tab. Workouts and Lifts share an unlabelled
+  group (the record of what was done) and Movements is a group of one, so neither has a header;
+  Workouts comes first, so selecting Training opens the log. Training is the long row (16 tabs) and scrolls
+  sideways on a phone; a third nav level for it would break "never a dropdown", so it hasn't
+  been added. `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
   `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress view
   keeps its earlier internal names (tab id `lifts`, `LiftsTab.tsx`); only its label and page title changed.
-  Timeline is `timeline`/`TimelineTab.tsx`.
+  Timeline is `timeline`/`TimelineTab.tsx`. Lifts is `lift-history`/`LiftHistoryTab.tsx` (not `lifts`,
+  which is Progress's id); its page title is "Lifts and benchmarks". It is the record (every session,
+  SugarWOD's PR flag as logged), Progress is the verdict, and neither restates the other.
+  Overview is the full-history front door (`docs/overview.md` holds the acceptance criteria and their
+  reasons). A totals row (days trained, most recent PR, body weight, the Progress headline), then three
+  panels (`overview/OverviewPanels.tsx`), each the evidence for one stat with a link into its section:
+  Training (days trained per calendar month over the last 12 months, the current month drawn with a diagonal hatch and a key,
+  then each month's M/W/G split over the same 12 months, column for column under it, from
+  `monthlyModalityMix`; no domain list), Insights (Progress's up and down rows, at most five, most recently
+  logged first, each opening its own row on Progress through `focusSubjectKey`, plus the latest Timeline
+  entry) and Body (the pooled weight line). The numbers come from `lib/analytics/overview.ts` (pure,
+  `today` passed in, the recent window is `OVERVIEW_RECENT_DAYS` in `insightConfig.ts`), which reads
+  `Insights.allRows`, the same parse as every other view with no range applied, never a second
+  `parseRows()`; the chart's months come from row dates, not `ParsedRow.bucket`, so Overview ignores the
+  grouping too. The Progress label and rows come from `classifySubjects` exactly as Progress computes
+  them, and body weight uses the pooled series and its noise band, as the Insights views do.
 - **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
   under the page title ("Showing all time, grouped by month"), next to the charts they change
   rather than in the global header. It sits in its own row under a thin rule (with "Stored in
@@ -523,6 +544,8 @@ home. Read the header comments of the files named here before moving anything be
   domain pages, CrossFit's definition) ends visibly before the view controls begin. Insights
   views show a plain "uses your full history" sentence instead, because `App.tsx` computes them
   from the whole unfiltered log as of today — a date control there would silently do nothing.
+  Overview does the same, adding the last logged date ("Uses your full history, as of today. Last
+  workout logged Nov 6."), so an old export explains its own low recent numbers.
 - **Manage** and **Preferences** (monthly at most / once) — `SettingsSheet.tsx`, behind the
   header's single Settings button (a ghost button in muted text, so it never out-weighs the
   section links): replace either file, back up to or restore from a file, send/receive to another
@@ -660,8 +683,8 @@ CSV already tracks their own training and doesn't need to be sold on why it matt
 UI never performs enthusiasm on their behalf. The landing page's own tagline (the Swift Design System's positioning line) says it
 in one line: "Training insights, no strings attached."
 
-- **State what's true; don't cheer for it.** `OverviewTab.tsx`'s stat labels ("workouts
-  logged", "personal records") and `HowItWorks.tsx`'s steps describe what happened in plain
+- **State what's true; don't cheer for it.** `OverviewTab.tsx`'s stat labels ("days
+  trained", "most recent PR") and `HowItWorks.tsx`'s steps describe what happened in plain
   terms, never "Great job!" or "You're crushing it." The numbers and charts do the motivating.
 - **Use the sport's own vocabulary, verbatim.** RX, Scaled, PR, the ten GPP domain names,
   M/W/G — these come from CrossFit/SugarWOD and are never softened or renamed for
@@ -734,6 +757,10 @@ through, not a backlog of fixes.
   strictly (`parseDate()` in `buildDashboardData.ts`), never `new Date(str)`, which is
   locale-inconsistent for that format. `pr` is the literal `"PR"` and `rx_or_scaled` the
   literals `"RX"`/`"SCALED"`; anything else counts as neither.
+- **Loads are always pounds.** SugarWOD stores weights in pounds and converts anything logged in
+  kilograms before export, so the app reads every load as lb and never needs to detect a unit.
+  Scores elsewhere are shown with their unit by `withScoreUnit()` (`src/lib/format/scoreUnit.ts`),
+  from `score_type`; the display text itself is never rewritten.
 - `REQUIRED_COLUMNS` (`src/types/sugarwod.ts`) deliberately omits `set_details` and `notes`
   because nothing reads them — a slim export must not be rejected for missing them.
 - User-facing parse errors are plain language, mapped in `plainParseMessage()`. PapaParse's

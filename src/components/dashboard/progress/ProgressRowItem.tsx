@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { bodyContextLines, type BodyReading } from "@/lib/analytics/insights/bodyContext";
 import { crossReference, displayName, factsLine, monthYear, moveUpText, verdictText, newBestText } from "@/lib/analytics/insights/display";
@@ -23,6 +23,8 @@ interface ProgressRowItemProps {
   bandLb: number;
   /** Opens this subject on the Timeline. Offered under the opened chart of a subject that has a lane there. */
   onSeeOnTimeline?: (subjectKey: string) => void;
+  /** Start opened and scrolled into view: the row was reached from Overview's "What moved". */
+  focused?: boolean;
 }
 
 /**
@@ -30,11 +32,16 @@ interface ProgressRowItemProps {
  * percentage or a pill; a move up to RX shows its reason and does not open. Body-context lines sit on the rows of Up, Down and Not tested
  * since, and on a No clear change row once it is opened. A row opens to its evidence chart.
  */
-export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline }: ProgressRowItemProps) {
+export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, focused = false }: ProgressRowItemProps) {
   const { subject, verdict, group, moveUp, moveUpVotes } = row;
-  const [open, setOpen] = useState(false);
   const isMove = !verdict && moveUpVotes && !!moveUp;
   const openable = !isMove && subject.sessions.length >= 2;
+  const [open, setOpen] = useState(focused && openable);
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    // jsdom has no scrollIntoView; a real browser does.
+    if (focused) ref.current?.scrollIntoView?.({ block: "start" });
+  }, [focused]);
   const pill = PILL[group];
   const text = verdict ? verdictText(subject, verdict) : null;
   const earlierBest = verdict ? bestSession(subject.sessions.slice(0, subject.sessions.length - verdict.window), subject.lowerIsBetter) : null;
@@ -63,7 +70,7 @@ export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline }
   );
 
   return (
-    <li className="flex flex-col gap-1 border-t border-border px-4 py-3 first:border-t-0" data-group={group}>
+    <li ref={ref} className="flex flex-col gap-1 border-t border-border px-4 py-3 first:border-t-0" data-group={group}>
       {openable ? (
         <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex w-full items-baseline justify-between gap-3 text-left">
           {header}

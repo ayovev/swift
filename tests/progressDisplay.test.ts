@@ -138,7 +138,7 @@ describe("body context lines (A1-BDY)", () => {
   });
 
   it("BDY-08 a change inside the band has no relating sentence; exactly the band is inside", () => {
-    expect(bodyContextLines(base, at(180, 182), 3)).toEqual({ first: "Body weight 180 to 182 lb, within normal scan variation.", relation: null });
+    expect(bodyContextLines(base, at(180, 182), 3)).toEqual({ first: "Body weight 180 to 182 lb, within normal variation.", relation: null });
     expect(bodyContextLines(base, at(180, 183), 3)?.relation).toBeNull();
     expect(bodyContextLines(base, at(180, 183.1), 3)?.relation).not.toBeNull();
   });

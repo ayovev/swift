@@ -13,12 +13,14 @@ interface LiftsTabProps {
   asOf?: string;
   /** Opens a subject on the Timeline. */
   onSeeOnTimeline?: (subjectKey: string) => void;
+  /** A subject to open and scroll to (reached from Overview). */
+  focusSubjectKey?: string | null;
 }
 
 /**
  * The Insights front door (tab id `lifts`, labelled Progress): is each lift and benchmark moving, and what is the headline across them?
  * Needs only the SugarWOD log. The rules are in `src/lib/analytics/insights`; this is the view over them.
  */
-export function LiftsTab({ workouts, scans, weighIns, asOf, onSeeOnTimeline }: LiftsTabProps) {
-  return <ProgressView workouts={workouts} scans={scans} {...(weighIns ? { weighIns } : {})} {...(asOf ? { asOf } : {})} {...(onSeeOnTimeline ? { onSeeOnTimeline } : {})} />;
+export function LiftsTab({ workouts, scans, weighIns, asOf, onSeeOnTimeline, focusSubjectKey = null }: LiftsTabProps) {
+  return <ProgressView workouts={workouts} scans={scans} focusSubjectKey={focusSubjectKey} {...(weighIns ? { weighIns } : {})} {...(asOf ? { asOf } : {})} {...(onSeeOnTimeline ? { onSeeOnTimeline } : {})} />;
 }

@@ -64,7 +64,7 @@ const lb = (x: number): string => String(Number(x.toFixed(1)));
 
 /**
  * Body weight over the entry's span: the reading at its start and at its end (the reference date for an ongoing one), by the
- * reading rule. A change inside the band is "within normal scan variation". Null when either end has no reading.
+ * reading rule. A change inside the band is "within normal variation". Null when either end has no reading.
  */
 export function entryBodyWeightLine(entry: TimelineEntry, readings: readonly BodyReading[], bandLb: number, asOf: string): string | null {
   if (readings.length === 0) return null;
@@ -73,7 +73,7 @@ export function entryBodyWeightLine(entry: TimelineEntry, readings: readonly Bod
   if (start === null || end === null) return null;
   const delta = end - start;
   const span = `${lb(start)} lb to ${lb(end)} lb`;
-  if (Math.abs(delta) < bandLb) return `Body weight over this entry: ${span}, within normal scan variation.`;
+  if (Math.abs(delta) < bandLb) return `Body weight over this entry: ${span}, within normal variation.`;
   return `Body weight over this entry: ${span}, ${delta > 0 ? "up" : "down"} ${lb(Math.abs(delta))} lb.`.replace("-", MINUS);
 }
 

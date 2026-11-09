@@ -3,6 +3,7 @@ import { Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "./chartUtils";
 import type { PrTimelineEntry } from "@/types/dashboard";
+import { withScoreUnit } from "@/lib/format/scoreUnit";
 
 const INITIAL_VISIBLE = 12;
 
@@ -32,7 +33,7 @@ export function PrTimeline({ prs }: { prs: PrTimelineEntry[] }) {
             />
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
               <span className="text-sm font-medium">{pr.barbell_lift ?? pr.title}</span>
-              <span className="text-sm text-accent-link tabular">{pr.display || "—"}</span>
+              <span className="text-sm text-accent-link tabular">{pr.display ? withScoreUnit(pr.display, pr.score_type) : "—"}</span>
             </div>
             <span className="text-xs text-muted-foreground">{formatDate(pr.date)}</span>
           </li>

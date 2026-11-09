@@ -1,6 +1,7 @@
 import {
   ALL_TABS,
   BODY_COMP_TAB,
+  LIFT_HISTORY_TAB,
   LIFTS_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
@@ -11,7 +12,7 @@ import { CROSSFIT_DEFINITIONS, DOMAIN_LIST } from "@/types/dashboard";
 import { MODALITY_LIST, MODALITY_NAMES } from "@/types/modality";
 import { cn } from "@/lib/utils";
 
-export type Section = "Training" | "Breakdown" | "Body" | "Insights";
+export type Section = "Overview" | "Training" | "Body" | "Insights";
 
 interface SubGroup {
   /** Shown as a small label ahead of its tabs — only where a section mixes two kinds of view. */
@@ -20,24 +21,26 @@ interface SubGroup {
 }
 
 /**
- * Nineteen views, grouped the way an athlete actually moves between them:
- * what I did (Training), what it was made of (Breakdown — the ten GPP
- * domains, three modalities and the movements themselves, which are a *classification* of the same
- * workouts rather than separate data), what my body did (Body), and what
- * the two datasets say together (Insights — Progress and Timeline:
- * whether each lift and benchmark is moving, and the things the athlete changed or that
- * happened, laid beside those verdicts).
+ * Twenty views, grouped the way an athlete actually moves between them:
+ * the front page (Overview), what I did and what it was made of (Training —
+ * the workout list and the lift and benchmark record, then the ten GPP domains, three modalities and the
+ * movements themselves, which are a *classification* of those same workouts
+ * rather than separate data, hence their group headers), what my body did
+ * (Body), and what the two datasets say together (Insights — Progress and
+ * Timeline: whether each lift and benchmark is moving, and the things the
+ * athlete changed or that happened, laid beside those verdicts).
  *
  * Two levels, never a dropdown: the section row sits in the page header and
  * the views inside a section are a plain row of tabs under the page title,
  * so every sibling is visible without opening anything. A section with one
- * view (Body) shows no second row at all.
+ * view (Overview, Body) shows no second row at all.
  */
 export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
-  { id: "Training", groups: [{ values: [OVERVIEW_TAB, WORKOUTS_TAB] }] },
+  { id: "Overview", groups: [{ values: [OVERVIEW_TAB] }] },
   {
-    id: "Breakdown",
+    id: "Training",
     groups: [
+      { values: [WORKOUTS_TAB, LIFT_HISTORY_TAB] },
       { label: "Domains", values: ALL_TABS.filter((t) => t.group === "Domains").map((t) => t.value) },
       { label: "Modalities", values: ALL_TABS.filter((t) => t.group === "Modalities").map((t) => t.value) },
       { values: [MOVEMENTS_TAB] },
@@ -48,7 +51,7 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
 ];
 
 export function sectionOf(value: string): Section {
-  return SECTIONS.find((s) => s.groups.some((g) => g.values.includes(value)))?.id ?? "Training";
+  return SECTIONS.find((s) => s.groups.some((g) => g.values.includes(value)))?.id ?? "Overview";
 }
 
 /** The view's short label, as its tab shows it. */
@@ -67,6 +70,7 @@ export function pageTitleOf(value: string): string {
   const modality = MODALITY_LIST.find((m) => value === `modality:${m}`);
   if (modality) return MODALITY_NAMES[modality];
   if (value === BODY_COMP_TAB) return "Body composition";
+  if (value === LIFT_HISTORY_TAB) return "Lifts and benchmarks";
   return labelOf(value);
 }
 

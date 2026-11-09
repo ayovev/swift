@@ -213,6 +213,7 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
       title: r.raw.title,
       display: r.raw.best_result_display ?? "",
       barbell_lift: r.raw.barbell_lift || null,
+      score_type: r.raw.score_type ?? "",
     }));
 
   // --- per-domain trend, one point per bucket ---
