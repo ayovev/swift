@@ -265,7 +265,7 @@ Read each file's header comment before changing it; the cases are `tests/progres
 
 - **`sessions.ts`**: a *subject* is one lift or named benchmark with RX and Scaled kept separate; a *session* is one subject on one day (the best
   of the day). A lift's value is its estimated 1RM (average of Epley and Brzycki) from any 1 to 8 rep scheme; SugarWOD's PR flag is deliberately
-  not read. It builds on `liftSubjects.ts` (name normalisation, RX/Scaled split, the 1RM estimate; a test pins the parity) and also keeps
+  not read (Overview's "most recent PR" stat is the one reader of the flag, as a logged fact, and feeds nothing here). It builds on `liftSubjects.ts` (name normalisation, RX/Scaled split, the 1RM estimate; a test pins the parity) and also keeps
   per-entry max-effort facts and the reason each Load row went unused.
 - **`verdict.ts`**: session-based. The best of the recent N sessions against the best of the N before them, N = min(4, floor(n / 2)), at least 6
   sessions. `up` (change of 5% or more, or a record: the recent best 2% above everything before the recent window), `down` (5% or more worse
@@ -524,6 +524,12 @@ home. Read the header comments of the files named here before moving anything be
   which is Progress's id); its page title is "Lifts and benchmarks". It is the record (every session,
   SugarWOD's PR flag as logged), Progress is the verdict, and neither restates the other.
   Overview is being redesigned as a full-history front door, in the steps `docs/overview.md` lists.
+  Its totals row is done: days trained, most recent PR, body weight and the Progress headline, from
+  `lib/analytics/overview.ts` (pure, `today` passed in, the recent window is `OVERVIEW_RECENT_DAYS` in
+  `insightConfig.ts`). It reads `Insights.allRows` and `Insights.overall`, the same parse as every
+  other view with no range applied, never a second `parseRows()`. The Progress label comes from
+  `classifySubjects` exactly as Progress computes it, and body weight uses the pooled series and its
+  noise band, as the Insights views do.
 - **Scope** (most visits) — `ScopeLine.tsx`. Date range and grouping, written as one sentence
   under the page title ("Showing all time, grouped by month"), next to the charts they change
   rather than in the global header. It sits in its own row under a thin rule (with "Stored in
@@ -531,6 +537,8 @@ home. Read the header comments of the files named here before moving anything be
   domain pages, CrossFit's definition) ends visibly before the view controls begin. Insights
   views show a plain "uses your full history" sentence instead, because `App.tsx` computes them
   from the whole unfiltered log as of today — a date control there would silently do nothing.
+  Overview does the same, adding the last logged date ("Uses your full history, as of today. Last
+  workout logged Nov 6."), so an old export explains its own low recent numbers.
 - **Manage** and **Preferences** (monthly at most / once) — `SettingsSheet.tsx`, behind the
   header's single Settings button (a ghost button in muted text, so it never out-weighs the
   section links): replace either file, back up to or restore from a file, send/receive to another
@@ -668,8 +676,8 @@ CSV already tracks their own training and doesn't need to be sold on why it matt
 UI never performs enthusiasm on their behalf. The landing page's own tagline (the Swift Design System's positioning line) says it
 in one line: "Training insights, no strings attached."
 
-- **State what's true; don't cheer for it.** `OverviewTab.tsx`'s stat labels ("workouts
-  logged", "personal records") and `HowItWorks.tsx`'s steps describe what happened in plain
+- **State what's true; don't cheer for it.** `OverviewTab.tsx`'s stat labels ("days
+  trained", "most recent PR") and `HowItWorks.tsx`'s steps describe what happened in plain
   terms, never "Great job!" or "You're crushing it." The numbers and charts do the motivating.
 - **Use the sport's own vocabulary, verbatim.** RX, Scaled, PR, the ten GPP domain names,
   M/W/G — these come from CrossFit/SugarWOD and are never softened or renamed for

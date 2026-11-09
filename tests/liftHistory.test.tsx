@@ -5,6 +5,7 @@ import { OverviewTab } from "@/components/dashboard/OverviewTab";
 import { WorkoutsTab, workoutsSummaryParts } from "@/components/dashboard/WorkoutsTab";
 import { buildInsights, type Insights } from "@/lib/analytics/buildInsights";
 import type { DashboardSummary } from "@/types/dashboard";
+import type { SugarWodRow } from "@/types/sugarwod";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
 // Step 1 of docs/overview.md: the lift, benchmark and PR cards move from
@@ -14,8 +15,10 @@ import { loadSampleRows } from "./fixtures/sampleRows";
 const MOVED_CARDS = ["What got heavier", "Benchmarks, revisited", "Personal records"];
 
 let insights: Insights;
+let rows: SugarWodRow[];
 beforeAll(async () => {
-  insights = buildInsights(await loadSampleRows());
+  rows = await loadSampleRows();
+  insights = buildInsights(rows);
 });
 
 function summary(over: Partial<DashboardSummary>): DashboardSummary {
@@ -36,7 +39,7 @@ describe("Training → Lifts", () => {
   });
 
   it("no longer appear on Overview", () => {
-    render(<OverviewTab insights={insights} granularity="monthly" />);
+    render(<OverviewTab insights={insights} granularity="monthly" workouts={rows} />);
     for (const t of MOVED_CARDS) expect(screen.queryByText(t)).not.toBeInTheDocument();
     expect(screen.getByText("Showing up")).toBeInTheDocument();
   });

@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlaskConical } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
@@ -29,6 +30,7 @@ import { formatDate } from "./charts/chartUtils";
 import type { DateRange, DateRangePreset } from "@/lib/analytics/dateRange";
 import { dailyGranularityFits, type Granularity } from "@/lib/analytics/granularity";
 import { capture } from "@/lib/posthog";
+import { overviewScopeSentence } from "@/lib/analytics/overview";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
@@ -93,8 +95,10 @@ export function Dashboard({
   // A subject to open on the Timeline when it is reached from a row's "See on timeline" link. `nonce` re-keys the view so a second link replaces the first.
   const [timelineSubject, setTimelineSubject] = useState<{ key: string; nonce: number } | null>(null);
   const { summary } = insights.dashboard;
-  // Insights views read the whole history, never the selected range (see App.tsx).
-  const usesRange = sectionOf(tab) !== "Insights";
+  // Overview and the Insights views read the whole history as of today, never
+  // the selected range (see App.tsx and docs/overview.md).
+  const usesRange = sectionOf(tab) !== "Insights" && sectionOf(tab) !== "Overview";
+  const today = dayjs().format("YYYY-MM-DD");
 
   // "All time" (range === null) has no explicit span of its own, so it falls
   // back to the log's own full bounds — the same span DateRangePicker uses
@@ -216,10 +220,18 @@ export function Dashboard({
           <div className="flex flex-col gap-2.5">
             <div className="font-mono text-xs tracking-[0.08em] text-muted-foreground uppercase">
               Training log <span className="text-muted-foreground/50">/</span> {sectionOf(tab)}
-              {summary.total_logged > 0 ? (
+              {/* The span the page covers: the selected range where it applies,
+                  else the whole log. */}
+              {usesRange && summary.total_logged > 0 ? (
                 <span className="hidden normal-case tracking-normal sm:inline">
                   {"  ·  "}
                   {formatDate(summary.date_start)} – {formatDate(summary.date_end)}
+                </span>
+              ) : !usesRange && insights.dateBounds ? (
+                <span className="hidden normal-case tracking-normal sm:inline">
+                  {"  ·  "}
+                  {formatDate(insights.dateBounds.start.format("YYYY-MM-DD"))} –{" "}
+                  {formatDate(insights.dateBounds.end.format("YYYY-MM-DD"))}
                 </span>
               ) : null}
             </div>
@@ -243,6 +255,10 @@ export function Dashboard({
                 onGranularityChange={onGranularityChange}
                 dailyDisabled={dailyDisabled}
               />
+            ) : sectionOf(tab) === "Overview" ? (
+              // Overview is where things stand now. The last logged date explains
+              // low recent numbers on an old export without a stat of its own.
+              <p className="text-base text-muted-foreground">{overviewScopeSentence(insights.allRows, today)}</p>
             ) : (
               // Progress and Timeline are computed in App.tsx
               // from the full, unfiltered history as of today — saying so
@@ -264,7 +280,14 @@ export function Dashboard({
 
         <Tabs value={tab} onValueChange={onTabChange} className="gap-6">
           <TabsContent value={OVERVIEW_TAB}>
-            <OverviewTab insights={insights} granularity={granularity} />
+            <OverviewTab
+              insights={insights}
+              granularity={granularity}
+              workouts={workoutRows}
+              scans={bodyComp.status === "ready" ? bodyComp.rows : []}
+              weighIns={weighIns}
+              onNavigate={onTabChange}
+            />
           </TabsContent>
 
           <TabsContent value={WORKOUTS_TAB}>

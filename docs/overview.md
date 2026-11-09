@@ -2,7 +2,7 @@
 
 Acceptance criteria for the redesigned Overview, and the reasons behind them. Back to the [README](../README.md).
 
-**Status: approved; step 1 of the build order is done.** Once a part ships, its reasons move into the code
+**Status: approved; steps 1 and 2 of the build order are done.** Once a part ships, its reasons move into the code
 comments and tests next to it, as with everything else in this repo, and this page is trimmed to what stays useful.
 
 ## What the page is for
@@ -182,7 +182,9 @@ a phone.
 ## Build order
 
 1. **Moves:** the Lifts view and the Workouts summary line. Overview loses those cards but keeps working. *Done.*
-2. **Full-history data, scope sentence and the new totals row.**
+2. **Full-history data, scope sentence and the new totals row.** *Done.* Until step 3, the old charts under the
+   totals read the full history at the athlete's grouping (`Insights.overall`), so nothing on the page follows the
+   date range.
 3. **The three panels.**
 
 Each step ships with its tests and updates CLAUDE.md, the guide, the README screenshots' alt text and this page.

@@ -1,4 +1,4 @@
-import { buildFromParsedRows, parseRows } from "./buildDashboardData";
+import { buildFromParsedRows, parseRows, type ParsedRow } from "./buildDashboardData";
 import { buildModalityData } from "./buildModalityData";
 import { buildMovementData } from "./buildMovementData";
 import { filterParsedRowsByRange, getDateBounds, type DateRange } from "./dateRange";
@@ -14,6 +14,18 @@ export interface Insights {
   movements: MovementData;
   /** The full, unfiltered span of the uploaded log — independent of `range`. */
   dateBounds: DateRange | null;
+  /**
+   * Every parsed row, oldest first, ignoring `range`: the same parse as
+   * everything above, kept for Overview, which reads the full history as of
+   * today (docs/overview.md). Never a second `parseRows()` call.
+   */
+  allRows: ParsedRow[];
+  /**
+   * `dashboard` and `modality` over the full history, for Overview's charts.
+   * The same objects as above when no range is set; otherwise built from
+   * `allRows`, which re-aggregates but never re-parses.
+   */
+  overall: { dashboard: DashboardData; modality: ModalityData };
 }
 
 /**
@@ -39,10 +51,16 @@ export function buildInsights(
   const parsed = parseRows(rows, granularity);
   const dateBounds = getDateBounds(parsed);
   const filtered = filterParsedRowsByRange(parsed, range);
+  const dashboard = buildFromParsedRows(filtered);
+  const modality = buildModalityData(filtered);
   return {
-    dashboard: buildFromParsedRows(filtered),
-    modality: buildModalityData(filtered),
+    dashboard,
+    modality,
     movements: buildMovementData(filtered),
     dateBounds,
+    allRows: parsed,
+    overall: range
+      ? { dashboard: buildFromParsedRows(parsed), modality: buildModalityData(parsed) }
+      : { dashboard, modality },
   };
 }
