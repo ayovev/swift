@@ -146,6 +146,7 @@ how the Timeline works.
 
 - [Using Swift](docs/guide.md): data in, backups, sync, the timeline
 - [Privacy: the details](docs/privacy.md)
+- [The Overview page (draft for review)](docs/overview.md)
 - [Architecture](docs/architecture.md): how the code is organised
 - [How classification works](docs/classification.md): the GPP and M/W/G logic
 - [Testing](docs/testing.md)
