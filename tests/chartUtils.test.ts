@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
 import {
+  CLOCK_STEPS,
   formatTimeTick,
   mergeBucketCounts,
   niceAxisTicks,
@@ -38,6 +39,19 @@ describe("niceAxisTicks", () => {
     const { domain } = niceAxisTicks(132.25, 242.75);
     expect(domain[0]).toBeLessThanOrEqual(132.25);
     expect(domain[1]).toBeGreaterThanOrEqual(242.75);
+  });
+
+  it("rounds a lift's range out to a round step (the evidence chart's y-axis)", () => {
+    expect(niceAxisTicks(165, 269)).toEqual({ domain: [150, 275], ticks: [150, 175, 200, 225, 250, 275] });
+    expect(niceAxisTicks(189, 365)).toEqual({ domain: [150, 400], ticks: [150, 200, 250, 300, 350, 400] });
+  });
+
+  it("steps a time by clock values when given them, never 25 or 50 seconds", () => {
+    const { domain, ticks } = niceAxisTicks(137, 402, 6, false, CLOCK_STEPS);
+    expect(domain[0]).toBeLessThanOrEqual(137);
+    expect(domain[1]).toBeGreaterThanOrEqual(402);
+    expect(new Set(stepSizes(ticks)).size).toBe(1);
+    expect(CLOCK_STEPS).toContain(stepSizes(ticks)[0]);
   });
 
   it("handles a zero-width range without dividing by zero", () => {

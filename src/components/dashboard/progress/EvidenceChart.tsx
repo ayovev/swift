@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { trendLine } from "@/lib/analytics/insights/chart";
+import { AXIS_TICK_COUNT, CLOCK_STEPS, formatTimeTick, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
 import { formatClock, formatSession } from "@/lib/analytics/insights/display";
 import type { ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/lib/analytics/insights/verdict";
@@ -7,40 +8,9 @@ import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/l
 const W = 560;
 const H = 170;
 const PAD = { l: 52, r: 44, t: 22, b: 30 };
-const MAX_X_TICKS = 8;
-const TICK_STEPS_MONTHS = [1, 2, 3, 6, 12, 24, 36, 60];
 /** Every dot is the same size: colour alone says which group it is in. */
 const DOT_R = 3.5;
-/** Labels on the y-axis for a load or a time: the lowest and highest dot and evenly spaced values between them. */
-const Y_TICKS = 5;
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-const monthYearOfDay = (d: number): string => {
-  const date = new Date(Math.round(d) * 86_400_000);
-  return `${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
-};
-
-/**
- * Ticks on the first of a month, on a calendar-aligned step (every month, quarter, half year, year...): the smallest step that gives
- * at most `MAX_X_TICKS` ticks across the span, so a short history reads month by month and a long one year by year. A span too short
- * for even one tick falls back to its two ends.
- */
-function xTickDays(x0: number, x1: number): { day: number; label: string }[] {
-  const first = new Date(Math.round(x0) * 86_400_000);
-  const startIndex = first.getUTCFullYear() * 12 + first.getUTCMonth();
-  const endDate = new Date(Math.round(x1) * 86_400_000);
-  const endIndex = endDate.getUTCFullYear() * 12 + endDate.getUTCMonth();
-  for (const step of TICK_STEPS_MONTHS) {
-    const ticks: { day: number; label: string }[] = [];
-    for (let m = Math.ceil(startIndex / step) * step; m <= endIndex; m += step) {
-      const day = Date.UTC(Math.floor(m / 12), m % 12, 1) / 86_400_000;
-      if (day < x0 || day > x1) continue;
-      ticks.push({ day, label: step >= 12 && m % 12 === 0 ? String(Math.floor(m / 12)) : monthYearOfDay(day) });
-    }
-    if (ticks.length <= MAX_X_TICKS) return ticks.length >= 2 ? ticks : [{ day: x0, label: monthYearOfDay(x0) }, { day: x1, label: monthYearOfDay(x1) }];
-  }
-  return [];
-}
+const DAY_MS = 86_400_000;
 
 /**
  * The chart that opens from a subject's row: one dot per day (the best result of that day, the same series the verdict reads), the
@@ -57,8 +27,11 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
     const x0 = Math.min(...days, ...(domain ? [dayNumber(domain.start)] : []));
     const x1 = Math.max(...days, ...(domain ? [dayNumber(domain.end)] : []));
     const values = sessions.map((s) => s.value);
-    const v0 = Math.min(...values);
-    const v1 = Math.max(...values);
+    // The same axis rule as every other chart (`niceAxisTicks`): the ends round out to a round step and every label is a multiple of it, evenly spaced.
+    // A score such as "17+20" has no value to print between its ends, so it keeps the lowest and highest dot's own.
+    const nice = subject.format === "rounds-reps" ? null : niceAxisTicks(Math.min(...values), Math.max(...values), AXIS_TICK_COUNT, false, subject.format === "time" ? CLOCK_STEPS : undefined);
+    const v0 = nice ? nice.domain[0] : Math.min(...values);
+    const v1 = nice ? nice.domain[1] : Math.max(...values);
     const X = (d: number): number => PAD.l + ((d - x0) / (x1 - x0 || 1)) * (W - PAD.l - PAD.r);
     const Y = (v: number): number => {
       const f = (v - v0) / (v1 - v0 || 1);
@@ -75,19 +48,15 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
       const value = formatSession(subject, verdict.recentBest).replace(" lb", "");
       newBest = { x: X(dayNumber(verdict.recentBest.date)), y: Y(verdict.recentBest.value), label: `${value} · new best +${pct.toFixed(1)}%` };
     }
-    // Axis ticks: the lowest and highest dot on y (named by the sessions themselves, so a score keeps its own wording), plus evenly spaced values between them for a load or a time, calendar-aligned dates on x (`xTickDays`).
-    const lo = sessions.reduce((a, b) => (b.value < a.value ? b : a));
-    const hi = sessions.reduce((a, b) => (b.value > a.value ? b : a));
-    const yTicks = (lo === hi ? [lo] : [lo, hi]).map((t) => ({ y: Y(t.value), label: formatSession(subject, t) }));
-    // A load or a time gets evenly spaced values between the two ends (a score such as "17+20" has no value to print between, so it keeps the two).
-    if (subject.format !== "rounds-reps" && v1 > v0) {
-      yTicks.length = 0;
-      for (let i = 0; i < Y_TICKS; i++) {
-        const v = v0 + ((v1 - v0) * i) / (Y_TICKS - 1);
-        yTicks.push({ y: Y(v), label: subject.format === "load" ? `${Math.round(v)} lb` : formatClock(v) });
-      }
-    }
-    const xTicks = xTickDays(x0, x1).map((t) => ({ x: X(t.day), label: t.label }));
+    const yTicks = nice
+      ? nice.ticks.map((v) => ({ y: Y(v), label: subject.format === "load" ? `${v} lb` : formatClock(v) }))
+      : (() => {
+          const lo = sessions.reduce((a, b) => (b.value < a.value ? b : a));
+          const hi = sessions.reduce((a, b) => (b.value > a.value ? b : a));
+          return (lo === hi ? [lo] : [lo, hi]).map((t) => ({ y: Y(t.value), label: formatSession(subject, t) }));
+        })();
+    const dates = niceTimeTicks(x0 * DAY_MS, x1 * DAY_MS);
+    const xTicks = dates.ticks.map((t) => ({ x: X(t / DAY_MS), label: formatTimeTick(t, dates.unit) }));
     return { sessions, X, Y, previous, recent, trend, newBest, yTicks, xTicks };
   }, [subject, verdict, domain]);
 
