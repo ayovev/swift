@@ -23,7 +23,7 @@ import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { TimelineEntry } from "@/types/timeline";
 import type { WeighIn } from "@/types/weighIn";
-import { BodyPanel, InsightsPanel, TrainingPanel } from "./overview/OverviewPanels";
+import { BodyPanel, InsightsPanel, TrainingPanel, bodySourcesCaption } from "./overview/OverviewPanels";
 import { BODY_COMP_TAB, LIFTS_TAB, LIFT_HISTORY_TAB, TIMELINE_TAB, WORKOUTS_TAB } from "./tabs";
 import type { Insights } from "@/lib/analytics/buildInsights";
 
@@ -118,6 +118,13 @@ export function OverviewTab({
   const days = useMemo(() => daysTrainedStat(insights.allRows, today), [insights.allRows, today]);
   const pr = useMemo(() => latestPrStat(insights.allRows, today), [insights.allRows, today]);
   const readings = useMemo(() => pooledReadings(readingsFromInBody(scans), weighIns).filter((r) => r.date <= today), [scans, weighIns, today]);
+  // Name only the sources the line is really drawn from: a weigh-in on a day with
+  // a scan is not used (weighIns.ts), so count what survived the pooling.
+  const bodySources = useMemo(() => {
+    const scanDays = new Set(readingsFromInBody(scans).map((r) => r.date));
+    const fromScans = readings.filter((r) => scanDays.has(r.date)).length;
+    return bodySourcesCaption(fromScans, readings.length - fromScans);
+  }, [readings, scans]);
   const body = useMemo(
     () => bodyWeightStat(readings, weightBandLb(pooledScanRows(scans, weighIns)), today),
     [readings, scans, weighIns, today]
@@ -215,7 +222,7 @@ export function OverviewTab({
           onSeeProgress={go(LIFTS_TAB)}
           onSeeTimeline={go(TIMELINE_TAB)}
         />
-        <BodyPanel readings={readings} today={today} onSeeBody={go(BODY_COMP_TAB)} />
+        <BodyPanel readings={readings} sources={bodySources} today={today} onSeeBody={go(BODY_COMP_TAB)} />
       </div>
     </div>
   );

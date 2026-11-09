@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { OverviewTab } from "@/components/dashboard/OverviewTab";
+import { bodySourcesCaption } from "@/components/dashboard/overview/OverviewPanels";
 import { LiftsTab } from "@/components/dashboard/LiftsTab";
 import { classifySubjects } from "@/lib/analytics/insights/headline";
 import { buildProgressSubjects } from "@/lib/analytics/insights/sessions";
@@ -381,5 +382,14 @@ describe("Progress, reached from What moved", () => {
       screen.getAllByRole("button", { expanded: true }).concat(screen.getAllByRole("button", { expanded: false })).find((b) => b.textContent?.startsWith(displayName(r.subject)))!;
     expect(button(target!)).toHaveAttribute("aria-expanded", "true");
     expect(button(other!)).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+describe("bodySourcesCaption", () => {
+  it("names only the sources the weight line is drawn from", () => {
+    expect(bodySourcesCaption(12, 0)).toBe("InBody scans");
+    expect(bodySourcesCaption(0, 5)).toBe("Weigh-ins");
+    expect(bodySourcesCaption(12, 5)).toBe("InBody scans and weigh-ins");
+    expect(bodySourcesCaption(0, 0)).toBeNull();
   });
 });

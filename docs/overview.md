@@ -141,6 +141,8 @@ a phone.
 
 41. **Weight over time:** the pooled weight series (scans and weigh-ins) as one line, over the athlete's whole body
     history.
+    - The caption names only the sources the line is drawn from: *"InBody scans"*, *"Weigh-ins"* or *"InBody scans and
+      weigh-ins"*. A weigh-in on a day with a scan isn't used, so it doesn't count as a source.
 42. With no data, the chart is replaced by one line: *"Upload an InBody export or add a weigh-in"*, linking to Body
     Comp.
 43. With exactly one reading: that reading and its date, with no line.

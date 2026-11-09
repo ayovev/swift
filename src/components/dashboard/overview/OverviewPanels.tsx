@@ -135,7 +135,7 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
             );
           }}
         />
-        <Bar dataKey="days" fill="var(--primary)" radius={[3, 3, 0, 0]}>
+        <Bar dataKey="days" fill="var(--primary)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
           {data.map((m) => (
             <Cell
               key={m.month}
@@ -407,18 +407,29 @@ function WeightChart({ readings }: { readings: BodyReading[] }) {
   );
 }
 
+/** What the weight line is drawn from, named only as far as it is true: "InBody scans", "Weigh-ins" or both. */
+export function bodySourcesCaption(fromScans: number, fromWeighIns: number): string | null {
+  if (fromScans && fromWeighIns) return "InBody scans and weigh-ins";
+  if (fromScans) return "InBody scans";
+  if (fromWeighIns) return "Weigh-ins";
+  return null;
+}
+
 export function BodyPanel({
   readings,
+  sources = null,
   today,
   onSeeBody,
 }: {
   readings: BodyReading[];
+  /** The caption naming what the line is drawn from (bodySourcesCaption). */
+  sources?: string | null;
   today: string;
   onSeeBody?: (() => void) | undefined;
 }) {
   return (
     <Card>
-      <PanelHeader title="Body weight" {...(readings.length > 1 ? { caption: "Scans and weigh-ins" } : {})} />
+      <PanelHeader title="Body weight" {...(readings.length > 1 && sources ? { caption: sources } : {})} />
       <CardContent className="flex flex-col gap-4">
         {readings.length > 1 ? (
           <WeightChart readings={readings} />
