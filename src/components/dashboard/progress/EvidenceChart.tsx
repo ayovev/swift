@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { trendLine } from "@/lib/analytics/insights/chart";
-import { AXIS_TICK_COUNT, CLOCK_STEPS, formatTimeTick, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
+import { AXIS_TICK_COUNT, CLOCK_STEPS, formatDate, formatTimeTick, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
 import { formatClock, formatSession } from "@/lib/analytics/insights/display";
-import type { ProgressSubject } from "@/lib/analytics/insights/sessions";
+import type { ProgressSession, ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/lib/analytics/insights/verdict";
 
 const W = 560;
@@ -14,6 +14,7 @@ const DAY_MS = 86_400_000;
 /** Rough size of a 10px label in chart units, to tell whether the trend line would run through it. */
 const LABEL_CHAR_W = 5.6;
 const LABEL_H = 10;
+const HIT_R = 9;
 
 /**
  * The chart that opens from a subject's row: one dot per day (the best result of that day, the same series the verdict reads), the
@@ -92,6 +93,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
   }, [subject, verdict, domain]);
 
   // Lifts only: every benchmark session is a max effort, so a ring on each dot would say nothing.
+  const [hovered, setHovered] = useState<ProgressSession | null>(null);
   const rings = verdict && subject.kind === "lift" && (verdict.state === "down" || verdict.state === "not-tested-since");
   const { X, Y } = model;
   const caption = verdict
@@ -100,6 +102,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
 
   return (
     <figure className="flex flex-col gap-1">
+      <div className="relative" onMouseLeave={() => setHovered(null)}>
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Sessions of ${subject.name}`}>
         <line x1={PAD.l} x2={PAD.l} y1={PAD.t - 6} y2={H - PAD.b + 6} className="stroke-border" strokeWidth={1} />
         <line x1={PAD.l} x2={W - PAD.r} y1={H - PAD.b + 6} y2={H - PAD.b + 6} className="stroke-border" strokeWidth={1} />
@@ -144,9 +147,9 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
           return (
             <g key={s.date}>
               {rings && s.maxEffort ? <circle cx={cx} cy={cy} r={7} className="fill-none stroke-accent-link" strokeWidth={1.25} /> : null}
-              <circle cx={cx} cy={cy} r={DOT_R} className={fill}>
-                <title>{`${s.date} · ${formatSession(subject, s)}${subject.kind === "lift" ? " est." : ""}${s.maxEffort && subject.kind === "lift" ? " · max effort" : ""}`}</title>
-              </circle>
+              <circle cx={cx} cy={cy} r={DOT_R} className={fill} {...(hovered?.date === s.date ? { stroke: "currentColor", strokeWidth: 1.5 } : {})} />
+              {/* A larger invisible target than the dot itself, so it is easy to hover or tap. */}
+              <circle cx={cx} cy={cy} r={HIT_R} fill="transparent" className="cursor-pointer" onMouseEnter={() => setHovered(s)} onClick={() => setHovered((h) => (h?.date === s.date ? null : s))} />
             </g>
           );
         })}
@@ -163,7 +166,34 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
           </g>
         ) : null}
       </svg>
+      {hovered ? <DotTooltip subject={subject} session={hovered} x={model.X(dayNumber(hovered.date)) / W} y={model.Y(hovered.value) / H} /> : null}
+      </div>
       <figcaption className="text-xs text-muted-foreground">{caption}</figcaption>
     </figure>
+  );
+}
+
+/**
+ * The same card as the other charts' tooltips (`ChartTooltipContent`): the value, the date, and for a lift whether it was a max effort.
+ * Placed over the chart by the dot's share of its width and height, above the dot and flipped below it near the top, and kept inside
+ * the chart at either side.
+ */
+function DotTooltip({ subject, session, x, y }: { subject: ProgressSubject; session: ProgressSession; x: number; y: number }) {
+  const lift = subject.kind === "lift";
+  const shift = x > 0.7 ? "-100%" : x < 0.3 ? "0%" : "-50%";
+  const below = y < 0.3;
+  return (
+    <div
+      role="tooltip"
+      className="pointer-events-none absolute z-10 grid min-w-[8rem] gap-0.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl"
+      style={{ left: `${x * 100}%`, top: `${y * 100}%`, transform: `translate(${shift}, ${below ? "12px" : "calc(-100% - 12px)"})` }}
+    >
+      <span className="font-medium tabular">
+        {formatSession(subject, session)}
+        {lift ? " est." : ""}
+      </span>
+      <span className="text-muted-foreground">{formatDate(session.date)}</span>
+      {lift && session.maxEffort ? <span className="text-accent-link">Max effort</span> : null}
+    </div>
   );
 }

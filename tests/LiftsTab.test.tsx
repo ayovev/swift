@@ -67,6 +67,20 @@ describe("the Insights front door", () => {
     expect(within(row).getByText(/Each dot is the best result of a day\. Dark dots are the 4 sessions before the recent 4/)).toBeInTheDocument();
   });
 
+  it("shows a tooltip with the value and date when a dot is hovered, and hides it on leaving the chart", () => {
+    renderSample();
+    const row = within(group("Up")).getByText("Front Squat").closest("li") as HTMLElement;
+    fireEvent.click(within(row).getByRole("button"));
+    const figure = within(row).getByRole("figure");
+    expect(within(row).queryByRole("tooltip")).not.toBeInTheDocument();
+    fireEvent.mouseEnter(figure.querySelectorAll("circle[fill='transparent']")[0] as Element);
+    const tip = within(row).getByRole("tooltip");
+    expect(tip).toHaveTextContent(/\d+ lb est\./);
+    expect(tip).toHaveTextContent(/[A-Z][a-z]{2} \d{1,2}, \d{4}/);
+    fireEvent.mouseLeave(figure.querySelector("div.relative") as Element);
+    expect(within(row).queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
   it("opens a facts-line subject to dots alone", () => {
     renderSample();
     fireEvent.click(screen.getByRole("button", { name: /^Fewer than 6 sessions/ }));
