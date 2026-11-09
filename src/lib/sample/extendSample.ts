@@ -23,8 +23,10 @@ dayjs.extend(customParseFormat);
  * Content is templated, not freeform-random: the classifier needs real GPP
  * and M/W/G vocabulary to produce a demo that doesn't look broken (empty
  * domains, a nonsensical modality split). Cadence (how many days a week,
- * how many sessions per attended day, RX vs scaled) and lift starting
- * weights are DERIVED from the real historical rows rather than guessed, so
+ * how many sessions per attended day, RX vs scaled), lift starting weights,
+ * how heavy a lift session runs against the best (and so how often it is a
+ * PR), how fast the working level rises, and how often a metcon or benchmark
+ * is a PR are all DERIVED from the real historical rows rather than guessed, so
  * the generated tail reads as a continuation of the same athlete rather
  * than an obviously different one bolted on — and so this keeps working if
  * the bundled export is ever swapped for a different one.
@@ -307,7 +309,49 @@ interface HistoricalStats {
   secondSessionProb: number;
   rxProb: number;
   liftMaxByName: Map<string, number>;
+  /**
+   * Every historical lift session as a fraction of that lift's best before it,
+   * sorted. A generated session draws one of these, so the tail lifts the way
+   * this athlete lifts: mostly working sets below their best, sometimes a PR.
+   */
+  liftRatios: number[];
+  /** Share of non-lift entries (metcons, benchmarks) flagged PR in the history. */
+  nonLiftPrProb: number;
+  /** Each lift's best when the export ends: the working level the tail starts from. */
+  liftLevelAtEnd: Map<string, number>;
+  /** How fast that level rises per year: the athlete's own last-year growth, capped (see MAX_YEARLY_GROWTH). */
+  yearlyGrowth: number;
+  /** The export's last logged date, to measure how far into the tail a session is. */
+  lastDate: Dayjs;
 }
+
+/**
+ * Fallback when the history has too few lift sessions to learn a spread from:
+ * mostly working sets at 75 to 95% of the best, about one in eight a PR.
+ */
+const DEFAULT_LIFT_RATIOS: readonly number[] = [0.75, 0.8, 0.82, 0.85, 0.88, 0.9, 0.92, 0.95, 0.97, 1.0, 1.0, 1.02, 1.04, 1.06];
+const MIN_LIFT_RATIOS = 20;
+
+/**
+ * Largest single step past the best a generated session may take. The history's
+ * own top end includes beginner jumps (+20% in one session), and the tail keeps
+ * growing for as long as the bundled export stays frozen, so uncapped jumps
+ * compound into a demo where every lift soars. Capping the step keeps a PR's
+ * frequency the athlete's own while each one stays a believable increment.
+ */
+const MAX_PR_STEP = 1.06;
+
+/**
+ * The tail's lifts are drawn around a working level, not around the best so far.
+ * Drawing around the best let every PR raise the base for the next one, so the
+ * longer the export stayed frozen the faster the demo's numbers climbed (measured:
+ * Snatch 145 to 215 lb in two years). The level instead rises at the athlete's own
+ * last-year rate (best of the final 12 months against the 12 before, median across
+ * lifts), capped here, so growth stays believable however old the export gets, and
+ * PRs thin out as the best pulls ahead of the level, the way a plateau does.
+ */
+const MAX_YEARLY_GROWTH = 0.05;
+const DEFAULT_YEARLY_GROWTH = 0.02;
 
 function historicalStats(rows: readonly SugarWodRow[]): HistoricalStats {
   const dates = rows.map(parseRowDate).filter((d) => d.isValid());
@@ -338,7 +382,58 @@ function historicalStats(rows: readonly SugarWodRow[]): HistoricalStats {
     if (value > current) liftMaxByName.set(row.barbell_lift, value);
   }
 
-  return { attendanceProb, secondSessionProb, rxProb, liftMaxByName };
+  // Lift sessions against the running best, in date order (CSV order within a day).
+  const dated = rows
+    .map((row, i) => ({ row, i, d: parseRowDate(row) }))
+    .filter((x) => x.d.isValid())
+    .sort((a, b) => a.d.valueOf() - b.d.valueOf() || a.i - b.i);
+  const runningBest = new Map<string, number>();
+  const ratios: number[] = [];
+  for (const { row } of dated) {
+    if (row.score_type !== "Load" || !row.barbell_lift) continue;
+    const value = Number.parseFloat(row.best_result_raw);
+    if (Number.isNaN(value) || value <= 0) continue;
+    const best = runningBest.get(row.barbell_lift);
+    if (best) ratios.push(Math.min(value / best, MAX_PR_STEP));
+    if (!best || value > best) runningBest.set(row.barbell_lift, value);
+  }
+  const liftRatios = ratios.length >= MIN_LIFT_RATIOS ? ratios.sort((a, b) => a - b) : [...DEFAULT_LIFT_RATIOS];
+
+  const nonLift = rows.filter((r) => r.score_type !== "Load");
+  const nonLiftPrProb = nonLift.length >= MIN_LIFT_RATIOS ? clamp(nonLift.filter((r) => r.pr === "PR").length / nonLift.length, 0.01, 0.2) : 0.05;
+
+  // The athlete's own last-year growth, per lift, as the tail's rate.
+  const lastDate = dated.length ? dated[dated.length - 1]!.d : dayjs();
+  const yearAgo = lastDate.subtract(1, "year");
+  const twoYearsAgo = lastDate.subtract(2, "year");
+  const growth: number[] = [];
+  for (const def of LIFT_DEFINITIONS) {
+    let recent = 0;
+    let before = 0;
+    for (const { row, d } of dated) {
+      if (row.score_type !== "Load" || row.barbell_lift !== def.name) continue;
+      const v = Number.parseFloat(row.best_result_raw);
+      if (Number.isNaN(v)) continue;
+      if (d.isAfter(yearAgo)) recent = Math.max(recent, v);
+      else if (d.isAfter(twoYearsAgo)) before = Math.max(before, v);
+    }
+    if (recent > 0 && before > 0) growth.push(recent / before - 1);
+  }
+  growth.sort((a, b) => a - b);
+  const median = growth.length ? growth[Math.floor(growth.length / 2)]! : DEFAULT_YEARLY_GROWTH;
+  const yearlyGrowth = clamp(median, 0, MAX_YEARLY_GROWTH);
+
+  return {
+    attendanceProb,
+    secondSessionProb,
+    rxProb,
+    liftMaxByName,
+    liftRatios,
+    nonLiftPrProb,
+    liftLevelAtEnd: new Map(liftMaxByName),
+    yearlyGrowth,
+    lastDate,
+  };
 }
 
 function roundToFive(n: number): number {
@@ -360,7 +455,7 @@ function generateSession(
   if (roll < 0.55) {
     const template = pick(rngFor(dateKey, `metcon-${sessionIndex}`), METCON_TEMPLATES);
     const { raw, display } = resultFor(template, rngFor(dateKey, `result-${sessionIndex}`));
-    const pr = rngFor(dateKey, `pr-${sessionIndex}`)() < 0.03 ? "PR" : "";
+    const pr = rngFor(dateKey, `pr-${sessionIndex}`)() < stats.nonLiftPrProb ? "PR" : "";
     return {
       date: dateForRow,
       title: template.title,
@@ -380,8 +475,11 @@ function generateSession(
     const def = pick(rngFor(dateKey, `lift-${sessionIndex}`), LIFT_DEFINITIONS);
     const scheme = pick(rngFor(dateKey, `scheme-${sessionIndex}`), LIFT_SCHEMES);
     const currentMax = stats.liftMaxByName.get(def.name) ?? def.baselineWeight;
+    const years = Math.max(0, dayjs(dateKey).diff(stats.lastDate, "day") / 365);
+    const level = (stats.liftLevelAtEnd.get(def.name) ?? def.baselineWeight) * (1 + stats.yearlyGrowth * years);
     const driftRng = rngFor(dateKey, `weight-${sessionIndex}`);
-    const weight = roundToFive(currentMax * (1 + (driftRng() - 0.35) * 0.05));
+    const ratio = stats.liftRatios[Math.floor(driftRng() * stats.liftRatios.length)] ?? 0.9;
+    const weight = roundToFive(level * ratio);
     const isPr = weight > currentMax;
     if (isPr) stats.liftMaxByName.set(def.name, weight);
     return {
@@ -401,7 +499,7 @@ function generateSession(
 
   const template = pick(rngFor(dateKey, `benchmark-${sessionIndex}`), NAMED_BENCHMARK_TEMPLATES);
   const { raw, display } = resultFor(template, rngFor(dateKey, `result-${sessionIndex}`));
-  const pr = rngFor(dateKey, `pr-${sessionIndex}`)() < 0.05 ? "PR" : "";
+  const pr = rngFor(dateKey, `pr-${sessionIndex}`)() < stats.nonLiftPrProb ? "PR" : "";
   return {
     date: dateForRow,
     title: template.title,

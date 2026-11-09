@@ -18,6 +18,7 @@ Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather t
 - `themeContrast.test.ts` — every accent swatch holds adequate contrast in both light and dark mode.
 - `analytics.test.ts` — analytics stays off without a key, and no event payload can carry workout content.
 - `progressVerdict.test.ts`, `progressDisplay.test.ts`, `LiftsTab.test.tsx` — the Insights engine and the Progress view: the verdict rules as cases, the words, the groups and the headline, pinned on the bundled sample.
+- `extendSample.test.ts` — the sample's generated tail (from the export's last date to today): only dates after the export and up to today, a session on today, determinism, schema-valid rows, and lifts that follow the athlete: a lift PR only when it beats the best so far, PR rates near the history's own, and each lift's best growing at a bounded yearly rate however old the export gets.
 - `timeline.test.ts`, `entryVerdict.test.ts`, `TimelineTab.test.tsx`, `generateSampleTimeline` via `sampleDataFullness.test.ts` — the entry form's rules, an entry's before and after, and the Timeline view (lanes, selection, the entry dialog, confirmed delete).
 - `weighIns.test.tsx` — manual weigh-ins: validation, pooling with scans, storage, sync and the panel.
 - `weightNoiseBand.test.ts` — the weight noise band: the paired-scans, rolling-median and default methods and the fallback ladder between them.

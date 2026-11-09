@@ -138,3 +138,55 @@ describe("extendSampleRows", () => {
     }
   });
 });
+
+// The tail's lifts and PRs follow the athlete's own history (measured on the
+// bundled export: 22% of lift sessions beat the best so far, 10.8% of other
+// entries are PRs). Before, every lift session sat at 98 to 103% of the best
+// and every PR raised the base for the next, so two years of tail took the
+// Snatch from 145 to 215 lb and the demo's Progress drifted to "everything Up".
+describe("extendSampleRows: lifts and PRs follow the athlete", () => {
+  const isoOf = (r: SugarWodRow) => dayjs(r.date, "MM/DD/YYYY").format("YYYY-MM-DD");
+
+  it("flags a generated lift PR only when it beats the best so far", async () => {
+    const { loadSampleRows } = await import("./fixtures/sampleRows");
+    const real = await loadSampleRows();
+    const ext = extendSampleRows(real, dayjs("2027-11-09"));
+    const best = new Map<string, number>();
+    for (const r of ext.slice(0, real.length)) {
+      if (r.score_type === "Load" && r.barbell_lift) best.set(r.barbell_lift, Math.max(best.get(r.barbell_lift) ?? 0, Number(r.best_result_raw)));
+    }
+    const tail = ext.slice(real.length).filter((r) => r.score_type === "Load").sort((a, b) => (isoOf(a) < isoOf(b) ? -1 : 1));
+    for (const r of tail) {
+      const v = Number(r.best_result_raw);
+      const before = best.get(r.barbell_lift) ?? 0;
+      expect(r.pr === "PR").toBe(v > before);
+      best.set(r.barbell_lift, Math.max(before, v));
+    }
+  });
+
+  it("keeps PRs near the history's own rate rather than on most lift sessions", async () => {
+    const { loadSampleRows } = await import("./fixtures/sampleRows");
+    const real = await loadSampleRows();
+    const tail = extendSampleRows(real, dayjs("2027-11-09")).slice(real.length);
+    const share = (rows: SugarWodRow[]) => rows.filter((r) => r.pr === "PR").length / rows.length;
+    const lifts = tail.filter((r) => r.score_type === "Load");
+    const other = tail.filter((r) => r.score_type !== "Load");
+    expect(share(lifts)).toBeGreaterThan(0.05);
+    expect(share(lifts)).toBeLessThan(0.3);
+    expect(share(other)).toBeGreaterThan(0.02);
+    expect(share(other)).toBeLessThan(0.2);
+  });
+
+  it("grows each lift's best at a bounded yearly rate however old the export gets", async () => {
+    const { loadSampleRows } = await import("./fixtures/sampleRows");
+    const real = await loadSampleRows();
+    const ext = extendSampleRows(real, dayjs("2028-11-09")); // two years past the export's end
+    const best = (rows: SugarWodRow[], lift: string) =>
+      Math.max(...rows.filter((r) => r.score_type === "Load" && r.barbell_lift === lift).map((r) => Number(r.best_result_raw)));
+    for (const lift of ["Snatch", "Back Squat", "Deadlift", "Clean & Jerk"]) {
+      const start = best(real, lift);
+      // At most 5% a year on the level, plus one capped 6% step past it, plus rounding to 5 lb.
+      expect(best(ext, lift)).toBeLessThanOrEqual(Math.ceil((start * (1 + 0.05 * 2.2) * 1.06) / 5) * 5);
+    }
+  });
+});
