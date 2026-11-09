@@ -11,6 +11,9 @@ const PAD = { l: 52, r: 44, t: 22, b: 30 };
 /** Every dot is the same size: colour alone says which group it is in. */
 const DOT_R = 3.5;
 const DAY_MS = 86_400_000;
+/** Rough size of a 10px label in chart units, to tell whether the trend line would run through it. */
+const LABEL_CHAR_W = 5.6;
+const LABEL_H = 10;
 
 /**
  * The chart that opens from a subject's row: one dot per day (the best result of that day, the same series the verdict reads), the
@@ -40,7 +43,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
     const previous = new Set(verdict?.previous.map((s) => s.date));
     const recent = new Set(verdict?.recent.map((s) => s.date));
     const trend = verdict ? trendLine(sessions, subject.lowerIsBetter) : null;
-    let newBest: { x: number; y: number; label: string } | null = null;
+    let newBest: { x: number; y: number; label: string; labelY?: number } | null = null;
     if (verdict?.record) {
       const earlier = bestSession(sessions.slice(0, sessions.length - verdict.window), subject.lowerIsBetter);
       const sign = subject.lowerIsBetter ? -1 : 1;
@@ -57,7 +60,35 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
         })();
     const dates = niceTimeTicks(x0 * DAY_MS, x1 * DAY_MS);
     const xTicks = dates.ticks.map((t) => ({ x: X(t / DAY_MS), label: formatTimeTick(t, dates.unit) }));
-    return { sessions, X, Y, previous, recent, trend, newBest, yTicks, xTicks };
+    // A value label sits above its dot, or below it when the trend line would run through it (and the axis is clear).
+    const trendAt = (x: number): number | null => {
+      if (!trend) return null;
+      const ax = X(trend.from.x);
+      const bx = X(trend.to.x);
+      if (x < ax || x > bx) return null;
+      return Y(trend.from.y) + ((Y(trend.to.y) - Y(trend.from.y)) * (x - ax)) / (bx - ax || 1);
+    };
+    const axisY = H - PAD.b + 6;
+    const labelBaseline = (x: number, y: number, text: string, anchor: "middle" | "end", gap: number): number => {
+      const width = text.length * LABEL_CHAR_W;
+      const from = anchor === "end" ? x - width : x - width / 2;
+      const hits = (baseline: number): boolean =>
+        Array.from({ length: 6 }, (_, i) => trendAt(from + (width * i) / 5)).some((ty) => ty !== null && ty > baseline - LABEL_H - 2 && ty < baseline + 3);
+      const above = y - gap;
+      const below = y + gap + LABEL_H;
+      return hits(above) && !hits(below) && below + 3 < axisY ? below : above;
+    };
+    const valueLabels = verdict
+      ? [verdict.previousBest, verdict.recentBest].flatMap((b, i) => {
+          if (newBest && i === 1) return [];
+          const text = formatSession(subject, b).replace(" lb", "");
+          const x = X(dayNumber(b.date));
+          const y = Y(b.value);
+          return [{ key: b.date, x, y: labelBaseline(x, y, text, "middle", 8), text }];
+        })
+      : [];
+    if (newBest) newBest = { ...newBest, labelY: labelBaseline(newBest.x, newBest.y, newBest.label, "end", 10) };
+    return { sessions, X, Y, previous, recent, trend, newBest, yTicks, xTicks, valueLabels };
   }, [subject, verdict, domain]);
 
   const rings = verdict && (verdict.state === "down" || verdict.state === "not-tested-since");
@@ -118,18 +149,14 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
             </g>
           );
         })}
-        {verdict
-          ? [verdict.previousBest, verdict.recentBest].map((b, i) =>
-              model.newBest && i === 1 ? null : (
-                <text key={b.date} x={X(dayNumber(b.date))} y={Y(b.value) - 8} textAnchor="middle" className="fill-muted-foreground text-[10px]">
-                  {formatSession(subject, b).replace(" lb", "")}
-                </text>
-              )
-            )
-          : null}
+        {model.valueLabels.map((l) => (
+          <text key={l.key} x={l.x} y={l.y} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+            {l.text}
+          </text>
+        ))}
         {model.newBest ? (
           <g>
-            <text x={model.newBest.x} y={model.newBest.y - 10} textAnchor="end" className="fill-accent-link text-[10px] font-medium">
+            <text x={model.newBest.x} y={model.newBest.labelY ?? model.newBest.y - 10} textAnchor="end" className="fill-accent-link text-[10px] font-medium">
               {model.newBest.label}
             </text>
           </g>
