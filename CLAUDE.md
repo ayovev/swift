@@ -527,8 +527,8 @@ home. Read the header comments of the files named here before moving anything be
   reasons). A totals row (days trained, most recent PR, body weight, the Progress headline), then three
   panels (`overview/OverviewPanels.tsx`), each the evidence for one stat with a link into its section:
   Training (days trained per calendar month over the last 12 months, the current month drawn with a diagonal hatch and a key,
-  then the last 90 days' M/W/G split beside the 90 before and the three most-trained domains; least
-  trained is left out on purpose), Insights (Progress's up and down rows, at most five, most recently
+  then each month's M/W/G split over the same 12 months, column for column under it, from
+  `monthlyModalityMix`; no domain list), Insights (Progress's up and down rows, at most five, most recently
   logged first, each opening its own row on Progress through `focusSubjectKey`, plus the latest Timeline
   entry) and Body (the pooled weight line). The numbers come from `lib/analytics/overview.ts` (pure,
   `today` passed in, the recent window is `OVERVIEW_RECENT_DAYS` in `insightConfig.ts`), which reads

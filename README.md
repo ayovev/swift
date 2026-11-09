@@ -13,7 +13,7 @@ There is no account to make and no server to send your file to.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png">
-  <img alt="Swift's Overview page: totals for days trained, the most recent PR, body weight and the Progress headline, then days trained per month over the last year and the recent cardio, weights and gymnastics mix." src="docs/images/overview-light.png">
+  <img alt="Swift's Overview page: totals for days trained, the most recent PR, body weight and the Progress headline, then days trained and the cardio, weightlifting and gymnastics split for each of the last 12 months." src="docs/images/overview-light.png">
 </picture>
 
 

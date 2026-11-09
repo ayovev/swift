@@ -6,8 +6,8 @@
  * Four stats, one per area: days trained, the most recent PR, body weight and
  * the Progress headline. Each reports all time and the recent window
  * (OVERVIEW_RECENT_DAYS ending today) where a pair makes sense. Below them, the
- * evidence for three panels: days trained by month, the recent M/W/G mix and
- * most-trained domains, what moved on Progress, and the latest Timeline entry.
+ * evidence for three panels: days trained and the M/W/G split by month over
+ * the same 12 months, what moved on Progress, and the latest Timeline entry.
  */
 import dayjs from "dayjs";
 import type { ParsedRow } from "./buildDashboardData";
@@ -15,7 +15,6 @@ import { OVERVIEW_RECENT_DAYS } from "./insightConfig";
 import type { BodyReading } from "./insights/bodyContext";
 import type { ProgressHeadline, ProgressRow } from "./insights/headline";
 import { classifyMovements, sharesTo100 } from "@/lib/classify/classifyModality";
-import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality, type ModalitySplit } from "@/types/modality";
 import type { TimelineEntry } from "@/types/timeline";
 import { noHeadlineText } from "./insights/display";
@@ -271,49 +270,46 @@ export function monthlyDaysTrained(rows: readonly ParsedRow[], today: string): M
   return out;
 }
 
-export interface WindowMix {
-  /** The window's M/W/G split, summing to 100 (largest-remainder rounding, as everywhere else). */
-  split: ModalitySplit;
-  /** Classified workouts in the window; unclassified ones are excluded, never counted as zeroes. */
+export interface MonthMix {
+  /** YYYY-MM, the same months `monthlyDaysTrained` returns. */
+  month: string;
+  /** The month's M/W/G split, summing to 100 (largest-remainder rounding, as everywhere else); null with no classified workout. */
+  split: ModalitySplit | null;
+  /** Classified workouts that month; unclassified ones are excluded, never counted as zeroes. */
   workouts: number;
-}
-
-export interface TrainingMix {
-  recent: WindowMix | null;
-  prior: WindowMix | null;
-  /** Up to three GPP domains tagged on the most workouts in the recent window, most first. */
-  mostTrained: Domain[];
-}
-
-function windowMix(rows: readonly ParsedRow[]): WindowMix | null {
-  const weights: Record<Modality, number> = { M: 0, W: 0, G: 0 };
-  let workouts = 0;
-  for (const r of rows) {
-    const c = classifyMovements(r.movements);
-    if (!c.classified) continue;
-    workouts++;
-    for (const m of MODALITY_LIST) weights[m] += c.split[m];
-  }
-  if (workouts === 0) return null;
-  return { split: sharesTo100(weights, MODALITY_LIST.reduce((n, m) => n + weights[m], 0)), workouts };
+  partial: boolean;
 }
 
 /**
- * What the recent window was made of: its M/W/G split beside the window
- * before, built the same way the modality stack is (each workout's split
- * summed, then normalised to 100), and the three most-trained domains. Least
- * trained is left out on purpose for now (docs/overview.md).
+ * The M/W/G split for each month on the Training panel's timeline: the same
+ * 12 calendar months as `monthlyDaysTrained`, so the two charts line up column
+ * for column. Built the way the modality stack is (each classified workout's
+ * split summed, then normalised to 100); a month with no classified workout has
+ * no split rather than a 0/0/0 one.
  */
-export function trainingMix(rows: readonly ParsedRow[], today: string): TrainingMix {
-  const w = recentWindow(today);
-  const recentRows = rows.filter((r) => iso(r) >= w.recentStart && iso(r) <= today);
-  const priorRows = rows.filter((r) => iso(r) >= w.priorStart && iso(r) < w.recentStart);
-  const counts = new Map<Domain, number>();
-  for (const r of recentRows) for (const d of r.domains) counts.set(d, (counts.get(d) ?? 0) + 1);
-  const mostTrained = DOMAIN_LIST.filter((d) => (counts.get(d) ?? 0) > 0)
-    .sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0))
-    .slice(0, 3);
-  return { recent: windowMix(recentRows), prior: windowMix(priorRows), mostTrained };
+export function monthlyModalityMix(rows: readonly ParsedRow[], today: string): MonthMix[] {
+  const months = monthlyDaysTrained(rows, today);
+  if (months.length === 0) return [];
+  const byMonth = new Map<string, { weights: Record<Modality, number>; workouts: number }>();
+  const first = months[0]!.month;
+  for (const r of rows) {
+    const d = iso(r);
+    if (d > today) continue;
+    const m = d.slice(0, 7);
+    if (m < first) continue;
+    const c = classifyMovements(r.movements);
+    if (!c.classified) continue;
+    const acc = byMonth.get(m) ?? { weights: { M: 0, W: 0, G: 0 }, workouts: 0 };
+    acc.workouts++;
+    for (const k of MODALITY_LIST) acc.weights[k] += c.split[k];
+    byMonth.set(m, acc);
+  }
+  return months.map(({ month, partial }) => {
+    const acc = byMonth.get(month);
+    if (!acc) return { month, split: null, workouts: 0, partial };
+    const total = MODALITY_LIST.reduce((n, k) => n + acc.weights[k], 0);
+    return { month, split: sharesTo100(acc.weights, total), workouts: acc.workouts, partial };
+  });
 }
 
 // ── Insights panel ────────────────────────────────────────────────────────

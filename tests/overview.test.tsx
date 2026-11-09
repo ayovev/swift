@@ -20,7 +20,7 @@ import {
   overviewScopeSentence,
   progressStat,
   recentWindow,
-  trainingMix,
+  monthlyModalityMix,
   weightChangeText,
   whatMoved,
 } from "@/lib/analytics/overview";
@@ -233,28 +233,34 @@ describe("monthlyDaysTrained", () => {
   });
 });
 
-describe("trainingMix", () => {
-  it("splits each window across M/W/G to 100, leaving unclassified workouts out", () => {
-    const mix = trainingMix(
+describe("monthlyModalityMix", () => {
+  it("covers the same months as the days chart, so the two line up column for column", () => {
+    const rows = parsed([logRow("08/20/2026", "FRAN", "21-15-9Thrusters (65/95 lb)Pull-ups"), logRow("11/02/2026", "RUN", "5k run")]);
+    expect(monthlyModalityMix(rows, TODAY).map((m) => m.month)).toEqual(monthlyDaysTrained(rows, TODAY).map((m) => m.month));
+  });
+
+  it("splits each month to 100, leaving unclassified workouts out and empty months without a split", () => {
+    const mix = monthlyModalityMix(
       parsed([
-        logRow(daysAgo(5), "RUN", "5k run"),
-        logRow(daysAgo(6), "FRAN", "21-15-9Thrusters (65/95 lb)Pull-ups"),
-        logRow(daysAgo(7), "REST DAY", "mobility notes only"),
-        logRow(daysAgo(120), "ROW", "2000m row"),
+        logRow("08/20/2026", "RUN", "5k run"),
+        logRow("08/21/2026", "FRAN", "21-15-9Thrusters (65/95 lb)Pull-ups"),
+        logRow("08/22/2026", "REST DAY", "mobility notes only"),
+        logRow("10/03/2026", "ROW", "2000m row"),
       ]),
       TODAY
     );
-    expect(mix.recent?.workouts).toBe(2);
-    expect(mix.recent!.split.M + mix.recent!.split.W + mix.recent!.split.G).toBeCloseTo(100, 5);
-    expect(mix.recent!.split.M).toBe(50);
-    expect(mix.prior).toEqual({ split: { M: 100, W: 0, G: 0 }, workouts: 1 });
+    const aug = mix.find((m) => m.month === "2026-08")!;
+    expect(aug.workouts).toBe(2);
+    expect(aug.split!.M).toBe(50);
+    expect(aug.split!.M + aug.split!.W + aug.split!.G).toBeCloseTo(100, 5);
+    expect(mix.find((m) => m.month === "2026-09")).toEqual({ month: "2026-09", split: null, workouts: 0, partial: false });
+    expect(mix.find((m) => m.month === "2026-10")?.split).toEqual({ M: 100, W: 0, G: 0 });
+    expect(mix.at(-1)).toMatchObject({ month: "2026-11", partial: true, split: null });
   });
 
-  it("names at most three most-trained domains, and nothing for an empty window", () => {
-    const mix = trainingMix(parsed([logRow(daysAgo(5), "FRAN", "21-15-9Thrusters (65/95 lb)Pull-ups")]), TODAY);
-    expect(mix.mostTrained.length).toBeGreaterThan(0);
-    expect(mix.mostTrained.length).toBeLessThanOrEqual(3);
-    expect(trainingMix(parsed([logRow(daysAgo(300), "FRAN")]), TODAY)).toEqual({ recent: null, prior: null, mostTrained: [] });
+  it("reads the same 12 months whatever the athlete's grouping", () => {
+    const rows = [logRow("10/01/2026", "RUN", "5k run")];
+    expect(monthlyModalityMix(buildInsights(rows, null, "weekly").allRows, TODAY)).toEqual(monthlyModalityMix(parsed(rows), TODAY));
   });
 });
 
@@ -301,6 +307,10 @@ describe("OverviewTab panels", () => {
     expect(screen.getByText("Body weight")).toBeInTheDocument();
     expect(screen.queryByText("Where your training went")).not.toBeInTheDocument();
     expect(screen.queryByText("Cardio, weights, gymnastics")).not.toBeInTheDocument();
+    // The Training panel's mix is a 12-month chart now; the most-trained list is gone.
+    expect(screen.getByText("Cardio, weightlifting, gymnastics")).toBeInTheDocument();
+    expect(screen.queryByText(/Most trained/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Last 90 days")).not.toBeInTheDocument();
   });
 
   it("keys the in-progress month's hatch, and only when the chart has a current month", () => {
@@ -318,7 +328,7 @@ describe("OverviewTab panels", () => {
     const rows = [logRow(daysAgo(200), "FRAN")];
     const onNavigate = vi.fn();
     render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} onNavigate={onNavigate} />);
-    expect(screen.getByText("No workouts in the last 90 days.")).toBeInTheDocument();
+    expect(screen.getByText("No classified workouts in the last 12 months.")).toBeInTheDocument();
     expect(screen.getByText("No lift or benchmark has changed enough to call.")).toBeInTheDocument();
     expect(screen.getByText("No timeline entries yet.")).toBeInTheDocument();
     expect(screen.getByText("Upload an InBody export or add a weigh-in.")).toBeInTheDocument();

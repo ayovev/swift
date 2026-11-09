@@ -9,10 +9,10 @@ import {
   latestPrStat,
   latestTimelineEntry,
   monthlyDaysTrained,
+  monthlyModalityMix,
   progressStat,
   shortDate,
   weightChangeText,
-  trainingMix,
   weightText,
   whatMoved,
 } from "@/lib/analytics/overview";
@@ -128,7 +128,7 @@ export function OverviewTab({
   const progress = progressStat(classified.headline);
   const moved = useMemo(() => whatMoved(classified.rows), [classified]);
   const months = useMemo(() => monthlyDaysTrained(insights.allRows, today), [insights.allRows, today]);
-  const mix = useMemo(() => trainingMix(insights.allRows, today), [insights.allRows, today]);
+  const mix = useMemo(() => monthlyModalityMix(insights.allRows, today), [insights.allRows, today]);
   const latestEntry = useMemo(() => latestTimelineEntry(timeline, today), [timeline, today]);
   const go = (tab: string) => (onNavigate ? () => onNavigate(tab) : undefined);
 

@@ -111,13 +111,16 @@ a phone.
 31. With under 12 months of history, bars start at the first logged month. No empty months are drawn before it.
 32. No 90-day marker on the chart. 90 days rarely falls on a month boundary, so shading whole bars would mark a
     different period from the one the totals count.
-33. **What it was made of**, one line under the chart, for the recent window:
-    - The M/W/G split for the last 90 days as one stacked bar, beside the 90 days before. The bars use the fixed
-      modality colours, as on today's Overview.
-    - The three most-trained GPP domains: *"Most trained: Strength, Stamina, Power."*
-    - Least-trained domains are **not** shown for now. They can be added later if they prove useful.
-34. With nothing classified in the last 90 days, the line reads *"No workouts in the last 90 days"*. With nothing in
-    the earlier window, the recent bar shows without a comparison.
+33. **What it was made of**, a second chart under Showing up: each month's M/W/G split as a stacked bar summing to
+    100, over **the same 12 months**, with the same margins and axis width, so each month's column sits under its days
+    bar and the panel reads as one timeline. The bars use the fixed modality colours, with a three-item key.
+    - Why the same window: an earlier draft compared the last 90 days with the 90 before, beside a 12-month chart.
+      Two windows in one panel made the mix and the attendance hard to read together.
+    - The current month is not hatched here: a partial month's split is a share, not an amount, so it is as valid as
+      a full month's. Its tooltip still says "so far".
+    - No most-trained (or least-trained) domain list. It was tried and removed; domain detail lives in Training.
+34. A month with no classified workout has no bar. With none in all 12 months, the chart is replaced by *"No
+    classified workouts in the last 12 months."*
 35. Link: *"See workouts"* → Training → Workouts.
 
 ### Insights panel

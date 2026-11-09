@@ -4,23 +4,20 @@ import { ArrowRight } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, AXIS_TICK_COUNT, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
-import { ModalityBar } from "../charts/ModalityBar";
+import { AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_FIXED_CHART_CONFIG, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
 import type { BodyReading } from "@/lib/analytics/insights/bodyContext";
 import { displayName, moveUpText, verdictText } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
-import { OVERVIEW_RECENT_DAYS } from "@/lib/analytics/insightConfig";
 import {
   OVERVIEW_CHART_MONTHS,
   shortDate,
   weightText,
   type LatestEntry,
   type MonthDays,
-  type TrainingMix,
+  type MonthMix,
 } from "@/lib/analytics/overview";
 import { entryName, entrySpanText } from "@/lib/analytics/timeline";
 import { cn } from "@/lib/utils";
-import { DOMAIN_SHORT_LABELS } from "@/types/dashboard";
 import { MODALITY_LIST, MODALITY_SHORT_LABELS } from "@/types/modality";
 import { AREA_LABEL } from "@/types/timeline";
 
@@ -154,13 +151,77 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
   );
 }
 
-function MixRow({ label, mix }: { label: string; mix: TrainingMix["recent"] }) {
-  if (!mix) return null;
+/**
+ * The M/W/G split per month, on the same 12 months, margins and axis width as
+ * MonthlyDaysChart above it, so each month's column lines up under its days
+ * bar. Each bar is that month's share of cardio, weightlifting and gymnastics,
+ * summing to 100; a month with no classified workout has no bar. The current
+ * month is a share, not an amount, so it is not hatched: a partial month's
+ * split is as valid as a full one's, and its tooltip still says "so far".
+ */
+function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
+  const data = mix.map((m) => ({
+    month: m.month,
+    label: dayjs(`${m.month}-01`).format("MMM"),
+    partial: m.partial,
+    workouts: m.workouts,
+    M: m.split?.M ?? 0,
+    W: m.split?.W ?? 0,
+    G: m.split?.G ?? 0,
+  }));
+  const first = mix[0];
+  const last = mix[mix.length - 1];
+  const aria =
+    first && last
+      ? `Stacked bar chart of each month's cardio, weightlifting and gymnastics share, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
+      : "Stacked bar chart of each month's cardio, weightlifting and gymnastics share";
   return (
-    <div className="grid grid-cols-[7.5rem_1fr] items-center gap-3">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <ModalityBar split={mix.split} classified />
-    </div>
+    <ChartContainer config={MODALITY_FIXED_CHART_CONFIG} className="h-[160px] w-full min-w-0" role="img" aria-label={aria}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <CartesianGrid vertical={false} stroke="var(--border)" />
+        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...AXIS_PROPS} />
+        <YAxis
+          width={NUM_AXIS_WIDTH}
+          domain={[0, 100]}
+          ticks={[0, 50, 100]}
+          interval={0}
+          tickFormatter={(v: number) => `${v}%`}
+          {...AXIS_PROPS}
+        />
+        <ChartTooltip
+          cursor={{ fill: "var(--muted)", opacity: 0.4 }}
+          content={({ active, payload }) => {
+            const p = payload?.[0]?.payload as (typeof data)[number] | undefined;
+            if (!active || !p) return null;
+            return (
+              <div className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs shadow-sm">
+                <div className="font-medium">
+                  {dayjs(`${p.month}-01`).format("MMMM YYYY")}
+                  {p.partial ? " so far" : ""}
+                </div>
+                {p.workouts ? (
+                  <div className="text-muted-foreground tabular">
+                    {MODALITY_LIST.map((m) => `${MODALITY_SHORT_LABELS[m]} ${Math.round(p[m])}%`).join(" · ")}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground">No classified workouts</div>
+                )}
+              </div>
+            );
+          }}
+        />
+        {MODALITY_LIST.map((m, i) => (
+          <Bar
+            key={m}
+            dataKey={m}
+            stackId="mix"
+            fill={FIXED_MODALITY_COLORS[m]}
+            radius={i === MODALITY_LIST.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+            isAnimationActive={false}
+          />
+        ))}
+      </BarChart>
+    </ChartContainer>
   );
 }
 
@@ -170,10 +231,10 @@ export function TrainingPanel({
   onSeeWorkouts,
 }: {
   months: MonthDays[];
-  mix: TrainingMix;
+  mix: MonthMix[];
   onSeeWorkouts?: (() => void) | undefined;
 }) {
-  const recentLabel = `Last ${OVERVIEW_RECENT_DAYS} days`;
+  const anyMix = mix.some((m) => m.split);
   return (
     <Card>
       <PanelHeader title="Showing up" caption={`Last ${OVERVIEW_CHART_MONTHS} months, by month`} />
@@ -182,28 +243,22 @@ export function TrainingPanel({
           <MonthlyDaysChart months={months} />
           {months.some((m) => m.partial && m.days > 0) ? <InProgressKey /> : null}
         </div>
-        <section aria-label="What it was made of" className="flex flex-col gap-3 border-t border-border pt-4">
-          {mix.recent ? (
+        <section aria-label="What it was made of" className="flex flex-col gap-2 border-t border-border pt-4">
+          <h3 className="text-sm font-medium">Cardio, weightlifting, gymnastics</h3>
+          {anyMix ? (
             <>
-              <div className="flex flex-col gap-2">
-                <MixRow label={recentLabel} mix={mix.recent} />
-                <MixRow label={`The ${OVERVIEW_RECENT_DAYS} before`} mix={mix.prior} />
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  {MODALITY_LIST.map((m) => (
-                    <span key={m} className="text-xs text-muted-foreground tabular">
-                      {MODALITY_SHORT_LABELS[m]} {Math.round(mix.recent!.split[m])}%
-                    </span>
-                  ))}
-                </div>
-                {mix.mostTrained.length ? (
-                  <p className="text-sm">Most trained: {mix.mostTrained.map((d) => DOMAIN_SHORT_LABELS[d]).join(", ")}.</p>
-                ) : null}
+              <MonthlyMixChart mix={mix} />
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                {MODALITY_LIST.map((m) => (
+                  <span key={m} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: FIXED_MODALITY_COLORS[m] }} aria-hidden />
+                    {MODALITY_SHORT_LABELS[m]}
+                  </span>
+                ))}
               </div>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">No workouts in the last {OVERVIEW_RECENT_DAYS} days.</p>
+            <p className="text-sm text-muted-foreground">No classified workouts in the last {OVERVIEW_CHART_MONTHS} months.</p>
           )}
         </section>
         <PanelLink label="See workouts" onClick={onSeeWorkouts} />
