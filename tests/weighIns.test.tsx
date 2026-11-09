@@ -169,6 +169,14 @@ describe("the Weigh-ins panel", () => {
     expect(screen.getByLabelText("Weight (lb)")).toHaveValue(null);
   });
 
+  it("prefills the weight with the most recent reading, and with nothing when there is none", () => {
+    const { unmount } = render(<WeighInsPanel scans={scans} weighIns={[w("2026-09-05", 187)]} onSave={vi.fn()} onDelete={vi.fn()} today={TODAY} />);
+    expect(screen.getByLabelText("Weight (lb)")).toHaveValue(187);
+    unmount();
+    render(<WeighInsPanel scans={[]} weighIns={[]} onSave={vi.fn()} onDelete={vi.fn()} today={TODAY} />);
+    expect(screen.getByLabelText("Weight (lb)")).toHaveValue(null);
+  });
+
   it("WGH-02 lists each failing rule and saves nothing", () => {
     const onSave = vi.fn();
     render(<WeighInsPanel scans={[]} weighIns={[]} onSave={onSave} onDelete={vi.fn()} today={TODAY} />);

@@ -29,11 +29,13 @@ const longDate = (iso: string): string => dayjs(iso).format("MMM D, YYYY");
 export function WeighInsPanel({ scans, weighIns, onSave, onDelete, today }: WeighInsPanelProps) {
   const todayIso = useMemo(() => today ?? dayjs().format("YYYY-MM-DD"), [today]);
   const [date, setDate] = useState(todayIso);
-  const [weight, setWeight] = useState("");
+  // null = untouched: the field shows the most recent weight (scan or weigh-in) as a starting point to adjust.
+  const [typedWeight, setWeight] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [all, setAll] = useState(false);
   const rows = useMemo(() => bodyWeightRows(scans, weighIns), [scans, weighIns]);
+  const weight = typedWeight ?? (rows[0] ? String(rows[0].weightLb) : "");
   const shown = all ? rows : rows.slice(0, SHOWN);
 
   const save = () => {
@@ -45,7 +47,7 @@ export function WeighInsPanel({ scans, weighIns, onSave, onDelete, today }: Weig
     setErrors([]);
     onSave(result.value);
     capture({ name: "interaction_used", props: { interaction: "weigh_in_saved" } });
-    setWeight("");
+    setWeight(null);
     setNote("");
   };
 

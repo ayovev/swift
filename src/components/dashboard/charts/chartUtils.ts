@@ -98,6 +98,12 @@ export const NUM_AXIS_WIDTH = 52;
  */
 export const AXIS_TICK_COUNT = 6;
 
+/** Round steps for a rounds + reps total in reps, for `niceAxisTicks`' `steps`: whole rounds' worth of reps (30 to a round) and fractions of one. */
+export const ROUNDS_REPS_STEPS: readonly number[] = [1, 2, 5, 10, 15, 30, 60, 90, 150, 300];
+
+/** Round steps for a time in seconds (m:ss), for `niceAxisTicks`' `steps`. */
+export const CLOCK_STEPS: readonly number[] = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200];
+
 /**
  * Recharts, given an explicit numeric domain and no `ticks` prop, generates
  * "nice" evenly-stepped gridlines but then forces the exact domain max back
@@ -139,12 +145,14 @@ export function niceAxisTicks(
   // 2 workouts — makes the general algorithm land on a sub-1 step, which
   // reads as "0.5 workouts". Rounding every candidate step up to a whole
   // number keeps ticks meaningful for anything that can't fractionally occur.
-  wholeNumbers = false
+  wholeNumbers = false,
+  // For a quantity with its own round steps (a time in seconds steps by 15, 30, 60, not 25 or 50), the steps to choose from.
+  steps?: readonly number[]
 ): { domain: [number, number]; ticks: number[] } {
   if (min === max) return { domain: [min, max], ticks: [min] };
 
   const rawStep = (max - min) / (tickCount - 1);
-  let candidates = candidateSteps(rawStep);
+  let candidates = steps ? [...steps] : candidateSteps(rawStep);
   if (wholeNumbers) candidates = candidates.map((s) => Math.max(1, Math.round(s)));
   candidates = Array.from(new Set(candidates));
 

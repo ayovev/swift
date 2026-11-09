@@ -1,6 +1,8 @@
 import dayjs from "dayjs";
 import { describe, expect, it } from "vitest";
 import {
+  CLOCK_STEPS,
+  ROUNDS_REPS_STEPS,
   formatTimeTick,
   mergeBucketCounts,
   niceAxisTicks,
@@ -38,6 +40,26 @@ describe("niceAxisTicks", () => {
     const { domain } = niceAxisTicks(132.25, 242.75);
     expect(domain[0]).toBeLessThanOrEqual(132.25);
     expect(domain[1]).toBeGreaterThanOrEqual(242.75);
+  });
+
+  it("rounds a lift's range out to a round step (the evidence chart's y-axis)", () => {
+    expect(niceAxisTicks(165, 269)).toEqual({ domain: [150, 275], ticks: [150, 175, 200, 225, 250, 275] });
+    expect(niceAxisTicks(189, 365)).toEqual({ domain: [150, 400], ticks: [150, 200, 250, 300, 350, 400] });
+  });
+
+  it("steps a time by clock values when given them, never 25 or 50 seconds", () => {
+    const { domain, ticks } = niceAxisTicks(137, 402, 6, false, CLOCK_STEPS);
+    expect(domain[0]).toBeLessThanOrEqual(137);
+    expect(domain[1]).toBeGreaterThanOrEqual(402);
+    expect(new Set(stepSizes(ticks)).size).toBe(1);
+    expect(CLOCK_STEPS).toContain(stepSizes(ticks)[0]);
+  });
+
+  it("steps a rounds + reps total (30 reps a round) by half rounds or whole rounds, never an odd rep count", () => {
+    // 14+22 to 17+2 at 30 reps a round: 442 to 512 reps.
+    const { domain, ticks } = niceAxisTicks(442, 512, 6, false, ROUNDS_REPS_STEPS);
+    expect(domain).toEqual([435, 525]);
+    expect(stepSizes(ticks)).toEqual([15, 15, 15, 15, 15, 15]);
   });
 
   it("handles a zero-width range without dividing by zero", () => {
