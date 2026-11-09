@@ -162,7 +162,7 @@ remote-config features (exception capture, dead clicks, heatmaps, surveys) off i
   `buildModalityData`'s output shape deliberately mirrors `buildDashboardData`'s so those two
   components stay near-identical; keep that symmetry.
 
-The **Movements** view (`MovementsTab.tsx`, under Breakdown) lists what the lexicon can recognise: families
+The **Movements** view (`MovementsTab.tsx`, under Training) lists what the lexicon can recognise: families
 (`movementFamilies.ts`, every variant counts) and single movements, picked by id. It reads
 `Insights.movements` (`buildMovementData.ts`), a thin reduction of the same `ParsedRow.movements`
 `buildModalityData` uses, so nothing is classified twice. The workout list shows the phrase that matched,
@@ -504,14 +504,18 @@ home. Read the header comments of the files named here before moving anything be
 
 - **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header, at its true
   centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
-  onto their own row). Training (Overview, Workouts), Breakdown (the ten GPP domains, three
-  modalities and Movements — a classification of the same workouts, not separate data), Body (Body Comp) and
-  Insights (Progress, Timeline). The views
+  onto their own row). Overview (the front page, on its own), Training (Workouts, then the ten GPP
+  domains, three modalities and Movements — a classification of those same workouts, not separate
+  data, which is what their group headers are there to say), Body (Body Comp) and Insights
+  (Progress, Timeline). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
-  view (Breakdown's Domains and Modalities), each group's label sits *above* its tabs as a
-  header — in line with them it read as one more tab. Movements is a group of one, so it has no
-  header of its own (it would only repeat the tab's name). `tabs.ts` stays the flat identity list
+  view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
+  header — in line with them it read as one more tab. Workouts and Movements are groups of one,
+  so they have no header of their own (it would only repeat the tab's name); Workouts comes
+  first, so selecting Training opens the log. Training is the long row (15 tabs) and scrolls
+  sideways on a phone; a third nav level for it would break "never a dropdown", so it hasn't
+  been added. `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
   `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress view
   keeps its earlier internal names (tab id `lifts`, `LiftsTab.tsx`); only its label and page title changed.

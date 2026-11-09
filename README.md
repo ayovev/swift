@@ -42,7 +42,7 @@ on the landing page.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/breakdown-dark.png">
-  <img alt="The Strength page in the Breakdown section: share of workouts that train strength, month by month." src="docs/images/breakdown-light.png">
+  <img alt="The Strength page in the Training section: share of workouts that train strength, month by month." src="docs/images/breakdown-light.png">
 </picture>
 
 </td>
@@ -56,7 +56,7 @@ on the landing page.
 </td>
   </tr>
   <tr>
-    <td align="center"><sub>Breakdown: one of ten GPP domains</sub></td>
+    <td align="center"><sub>Training: one of ten GPP domains</sub></td>
     <td align="center"><sub>Progress: a verdict for each lift and benchmark</sub></td>
   </tr>
 </table>

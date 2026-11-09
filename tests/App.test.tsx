@@ -322,7 +322,9 @@ describe("App — view scope", () => {
     expect(screen.getByRole("button", { name: "Grouped by month" })).toBeInTheDocument();
 
     // A domain page carries CrossFit's definition of the skill under its heading.
-    fireEvent.click(screen.getByRole("button", { name: "Breakdown" }));
+    fireEvent.click(screen.getByRole("button", { name: "Training" }));
+    const domains = await screen.findByRole("group", { name: "Domains" });
+    fireEvent.click(within(domains).getByRole("button", { name: "Cardio" }));
     const heading = await screen.findByRole("heading", { level: 1, name: "Cardiovascular/Respiratory Endurance" });
     expect(heading.nextElementSibling).toHaveTextContent(
       "The ability of the body’s systems to gather, process, and deliver oxygen."
