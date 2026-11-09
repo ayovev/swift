@@ -303,6 +303,17 @@ describe("OverviewTab panels", () => {
     expect(screen.queryByText("Cardio, weights, gymnastics")).not.toBeInTheDocument();
   });
 
+  it("keys the in-progress month's cross-hatch, and only when the chart has a current month", () => {
+    const current = [logRow(daysAgo(2), "FRAN")];
+    const { unmount } = render(<OverviewTab insights={buildInsights(current)} workouts={current} asOf={TODAY} />);
+    expect(screen.getByText("This month so far")).toBeInTheDocument();
+    unmount();
+    // A log that ended over a year ago draws an empty current month: no hatched bar, so nothing to key.
+    const old = [logRow(daysAgo(500), "FRAN")];
+    render(<OverviewTab insights={buildInsights(old)} workouts={old} asOf={TODAY} />);
+    expect(screen.queryByText("This month so far")).not.toBeInTheDocument();
+  });
+
   it("says what's missing in one line each, and still offers the sections", () => {
     const rows = [logRow(daysAgo(200), "FRAN")];
     const onNavigate = vi.fn();

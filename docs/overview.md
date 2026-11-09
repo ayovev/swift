@@ -103,7 +103,10 @@ a phone.
 28. **Showing up:** days trained per calendar month, as bars, over **the last 12 months**.
 29. The panel header carries a small muted caption: *"Last 12 months, by month"*.
     - This is the one place on the page that doesn't use full history, so it says so where it applies.
-30. The current month's bar is drawn lighter, with "so far" in its tooltip, so a partial month doesn't read as a drop.
+30. The current month's bar is drawn with a diamond cross-hatch in the accent, outlined, with a small key under the
+    chart ("This month so far") and "so far" in its tooltip, so a partial month doesn't read as a drop. A pattern
+    rather than a lighter shade, so it reads as a different kind of bar rather than a smaller amount, without relying
+    on colour.
 31. With under 12 months of history, bars start at the first logged month. No empty months are drawn before it.
 32. No 90-day marker on the chart. 90 days rarely falls on a month boundary, so shading whole bars would mark a
     different period from the one the totals count.

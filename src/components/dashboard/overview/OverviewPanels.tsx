@@ -1,3 +1,4 @@
+import { useId } from "react";
 import dayjs from "dayjs";
 import { ArrowRight } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
@@ -56,12 +57,50 @@ function PanelHeader({ title, caption }: { title: string; caption?: string }) {
 // ── Training ──────────────────────────────────────────────────────────────
 
 /**
+ * The fill that marks a month still under way: a diamond cross-hatch in the
+ * accent over a faint wash of it. A pattern rather than a lighter shade, so
+ * "in progress" reads as a different kind of bar, not a smaller amount, and
+ * survives without colour. One definition serves the bar and its key; `id`
+ * comes from useId with the colons React puts in it stripped, since they are
+ * awkward inside `url(#...)`.
+ */
+function InProgressPattern({ id }: { id: string }) {
+  return (
+    <pattern id={id} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="var(--primary)" fillOpacity={0.12} />
+      <path d="M0 0H6M0 0V6" stroke="var(--primary)" strokeWidth="1.5" />
+    </pattern>
+  );
+}
+
+function useSvgId(prefix: string): string {
+  return `${prefix}-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+}
+
+/** The key under the chart: a swatch of the in-progress fill and what it means. */
+function InProgressKey() {
+  const id = useSvgId("in-progress-key");
+  return (
+    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <svg width="12" height="12" aria-hidden className="shrink-0">
+        <defs>
+          <InProgressPattern id={id} />
+        </defs>
+        <rect x="0.5" y="0.5" width="11" height="11" rx="2" fill={`url(#${id})`} stroke="var(--primary)" strokeWidth="1" />
+      </svg>
+      This month so far
+    </span>
+  );
+}
+
+/**
  * Days trained per month over the last 12 months. The current month is drawn
- * lighter and its tooltip says "so far", so a partial month doesn't read as a
- * drop. No 90-day marker: 90 days rarely falls on a month boundary, so shading
+ * with a diamond cross-hatch (InProgressPattern) and its tooltip says "so far",
+ * so a partial month doesn't read as a drop. No 90-day marker: 90 days rarely falls on a month boundary, so shading
  * whole bars would mark a different period from the one the totals count.
  */
 function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
+  const patternId = useSvgId("in-progress");
   const data = months.map((m) => ({ ...m, label: dayjs(`${m.month}-01`).format("MMM") }));
   const best = Math.max(1, ...months.map((m) => m.days));
   const { domain, ticks } = niceAxisTicks(0, best, AXIS_TICK_COUNT, true);
@@ -75,6 +114,9 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
   return (
     <ChartContainer config={config} className="h-[200px] w-full min-w-0" role="img" aria-label={aria}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <defs>
+          <InProgressPattern id={patternId} />
+        </defs>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...AXIS_PROPS} />
         <YAxis width={NUM_AXIS_WIDTH} domain={domain} ticks={ticks} interval={0} {...AXIS_PROPS} />
@@ -95,7 +137,13 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
         />
         <Bar dataKey="days" fill="var(--primary)" radius={[3, 3, 0, 0]}>
           {data.map((m) => (
-            <Cell key={m.month} fill="var(--primary)" fillOpacity={m.partial ? 0.4 : 1} />
+            <Cell
+              key={m.month}
+              fill={m.partial ? `url(#${patternId})` : "var(--primary)"}
+              stroke={m.partial ? "var(--primary)" : "none"}
+              strokeWidth={m.partial ? 1 : 0}
+              data-partial={m.partial ? "true" : undefined}
+            />
           ))}
         </Bar>
       </BarChart>
@@ -127,7 +175,10 @@ export function TrainingPanel({
     <Card>
       <PanelHeader title="Showing up" caption={`Last ${OVERVIEW_CHART_MONTHS} months, by month`} />
       <CardContent className="flex flex-col gap-5">
-        <MonthlyDaysChart months={months} />
+        <div className="flex flex-col gap-2">
+          <MonthlyDaysChart months={months} />
+          {months.some((m) => m.partial && m.days > 0) ? <InProgressKey /> : null}
+        </div>
         <section aria-label="What it was made of" className="flex flex-col gap-3 border-t border-border pt-4">
           {mix.recent ? (
             <>
