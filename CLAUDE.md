@@ -526,7 +526,7 @@ home. Read the header comments of the files named here before moving anything be
   Overview is the full-history front door (`docs/overview.md` holds the acceptance criteria and their
   reasons). A totals row (days trained, most recent PR, body weight, the Progress headline), then three
   panels (`overview/OverviewPanels.tsx`), each the evidence for one stat with a link into its section:
-  Training (days trained per calendar month over the last 12 months, the current month drawn with a diamond cross-hatch and a key,
+  Training (days trained per calendar month over the last 12 months, the current month drawn with a diagonal hatch and a key,
   then the last 90 days' M/W/G split beside the 90 before and the three most-trained domains; least
   trained is left out on purpose), Insights (Progress's up and down rows, at most five, most recently
   logged first, each opening its own row on Progress through `focusSubjectKey`, plus the latest Timeline

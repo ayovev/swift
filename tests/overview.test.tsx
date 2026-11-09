@@ -303,7 +303,7 @@ describe("OverviewTab panels", () => {
     expect(screen.queryByText("Cardio, weights, gymnastics")).not.toBeInTheDocument();
   });
 
-  it("keys the in-progress month's cross-hatch, and only when the chart has a current month", () => {
+  it("keys the in-progress month's hatch, and only when the chart has a current month", () => {
     const current = [logRow(daysAgo(2), "FRAN")];
     const { unmount } = render(<OverviewTab insights={buildInsights(current)} workouts={current} asOf={TODAY} />);
     expect(screen.getByText("This month so far")).toBeInTheDocument();

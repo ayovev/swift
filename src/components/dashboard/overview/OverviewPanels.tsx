@@ -57,10 +57,13 @@ function PanelHeader({ title, caption }: { title: string; caption?: string }) {
 // ── Training ──────────────────────────────────────────────────────────────
 
 /**
- * The fill that marks a month still under way: a diamond cross-hatch in the
+ * The fill that marks a month still under way: a single-direction 45° hatch in the
  * accent over a faint wash of it. A pattern rather than a lighter shade, so
  * "in progress" reads as a different kind of bar, not a smaller amount, and
- * survives without colour. One definition serves the bar and its key; `id`
+ * survives without colour. One direction of lines rather than a cross-hatch: it is
+ * the usual chart mark for "not final", it leaves the bar's top edge easy to
+ * read, and its stripes stay distinct at phone width and in a 12px key, where
+ * finer pinstripes blurred into a flat tint (compared side by side). One definition serves the bar and its key; `id`
  * comes from useId with the colons React puts in it stripped, since they are
  * awkward inside `url(#...)`.
  */
@@ -68,7 +71,7 @@ function InProgressPattern({ id }: { id: string }) {
   return (
     <pattern id={id} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
       <rect width="6" height="6" fill="var(--primary)" fillOpacity={0.12} />
-      <path d="M0 0H6M0 0V6" stroke="var(--primary)" strokeWidth="1.5" />
+      <path d="M0 0V6" stroke="var(--primary)" strokeWidth="2" />
     </pattern>
   );
 }
@@ -95,7 +98,7 @@ function InProgressKey() {
 
 /**
  * Days trained per month over the last 12 months. The current month is drawn
- * with a diamond cross-hatch (InProgressPattern) and its tooltip says "so far",
+ * with a diagonal hatch (InProgressPattern) and its tooltip says "so far",
  * so a partial month doesn't read as a drop. No 90-day marker: 90 days rarely falls on a month boundary, so shading
  * whole bars would mark a different period from the one the totals count.
  */
