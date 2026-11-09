@@ -104,6 +104,8 @@ export interface LatestPrStat {
   title: string;
   /** The score as SugarWOD displays it; may be "". */
   display: string;
+  /** SugarWOD's score type, for the unit (withScoreUnit). */
+  scoreType: string;
   date: string;
   /** Other PRs logged the same day. */
   moreThatDay: number;
@@ -129,6 +131,7 @@ export function latestPrStat(rows: readonly ParsedRow[], today: string): LatestP
   return {
     title: shown.raw.title,
     display: shown.raw.best_result_display ?? "",
+    scoreType: shown.raw.score_type ?? "",
     date: latest,
     moreThatDay: sameDay.length - 1,
     recentCount: prs.filter((r) => iso(r) >= w.recentStart).length,
@@ -158,7 +161,7 @@ function weightChange(fromLb: number, toLb: number, bandLb: number): WeightChang
 /**
  * Latest body weight from the pooled series (scans and weigh-ins, oldest
  * first), with its change over the recent window and since the first reading.
- * A change no bigger than the noise band reads "within normal scan
+ * A change no bigger than the noise band reads "within normal
  * variation", the same rule the Insights views use, so no line rests on sign
  * alone. Weight only: it is the one body measurement with a band.
  */
@@ -182,10 +185,10 @@ export function bodyWeightStat(readings: readonly BodyReading[], bandLb: number,
 
 const lbText = (x: number): string => String(Number(x.toFixed(1)));
 
-/** "−2.1 lb in 90 days", "Within normal scan variation over 90 days". */
+/** "−2.1 lb in 90 days", "Within normal variation over 90 days". */
 export function weightChangeText(change: WeightChange, span: "recent" | "sinceFirst"): string {
   const tail = span === "recent" ? `${OVERVIEW_RECENT_DAYS} days` : "first reading";
-  if (change.kind === "within") return span === "recent" ? `Within normal scan variation over ${tail}` : `Within normal scan variation since ${tail}`;
+  if (change.kind === "within") return span === "recent" ? `Within normal variation over ${tail}` : `Within normal variation since ${tail}`;
   const signed = `${change.lb >= 0 ? "+" : MINUS}${lbText(Math.abs(change.lb))} lb`;
   return span === "recent" ? `${signed} in ${tail}` : `${signed} since ${tail}`;
 }

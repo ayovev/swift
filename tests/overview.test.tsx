@@ -104,6 +104,7 @@ describe("latestPrStat", () => {
     expect(latestPrStat(rows, TODAY)).toEqual({
       title: "Back Squat 3RM",
       display: "285 lb",
+      scoreType: "",
       date: dayjs(TODAY).subtract(12, "day").format("YYYY-MM-DD"),
       moreThatDay: 1,
       recentCount: 3,
@@ -129,10 +130,10 @@ describe("bodyWeightStat", () => {
     expect(stat.sinceFirst).toEqual({ kind: "change", lb: 183.4 - 195 });
   });
 
-  it("reads a change inside the noise band as within normal scan variation", () => {
+  it("reads a change inside the noise band as within normal variation", () => {
     const stat = bodyWeightStat([r(100, 184), r(3, 183)], 3, TODAY)!;
     expect(stat.recent).toEqual({ kind: "within" });
-    expect(weightChangeText(stat.recent!, "recent")).toBe("Within normal scan variation over 90 days");
+    expect(weightChangeText(stat.recent!, "recent")).toBe("Within normal variation over 90 days");
   });
 
   it("leaves the 90-day line out without a reading that old, or without one inside the window", () => {
@@ -429,5 +430,13 @@ describe("progressState and the empty-state words", () => {
 
   it("gives an old log the same reason Progress gives, not a session count", () => {
     expect(progressStat(h(0), "not-recent")).toEqual({ value: "No headline yet", lines: ["No lift or benchmark was logged in the last 12 months."] });
+  });
+});
+
+describe("Overview's most recent PR", () => {
+  it("shows the score with its unit, as a load in pounds", () => {
+    const rows = [liftRow(daysAgo(3), "Back Squat", 285, { pr: "PR", best_result_display: "285", title: "Back Squat 3RM" })];
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} />);
+    expect(screen.getByText(/^285 lb · Nov 6/)).toBeInTheDocument();
   });
 });

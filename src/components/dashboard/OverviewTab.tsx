@@ -21,6 +21,7 @@ import {
 import { pooledReadings, pooledScanRows } from "@/lib/analytics/weighIns";
 import { OVERVIEW_RECENT_DAYS } from "@/lib/analytics/insightConfig";
 import { cn } from "@/lib/utils";
+import { withScoreUnit } from "@/lib/format/scoreUnit";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { TimelineEntry } from "@/types/timeline";
@@ -167,7 +168,7 @@ export function OverviewTab({
             numeric={false}
             label="most recent PR"
             lines={[
-              [pr.display, shortDate(pr.date, today)].filter(Boolean).join(" · ") +
+              [pr.display && withScoreUnit(pr.display, pr.scoreType), shortDate(pr.date, today)].filter(Boolean).join(" · ") +
                 (pr.moreThatDay ? ` and ${pr.moreThatDay} more that day` : ""),
               pr.recentCount
                 ? `${pr.recentCount} ${pr.recentCount === 1 ? "PR" : "PRs"} in ${recent}`

@@ -59,7 +59,9 @@ A ruled row, as today, with four stats in this order. Each has a large figure an
       with the Progress stat beside it.
     - The code carries a comment saying so.
 11. Large figure: the PR's workout title as logged (for example, "Back Squat 3RM").
-12. Under it: the score as SugarWOD displays it, and the date (*"285 lb · Oct 28"*).
+12. Under it: the score as SugarWOD displays it with its unit from `score_type` (`withScoreUnit`: lb, reps, cal, m, in,
+    pts; a time or rounds plus reps as logged), and the date (*"285 lb · Oct 28"*). Loads are always pounds: SugarWOD
+    converts kilograms before export.
     - When several PRs share the latest date, show the first in log order and add *"and ⟨n⟩ more that day"*.
 13. Second line: *"⟨n⟩ PRs in the last 90 days"*, or *"None in the last 90 days"*.
 14. With no PR ever logged, the large figure reads *"No PRs logged"* and there are no lines under it.
@@ -72,7 +74,7 @@ A ruled row, as today, with four stats in this order. Each has a large figure an
 17. Line one, the 90-day change: from the last reading on or before the start of the window to the latest reading.
     - Left out when there is no reading that old.
 18. Line two, the change since the first reading.
-19. A change within the noise band (`weightBandLb`) reads *"within normal scan variation"* instead of a signed number.
+19. A change within the noise band (`weightBandLb`) reads *"within normal variation"* instead of a signed number.
     This is the same rule the Insights views use.
 20. Only weight appears on Overview. Lean mass, fat mass and body fat stay on Body Comp.
     - Why: weight is the one body measurement with a noise band, so it is the only one whose change can be qualified

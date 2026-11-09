@@ -123,9 +123,9 @@ describe("an entry's body weight and overlaps", () => {
     expect(entryBodyWeightLine(ENTRY, readings, 3, ASOF)).toBe("Body weight over this entry: 190 lb to 184 lb, down 6 lb.");
   });
 
-  it("calls a change inside the noise band within normal scan variation", () => {
+  it("calls a change inside the noise band within normal variation", () => {
     const flat = [{ date: "2025-05-01", weightLb: 190 }, { date: "2025-08-31", weightLb: 188 }];
-    expect(entryBodyWeightLine(ENTRY, flat, 3, ASOF)).toBe("Body weight over this entry: 190 lb to 188 lb, within normal scan variation.");
+    expect(entryBodyWeightLine(ENTRY, flat, 3, ASOF)).toBe("Body weight over this entry: 190 lb to 188 lb, within normal variation.");
   });
 
   it("says nothing without readings at both ends", () => {

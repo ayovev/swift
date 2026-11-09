@@ -276,7 +276,7 @@ Read each file's header comment before changing it; the cases are `tests/progres
   the "Logged in" filter and the evidence chart's numbers. Body composition never feeds a verdict or a count.
 
 The weight noise band (`weightNoiseBand.ts`) is the one older pipeline that remains: `weightBandLb` uses it to decide whether a body-weight change
-is "within normal scan variation".
+is "within normal variation".
 
 ## Architecture: the weight noise band
 
@@ -288,9 +288,10 @@ body fat have no band, because nothing compares them.
 
 - Every threshold lives in `insightConfig.ts` with a comment on how it was chosen, and every one is *tunable, validate against real data*: the
   repo bundles no real InBody history. Do not put a bare number in an insight module; add it there.
-- `insights/bodyReadings.ts` (`weightBandLb`) is the one reader of the band: a body-weight change no bigger than it reads "within normal scan
-  variation" (`bodyContext.ts`, `entryDisplay.ts`). It is fed the pooled scans and weigh-ins (`weighIns.ts`), so frequent weigh-ins reach a measured
-  band where scans months apart fall to the default.
+- `insights/bodyReadings.ts` (`weightBandLb`) is the one reader of the band: a body-weight change no bigger than it reads "within normal
+  variation" (`bodyContext.ts`, `entryDisplay.ts`, `overview.ts`). It is fed the pooled scans and weigh-ins (`weighIns.ts`), so frequent weigh-ins reach a measured
+  band where scans months apart fall to the default. The words name no source ("scan variation" read wrong on weigh-ins): the band is the
+  swing between readings taken close together, whatever took them.
 - The band is estimated from the athlete's whole history as of today, never from a per-subject window (too few readings).
 
 ## Open items: what is unvalidated or undecided
@@ -756,6 +757,10 @@ through, not a backlog of fixes.
   strictly (`parseDate()` in `buildDashboardData.ts`), never `new Date(str)`, which is
   locale-inconsistent for that format. `pr` is the literal `"PR"` and `rx_or_scaled` the
   literals `"RX"`/`"SCALED"`; anything else counts as neither.
+- **Loads are always pounds.** SugarWOD stores weights in pounds and converts anything logged in
+  kilograms before export, so the app reads every load as lb and never needs to detect a unit.
+  Scores elsewhere are shown with their unit by `withScoreUnit()` (`src/lib/format/scoreUnit.ts`),
+  from `score_type`; the display text itself is never rewritten.
 - `REQUIRED_COLUMNS` (`src/types/sugarwod.ts`) deliberately omits `set_details` and `notes`
   because nothing reads them — a slim export must not be rejected for missing them.
 - User-facing parse errors are plain language, mapped in `plainParseMessage()`. PapaParse's
