@@ -46,7 +46,7 @@ describe("the Insights front door", () => {
   it("writes a verdict with its change in pounds first", () => {
     renderSample();
     const row = within(group("Up")).getByText("Power Snatch").closest("li") as HTMLElement;
-    expect(within(row).getByText("+21 lb (124 to 145 lb), +16.8%")).toBeInTheDocument();
+    expect(within(row).getByText("+21 lb (124 to 145 lb est. 1RM), +16.8%")).toBeInTheDocument();
     const nancy = within(group("Down")).getByText("Nancy (Scaled)").closest("li") as HTMLElement;
     expect(within(nancy).getByText("0:50 slower (13:47 to 14:37), 6.0% slower")).toBeInTheDocument();
   });
@@ -87,7 +87,8 @@ describe("the Insights front door", () => {
     const row = screen.getByText(/^Hang Power Clean: 5 sessions\./).closest("li") as HTMLElement;
     expect(within(row).getByText(/Needs 1 more session for a verdict\./)).toBeInTheDocument();
     fireEvent.click(within(row).getByRole("button"));
-    expect(within(row).getByText("Each dot is the best result of a day.")).toBeInTheDocument();
+    expect(within(row).getByText("Each dot is the best result of a day. Loads are estimated one-rep maxes from sets of 1 to 8 reps.")).toBeInTheDocument();
+    expect(within(row).getByRole("img", { name: "Sessions of Hang Power Clean, as estimated one-rep maxes" })).toHaveTextContent(/^Est\. 1RM/);
   });
 
   it("shows no body-context line without body data and one with it", () => {

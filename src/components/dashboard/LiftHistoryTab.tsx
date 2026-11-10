@@ -89,7 +89,8 @@ export function LiftHistoryTab({ dashboard }: { dashboard: DashboardData }) {
         <CardContent>
           <p className="mb-3 text-sm text-muted-foreground">
             Each point is one logged effort, colored by rep scheme; a diamond marks a personal
-            record.
+            record. These are the loads as logged; Progress compares estimated one-rep maxes, so its
+            numbers run higher for sets of more than one rep.
           </p>
           <RepMaxPrTable lifts={dashboard.lifts} />
           <RepMaxLegend repMaxFilter={repMaxFilter} onRepMaxFilterChange={setRepMaxFilter} />

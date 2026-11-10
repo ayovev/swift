@@ -30,6 +30,11 @@ export interface ProgressSession {
   maxEffort: boolean;
   /** SugarWOD's own display of the score ("14:37", "17+20"), for a benchmark. */
   display?: string;
+  /**
+   * For a lift, the set the estimate was made from (`value` is its estimated 1RM): so the words can say "from 225 × 5" and never
+   * leave an estimate reading as a load that was lifted.
+   */
+  logged?: { load: number; reps: number };
 }
 
 export interface ProgressSubject {
@@ -152,7 +157,7 @@ export function buildProgressSubjects(rows: readonly SugarWodRow[]): { subjects:
         const text = `${raw.title ?? ""} ${raw.description ?? ""}`;
         const reps = parseRepMax(text);
         if (value === null || reps === null || reps < 1 || reps > PV_MAX_REPS) continue;
-        entries.push({ date: parseWorkoutDate(raw.date).format("YYYY-MM-DD"), value: estimateOneRepMax(value, reps), maxEffort: isMaxEffort(text) });
+        entries.push({ date: parseWorkoutDate(raw.date).format("YYYY-MM-DD"), value: estimateOneRepMax(value, reps), maxEffort: isMaxEffort(text), logged: { load: value, reps } });
       }
       if (entries.length === 0) continue;
       entries.sort((a, b) => (a.date < b.date ? -1 : 1));

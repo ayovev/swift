@@ -7,6 +7,7 @@ import { filterRowsByPeriod, periodRange } from "@/lib/analytics/insights/period
 import { buildProgressSubjects, parseRoundsReps, type ProgressSession, type ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { progressVerdict } from "@/lib/analytics/insights/verdict";
 import { workoutRow } from "./fixtures/rows";
+import { loadSampleRows } from "./fixtures/sampleRows";
 
 const s = (date: string, value: number, extra: Partial<ProgressSession> = {}): ProgressSession => ({ date, value, maxEffort: false, ...extra });
 
@@ -25,7 +26,7 @@ describe("display (A1-DSP)", () => {
   it("DSP-01 names the windows and gives the change in pounds first", () => {
     const t = verdictText(fsq, verdictOf(fsq));
     expect(t.windows).toBe("Last 4: Feb to Aug 2026 · Previous 4: Mar 2024 to Mar 2025");
-    expect(t.change).toBe("+16 lb (184 to 200 lb), +8.7%");
+    expect(t.change).toBe("+16 lb (184 to 200 lb est. 1RM), +8.7%");
   });
 
   it("DSP-02 shortens a window to its months", () => {
@@ -71,7 +72,7 @@ describe("display (A1-DSP)", () => {
 
   it("DSP-07 says so when the bests display the same", () => {
     const flat = lift("Back Squat", s("2025-01-10", 200), s("2025-02-10", 190), s("2025-03-10", 211.6), s("2025-04-10", 190), s("2025-05-10", 212.4), s("2025-06-10", 190));
-    expect(verdictText(flat, verdictOf(flat)).change).toBe("no change in the best (212 and 212 lb)");
+    expect(verdictText(flat, verdictOf(flat)).change).toBe("no change in the best (212 and 212 lb est. 1RM)");
     const t = subject("Nancy", "RX", "time", [s("2025-01-10", 900), s("2025-02-10", 827), s("2025-03-10", 900), s("2025-04-10", 900), s("2025-05-10", 827), s("2025-06-10", 900)]);
     expect(verdictText(t, verdictOf(t)).change).toBe("no change in the best (13:47 and 13:47)");
   });
@@ -90,7 +91,34 @@ describe("display (A1-DSP)", () => {
   it("VRD-17 writes the new best note", () => {
     const climb = lift("Deadlift", ...[100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111].map((v, i) => s(`2025-${String(i + 1).padStart(2, "0")}-10`, v)));
     const v = verdictOf(climb);
-    expect(newBestText(climb, v, v.previousBest)).toBe("New best: 111 lb on Dec 10, 2025, 3.7% above the previous best of 107 lb.");
+    expect(newBestText(climb, v, v.previousBest)).toBe("New best est. 1RM: 111 lb on Dec 10, 2025, 3.7% above the previous best of 107 lb.");
+  });
+
+  it("VRD-17b names the logged set a lift's new best was estimated from", () => {
+    const sets = [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111];
+    const climb = lift("Deadlift", ...sets.map((v, i) => s(`2025-${String(i + 1).padStart(2, "0")}-10`, v, { logged: { load: v - 6, reps: 2 } })));
+    const v = verdictOf(climb);
+    expect(newBestText(climb, v, v.previousBest)).toBe("New best est. 1RM: 111 lb on Dec 10, 2025 (from 105 × 2), 3.7% above the previous best of 107 lb.");
+  });
+
+  it("DSP-12 never lets a lift's estimate read as a load that was lifted", async () => {
+    // Over the real sample: every lift verdict line and every record note says the pounds are an estimate, and no benchmark does.
+    const { subjects } = buildProgressSubjects(await loadSampleRows());
+    let lifts = 0;
+    for (const sub of subjects) {
+      const v = progressVerdict(sub.sessions, sub.lowerIsBetter, sub.kind);
+      if (!v) continue;
+      const note = newBestText(sub, v, v.previousBest);
+      if (sub.format === "load") {
+        lifts++;
+        expect(verdictText(sub, v).change).toContain("est. 1RM");
+        if (note) expect(note).toMatch(/^New best est\. 1RM: .* \(from \d+ × \d+\)/);
+      } else {
+        expect(verdictText(sub, v).change).not.toContain("est.");
+        if (note) expect(note).not.toContain("est.");
+      }
+    }
+    expect(lifts).toBeGreaterThan(5);
   });
 });
 

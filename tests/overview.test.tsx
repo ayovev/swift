@@ -317,6 +317,15 @@ describe("OverviewTab panels", () => {
     expect(screen.queryByText("Last 90 days")).not.toBeInTheDocument();
   });
 
+  it("says a lift's change in What moved is an estimated 1RM, so it can't be read against the logged PR beside it", async () => {
+    const rows = await loadSampleRows();
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} />);
+    const moved = screen.getByText("What moved").closest("[data-slot=card]") as HTMLElement;
+    const changes = within(moved).getAllByText(/ lb\b/);
+    expect(changes.length).toBeGreaterThan(0);
+    for (const line of changes) expect(line.textContent).toContain("lb est. 1RM");
+  });
+
   it("keys the in-progress month's hatch, and only when the chart has a current month", () => {
     const current = [logRow(daysAgo(2), "FRAN")];
     const { unmount } = render(<OverviewTab insights={buildInsights(current)} workouts={current} asOf={TODAY} />);

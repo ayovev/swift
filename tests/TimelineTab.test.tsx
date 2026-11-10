@@ -103,7 +103,7 @@ describe("the Timeline view (A1-TLN-18 to 31)", () => {
     const lane = screen.getAllByRole("listitem").find((li) => li.getAttribute("data-lane")?.startsWith("power snatch")) as HTMLElement;
     fireEvent.click(within(lane).getByRole("button"));
     expect(within(selected()).getByRole("heading", { name: "Power Snatch" })).toBeInTheDocument();
-    expect(within(selected()).getByRole("img", { name: "Sessions of Power Snatch" })).toBeInTheDocument();
+    expect(within(selected()).getByRole("img", { name: "Sessions of Power Snatch, as estimated one-rep maxes" })).toBeInTheDocument();
   });
 
   it("TLN-25 gives a move up to RX a lane that does not open", () => {

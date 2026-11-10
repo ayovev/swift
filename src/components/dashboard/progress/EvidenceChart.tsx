@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { trendLine } from "@/lib/analytics/insights/chart";
 import { AXIS_TICK_COUNT, CLOCK_STEPS, ROUNDS_REPS_STEPS, formatDate, formatTimeTick, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
-import { formatClock, formatSession, roundsReps } from "@/lib/analytics/insights/display";
+import { formatClock, formatSession, loggedSetText, roundsReps } from "@/lib/analytics/insights/display";
+import { PV_MAX_REPS } from "@/lib/analytics/insightConfig";
 import { REPS_PER_ROUND, type ProgressSession, type ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/lib/analytics/insights/verdict";
 
@@ -105,11 +106,19 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
   const caption = verdict
     ? `Each dot is the best result of a day. Dark dots are the ${verdict.window} sessions before the recent ${verdict.window}; accent dots are the recent ${verdict.window}, which are compared. Grey dots are other sessions.${model.trend ? " The dashed line is the long-run trend." : ""}${rings ? " Rings mark max efforts." : ""}`
     : "Each dot is the best result of a day.";
+  // A lift's dots are estimated 1RMs, not loads that were lifted: the axis is titled so and the caption says where they come from.
+  const estimated = subject.format === "load";
+  const fullCaption = estimated ? `${caption} Loads are estimated one-rep maxes from sets of 1 to ${PV_MAX_REPS} reps.` : caption;
 
   return (
     <figure className="flex flex-col gap-1">
       <div className="relative" onMouseLeave={() => setHovered(null)}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Sessions of ${subject.name}`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Sessions of ${subject.name}${estimated ? ", as estimated one-rep maxes" : ""}`}>
+        {estimated ? (
+          <text x={4} y={9} className="fill-muted-foreground text-[10px]">
+            Est. 1RM
+          </text>
+        ) : null}
         <line x1={PAD.l} x2={PAD.l} y1={PAD.t - 6} y2={H - PAD.b + 6} className="stroke-border" strokeWidth={1} />
         <line x1={PAD.l} x2={W - PAD.r} y1={H - PAD.b + 6} y2={H - PAD.b + 6} className="stroke-border" strokeWidth={1} />
         {model.yTicks.map((t) => (
@@ -174,7 +183,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
       </svg>
       {hovered ? <DotTooltip subject={subject} session={hovered} x={model.X(dayNumber(hovered.date)) / W} y={model.Y(hovered.value) / H} /> : null}
       </div>
-      <figcaption className="text-xs text-muted-foreground">{caption}</figcaption>
+      <figcaption className="text-xs text-muted-foreground">{fullCaption}</figcaption>
     </figure>
   );
 }
@@ -199,6 +208,7 @@ function DotTooltip({ subject, session, x, y }: { subject: ProgressSubject; sess
         {lift ? " est." : ""}
       </span>
       <span className="text-muted-foreground">{formatDate(session.date)}</span>
+      {lift && loggedSetText(session) ? <span className="text-muted-foreground">from {loggedSetText(session)}</span> : null}
       {lift && session.maxEffort ? <span className="text-accent-link">Max effort</span> : null}
     </div>
   );
