@@ -27,6 +27,12 @@ describe("ALL_TABS", () => {
   it("has one entry per Overview, Workouts, Lifts, GPP domain, modality, Movements, Body Comp, Progress and Timeline", () => {
     expect(ALL_TABS).toHaveLength(1 + 1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
   });
+
+  it("never gives two tabs the same label", () => {
+    // The Cardio domain and the M modality were both "Cardio", side by side in Training's row: a tag and a share under one name.
+    const labels = ALL_TABS.map((t) => t.label);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
 });
 
 describe("SECTIONS", () => {

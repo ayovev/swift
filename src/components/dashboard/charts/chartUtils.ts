@@ -361,6 +361,11 @@ export const FIXED_REPMAX_COLORS: Record<RepMaxCategory, string> = {
  */
 export const MODALITY_DRAW_ORDER: readonly Modality[] = ["W", "G", "M"];
 
+/** A key item: the letter and the word ("W · Weightlifting"), so each teaches the other and the "M 33 / W 67" text elsewhere reads at a glance. */
+export function modalityKeyLabel(m: Modality): string {
+  return `${m} · ${MODALITY_SHORT_LABELS[m]}`;
+}
+
 export const FIXED_MODALITY_COLORS: Record<Modality, string> = {
   M: "var(--repmax-1)",
   W: "var(--repmax-3)",

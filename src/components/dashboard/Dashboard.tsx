@@ -398,7 +398,7 @@ export function Dashboard({
                 {" "}
                 {insights.modality.unclassified_count.toLocaleString()} of{" "}
                 {summary.total_logged.toLocaleString()} entries had no recognisable movement in them
-                and sit outside the cardio/weights/gymnastics split.
+                and sit outside the M/W/G split.
               </>
             ) : null}
           </p>

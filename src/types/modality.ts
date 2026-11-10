@@ -12,21 +12,27 @@ export const MODALITY_LIST = ["M", "W", "G"] as const;
 
 export type Modality = (typeof MODALITY_LIST)[number];
 
+/**
+ * One name per modality, used for its tab, page title, key, tooltip and copy alike. M is "Monostructural", CrossFit's own word for
+ * it and the one that matches the letter, and never "Cardio": that is the short label of the Cardiovascular/Respiratory Endurance
+ * domain, and two tabs in one row both read "Cardio", for a tag and for a share, which are the two things the athlete most needs to
+ * tell apart. M had also been "Metabolic Conditioning" as a title and "cardio" in copy: four names for one thing.
+ */
 export const MODALITY_NAMES: Record<Modality, string> = {
-  M: "Metabolic Conditioning",
+  M: "Monostructural",
   W: "Weightlifting",
   G: "Gymnastics",
 };
 
 export const MODALITY_SHORT_LABELS: Record<Modality, string> = {
-  M: "Cardio",
+  M: "Monostructural",
   W: "Weightlifting",
   G: "Gymnastics",
 };
 
 export const MODALITY_BLURBS: Record<Modality, string> = {
   M:
-    "Monostructural cardio — the long-cycle engine work that moves you through space at a steady pattern: running, rowing, biking, skiing, jumping rope. In CrossFit terms this is the \"M\" of M/W/G, and it counts only the movement itself, not how hard a workout feels. A brutal thruster couplet is punishing metabolic work, but it is scored here as weightlifting and gymnastics, because that is what you were actually doing.",
+    "Monostructural work — the long-cycle engine work that moves you through space at a steady pattern: running, rowing, biking, skiing, jumping rope. In CrossFit terms this is the \"M\" of M/W/G, and it counts only the movement itself, not how hard a workout feels. A brutal thruster couplet is punishing metabolic work, but it is scored here as weightlifting and gymnastics, because that is what you were actually doing.",
   W:
     "Moving an external load — barbells, dumbbells, kettlebells, wall balls, sandbags, and carries. Everything from a max-effort single to a light barbell cycled for reps in a metcon. If the weight is separate from your body and you are moving it, it lands here.",
   G:

@@ -4,10 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ModalityBar } from "./charts/ModalityBar";
-import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, formatShortDate } from "./charts/chartUtils";
+import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, formatShortDate, modalityKeyLabel } from "./charts/chartUtils";
 import { formatWorkoutDescription, isLevelLabel } from "@/lib/format/workoutDescription";
 import { cn } from "@/lib/utils";
-import { MODALITY_SHORT_LABELS, type ModalityData } from "@/types/modality";
+import type { ModalityData } from "@/types/modality";
 import type { DashboardSummary } from "@/types/dashboard";
 
 const PAGE_SIZE = 50;
@@ -78,7 +78,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
           </p>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Every workout in this export, most recent first, with its proportional split across
-            metabolic conditioning, weightlifting and gymnastics.
+            weightlifting, gymnastics and monostructural work.
           </p>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4">
@@ -89,7 +89,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
                   style={{ backgroundColor: FIXED_MODALITY_COLORS[m] }}
                   aria-hidden="true"
                 />
-                {MODALITY_SHORT_LABELS[m]}
+                {modalityKeyLabel(m)}
               </span>
             ))}
             {data.unclassified_count > 0 ? (
@@ -132,7 +132,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
             <div className="overflow-hidden rounded-lg border border-border">
               <table className="w-full text-sm">
                 <caption className="sr-only">
-                  Every logged workout with its metabolic/weightlifting/gymnastics split; each row
+                  Every logged workout with its M/W/G split; each row
                   expands to the full description and score
                 </caption>
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">

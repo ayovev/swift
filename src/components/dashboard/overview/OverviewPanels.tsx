@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
+import { AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, modalityKeyLabel, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
 import type { BodyReading } from "@/lib/analytics/insights/bodyContext";
 import { displayName, moveUpText, verdictText } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
@@ -18,7 +18,6 @@ import {
 } from "@/lib/analytics/overview";
 import { entryName, entrySpanText } from "@/lib/analytics/timeline";
 import { cn } from "@/lib/utils";
-import { MODALITY_SHORT_LABELS } from "@/types/modality";
 import { AREA_LABEL } from "@/types/timeline";
 
 /**
@@ -172,7 +171,7 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
 /**
  * The M/W/G split per month, on the same 12 months, margins and axis width as
  * MonthlyDaysChart above it, so each month's column lines up under its days
- * bar. Each bar is that month's share of cardio, weightlifting and gymnastics,
+ * bar. Each bar is that month's share of weightlifting, gymnastics and monostructural work,
  * summing to 100; a month with no classified workout has no bar. The current
  * month is a share, not an amount, so it is not hatched: a partial month's
  * split is as valid as a full one's, and its tooltip still says "so far".
@@ -191,8 +190,8 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
   const last = mix[mix.length - 1];
   const aria =
     first && last
-      ? `Stacked bar chart of each month's cardio, weightlifting and gymnastics share, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
-      : "Stacked bar chart of each month's cardio, weightlifting and gymnastics share";
+      ? `Stacked bar chart of each month's weightlifting, gymnastics and monostructural share, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
+      : "Stacked bar chart of each month's weightlifting, gymnastics and monostructural share";
   return (
     <ChartContainer config={MODALITY_FIXED_CHART_CONFIG} className="h-[160px] w-full min-w-0" role="img" aria-label={aria}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} maxBarSize={MAX_BAR_PX}>
@@ -219,7 +218,7 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
                 </div>
                 {p.workouts ? (
                   <div className="text-muted-foreground tabular">
-                    {MODALITY_DRAW_ORDER.map((m) => `${MODALITY_SHORT_LABELS[m]} ${Math.round(p[m])}%`).join(" · ")}
+                    {MODALITY_DRAW_ORDER.map((m) => `${m} ${Math.round(p[m])}%`).join(" · ")}
                   </div>
                 ) : (
                   <div className="text-muted-foreground">No classified workouts</div>
@@ -274,7 +273,7 @@ export function TrainingPanel({
           )}
         </div>
         <section aria-label="What it was made of" className="flex flex-col gap-2 border-t border-border pt-4">
-          <h3 className="text-sm font-medium">Cardio, weightlifting, gymnastics</h3>
+          <h3 className="text-sm font-medium">Weightlifting, gymnastics, monostructural</h3>
           {anyMix ? (
             <>
               <MonthlyMixChart mix={mix} />
@@ -282,7 +281,7 @@ export function TrainingPanel({
                 {MODALITY_DRAW_ORDER.map((m) => (
                   <span key={m} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: FIXED_MODALITY_COLORS[m] }} aria-hidden />
-                    {MODALITY_SHORT_LABELS[m]}
+                    {modalityKeyLabel(m)}
                   </span>
                 ))}
               </div>

@@ -13,7 +13,7 @@ There is no account to make and no server to send your file to.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png">
-  <img alt="Swift's Overview page: totals for days trained, the most recent PR, body weight and the Progress headline, then days trained and the cardio, weightlifting and gymnastics split for each of the last 12 months." src="docs/images/overview-light.png">
+  <img alt="Swift's Overview page: totals for days trained, the most recent PR, body weight and the Progress headline, then days trained and the weightlifting, gymnastics and monostructural split for each of the last 12 months." src="docs/images/overview-light.png">
 </picture>
 
 
@@ -23,7 +23,7 @@ There is no account to make and no server to send your file to.
   and a timeline of PRs.
 - **What your training is made of.** A breakdown across the ten CrossFit
   general physical skills (the GPP domains), and the proportional mix of
-  metabolic conditioning, weightlifting and gymnastics (M/W/G) in your log.
+  monostructural work, weightlifting and gymnastics (M/W/G) in your log.
 - **Is each lift moving?** A verdict for every lift and benchmark (Up, Down,
   Not tested since, No clear change), a headline across them, and the evidence
   behind each. Body weight, from an InBody export or weigh-ins you enter, is
