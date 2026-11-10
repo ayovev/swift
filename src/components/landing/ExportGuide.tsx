@@ -9,16 +9,21 @@ interface ExportSource {
   steps: readonly string[];
 }
 
+/**
+ * The SugarWOD steps up to the CSV, shared with the stale-log nudge ("How to
+ * export"). The last step differs by where it is read, so each caller adds its own.
+ */
+export const SUGARWOD_EXPORT_STEPS: readonly string[] = [
+  "Open SugarWOD and go to your training log.",
+  "Choose Export Workouts.",
+  "Pick a date range — your full history gives Swift the most to work with.",
+];
+
 const SOURCES: readonly ExportSource[] = [
   {
     id: "sugarwod",
     label: "SugarWOD",
-    steps: [
-      "Open SugarWOD and go to your training log.",
-      "Choose Export Workouts.",
-      "Pick a date range — your full history gives Swift the most to work with.",
-      "SugarWOD gives you a CSV. That's the file to drop in above.",
-    ],
+    steps: [...SUGARWOD_EXPORT_STEPS, "SugarWOD gives you a CSV. That's the file to drop in above."],
   },
   {
     id: "inbody",
@@ -31,6 +36,25 @@ const SOURCES: readonly ExportSource[] = [
     ],
   },
 ] as const;
+
+/** A numbered list of export steps, in a bordered box. */
+export function ExportStepList({ steps }: { steps: readonly string[] }) {
+  return (
+    <ol className="flex flex-col gap-3 rounded-lg border border-border p-4">
+      {steps.map((step, i) => (
+        <li key={step} className="flex gap-3">
+          <span
+            className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border text-[11px] font-semibold tabular"
+            aria-hidden="true"
+          >
+            {i + 1}
+          </span>
+          <span className="text-sm leading-relaxed text-muted-foreground">{step}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 /** Collapsed by default — a step-by-step guide for athletes who don't have their export yet. */
 export function ExportGuide() {
@@ -56,19 +80,7 @@ export function ExportGuide() {
           </TabsList>
           {SOURCES.map((source) => (
             <TabsContent key={source.id} value={source.id}>
-              <ol className="flex flex-col gap-3 rounded-lg border border-border p-4">
-                {source.steps.map((step, i) => (
-                  <li key={step} className="flex gap-3">
-                    <span
-                      className="flex size-5 shrink-0 items-center justify-center rounded-full border border-border text-[11px] font-semibold tabular"
-                      aria-hidden="true"
-                    >
-                      {i + 1}
-                    </span>
-                    <span className="text-sm leading-relaxed text-muted-foreground">{step}</span>
-                  </li>
-                ))}
-              </ol>
+              <ExportStepList steps={source.steps} />
             </TabsContent>
           ))}
         </Tabs>

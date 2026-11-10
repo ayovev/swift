@@ -405,6 +405,38 @@ describe("App — daily granularity gating", () => {
 });
 
 describe("App — stale workout log nudge", () => {
+  it("opens the SugarWOD export steps in place from 'How to export'", async () => {
+    await saveWorkoutRows([graceRow("01/05/2020")]);
+    renderApp();
+    await findDashboard();
+    expect(screen.queryByText(/Choose Export Workouts/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /how to export/i }));
+    expect(screen.getByText(/Choose Export Workouts/)).toBeInTheDocument();
+    expect(screen.getByText(/Choose Replace file here/)).toBeInTheDocument();
+  });
+
+  it("names the last workout on Insights, where nothing above it does, but not on Overview", async () => {
+    await saveWorkoutRows([graceRow("01/05/2020")]);
+    await saveWorkoutMeta({ uploadedAt: new Date(Date.now() - 45 * 86_400_000).toISOString() });
+    renderApp();
+    await findDashboard();
+    expect(screen.getByRole("complementary", { name: /out of date/i }).textContent).not.toMatch(/last workout logged/i);
+    fireEvent.click(screen.getByRole("button", { name: "Insights" }));
+    expect(screen.getByRole("complementary", { name: /out of date/i }).textContent).toMatch(/last workout logged/i);
+  });
+
+  it("says what a replacement added once it has loaded", async () => {
+    await saveWorkoutRows([graceRow("01/05/2020")]);
+    await saveWorkoutMeta({ uploadedAt: new Date(Date.now() - 45 * 86_400_000).toISOString() });
+    renderApp();
+    await findDashboard();
+    const input = document.querySelector('aside input[type="file"]');
+    if (!input) throw new Error("expected the nudge's file input");
+    const file = new File([loadSampleCsvText()], "export.csv", { type: "text/csv" });
+    fireEvent.change(input, { target: { files: [file] } });
+    await screen.findByText(/new workouts since your last upload/i, undefined, { timeout: 3000 });
+  }, 15000);
+
   const staleLine = () => screen.queryByRole("complementary", { name: "Workout log may be out of date" });
 
   it("shows on Overview for an old upload and not for a fresh one", async () => {

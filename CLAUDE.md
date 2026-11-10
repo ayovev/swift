@@ -572,6 +572,10 @@ saved before `uploadedAt` existed falls back to the last workout's age. `today` 
   rows. `finishSuccessfulLoad` stamps it, so a sync or backup restore is stamped when it **arrived**, not when the export was made (neither format
   carries the date; an old backup can look fresher than it is). A new file clears the snooze; Start over wipes the key. Sample data gets none
   and never nags.
+- The sentence leads with the upload's age; the last workout's date is added only where the page does not already print it (Insights, not Overview).
+  "How to export" opens the SugarWOD steps in place (`ExportStepList`, shared with the landing guide), since the athlete often has no current CSV.
+  A replacement's reveal says how many entries it added (`countNewRows`, `lib/analytics/newRows.ts`: a multiset on day, title, description and
+  score, so an edited score counts as new) and says "No new workouts" when none; a first upload has no such line.
 - Per-device, so it does not sync or back up. Analytics: `stale_log_replace_clicked` and `stale_log_snoozed`, value-free.
 
 ## Architecture: app state and local persistence

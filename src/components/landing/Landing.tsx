@@ -23,6 +23,7 @@ import type { WeighIn } from "@/types/weighIn";
 interface RevealSummary {
   workoutCount: number;
   prCount: number;
+  newCount?: number | undefined;
 }
 
 interface LandingProps {
@@ -129,7 +130,7 @@ export function Landing({
 
           <div className="mt-9">
             {reveal ? (
-              <UploadReveal workoutCount={reveal.workoutCount} prCount={reveal.prCount} />
+              <UploadReveal workoutCount={reveal.workoutCount} prCount={reveal.prCount} newCount={reveal.newCount} />
             ) : (
               <UploadDropzone
                 loading={loading}

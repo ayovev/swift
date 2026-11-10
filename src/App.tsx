@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
 import { Dashboard } from "@/components/dashboard/Dashboard";
@@ -26,6 +26,7 @@ import {
   saveWorkoutRows,
   type WorkoutMeta,
 } from "@/lib/storage/workoutStorage";
+import { countNewRows } from "@/lib/analytics/newRows";
 import { STALE_LOG_SNOOZE_DAYS } from "@/lib/analytics/insightConfig";
 import type { InBodyRow } from "@/types/inbody";
 import type { TimelineEntry } from "@/types/timeline";
@@ -36,6 +37,8 @@ export type DataSource = "upload" | "sample";
 interface RevealSummary {
   workoutCount: number;
   prCount: number;
+  /** Entries not in the log this load replaced. Absent when nothing was loaded before it. */
+  newCount?: number;
 }
 
 type AppState =
@@ -88,6 +91,8 @@ export default function App() {
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [weighIns, setWeighIns] = useState<WeighIn[]>([]);
   // When the stored workout log reached this browser, and its stale-log snooze. Null for sample data and for caches saved before this existed.
+  // The uploaded log currently on screen, kept so a replacement can say what it added. Cleared by reset().
+  const previousRowsRef = useRef<SugarWodRow[] | null>(null);
   const [workoutMeta, setWorkoutMeta] = useState<WorkoutMeta | null>(null);
 
   // Restore whatever was uploaded last time — persistence is local-only (see
@@ -163,6 +168,10 @@ export default function App() {
     });
   }, [rangePreset, range]);
 
+  useEffect(() => {
+    if (state.status === "ready" && state.source === "upload") previousRowsRef.current = state.rows;
+  }, [state]);
+
   const insights = useMemo(
     () => (state.status === "ready" ? buildInsights(state.rows, range, granularity) : null),
     [state, range, granularity]
@@ -213,6 +222,7 @@ export default function App() {
       const generatedTimeline = generateSampleTimeline(rows);
       setTimeline((prev) => (prev.length > 0 ? prev : generatedTimeline));
     }
+    const previous = source === "upload" ? previousRowsRef.current : null;
     setState({
       status: "reveal",
       rows,
@@ -220,6 +230,7 @@ export default function App() {
       summary: {
         workoutCount: rows.length,
         prCount: rows.filter((r) => r.pr === "PR").length,
+        ...(previous ? { newCount: countNewRows(previous, rows) } : {}),
       },
     });
   }, []);
@@ -417,6 +428,7 @@ export default function App() {
     setTimeline([]);
     setWeighIns([]);
     setWorkoutMeta(null);
+    previousRowsRef.current = null;
     // "Start over" is also the one clear-my-data control: without wiping
     // storage here, a reload would silently restore the data this button
     // just appeared to discard.

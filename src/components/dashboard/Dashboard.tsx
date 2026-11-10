@@ -310,6 +310,7 @@ export function Dashboard({
             <StaleLogNudge
               staleness={staleness}
               today={today}
+              includeLastWorkout={sectionOf(tab) !== "Overview"}
               onWorkoutFile={onWorkoutFile}
               onSnooze={onSnoozeStaleNudge}
             />
