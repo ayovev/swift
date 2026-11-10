@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
-import { modalityColor, unclassifiedNote } from "./charts/chartUtils";
+import { modalityColor, splitText, unclassifiedNote } from "./charts/chartUtils";
 import { TrendStat } from "./TrendStat";
 import { WorkoutList } from "./WorkoutList";
 import { GRANULARITY_NOUN, granularityLabel, type Granularity } from "@/lib/analytics/granularity";
@@ -40,7 +40,7 @@ export function ModalityTab({
     date: w.date,
     title: w.title,
     reason: `${w.share.toFixed(0)}%`,
-    detail: `${w.movements.join(", ") || "—"} · M ${w.split.M.toFixed(0)} / W ${w.split.W.toFixed(0)} / G ${w.split.G.toFixed(0)}`,
+    detail: `${w.movements.join(", ") || "—"} · ${splitText(w.split)}`,
   }));
   const shown = picked ? rows.filter((r) => inPicked(r.date)) : rows;
 

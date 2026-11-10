@@ -345,7 +345,7 @@ export function Dashboard({
           </TabsContent>
 
           <TabsContent value={WORKOUTS_TAB}>
-            <WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} />
+            <WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} ranged={range !== null} />
           </TabsContent>
 
           <TabsContent value={LIFT_HISTORY_TAB}>

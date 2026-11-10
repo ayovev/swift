@@ -66,4 +66,20 @@ describe("Workouts summary line", () => {
     expect(line).toBeInTheDocument();
     expect(line.textContent).toContain(`${insights.dashboard.summary.total_logged.toLocaleString()} workouts logged`);
   });
+
+  it("says this export for all time and this range once a date range narrows it", () => {
+    const { unmount } = render(<WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} />);
+    expect(screen.getByText(/^Every workout in this export, most recent first/)).toBeInTheDocument();
+    unmount();
+    render(<WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} ranged />);
+    expect(screen.getByText(/^Every workout in this range, most recent first/)).toBeInTheDocument();
+  });
+
+  it("writes each row's split in the order its bar is drawn, under a header in the same order", () => {
+    render(<WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} />);
+    expect(screen.getByRole("columnheader", { name: "W / G / M" })).toBeInTheDocument();
+    const split = screen.getAllByText(/^W \d+ · G \d+ · M \d+$/);
+    expect(split.length).toBeGreaterThan(0);
+    expect(screen.queryByText(/^M \d+ \/ W \d+ \/ G \d+$/)).not.toBeInTheDocument();
+  });
 });

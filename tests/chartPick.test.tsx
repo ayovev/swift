@@ -167,11 +167,14 @@ describe("WorkoutList narrowed to a picked point", () => {
     expect(screen.getByText("Oct '24")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Show every workout" }));
     expect(onClear).toHaveBeenCalledOnce();
+    // The rows are the picked point's, so the toggle says "these", not "all".
+    expect(screen.getByRole("button", { name: "Hide this workout" })).toBeInTheDocument();
   });
 
   it("stays closed without a pick, as before", () => {
     render(<WorkoutList rows={rows} emptyMessage="none" />);
     expect(screen.queryByText("FRAN")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show all 1 workout" })).toBeInTheDocument();
   });
 });
 

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ModalityBar } from "./charts/ModalityBar";
-import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, formatShortDate, modalityKeyLabel } from "./charts/chartUtils";
+import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, formatShortDate, modalityKeyLabel, splitText } from "./charts/chartUtils";
 import { formatWorkoutDescription, isLevelLabel } from "@/lib/format/workoutDescription";
 import { cn } from "@/lib/utils";
 import type { ModalityData } from "@/types/modality";
@@ -41,7 +41,16 @@ export function workoutsSummaryParts(summary: DashboardSummary): string[] {
  * data already sitting in ParsedRow.raw and unused elsewhere in this tab, so
  * no new parsing or fetch is involved, just surfacing it on click.
  */
-export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: DashboardSummary }) {
+export function WorkoutsTab({
+  data,
+  summary,
+  ranged = false,
+}: {
+  data: ModalityData;
+  summary: DashboardSummary;
+  /** A date range narrows the list (anything but all time), so the copy says "this range", not "this export". */
+  ranged?: boolean;
+}) {
   const [query, setQuery] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -77,7 +86,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
             {workoutsSummaryParts(summary).join(" · ")}
           </p>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Every workout in this export, most recent first, with its proportional split across
+            Every workout in {ranged ? "this range" : "this export"}, most recent first, with its proportional split across
             weightlifting, gymnastics and cardio.
           </p>
 
@@ -127,7 +136,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
           </div>
 
           {total === 0 ? (
-            <p className="text-sm text-muted-foreground">No workouts in this export.</p>
+            <p className="text-sm text-muted-foreground">No workouts in {ranged ? "this range" : "this export"}.</p>
           ) : (
             <div className="overflow-hidden rounded-lg border border-border">
               <table className="w-full text-sm">
@@ -140,7 +149,8 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
                     <th scope="col" className="px-3 py-2 text-left font-medium">Date</th>
                     <th scope="col" className="px-3 py-2 text-left font-medium">Workout</th>
                     <th scope="col" className="w-48 px-3 py-2 text-left font-medium sm:w-64">
-                      M / W / G
+                      {/* In draw order, as the bar and the text under it run (MODALITY_DRAW_ORDER). */}
+                      W / G / M
                     </th>
                   </tr>
                 </thead>
@@ -188,7 +198,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
                             <ModalityBar split={w.split} classified={w.classified} />
                             <div className="mt-1 text-xs text-muted-foreground tabular">
                               {w.classified
-                                ? `M ${w.split.M.toFixed(0)} / W ${w.split.W.toFixed(0)} / G ${w.split.G.toFixed(0)}`
+                                ? splitText(w.split)
                                 : "not classified"}
                             </div>
                           </td>

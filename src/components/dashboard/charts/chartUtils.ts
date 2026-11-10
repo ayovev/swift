@@ -370,6 +370,14 @@ export function unclassifiedNote(n: number): string | null {
   return n === 1 ? "1 workout with no recognised movement is left out." : `${n.toLocaleString()} workouts with no recognised movement are left out.`;
 }
 
+/**
+ * A workout's split as text, in the same order its bar is drawn (MODALITY_DRAW_ORDER): "W 67 · G 0 · M 33". The bar runs W, G, M left
+ * to right; text in the canonical M, W, G order under it read the segments backwards.
+ */
+export function splitText(split: Record<Modality, number>): string {
+  return MODALITY_DRAW_ORDER.map((m) => `${m} ${split[m].toFixed(0)}`).join(" · ");
+}
+
 /** A key item: the letter and the word ("W · Weightlifting"), so each teaches the other and the "M 33 / W 67" text elsewhere reads at a glance. */
 export function modalityKeyLabel(m: Modality): string {
   return `${m} · ${MODALITY_SHORT_LABELS[m]}`;

@@ -76,7 +76,13 @@ export function WorkoutList({
             className={cn("size-4 transition-transform", open && "rotate-180")}
             aria-hidden="true"
           />
-          {open ? "Hide" : "Show"} all {rows.length.toLocaleString()} workouts
+          {/* Narrowed to a picked point, the rows are that point's, not all of them. */}
+          {open ? "Hide" : "Show"}{" "}
+          {scope
+            ? rows.length === 1
+              ? "this workout"
+              : `these ${rows.length.toLocaleString()} workouts`
+            : `all ${rows.length.toLocaleString()} ${rows.length === 1 ? "workout" : "workouts"}`}
         </Button>
       </CollapsibleTrigger>
 
