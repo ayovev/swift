@@ -35,7 +35,7 @@ describe("Training → Lifts", () => {
     for (let i = 1; i < titles.length; i++) {
       expect(titles[i - 1]!.compareDocumentPosition(titles[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
-    expect(screen.getByRole("group", { name: "Filter by rep-max scheme" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Highlight a rep scheme" })).toBeInTheDocument();
   });
 
   it("no longer appear on Overview", () => {

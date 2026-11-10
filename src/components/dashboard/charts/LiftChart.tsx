@@ -5,12 +5,14 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import {
   repMaxCategory,
   repMaxLabel,
+  type RepMaxCategory,
   type TrackedRepMaxCategory,
 } from "@/lib/analytics/repMax";
 import {
   AXIS_PROPS,
   FIXED_REPMAX_COLORS,
   NUM_AXIS_WIDTH,
+  REP_MAX_CATEGORY_ORDER,
   formatDate,
   formatTimeTick,
   niceAxisTicks,
@@ -25,79 +27,84 @@ const CONFIG = {
   value: { label: "Load", color: "var(--primary)" },
 } as const;
 
-/** Which rep-max scheme's points to show — "all" or exactly one tracked scheme. */
-export type RepMaxFilter = "all" | TrackedRepMaxCategory;
+/**
+ * Which rep scheme each chart highlights: "most" (each lift's own most-logged scheme, the default) or one tracked scheme for every
+ * chart. It moves the emphasis and hides nothing: the other efforts stay on the chart in grey.
+ */
+export type RepMaxHighlight = "most" | TrackedRepMaxCategory;
+
+/** A lift needs this many logged efforts for a chart; fewer go in the "Also logged" line, since 3 to 5 points draw no trend. */
+export const MIN_CHART_EFFORTS = 6;
+
+/** The scheme a lift logged most often, tracked schemes winning ties in REP_MAX_CATEGORY_ORDER (1RM first). */
+export function mostLoggedScheme(entries: readonly LiftEntry[]): RepMaxCategory {
+  const counts = new Map<RepMaxCategory, number>();
+  for (const e of entries) if (e.value > 0) counts.set(repMaxCategory(e.repMax), (counts.get(repMaxCategory(e.repMax)) ?? 0) + 1);
+  let best: RepMaxCategory = "other";
+  let n = 0;
+  for (const c of [...REP_MAX_CATEGORY_ORDER, "other" as const]) {
+    const k = counts.get(c) ?? 0;
+    if (k > n) [best, n] = [c, k];
+  }
+  return best;
+}
+
+const SHORT_SCHEME: Record<RepMaxCategory, string> = { "1RM": "1RM", "2RM": "2RM", "3RM": "3RM", "5RM": "5RM", other: "Other schemes" };
+
+/** The highlighted scheme's colour; "other" (no rep count read from the text) is the ink, since its fixed colour is the grey of the rest. */
+const highlightColor = (c: RepMaxCategory) => (c === "other" ? "var(--foreground)" : FIXED_REPMAX_COLORS[c]);
+
+interface LiftPoint extends LiftEntry {
+  t: number;
+  scheme: string;
+  category: RepMaxCategory;
+  emph: boolean;
+}
 
 function LiftDot({
   cx,
   cy,
   payload,
-  colorFor,
+  color,
   picked,
 }: {
   cx?: number;
   cy?: number;
-  payload?: { pr: boolean; repMax: number | null; date: string };
-  colorFor: (repMax: number | null) => string;
+  payload?: LiftPoint;
+  /** The highlighted scheme's colour; every other effort is grey. */
+  color: string;
   /** The picked dot's date (ChartPick.tsx); that dot gets a ring in the foreground ink. */
   picked?: string | null;
 }) {
   if (cx === undefined || cy === undefined || !payload) return null;
-  const r = 4;
-  const fill = colorFor(payload.repMax);
+  const r = payload.emph ? 4 : 3.5;
+  const fill = payload.emph ? color : "var(--muted-foreground)";
+  const opacity = payload.emph ? 1 : 0.4;
   // A transparent circle 24px across under every dot: the hit target for a finger or a pointer, bigger than the 8px mark (a pinpoint
   // target misses), and the element that names its point for picking (ChartPick.tsx).
   const hit = <circle cx={cx} cy={cy} r={12} fill="transparent" data-pick={payload.date} />;
-  if (picked && picked === payload.date) {
-    return (
-      <g data-pick={payload.date}>
-        {hit}
-        <circle cx={cx} cy={cy} r={8} fill="none" stroke="var(--foreground)" strokeWidth={1.5} />
-        <circle cx={cx} cy={cy} r={r} fill={fill} />
-      </g>
-    );
-  }
   // A PR only gets the diamond treatment for the 4 tracked rep-max schemes —
   // an "other" rep scheme (a 4RM, a 6+RM, unspecified) isn't one we claim to
   // track precisely enough to call out as a record shape.
-  const isTrackedPr = payload.pr && repMaxCategory(payload.repMax) !== "other";
-  if (isTrackedPr) {
-    return (
-      <g data-pick={payload.date}>
-      {hit}
-      <rect
-        x={cx - r}
-        y={cy - r}
-        width={r * 2}
-        height={r * 2}
-        transform={`rotate(45 ${cx} ${cy})`}
-        fill={fill}
-        fillOpacity={0.85}
-      />
-      </g>
-    );
-  }
+  const isTrackedPr = payload.pr && payload.category !== "other";
+  const mark = isTrackedPr ? (
+    <rect x={cx - r} y={cy - r} width={r * 2} height={r * 2} transform={`rotate(45 ${cx} ${cy})`} fill={fill} fillOpacity={opacity} />
+  ) : (
+    <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={opacity} />
+  );
   return (
-    <g data-pick={payload.date}>
+    <g data-pick={payload.date} data-emph={payload.emph ? "" : undefined}>
       {hit}
-      <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.85} />
+      {picked && picked === payload.date ? <circle cx={cx} cy={cy} r={8} fill="none" stroke="var(--foreground)" strokeWidth={1.5} /> : null}
+      {mark}
     </g>
   );
 }
 
-/**
- * One lift's progression.
- *
- * Plotted as points rather than a single connected line, because a SugarWOD
- * log mixes rep schemes: a 165 lb 5RM and a 165 lb single are not the same
- * data point, and joining them draws a progression that never happened. The
- * rep scheme is inferred where the workout text allows (see repMax.ts) and
- * shown in the tooltip; points are connected only within the same scheme.
- */
 export function LiftChart({
   liftName,
   entries,
-  repMaxFilter,
+  highlight,
   xDomain,
   xTicks,
   xTickUnit,
@@ -105,7 +112,7 @@ export function LiftChart({
 }: {
   liftName: string;
   entries: LiftEntry[];
-  repMaxFilter: RepMaxFilter;
+  highlight: RepMaxHighlight;
   // Shared across every chart in the grid (see LiftGrid) so the same
   // calendar date lands at the same horizontal position in every small
   // multiple — each chart auto-scaling to its own tight date range instead
@@ -129,26 +136,19 @@ export function LiftChart({
     : undefined;
   const { track, onPointerUp, onKeyDown } = usePointPick(pick, picked);
   const [view] = useChartView();
-  const allData = useMemo(
-    () =>
-      entries
-        .filter((e) => e.value > 0)
-        .map((e) => ({
-          ...e,
-          t: new Date(e.date).getTime(),
-          scheme: repMaxLabel(e.repMax),
-          category: repMaxCategory(e.repMax),
-        })),
-    [entries]
-  );
-
-  const data = useMemo(
-    () =>
-      repMaxFilter === "all" ? allData : allData.filter((d) => d.category === repMaxFilter),
-    [allData, repMaxFilter]
-  );
-
-  const colorFor = (repMax: number | null) => FIXED_REPMAX_COLORS[repMaxCategory(repMax)];
+  const emphCategory: RepMaxCategory = highlight === "most" ? mostLoggedScheme(entries) : highlight;
+  const color = highlightColor(emphCategory);
+  const data = useMemo(() => {
+    const rows = entries
+      .filter((e) => e.value > 0)
+      .map((e) => ({ ...e, t: new Date(e.date).getTime(), scheme: repMaxLabel(e.repMax), category: repMaxCategory(e.repMax) }))
+      .map((e) => ({ ...e, emph: e.category === emphCategory }))
+      .sort((a, b) => a.t - b.t);
+    return rows satisfies LiftPoint[];
+  }, [entries, emphCategory]);
+  const emph = data.filter((d) => d.emph);
+  const latest = emph[emph.length - 1];
+  const rest = data.filter((d) => !d.emph);
 
   if (data.length < 2) return null;
   const pickedPoint = picked ? data.find((d) => d.date === picked) : undefined;
@@ -162,10 +162,22 @@ export function LiftChart({
 
   return (
     <div>
-      <div className="mb-1 flex items-baseline justify-between gap-2">
+      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <h3 className="text-sm font-medium">{liftName}</h3>
-        <span className="text-xs text-muted-foreground tabular">
-          best {best.toLocaleString()}
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular" data-direct-label>
+          {latest ? (
+            <>
+              {/* The highlighted scheme named next to its colour, in the header rather than at the line's end, where it landed on dots. */}
+              <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
+              <span>
+                <span className="text-foreground">{SHORT_SCHEME[emphCategory]}</span>, latest {latest.value.toLocaleString()} lb
+              </span>
+            </>
+          ) : (
+            <span>No {SHORT_SCHEME[emphCategory]} logged</span>
+          )}
+          <span aria-hidden="true">·</span>
+          <span>best {best.toLocaleString()} lb</span>
         </span>
       </div>
       {view === "table" ? (
@@ -190,11 +202,11 @@ export function LiftChart({
             type="number"
             domain={xDomain}
             ticks={xTicks}
-            interval={0} // see niceAxisTicks() in chartUtils.ts for why
             tickFormatter={(t: number) => formatTimeTick(t, xTickUnit)}
-            angle={-35}
-            textAnchor="end"
-            height={50}
+            // Flat, and thinned to fit, instead of -35 degrees: slanted labels took a quarter of the chart's height on a phone.
+            interval="preserveStartEnd"
+            minTickGap={12}
+            height={24}
             {...AXIS_PROPS}
           />
           <YAxis
@@ -204,6 +216,8 @@ export function LiftChart({
             ticks={yTicks}
             interval={0} // see niceAxisTicks() in chartUtils.ts for why
             width={NUM_AXIS_WIDTH}
+            // The unit once, on the top tick: every tick saying "lb" would crowd the axis.
+            tickFormatter={(v: number) => (v === yTicks[yTicks.length - 1] ? `${v.toLocaleString()} lb` : v.toLocaleString())}
             {...AXIS_PROPS}
           />
           <ZAxis range={[36, 36]} />
@@ -226,7 +240,7 @@ export function LiftChart({
                     if (!p) return null;
                     return (
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-medium tabular">{p.value.toLocaleString()}</span>
+                        <span className="font-medium tabular">{p.value.toLocaleString()} lb</span>
                         <span className="text-muted-foreground">{formatDate(p.date)}</span>
                         <span className="text-muted-foreground">{p.scheme}</span>
                         {p.pr ? <span className="text-accent-link">Personal record</span> : null}
@@ -238,7 +252,15 @@ export function LiftChart({
               );
             }}
           />
-          <Scatter data={data} shape={<LiftDot colorFor={colorFor} picked={picked} />} isAnimationActive={false} />
+          {/* Grey first, so the highlighted scheme and its line draw on top. */}
+          <Scatter data={rest} shape={<LiftDot color={color} picked={picked} />} isAnimationActive={false} />
+          <Scatter
+            data={emph}
+            line={{ stroke: color, strokeWidth: 1.5 }}
+            lineJointType="linear"
+            shape={<LiftDot color={color} picked={picked} />}
+            isAnimationActive={false}
+          />
         </ScatterChart>
       </ChartContainer>
       </div>
@@ -254,77 +276,62 @@ export function LiftChart({
   );
 }
 
-/** Small multiples of the lifts with enough history to say anything. */
+/**
+ * Small multiples of the lifts with enough history to say anything: at least MIN_CHART_EFFORTS logged efforts each. A lift with 3 to
+ * 5 got the same chart as Back Squat with about 40; those are named in one line under the grid instead.
+ */
 export function LiftGrid({
   lifts,
-  repMaxFilter,
+  highlight,
   onOpenDay,
 }: {
   lifts: Record<string, LiftEntry[]>;
-  repMaxFilter: RepMaxFilter;
+  highlight: RepMaxHighlight;
   /** Opens Workouts for a picked dot's day; passed to every chart. */
   onOpenDay?: ((date: string) => void) | undefined;
 }) {
-  const entries = useMemo(
-    () =>
-      Object.entries(lifts)
-        .filter(([, v]) => v.filter((e) => e.value > 0).length >= 3)
-        .sort((a, b) => b[1].length - a[1].length),
-    [lifts]
-  );
+  const logged = (v: readonly LiftEntry[]) => v.filter((e) => e.value > 0).length;
+  const all = useMemo(() => Object.entries(lifts).filter(([, v]) => logged(v) > 0).sort((a, b) => logged(b[1]) - logged(a[1])), [lifts]);
+  const charted = all.filter(([, v]) => logged(v) >= MIN_CHART_EFFORTS);
+  const listed = all.filter(([, v]) => logged(v) < MIN_CHART_EFFORTS);
 
-  if (entries.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No barbell lifts in this export had enough logged sessions to chart a progression.
-      </p>
-    );
-  }
-
-  // Mirrors LiftChart's own "at least 2 points" cutoff, filtered the same way,
-  // so an empty result here means every chart below would render nothing.
-  const visible = entries.filter(
-    ([, series]) =>
-      series.filter(
-        (e) =>
-          e.value > 0 && (repMaxFilter === "all" || repMaxCategory(e.repMax) === repMaxFilter)
-      ).length >= 2
-  );
-
-  if (visible.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        No lift has at least two logged efforts at that rep scheme.
-      </p>
-    );
+  if (charted.length === 0 && listed.length === 0) {
+    return <p className="text-sm text-muted-foreground">No barbell lifts in this export had a load logged.</p>;
   }
 
   // One shared time domain and tick set for every chart below — see the
   // xDomain/xTicks comment on LiftChart for why per-chart auto-scaling
   // makes identical-looking dates land at different pixel positions.
-  const times = visible.flatMap(([, series]) =>
-    series
-      .filter((e) => e.value > 0 && (repMaxFilter === "all" || repMaxCategory(e.repMax) === repMaxFilter))
-      .map((e) => new Date(e.date).getTime())
-  );
-  const xDomain: [number, number] = [Math.min(...times), Math.max(...times)];
+  const times = charted.flatMap(([, series]) => series.filter((e) => e.value > 0).map((e) => new Date(e.date).getTime()));
+  const xDomain: [number, number] = times.length ? [Math.min(...times), Math.max(...times)] : [0, 0];
   const { ticks: xTicks, unit: xTickUnit } = niceTimeTicks(xDomain[0], xDomain[1]);
 
   return (
-    <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
-      {visible.map(([name, series]) => (
-        <LiftChart
-          key={name}
-          liftName={name}
-          entries={series}
-          repMaxFilter={repMaxFilter}
-          xDomain={xDomain}
-          xTicks={xTicks}
-          xTickUnit={xTickUnit}
-          onOpenDay={onOpenDay}
-        />
-      ))}
+    <div className="flex flex-col gap-6">
+      {charted.length ? (
+        <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+          {charted.map(([name, series]) => (
+            <LiftChart
+              key={name}
+              liftName={name}
+              entries={series}
+              highlight={highlight}
+              xDomain={xDomain}
+              xTicks={xTicks}
+              xTickUnit={xTickUnit}
+              onOpenDay={onOpenDay}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">No lift in this range has {MIN_CHART_EFFORTS} logged efforts, enough to chart.</p>
+      )}
+      {listed.length ? (
+        <p className="text-sm text-muted-foreground" data-also-logged>
+          <span className="font-medium text-foreground">Also logged</span>, too few efforts to chart:{" "}
+          {listed.map(([name, v]) => `${name} (${logged(v)})`).join(", ")}.
+        </p>
+      ) : null}
     </div>
   );
 }
-

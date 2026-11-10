@@ -592,7 +592,7 @@ than the engine behind them.
 9. **#21** The unclassified line next to the M/W/G charts.
 10. **#18** Relabel the Insights filters.
 
-**Also built since: #2, #4, #5, #6, #8, #14, #16, #17, #22 and #23.**
+**Also built since: #2, #4, #5, #6, #7, #8, #14, #16, #17, #22 and #23.**
 
 - **#2:** every verdict now has its own glyph and Timeline mark (`progress/verdictMark.tsx`), and colour only repeats it, so Up
   and Down stay distinct with the red accent and in greyscale. "Not tested since" lost its hardcoded amber and is grey and
@@ -619,6 +619,9 @@ than the engine behind them.
 - **#6:** as recommended, with the strip inside each domain and modality page's first card, sorted most trained first. The
   then-to-now drift is a signed number of points rather than a tick pair: two ticks on an 8px bar were too small to read. On a
   phone the change column is dropped (the page's own Then versus now has it). `StackedShareChart.tsx` is deleted.
+- **#7:** as recommended, except the highlighted scheme is named in each chart's header ("● 1RM, latest 215 lb") rather than at
+  the line's end, where on the sample it landed on other dots. "Also logged" is a plain line, not links: Workouts has no way to be
+  opened filtered to one lift. Charts on the sample drop from 18 to 14, and the time ticks are flat.
 - **#16, #17, #22, #23:** on a phone the PR table is a list and Workouts puts the date under the title, Timeline labels and axis
   ticks stay inside the chart, and the "last logged in" filter wraps. A skip link leads to the view, and tab panels are no longer
   stray tab stops (only the landing page's export guide keeps one, for its scrollable text). A weigh-in delete has ten seconds of
