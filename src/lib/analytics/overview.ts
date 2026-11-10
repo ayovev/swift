@@ -356,14 +356,33 @@ export function monthlyModalityMix(rows: readonly ParsedRow[], today: string): M
 export const OVERVIEW_MOVED_MAX = 5;
 
 /**
- * The lifts and benchmarks Progress calls up or down (a move up to RX is in
- * "up", as on Progress), most recently logged first, at most five.
+ * Slots in those five kept for a down. Sorting by recency alone let a cap of five ups push the only down off the panel while the
+ * totals row beside it said "1 down": the evidence contradicted the stat it is there to support. Two, so a down is always seen
+ * and the panel still mostly answers "what went up".
  */
-export function whatMoved(rows: readonly ProgressRow[]): ProgressRow[] {
-  return rows
-    .filter((r) => r.group === "up" || r.group === "down")
-    .sort((a, b) => (a.latest < b.latest ? 1 : a.latest > b.latest ? -1 : 0))
-    .slice(0, OVERVIEW_MOVED_MAX);
+export const OVERVIEW_MOVED_DOWN_SLOTS = 2;
+
+export interface WhatMoved {
+  /** Most recently logged first. */
+  rows: ProgressRow[];
+  /** Downs that didn't fit, said as "and 1 more down" so the panel never claims fewer downs than Progress has. */
+  moreDown: number;
+}
+
+/**
+ * The lifts and benchmarks Progress calls up or down (a move up to RX is in "up", as on Progress), at most five, most recently
+ * logged first. Every down is listed up to OVERVIEW_MOVED_DOWN_SLOTS, and the rest of the slots go to the most recent ups.
+ */
+export function whatMoved(rows: readonly ProgressRow[]): WhatMoved {
+  const byRecency = (a: ProgressRow, b: ProgressRow): number => (a.latest < b.latest ? 1 : a.latest > b.latest ? -1 : 0);
+  const downs = rows.filter((r) => r.group === "down").sort(byRecency);
+  const ups = rows.filter((r) => r.group === "up").sort(byRecency);
+  const shownDowns = downs.slice(0, Math.min(OVERVIEW_MOVED_DOWN_SLOTS, OVERVIEW_MOVED_MAX));
+  const shownUps = ups.slice(0, OVERVIEW_MOVED_MAX - shownDowns.length);
+  // Slots ups don't need go back to downs, so a log of all downs still lists five.
+  const moreDowns = downs.slice(shownDowns.length, shownDowns.length + (OVERVIEW_MOVED_MAX - shownDowns.length - shownUps.length));
+  const listed = [...shownDowns, ...moreDowns, ...shownUps].sort(byRecency);
+  return { rows: listed, moreDown: downs.length - shownDowns.length - moreDowns.length };
 }
 
 export interface LatestEntry {

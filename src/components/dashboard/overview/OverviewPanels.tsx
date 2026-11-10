@@ -313,6 +313,7 @@ function movedText(row: ProgressRow): string {
 
 export function InsightsPanel({
   moved,
+  moreDown = 0,
   emptyText = "No lift or benchmark has changed enough to call.",
   latest,
   today,
@@ -321,6 +322,8 @@ export function InsightsPanel({
   onSeeTimeline,
 }: {
   moved: ProgressRow[];
+  /** Downs that didn't fit in the list (whatMoved), so the panel never shows fewer downs than Progress counts. */
+  moreDown?: number;
   /** Why nothing is listed (whatMovedEmptyText): nothing moved, or nothing could be compared yet. */
   emptyText?: string;
   latest: LatestEntry | null;
@@ -368,6 +371,15 @@ export function InsightsPanel({
         ) : (
           <p className="text-sm text-muted-foreground">{emptyText}</p>
         )}
+        {moreDown > 0 ? (
+          onSeeProgress ? (
+            <button type="button" onClick={onSeeProgress} className="-mt-2 self-start text-xs text-accent-link underline-offset-2 hover:underline">
+              and {moreDown} more down
+            </button>
+          ) : (
+            <p className="-mt-2 text-xs text-muted-foreground">and {moreDown} more down</p>
+          )
+        ) : null}
 
         <div className="flex flex-col gap-1 border-t border-border pt-4">
           <span className="text-xs font-semibold tracking-[0.08em] uppercase">Timeline</span>

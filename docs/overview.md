@@ -137,7 +137,9 @@ a phone.
 ### Insights panel
 
 36. **What moved:** lifts and benchmarks whose Progress verdict is up or down, including moves up to RX. At most five,
-    most recently logged first.
+    most recently logged first, with up to two slots kept for downs so recent ups can never push a down off the panel
+    (the totals row beside it counts downs). Downs that still don't fit are said as *"and ⟨n⟩ more down"*, linking to
+    Progress.
     - Each row shows the name, the verdict and the change, all in Progress's own words.
     - Each row opens that subject's row on Progress.
 37. With nothing up or down, one line says why, linking to Progress. *"No lift or benchmark has changed enough to

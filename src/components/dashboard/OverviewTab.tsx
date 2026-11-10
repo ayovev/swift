@@ -218,7 +218,8 @@ export function OverviewTab({
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <InsightsPanel
-          moved={moved}
+          moved={moved.rows}
+          moreDown={moved.moreDown}
           emptyText={whatMovedEmptyText(state)}
           latest={latestEntry}
           today={today}

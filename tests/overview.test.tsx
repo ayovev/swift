@@ -282,7 +282,39 @@ describe("whatMoved", () => {
       row("g", "down", "2026-06-01"),
       row("h", "few", "2026-11-05"),
     ];
-    expect(whatMoved(rows).map((r) => r.subject.key)).toEqual(["c", "d", "e", "f", "g"]);
+    expect(whatMoved(rows).rows.map((r) => r.subject.key)).toEqual(["c", "d", "e", "f", "g"]);
+    expect(whatMoved(rows).moreDown).toBe(0);
+  });
+
+  it("never lets recent ups push a down off the panel", () => {
+    // The sample's shape: ten ups logged recently, one down logged long ago. Sorting by recency alone listed five ups.
+    const ups = Array.from({ length: 10 }, (_, i) => row(`u${i}`, "up", `2026-10-${String(20 - i).padStart(2, "0")}`));
+    const got = whatMoved([...ups, row("old-down", "down", "2025-04-01")]);
+    expect(got.rows.map((r) => r.subject.key)).toEqual(["u0", "u1", "u2", "u3", "old-down"]);
+    expect(got.moreDown).toBe(0);
+  });
+
+  it("keeps two slots for downs and counts the rest", () => {
+    const ups = Array.from({ length: 6 }, (_, i) => row(`u${i}`, "up", `2026-10-${String(20 - i).padStart(2, "0")}`));
+    const downs = ["2025-01-01", "2025-02-01", "2025-03-01"].map((d, i) => row(`d${i}`, "down", d));
+    const got = whatMoved([...ups, ...downs]);
+    expect(got.rows.map((r) => r.subject.key)).toEqual(["u0", "u1", "u2", "d2", "d1"]);
+    expect(got.moreDown).toBe(1);
+  });
+
+  it("gives slots ups don't need back to downs", () => {
+    const downs = Array.from({ length: 7 }, (_, i) => row(`d${i}`, "down", `2026-0${i + 1}-01`));
+    const got = whatMoved([row("u", "up", "2025-01-01"), ...downs]);
+    expect(got.rows).toHaveLength(5);
+    expect(got.rows.filter((r) => r.group === "down")).toHaveLength(4);
+    expect(got.moreDown).toBe(3);
+  });
+
+  it("lists the sample's one down on Overview, matching the totals row's count", async () => {
+    const rows = await loadSampleRows();
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} />);
+    const moved = screen.getByText("What moved").closest("[data-slot=card]") as HTMLElement;
+    expect(within(moved).getAllByText("Down")).toHaveLength(1);
   });
 });
 
@@ -399,7 +431,7 @@ describe("OverviewTab panels", () => {
 describe("Progress, reached from What moved", () => {
   it("opens the chosen row and leaves the others closed", async () => {
     const rows = await loadSampleRows();
-    const moved = whatMoved(classifySubjects(buildProgressSubjects(rows).subjects, TODAY).rows).filter((r) => r.verdict);
+    const moved = whatMoved(classifySubjects(buildProgressSubjects(rows).subjects, TODAY).rows).rows.filter((r) => r.verdict);
     expect(moved.length).toBeGreaterThan(1);
     const [target, other] = moved;
     render(<LiftsTab workouts={rows} scans={[]} asOf={TODAY} focusSubjectKey={target!.subject.key} />);
