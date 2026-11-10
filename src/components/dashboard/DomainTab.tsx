@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
 import { domainColor } from "./charts/chartUtils";
 import { TrendStat } from "./TrendStat";
@@ -23,6 +25,12 @@ export function DomainTab({
   const direction = data.trend_direction[domain];
   const overall = data.overall[domain];
   const workouts = data.workout_lists[domain];
+  // Picking a month on the chart narrows the list below to it (ChartPick.tsx).
+  const { picked, pick, clear, inPicked, label: pickedLabel } = useBucketPick(granularity, `${domain}|${data.summary.total_logged}|${trend.length}`);
+  const listRef = useRef<HTMLDivElement>(null);
+  const point = picked ? trend.find((p) => p.bucket === picked) : undefined;
+  const rows = workouts.map(([date, title, reason]) => ({ date, title, reason }));
+  const shown = picked ? rows.filter((r) => inPicked(r.date)) : rows;
 
   return (
     <div className="flex flex-col gap-6">
@@ -56,7 +64,17 @@ export function DomainTab({
             seriesLabel={domain}
             label={`${granularityLabel(granularity)} share of workouts touching ${domain}`}
             granularity={granularity}
+            selected={picked}
+            onSelect={pick}
           />
+          {picked && pickedLabel ? (
+            <ChartPickNote
+              onClear={clear}
+              action={shown.length ? { label: `List ${shown.length === 1 ? "it" : "them"}`, onClick: () => scrollToList(listRef.current) } : undefined}
+            >
+              <span className="font-medium">{pickedLabel}</span>: {shown.length.toLocaleString()} of {(point?.total ?? 0).toLocaleString()} workouts touched {domain}
+            </ChartPickNote>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -75,7 +93,7 @@ export function DomainTab({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card ref={listRef}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Every workout counted here</CardTitle>
         </CardHeader>
@@ -85,8 +103,9 @@ export function DomainTab({
             triggered the match is shown, so you can judge the call yourself.
           </p>
           <WorkoutList
-            rows={workouts.map(([date, title, reason]) => ({ date, title, reason }))}
-            emptyMessage={`No workouts in this export were classified as ${domain}.`}
+            rows={shown}
+            emptyMessage={picked ? `No workouts in ${pickedLabel} were classified as ${domain}.` : `No workouts in this export were classified as ${domain}.`}
+            scope={picked && pickedLabel ? { label: pickedLabel, onClear: clear } : undefined}
           />
         </CardContent>
       </Card>

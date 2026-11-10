@@ -101,6 +101,7 @@ export function OverviewTab({
   asOf,
   onNavigate,
   onOpenProgressSubject,
+  onOpenWorkouts,
 }: {
   insights: Insights;
   /** The raw log, for the Progress headline (computed exactly as Progress computes it). */
@@ -115,6 +116,8 @@ export function OverviewTab({
   onNavigate?: (tab: string) => void;
   /** Opens one lift or benchmark's row on Progress. */
   onOpenProgressSubject?: (key: string) => void;
+  /** Opens Workouts for a picked month (YYYY-MM-DD, inclusive). */
+  onOpenWorkouts?: (start: string, end: string) => void;
 }) {
   const today = useMemo(() => asOf ?? dayjs().format("YYYY-MM-DD"), [asOf]);
 
@@ -214,7 +217,7 @@ export function OverviewTab({
         />
       </section>
 
-      <TrainingPanel months={months} mix={mix} onSeeWorkouts={go(WORKOUTS_TAB)} />
+      <TrainingPanel months={months} mix={mix} onSeeWorkouts={go(WORKOUTS_TAB)} onOpenMonth={onOpenWorkouts} />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <InsightsPanel

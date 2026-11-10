@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
 import { modalityColor, unclassifiedNote } from "./charts/chartUtils";
 import { TrendStat } from "./TrendStat";
@@ -30,6 +32,17 @@ export function ModalityTab({
   const overall = data.modality_overall[modality];
   const workouts = data.modality_workout_lists[modality];
   const name = MODALITY_NAMES[modality];
+  // Picking a month on the chart narrows the list below to it (ChartPick.tsx).
+  const { picked, pick, clear, inPicked, label: pickedLabel } = useBucketPick(granularity, `${modality}|${data.classified_count}|${trend.length}`);
+  const listRef = useRef<HTMLDivElement>(null);
+  const point = picked ? trend.find((p) => p.bucket === picked) : undefined;
+  const rows = workouts.map((w) => ({
+    date: w.date,
+    title: w.title,
+    reason: `${w.share.toFixed(0)}%`,
+    detail: `${w.movements.join(", ") || "—"} · M ${w.split.M.toFixed(0)} / W ${w.split.W.toFixed(0)} / G ${w.split.G.toFixed(0)}`,
+  }));
+  const shown = picked ? rows.filter((r) => inPicked(r.date)) : rows;
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,7 +82,18 @@ export function ModalityTab({
             seriesLabel={name}
             label={`${granularityLabel(granularity)} average share of training spent on ${name}`}
             granularity={granularity}
+            selected={picked}
+            onSelect={pick}
           />
+          {picked && pickedLabel ? (
+            <ChartPickNote
+              onClear={clear}
+              action={shown.length ? { label: `List ${shown.length === 1 ? "it" : "them"}`, onClick: () => scrollToList(listRef.current) } : undefined}
+            >
+              <span className="font-medium">{pickedLabel}</span>: {name.toLowerCase()} in {shown.length.toLocaleString()} of{" "}
+              {(point?.total ?? 0).toLocaleString()} classified workouts, {(point?.avg_share ?? 0).toFixed(1)}% on average
+            </ChartPickNote>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -88,7 +112,7 @@ export function ModalityTab({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card ref={listRef}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Every workout with {name} in it</CardTitle>
         </CardHeader>
@@ -98,13 +122,9 @@ export function ModalityTab({
           </p>
           <WorkoutList
             reasonLabel="share"
-            rows={workouts.map((w) => ({
-              date: w.date,
-              title: w.title,
-              reason: `${w.share.toFixed(0)}%`,
-              detail: `${w.movements.join(", ") || "—"} · M ${w.split.M.toFixed(0)} / W ${w.split.W.toFixed(0)} / G ${w.split.G.toFixed(0)}`,
-            }))}
-            emptyMessage={`No workouts in this export involved ${name.toLowerCase()}.`}
+            rows={shown}
+            emptyMessage={picked ? `No workouts in ${pickedLabel} involved ${name.toLowerCase()}.` : `No workouts in this export involved ${name.toLowerCase()}.`}
+            scope={picked && pickedLabel ? { label: pickedLabel, onClear: clear } : undefined}
           />
         </CardContent>
       </Card>

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CartesianGrid, Scatter, ScatterChart, XAxis, YAxis, ZAxis } from "recharts";
 import type { TooltipContentProps } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -18,6 +18,7 @@ import {
   type TimeUnit,
 } from "./chartUtils";
 import type { LiftEntry } from "@/types/dashboard";
+import { ChartPickNote, PickHint, capturePick, usePointPick } from "./ChartPick";
 
 const CONFIG = {
   value: { label: "Load", color: "var(--primary)" },
@@ -31,21 +32,38 @@ function LiftDot({
   cy,
   payload,
   colorFor,
+  picked,
 }: {
   cx?: number;
   cy?: number;
-  payload?: { pr: boolean; repMax: number | null };
+  payload?: { pr: boolean; repMax: number | null; date: string };
   colorFor: (repMax: number | null) => string;
+  /** The picked dot's date (ChartPick.tsx); that dot gets a ring in the foreground ink. */
+  picked?: string | null;
 }) {
   if (cx === undefined || cy === undefined || !payload) return null;
   const r = 4;
   const fill = colorFor(payload.repMax);
+  // A transparent circle 24px across under every dot: the hit target for a finger or a pointer, bigger than the 8px mark (a pinpoint
+  // target misses), and the element that names its point for picking (ChartPick.tsx).
+  const hit = <circle cx={cx} cy={cy} r={12} fill="transparent" data-pick={payload.date} />;
+  if (picked && picked === payload.date) {
+    return (
+      <g data-pick={payload.date}>
+        {hit}
+        <circle cx={cx} cy={cy} r={8} fill="none" stroke="var(--foreground)" strokeWidth={1.5} />
+        <circle cx={cx} cy={cy} r={r} fill={fill} />
+      </g>
+    );
+  }
   // A PR only gets the diamond treatment for the 4 tracked rep-max schemes —
   // an "other" rep scheme (a 4RM, a 6+RM, unspecified) isn't one we claim to
   // track precisely enough to call out as a record shape.
   const isTrackedPr = payload.pr && repMaxCategory(payload.repMax) !== "other";
   if (isTrackedPr) {
     return (
+      <g data-pick={payload.date}>
+      {hit}
       <rect
         x={cx - r}
         y={cy - r}
@@ -55,9 +73,15 @@ function LiftDot({
         fill={fill}
         fillOpacity={0.85}
       />
+      </g>
     );
   }
-  return <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.85} />;
+  return (
+    <g data-pick={payload.date}>
+      {hit}
+      <circle cx={cx} cy={cy} r={r} fill={fill} fillOpacity={0.85} />
+    </g>
+  );
 }
 
 /**
@@ -76,6 +100,7 @@ export function LiftChart({
   xDomain,
   xTicks,
   xTickUnit,
+  onOpenDay,
 }: {
   liftName: string;
   entries: LiftEntry[];
@@ -90,7 +115,18 @@ export function LiftChart({
   xTicks: number[];
   // The calendar unit niceTimeTicks() chose xTicks in — see formatTimeTick().
   xTickUnit: TimeUnit;
+  /** Opens Workouts for a picked dot's day (YYYY-MM-DD). Omit for a chart without picking. */
+  onOpenDay?: ((date: string) => void) | undefined;
 }) {
+  // One logged effort picked (ChartPick.tsx): the dot gets a ring, and the note under the chart offers its workout.
+  const [picked, setPicked] = useState<string | null>(null);
+  const pick = onOpenDay
+    ? (date: string | null) => {
+        setPicked(date);
+        if (date) capturePick("selected");
+      }
+    : undefined;
+  const { track, onPointerUp, onKeyDown } = usePointPick(pick, picked);
   const allData = useMemo(
     () =>
       entries
@@ -113,6 +149,7 @@ export function LiftChart({
   const colorFor = (repMax: number | null) => FIXED_REPMAX_COLORS[repMaxCategory(repMax)];
 
   if (data.length < 2) return null;
+  const pickedPoint = picked ? data.find((d) => d.date === picked) : undefined;
 
   const best = Math.max(...data.map((d) => d.value));
   const worst = Math.min(...data.map((d) => d.value));
@@ -128,6 +165,7 @@ export function LiftChart({
           best {best.toLocaleString()}
         </span>
       </div>
+      <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={onOpenDay ? "[&_.recharts-symbols]:cursor-pointer" : undefined}>
       <ChartContainer
         config={CONFIG}
         className="h-[180px] w-full min-w-0"
@@ -165,6 +203,7 @@ export function LiftChart({
               // them this way), both carrying the same row as `.payload`.
               // Keep only the y entry or the row renders twice.
               const filtered = payload.filter((item) => item.dataKey === "value");
+              track(active ? ((filtered[0]?.payload as (typeof data)[number] | undefined)?.date ?? null) : null);
               return (
                 <ChartTooltipContent
                   active={active}
@@ -180,6 +219,7 @@ export function LiftChart({
                         <span className="text-muted-foreground">{formatDate(p.date)}</span>
                         <span className="text-muted-foreground">{p.scheme}</span>
                         {p.pr ? <span className="text-accent-link">Personal record</span> : null}
+                        {onOpenDay ? <PickHint>Select to see this workout</PickHint> : null}
                       </div>
                     );
                   }}
@@ -187,9 +227,16 @@ export function LiftChart({
               );
             }}
           />
-          <Scatter data={data} shape={<LiftDot colorFor={colorFor} />} isAnimationActive={false} />
+          <Scatter data={data} shape={<LiftDot colorFor={colorFor} picked={picked} />} isAnimationActive={false} />
         </ScatterChart>
       </ChartContainer>
+      </div>
+      {pickedPoint && onOpenDay ? (
+        <ChartPickNote onClear={() => setPicked(null)} action={{ label: "See this workout", onClick: () => onOpenDay(pickedPoint.date) }}>
+          <span className="font-medium">{formatDate(pickedPoint.date)}</span>: {pickedPoint.value.toLocaleString()} lb, {pickedPoint.scheme}
+          {pickedPoint.pr ? ", a PR" : ""}
+        </ChartPickNote>
+      ) : null}
     </div>
   );
 }
@@ -198,9 +245,12 @@ export function LiftChart({
 export function LiftGrid({
   lifts,
   repMaxFilter,
+  onOpenDay,
 }: {
   lifts: Record<string, LiftEntry[]>;
   repMaxFilter: RepMaxFilter;
+  /** Opens Workouts for a picked dot's day; passed to every chart. */
+  onOpenDay?: ((date: string) => void) | undefined;
 }) {
   const entries = useMemo(
     () =>
@@ -258,6 +308,7 @@ export function LiftGrid({
           xDomain={xDomain}
           xTicks={xTicks}
           xTickUnit={xTickUnit}
+          onOpenDay={onOpenDay}
         />
       ))}
     </div>

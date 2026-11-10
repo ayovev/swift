@@ -33,12 +33,15 @@ interface DateRangePickerProps {
   inline?: boolean;
 }
 
-function triggerLabel(preset: DateRangePreset, value: DateRange | null): string {
+export function triggerLabel(preset: DateRangePreset, value: DateRange | null): string {
   if (preset !== "custom") {
     return PRESET_OPTIONS.find((p) => p.id === preset)?.label ?? "All time";
   }
   if (!value) return "Custom range";
-  return `${formatDate(value.start.format("YYYY-MM-DD"))} – ${formatDate(value.end.format("YYYY-MM-DD"))}`;
+  const start = formatDate(value.start.format("YYYY-MM-DD"));
+  const end = formatDate(value.end.format("YYYY-MM-DD"));
+  // One day (a picked lift session opened on Workouts) reads as that day, not "Jun 21, 2023 – Jun 21, 2023".
+  return start === end ? start : `${start} – ${end}`;
 }
 
 /**
@@ -72,7 +75,8 @@ export function DateRangePicker({ dateBounds, value, preset, onSelect, inline }:
       <PopoverTrigger asChild>
         {inline ? (
           <button type="button" className={INLINE_TRIGGER}>
-            {triggerLabel(preset, value).replace(/^[A-Z]/, (c) => c.toLowerCase())}
+            {/* Lowered to sit mid-sentence ("Showing all time"), but only a preset's words: a custom range starts with a month name. */}
+            {preset === "custom" ? triggerLabel(preset, value) : triggerLabel(preset, value).replace(/^[A-Z]/, (c) => c.toLowerCase())}
             <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
           </button>
         ) : (

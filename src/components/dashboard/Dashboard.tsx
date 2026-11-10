@@ -11,6 +11,7 @@ import { DomainTab } from "./DomainTab";
 import { ModalityTab } from "./ModalityTab";
 import { MovementsTab } from "./MovementsTab";
 import { OverviewTab } from "./OverviewTab";
+import { capturePick } from "./charts/ChartPick";
 import { LiftHistoryTab } from "./LiftHistoryTab";
 import { LiftsTab } from "./LiftsTab";
 import { TimelineTab } from "./TimelineTab";
@@ -182,6 +183,17 @@ export function Dashboard({
     [source]
   );
 
+  // A picked chart point followed to its workouts (ChartPick.tsx): a month on Overview or a lift's day on Lifts. It sets the same custom
+  // date range the date picker would, through the same handler, so the scope line says what is showing and the picker undoes it.
+  const openWorkouts = useCallback(
+    (start: string, end: string) => {
+      onRangeSelect({ start: dayjs(start).startOf("day"), end: dayjs(end).endOf("day") }, "custom");
+      onTabChange(WORKOUTS_TAB);
+      capturePick("opened");
+    },
+    [onRangeSelect, onTabChange]
+  );
+
   return (
     <div className="min-h-svh bg-background">
       {/* The one sample-mode indicator: a full-width strip above the header,
@@ -328,6 +340,7 @@ export function Dashboard({
               timeline={timeline}
               onNavigate={onTabChange}
               onOpenProgressSubject={onOpenProgressSubject}
+              onOpenWorkouts={openWorkouts}
             />
           </TabsContent>
 
@@ -336,7 +349,7 @@ export function Dashboard({
           </TabsContent>
 
           <TabsContent value={LIFT_HISTORY_TAB}>
-            <LiftHistoryTab dashboard={insights.dashboard} />
+            <LiftHistoryTab dashboard={insights.dashboard} onOpenWorkouts={openWorkouts} />
           </TabsContent>
 
           {DOMAIN_LIST.map((domain: Domain) => (

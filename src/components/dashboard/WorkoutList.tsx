@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,25 @@ export function WorkoutList({
   rows,
   emptyMessage,
   reasonLabel = "matched on",
+  scope,
 }: {
   rows: WorkoutListRow[];
   emptyMessage: string;
   reasonLabel?: string;
+  /**
+   * The list has been narrowed to a picked chart point (ChartPick.tsx): `rows` are already only that point's workouts, the list opens,
+   * and a line above it names the point with a way back to every workout.
+   */
+  scope?: { label: string; onClear: () => void } | undefined;
 }) {
   const [open, setOpen] = useState(false);
+  // Picking a point is asking to see its workouts, so the list opens; clearing leaves it as the athlete had it.
+  useEffect(() => {
+    if (scope) {
+      setOpen(true);
+      setVisible(PAGE_SIZE);
+    }
+  }, [scope?.label]);
   const [query, setQuery] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
 
@@ -68,6 +81,16 @@ export function WorkoutList({
       </CollapsibleTrigger>
 
       <CollapsibleContent className="mt-4">
+        {scope ? (
+          <p className="mb-3 flex flex-wrap items-center gap-x-3 text-sm">
+            <span>
+              Only <span className="font-medium">{scope.label}</span>
+            </span>
+            <button type="button" onClick={scope.onClear} className="inline-flex min-h-11 items-center text-accent-link underline-offset-2 hover:underline sm:min-h-8">
+              Show every workout
+            </button>
+          </p>
+        ) : null}
         <div className="relative mb-3">
           <Search
             className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground"

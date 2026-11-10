@@ -592,6 +592,16 @@ than the engine behind them.
 9. **#21** The unclassified line next to the M/W/G charts.
 10. **#18** Relabel the Insights filters.
 
+**Also built since: #2 and #4.**
+
+- **#2:** every verdict now has its own glyph and Timeline mark (`progress/verdictMark.tsx`), and colour only repeats it, so Up
+  and Down stay distinct with the red accent and in greyscale. "Not tested since" lost its hardcoded amber and is grey and
+  dotted.
+- **#4:** works as recommended, except on touch. A tap picks the point rather than showing a "See N workouts" button inside the
+  tooltip; one tap is a shorter path, and the note under the chart carries the action and Clear. Keyboard picking (arrow keys,
+  Enter, Escape) came with it, as did a keyboard-only focus ring on charts (WCAG 2.4.7); pointer focus no longer draws a box
+  round the plot. The custom range label keeps its capitals and reads one day as one date.
+
 **Status: all ten are built**, one commit each, with tests. Where the build differs from the recommendation above:
 
 - **#1:** The verdict line reads "+35 lb (223 to 258 lb est. 1RM), +15.4%" rather than starting with "Est. 1RM", so the same

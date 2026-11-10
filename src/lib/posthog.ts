@@ -49,7 +49,11 @@ export type InteractionName =
   | "weigh_in_saved"
   | "weigh_in_deleted"
   | "stale_log_replace_clicked"
-  | "stale_log_snoozed";
+  | "stale_log_snoozed"
+  // A chart point picked (the list below narrows to it), and a picked point followed to its workouts on another view. Never which
+  // point, bucket, date, lift or count: only that it happened.
+  | "chart_point_selected"
+  | "chart_point_opened";
 
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }

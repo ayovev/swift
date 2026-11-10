@@ -169,6 +169,18 @@ The **Movements** view (`MovementsTab.tsx`, under Training) lists what the lexic
 `buildModalityData` uses, so nothing is classified twice. The workout list shows the phrase that matched,
 because the matcher is a heuristic. Its analytics events are the value-free `movement_selected` and `implement_selected`.
 
+**Picking a chart point** (`charts/ChartPick.tsx`) is the one way into the workouts behind a chart. A click, a tap or Enter on a
+focused chart picks a point and a line under the chart says what it is, with an action and Clear; Escape clears. It is the same on
+every input on purpose: a tap picks rather than navigating, because a phone's first tap is also what shows the tooltip. Where the
+workouts are on the same page (the domain, modality and Movements charts) the list narrows to the picked bucket and opens
+(`useBucketPick`, `WorkoutList`'s `scope`), and a new grouping or range clears the pick. Where they are on another view (Overview's
+months, a lift's dot) the line links there, and `Dashboard.tsx`'s `openWorkouts` sets a custom date range through the same handler
+the date picker uses, so the scope line says what is showing. Picking reads the point from the tooltip (Recharts moves it with the
+pointer, a finger, or the arrow keys) on pointer up, two frames late, because a tap briefly activates the first point; a lift dot
+names its own point (`data-pick`, a 24px hit circle), because a scatter hides its tooltip before a tap's pointer up. Both timings
+were measured in Chromium with touch; Recharts' own `onClick` reports no point for a tap. Analytics: `chart_point_selected` and
+`chart_point_opened`, value-free.
+
 Two things that look like the same idea but are not — don't unify them:
 
 - **The 10 GPP domains are independent, non-exclusive tags.** Most workouts hit three or

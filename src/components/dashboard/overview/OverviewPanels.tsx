@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import dayjs from "dayjs";
 import { ArrowRight } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
@@ -18,6 +18,7 @@ import {
 } from "@/lib/analytics/overview";
 import { entryName, entrySpanText } from "@/lib/analytics/timeline";
 import { VerdictPill } from "../progress/verdictMark";
+import { ChartPickNote, PickHint, capturePick, usePointPick } from "../charts/ChartPick";
 import { AREA_LABEL } from "@/types/timeline";
 
 /**
@@ -114,7 +115,17 @@ function InProgressKey() {
  * so a partial month doesn't read as a drop. No 90-day marker: 90 days rarely falls on a month boundary, so shading
  * whole bars would mark a different period from the one the totals count.
  */
-function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
+/** A month the athlete picked on either Training chart (YYYY-MM), shared by both so the two columns light up together, and how the chart reports one. */
+interface MonthPick {
+  picked: string | null;
+  pick?: ((month: string | null) => void) | undefined;
+}
+
+/** How much a month that isn't the picked one fades, so the picked column stands out in both charts (emphasis, not a new colour). */
+const UNPICKED_OPACITY = 0.3;
+
+function MonthlyDaysChart({ months, picked, pick }: { months: MonthDays[] } & MonthPick) {
+  const { track, onPointerUp, onKeyDown } = usePointPick(pick, picked);
   const patternId = useSvgId("in-progress");
   const data = months.map((m) => ({ ...m, label: dayjs(`${m.month}-01`).format("MMM") }));
   const best = Math.max(1, ...months.map((m) => m.days));
@@ -127,6 +138,7 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
       ? `Bar chart of days trained per month, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
       : "Bar chart of days trained per month";
   return (
+    <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={pick ? "[&_.recharts-surface]:cursor-pointer" : undefined}>
     <ChartContainer config={config} className="h-[200px] w-full min-w-0" role="img" aria-label={aria}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} maxBarSize={MAX_BAR_PX}>
         <defs>
@@ -139,6 +151,7 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
           cursor={{ fill: "var(--muted)", opacity: 0.4 }}
           content={({ active, payload }) => {
             const p = payload?.[0]?.payload as (MonthDays & { label: string }) | undefined;
+            track(active && p ? p.month : null);
             if (!active || !p) return null;
             return (
               <div className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs shadow-sm">
@@ -146,6 +159,7 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
                 <div className="text-muted-foreground tabular">
                   {p.days} {p.days === 1 ? "day" : "days"} trained{p.partial ? " so far" : ""}
                 </div>
+                {pick && p.days ? <PickHint>Select to see this month</PickHint> : null}
               </div>
             );
           }}
@@ -159,12 +173,14 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
               stroke={m.partial ? DAYS_INK : "none"}
               strokeOpacity={DAYS_FILL_OPACITY}
               strokeWidth={m.partial ? 1 : 0}
+              opacity={picked && picked !== m.month ? UNPICKED_OPACITY : 1}
               data-partial={m.partial ? "true" : undefined}
             />
           ))}
         </Bar>
       </BarChart>
     </ChartContainer>
+    </div>
   );
 }
 
@@ -176,7 +192,8 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
  * month is a share, not an amount, so it is not hatched: a partial month's
  * split is as valid as a full one's, and its tooltip still says "so far".
  */
-function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
+function MonthlyMixChart({ mix, picked, pick }: { mix: MonthMix[] } & MonthPick) {
+  const { track, onPointerUp, onKeyDown } = usePointPick(pick, picked);
   const data = mix.map((m) => ({
     month: m.month,
     label: dayjs(`${m.month}-01`).format("MMM"),
@@ -193,6 +210,7 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
       ? `Stacked bar chart of each month's weightlifting, gymnastics and cardio share, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
       : "Stacked bar chart of each month's weightlifting, gymnastics and cardio share";
   return (
+    <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={pick ? "[&_.recharts-surface]:cursor-pointer" : undefined}>
     <ChartContainer config={MODALITY_FIXED_CHART_CONFIG} className="h-[160px] w-full min-w-0" role="img" aria-label={aria}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} maxBarSize={MAX_BAR_PX}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
@@ -209,6 +227,7 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
           cursor={{ fill: "var(--muted)", opacity: 0.4 }}
           content={({ active, payload }) => {
             const p = payload?.[0]?.payload as (typeof data)[number] | undefined;
+            track(active && p ? p.month : null);
             if (!active || !p) return null;
             return (
               <div className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs shadow-sm">
@@ -223,6 +242,7 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
                 ) : (
                   <div className="text-muted-foreground">No classified workouts</div>
                 )}
+                {pick && p.workouts ? <PickHint>Select to see this month</PickHint> : null}
               </div>
             );
           }}
@@ -239,10 +259,15 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
             strokeWidth={2}
             radius={i === MODALITY_DRAW_ORDER.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
             isAnimationActive={false}
-          />
+          >
+            {data.map((d) => (
+              <Cell key={d.month} opacity={picked && picked !== d.month ? UNPICKED_OPACITY : 1} />
+            ))}
+          </Bar>
         ))}
       </BarChart>
     </ChartContainer>
+    </div>
   );
 }
 
@@ -250,11 +275,24 @@ export function TrainingPanel({
   months,
   mix,
   onSeeWorkouts,
+  onOpenMonth,
 }: {
   months: MonthDays[];
   mix: MonthMix[];
   onSeeWorkouts?: (() => void) | undefined;
+  /** Opens Workouts for a picked month: its first day to its last (or today, for the month under way), YYYY-MM-DD. */
+  onOpenMonth?: ((start: string, end: string) => void) | undefined;
 }) {
+  // A month picked on either chart (ChartPick.tsx): both fade the other months, and the note under them offers its workouts.
+  const [picked, setPicked] = useState<string | null>(null);
+  const pick = onOpenMonth
+    ? (month: string | null) => {
+        setPicked(month);
+        if (month) capturePick("selected");
+      }
+    : undefined;
+  const pickedDays = picked ? months.find((m) => m.month === picked) : undefined;
+  const pickedMix = picked ? mix.find((m) => m.month === picked) : undefined;
   const anyMix = mix.some((m) => m.split);
   const leftOut = unclassifiedNote(mix.reduce((n, m) => n + m.unclassified, 0));
   return (
@@ -264,7 +302,7 @@ export function TrainingPanel({
         <div className="flex flex-col gap-2">
           {months.some((m) => m.days > 0) ? (
             <>
-              <MonthlyDaysChart months={months} />
+              <MonthlyDaysChart months={months} picked={picked} pick={pick} />
               {months.some((m) => m.partial && m.days > 0) ? <InProgressKey /> : null}
             </>
           ) : (
@@ -277,7 +315,7 @@ export function TrainingPanel({
           <h3 className="text-sm font-medium">Weightlifting, gymnastics, cardio</h3>
           {anyMix ? (
             <>
-              <MonthlyMixChart mix={mix} />
+              <MonthlyMixChart mix={mix} picked={picked} pick={pick} />
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 {MODALITY_DRAW_ORDER.map((m) => (
                   <span key={m} className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -292,6 +330,26 @@ export function TrainingPanel({
             <p className="text-sm text-muted-foreground">No classified workouts in the last {OVERVIEW_CHART_MONTHS} months.</p>
           )}
         </section>
+        {picked && pickedDays && onOpenMonth ? (
+          <ChartPickNote
+            onClear={() => setPicked(null)}
+            action={
+              pickedDays.days
+                ? {
+                    label: "See these workouts",
+                    onClick: () => {
+                      const start = dayjs(`${picked}-01`);
+                      onOpenMonth(start.format("YYYY-MM-DD"), start.endOf("month").format("YYYY-MM-DD"));
+                    },
+                  }
+                : undefined
+            }
+          >
+            <span className="font-medium">{dayjs(`${picked}-01`).format("MMMM YYYY")}</span>: {pickedDays.days}{" "}
+            {pickedDays.days === 1 ? "day" : "days"} trained{pickedDays.partial ? " so far" : ""}
+            {pickedMix?.split ? ` · ${MODALITY_DRAW_ORDER.map((m) => `${m} ${Math.round(pickedMix.split![m])}%`).join(" · ")}` : ""}
+          </ChartPickNote>
+        ) : null}
         <PanelLink label="See workouts" onClick={onSeeWorkouts} />
       </CardContent>
     </Card>

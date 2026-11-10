@@ -77,7 +77,14 @@ function RepMaxLegend({
  * two definitions of "getting better" never sit side by side. The tab id here
  * is `lift-history` because `lifts` already belongs to Progress.
  */
-export function LiftHistoryTab({ dashboard }: { dashboard: DashboardData }) {
+export function LiftHistoryTab({
+  dashboard,
+  onOpenWorkouts,
+}: {
+  dashboard: DashboardData;
+  /** Opens Workouts for a range of days (YYYY-MM-DD, inclusive); a picked lift dot opens its one day. */
+  onOpenWorkouts?: ((start: string, end: string) => void) | undefined;
+}) {
   const [repMaxFilter, setRepMaxFilter] = useState<RepMaxFilter>("all");
 
   return (
@@ -94,7 +101,7 @@ export function LiftHistoryTab({ dashboard }: { dashboard: DashboardData }) {
           </p>
           <RepMaxPrTable lifts={dashboard.lifts} />
           <RepMaxLegend repMaxFilter={repMaxFilter} onRepMaxFilterChange={setRepMaxFilter} />
-          <LiftGrid lifts={dashboard.lifts} repMaxFilter={repMaxFilter} />
+          <LiftGrid lifts={dashboard.lifts} repMaxFilter={repMaxFilter} onOpenDay={onOpenWorkouts ? (date) => onOpenWorkouts(date, date) : undefined} />
         </CardContent>
       </Card>
 

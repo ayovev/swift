@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
+import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { WorkoutList } from "./WorkoutList";
 import {
   buildMovementOptions,
@@ -37,6 +38,13 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
 
   const all = [...options.families, ...options.movements];
   const chosen = all.find((o) => keyOf(o) === picked) ?? first;
+  // Picking a month on the chart narrows the list below to it (ChartPick.tsx); another movement, implement or range starts unpicked.
+  // Above the early return below, as hooks must be.
+  const { picked: bucket, pick: pickBucket, clear: clearBucket, label: bucketLabel } = useBucketPick(
+    granularity,
+    `${chosen ? keyOf(chosen) : ""}|${implement}|${data.workouts.length}`
+  );
+  const listRef = useRef<HTMLDivElement>(null);
 
   if (!chosen) {
     return (
@@ -61,6 +69,8 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
   const name = selectionLabel(sel);
   const matches = workoutsFor(data, sel);
   const trend = trendFor(data, sel);
+  const shownMatches = bucket ? matches.filter(({ workout }) => workout.bucket === bucket) : matches;
+  const bucketTotal = bucket ? data.workouts.filter((w) => w.bucket === bucket).length : 0;
   const members = memberBreakdown(data, sel);
   const share = data.workouts.length === 0 ? 0 : (matches.length / data.workouts.length) * 100;
 
@@ -151,23 +161,34 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
             seriesLabel={name}
             label={`${granularityLabel(granularity)} share of workouts that included ${name}`}
             granularity={granularity}
+            selected={bucket}
+            onSelect={pickBucket}
           />
+          {bucket && bucketLabel ? (
+            <ChartPickNote
+              onClear={clearBucket}
+              action={shownMatches.length ? { label: `List ${shownMatches.length === 1 ? "it" : "them"}`, onClick: () => scrollToList(listRef.current) } : undefined}
+            >
+              <span className="font-medium">{bucketLabel}</span>: {labelInSentence(name)} in {shownMatches.length.toLocaleString()} of {bucketTotal.toLocaleString()} workouts
+            </ChartPickNote>
+          ) : null}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card ref={listRef}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Every workout with {labelInSentence(name)} in it</CardTitle>
         </CardHeader>
         <CardContent>
           <WorkoutList
-            rows={[...matches].reverse().map(({ workout, matched }) => ({
+            rows={[...shownMatches].reverse().map(({ workout, matched }) => ({
               date: workout.date,
               title: workout.title,
               reason: matched.map((m) => (m.implement === undefined ? m.label : `${m.label} (${m.implement})`)).join(", "),
               detail: `matched on ${matched.map((m) => (m.source === "barbell_lift" ? `"${m.phrase}" (lift field)` : `"${m.phrase}"`)).join(", ")}`,
             }))}
-            emptyMessage={`No workouts in this range involved ${labelInSentence(name)}.`}
+            emptyMessage={bucket ? `No workouts in ${bucketLabel} involved ${labelInSentence(name)}.` : `No workouts in this range involved ${labelInSentence(name)}.`}
+            scope={bucket && bucketLabel ? { label: bucketLabel, onClear: clearBucket } : undefined}
           />
         </CardContent>
       </Card>
