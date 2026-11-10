@@ -351,6 +351,16 @@ export const FIXED_REPMAX_COLORS: Record<RepMaxCategory, string> = {
  * there are only three modalities to color. Deliberately NOT modalityColor()
  * below, which derives from the athlete's accent hue — this bar stays fixed.
  */
+/**
+ * The order every M/W/G mark is drawn in: bottom to top in a stacked bar, left to right in a row's bar, and the order of its key
+ * and tooltip. Not MODALITY_LIST's canonical M, W, G (which tabs, copy and the classifier keep), because that order stacks M's red
+ * straight onto W's green: under deuteranopia that pair is about 4 apart in OKLab (x100), against a target of 8, and it is the
+ * pair a stack asks the eye to compare. With G in the middle, red only ever touches blue and green only touches blue, and every
+ * adjacent pair clears the target in both modes (tests/modalityColors.test.ts). W sits on the baseline because it is usually
+ * the largest share, and a share read off the baseline reads most exactly.
+ */
+export const MODALITY_DRAW_ORDER: readonly Modality[] = ["W", "G", "M"];
+
 export const FIXED_MODALITY_COLORS: Record<Modality, string> = {
   M: "var(--repmax-1)",
   W: "var(--repmax-3)",
@@ -364,7 +374,7 @@ export const FIXED_MODALITY_COLORS: Record<Modality, string> = {
  * athlete's accent.
  */
 export const MODALITY_FIXED_CHART_CONFIG: ChartConfig = Object.fromEntries(
-  MODALITY_LIST.map((modality) => [
+  MODALITY_DRAW_ORDER.map((modality) => [
     modality,
     { label: MODALITY_SHORT_LABELS[modality], color: FIXED_MODALITY_COLORS[modality] },
   ])

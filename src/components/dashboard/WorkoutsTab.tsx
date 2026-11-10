@@ -4,10 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ModalityBar } from "./charts/ModalityBar";
-import { FIXED_MODALITY_COLORS, formatShortDate } from "./charts/chartUtils";
+import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, formatShortDate } from "./charts/chartUtils";
 import { formatWorkoutDescription, isLevelLabel } from "@/lib/format/workoutDescription";
 import { cn } from "@/lib/utils";
-import { MODALITY_LIST, MODALITY_SHORT_LABELS, type ModalityData } from "@/types/modality";
+import { MODALITY_SHORT_LABELS, type ModalityData } from "@/types/modality";
 import type { DashboardSummary } from "@/types/dashboard";
 
 const PAGE_SIZE = 50;
@@ -82,7 +82,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
           </p>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4">
-            {MODALITY_LIST.map((m) => (
+            {MODALITY_DRAW_ORDER.map((m) => (
               <span key={m} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"

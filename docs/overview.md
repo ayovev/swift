@@ -107,7 +107,8 @@ a phone.
 28. **Showing up:** days trained per calendar month, as bars, over **the last 12 months**.
 29. The panel header carries a small muted caption: *"Last 12 months, by month"*.
     - This is the one place on the page that doesn't use full history, so it says so where it applies.
-30. The current month's bar is drawn with a diagonal hatch (one direction of 45° lines) in the accent, outlined, with a small key under the
+30. The bars are drawn in the neutral foreground ink, not the accent: the M/W/G chart below them uses fixed red, green and blue,
+    and an accent fill matched one of those for half the swatches, which read as one series. The current month's bar is drawn with a diagonal hatch (one direction of 45° lines) in the same ink, outlined, with a small key under the
     chart ("This month so far") and "so far" in its tooltip, so a partial month doesn't read as a drop. A pattern
     rather than a lighter shade, so it reads as a different kind of bar rather than a smaller amount, without relying
     on colour. One direction of lines was chosen over a diamond cross-hatch (busier, harder to read the bar's top) and a
@@ -121,7 +122,9 @@ a phone.
     different period from the one the totals count.
 33. **What it was made of**, a second chart under Showing up: each month's M/W/G split as a stacked bar summing to
     100, over **the same 12 months**, with the same margins and axis width, so each month's column sits under its days
-    bar and the panel reads as one timeline. The bars use the fixed modality colours, with a three-item key.
+    bar and the panel reads as one timeline. The bars use the fixed modality colours, stacked W, G, M from the baseline with a
+    2px gap between segments, and a three-item key in the same order. Gymnastics sits in the middle so cardio's red never
+    touches weightlifting's green, a pair deuteranopia can barely separate (`MODALITY_DRAW_ORDER`, `tests/modalityColors.test.ts`).
     - Why the same window: an earlier draft compared the last 90 days with the 90 before, beside a 12-month chart.
       Two windows in one panel made the mix and the attendance hard to read together.
     - The current month is not hatched here: a partial month's split is a share, not an amount, so it is as valid as

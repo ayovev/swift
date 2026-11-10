@@ -1,5 +1,5 @@
-import { MODALITY_LIST, MODALITY_SHORT_LABELS, type ModalitySplit } from "@/types/modality";
-import { FIXED_MODALITY_COLORS } from "./chartUtils";
+import { MODALITY_SHORT_LABELS, type ModalitySplit } from "@/types/modality";
+import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER } from "./chartUtils";
 
 /**
  * One workout's M/W/G split as a thin horizontal stacked bar — the per-row
@@ -10,6 +10,8 @@ import { FIXED_MODALITY_COLORS } from "./chartUtils";
  * per-modality tabs still use the accent-derived modalityColor(), since each
  * of those is a single series rather than a composition being compared
  * across colors.
+ *
+ * Segments run in MODALITY_DRAW_ORDER (W, G, M), so red and green never touch; see there for why.
  *
  * Zero-share modalities render no segment at all (a 0-width div would still
  * need a rounded end), and the bar rounds whichever segments land first/last
@@ -28,7 +30,7 @@ export function ModalityBar({ split, classified }: { split: ModalitySplit; class
     );
   }
 
-  const segments = MODALITY_LIST.filter((m) => split[m] > 0);
+  const segments = MODALITY_DRAW_ORDER.filter((m) => split[m] > 0);
   const label = segments.map((m) => `${MODALITY_SHORT_LABELS[m]} ${split[m].toFixed(0)}%`).join(", ");
 
   return (

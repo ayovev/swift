@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_FIXED_CHART_CONFIG, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
+import { AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
 import type { BodyReading } from "@/lib/analytics/insights/bodyContext";
 import { displayName, moveUpText, verdictText } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
@@ -18,7 +18,7 @@ import {
 } from "@/lib/analytics/overview";
 import { entryName, entrySpanText } from "@/lib/analytics/timeline";
 import { cn } from "@/lib/utils";
-import { MODALITY_LIST, MODALITY_SHORT_LABELS } from "@/types/modality";
+import { MODALITY_SHORT_LABELS } from "@/types/modality";
 import { AREA_LABEL } from "@/types/timeline";
 
 /**
@@ -61,8 +61,17 @@ function PanelHeader({ title, caption }: { title: string; caption?: string }) {
 const MAX_BAR_PX = 72;
 
 /**
+ * The ink for the days-trained bars: the achromatic foreground, not the accent. The M/W/G chart sits in the same card in fixed
+ * red, green and blue, and an accent fill there matched one of them for half the swatches (blue is G, green is W, red and magenta
+ * read as M), which told the reader two different series were one (Gestalt similarity). A neutral bar can match none of them.
+ */
+const DAYS_INK = "var(--foreground)";
+/** How strongly a full month's bar is filled: dark enough to read as a solid bar (well over 3:1 on the card in both modes), light enough not to shout. */
+const DAYS_FILL_OPACITY = 0.7;
+
+/**
  * The fill that marks a month still under way: a single-direction 45° hatch in the
- * accent over a faint wash of it. A pattern rather than a lighter shade, so
+ * same ink as the full months, over a faint wash of it. A pattern rather than a lighter shade, so
  * "in progress" reads as a different kind of bar, not a smaller amount, and
  * survives without colour. One direction of lines rather than a cross-hatch: it is
  * the usual chart mark for "not final", it leaves the bar's top edge easy to
@@ -74,8 +83,8 @@ const MAX_BAR_PX = 72;
 function InProgressPattern({ id }: { id: string }) {
   return (
     <pattern id={id} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <rect width="6" height="6" fill="var(--primary)" fillOpacity={0.12} />
-      <path d="M0 0V6" stroke="var(--primary)" strokeWidth="2" />
+      <rect width="6" height="6" fill={DAYS_INK} fillOpacity={0.08} />
+      <path d="M0 0V6" stroke={DAYS_INK} strokeOpacity={DAYS_FILL_OPACITY} strokeWidth="2" />
     </pattern>
   );
 }
@@ -93,7 +102,7 @@ function InProgressKey() {
         <defs>
           <InProgressPattern id={id} />
         </defs>
-        <rect x="0.5" y="0.5" width="11" height="11" rx="2" fill={`url(#${id})`} stroke="var(--primary)" strokeWidth="1" />
+        <rect x="0.5" y="0.5" width="11" height="11" rx="2" fill={`url(#${id})`} stroke={DAYS_INK} strokeOpacity={DAYS_FILL_OPACITY} strokeWidth="1" />
       </svg>
       This month so far
     </span>
@@ -111,7 +120,7 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
   const data = months.map((m) => ({ ...m, label: dayjs(`${m.month}-01`).format("MMM") }));
   const best = Math.max(1, ...months.map((m) => m.days));
   const { domain, ticks } = niceAxisTicks(0, best, AXIS_TICK_COUNT, true);
-  const config: ChartConfig = { days: { label: "Days trained", color: "var(--primary)" } };
+  const config: ChartConfig = { days: { label: "Days trained", color: DAYS_INK } };
   const first = months[0];
   const last = months[months.length - 1];
   const aria =
@@ -142,12 +151,14 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
             );
           }}
         />
-        <Bar dataKey="days" fill="var(--primary)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+        <Bar dataKey="days" fill={DAYS_INK} radius={[3, 3, 0, 0]} isAnimationActive={false}>
           {data.map((m) => (
             <Cell
               key={m.month}
-              fill={m.partial ? `url(#${patternId})` : "var(--primary)"}
-              stroke={m.partial ? "var(--primary)" : "none"}
+              fill={m.partial ? `url(#${patternId})` : DAYS_INK}
+              fillOpacity={m.partial ? 1 : DAYS_FILL_OPACITY}
+              stroke={m.partial ? DAYS_INK : "none"}
+              strokeOpacity={DAYS_FILL_OPACITY}
               strokeWidth={m.partial ? 1 : 0}
               data-partial={m.partial ? "true" : undefined}
             />
@@ -208,7 +219,7 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
                 </div>
                 {p.workouts ? (
                   <div className="text-muted-foreground tabular">
-                    {MODALITY_LIST.map((m) => `${MODALITY_SHORT_LABELS[m]} ${Math.round(p[m])}%`).join(" · ")}
+                    {MODALITY_DRAW_ORDER.map((m) => `${MODALITY_SHORT_LABELS[m]} ${Math.round(p[m])}%`).join(" · ")}
                   </div>
                 ) : (
                   <div className="text-muted-foreground">No classified workouts</div>
@@ -217,13 +228,17 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
             );
           }}
         />
-        {MODALITY_LIST.map((m, i) => (
+        {/* Drawn W, G, M from the baseline (MODALITY_DRAW_ORDER), with a 2px card-coloured stroke as the gap between segments,
+            so two segments never read as one block. */}
+        {MODALITY_DRAW_ORDER.map((m, i) => (
           <Bar
             key={m}
             dataKey={m}
             stackId="mix"
             fill={FIXED_MODALITY_COLORS[m]}
-            radius={i === MODALITY_LIST.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+            stroke="var(--card)"
+            strokeWidth={2}
+            radius={i === MODALITY_DRAW_ORDER.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
             isAnimationActive={false}
           />
         ))}
@@ -264,7 +279,7 @@ export function TrainingPanel({
             <>
               <MonthlyMixChart mix={mix} />
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                {MODALITY_LIST.map((m) => (
+                {MODALITY_DRAW_ORDER.map((m) => (
                   <span key={m} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: FIXED_MODALITY_COLORS[m] }} aria-hidden />
                     {MODALITY_SHORT_LABELS[m]}

@@ -665,7 +665,11 @@ element the athlete controls. Every token in `src/index.css` is achromatic (chro
 with two fixed exceptions that never derive from the accent: `--destructive`, the error/delete-action
 red, and the `--repmax-1/2/3/5` tokens (red/orange/green/blue). The `--repmax-*` tokens colour the
 lift-chart dots and legend by rep scheme (`FIXED_REPMAX_COLORS` in `chartUtils.ts`), and the
-Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). They are fixed on
+Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). Those bars are drawn in
+`MODALITY_DRAW_ORDER` (W, G, M), never `MODALITY_LIST`'s M, W, G: the canonical order stacks red onto green, which
+deuteranopia can barely tell apart, and `tests/modalityColors.test.ts` measures every adjacent pair from the real tokens.
+Overview's days-trained bars sit in the same card, so they use neutral ink rather than the accent, which matched one of the
+three modality colours for half the swatches. They are fixed on
 purpose: an accent-derived alternative was tried side by side and dropped, so there is no colour-mode
 toggle and no `accentRepMaxColors()`; don't reintroduce one. The accent itself arrives as CSS custom
 properties written to `:root` by `src/lib/theme/useTheme.ts`, so shadcn primitives, focus rings

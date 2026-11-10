@@ -34,7 +34,7 @@ function encodeGamma(channel: number): number {
 }
 
 /** Linear-light sRGB components, before gamma encoding. */
-function oklchToLinearSrgb(color: Oklch): Rgb {
+export function oklchToLinearSrgb(color: Oklch): Rgb {
   const hRad = (color.h * Math.PI) / 180;
   const a = color.c * Math.cos(hRad);
   const b = color.c * Math.sin(hRad);
