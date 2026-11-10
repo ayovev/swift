@@ -592,6 +592,23 @@ than the engine behind them.
 9. **#21** The unclassified line next to the M/W/G charts.
 10. **#18** Relabel the Insights filters.
 
+**Status: all ten are built**, one commit each, with tests. Where the build differs from the recommendation above:
+
+- **#1:** The verdict line reads "+35 lb (223 to 258 lb est. 1RM), +15.4%" rather than starting with "Est. 1RM", so the same
+  string also reads correctly mid-sentence (Timeline, Overview). A record names its logged set, even for a single
+  ("from 145 × 1"), which tells the athlete that load was actually lifted. A test over the sample checks every lift line.
+- **#3:** W, G, M from the baseline. `tests/modalityColors.test.ts` simulates the deficiencies on the real tokens: every
+  adjacent pair clears 21 under deutan and protan in both modes. The one pair still under target is green against blue under
+  tritanopia (5.3 light, 4.5 dark), pinned as a known limitation and carried by the 2px gap.
+- **#10:** M is "Monostructural" everywhere. If "Metabolic conditioning" is preferred, it is one constant in
+  `src/types/modality.ts`.
+- **#11:** The longer "Monostructural" label made the row 1255px at 1280, so the gaps also tighten from `xl`, where the whole
+  row now fits (1216px in 1216px). Below `xl` it scrolls, with fades and scroll buttons.
+- **#12:** The two-line InBody source card stays at the top, since it explains the charts and holds Replace file. Trends then
+  come before the reading list. Days trained reads "730 in months with a scan".
+- **#19:** The "too short to compare" guard is 8 weeks from the first workout to the last, not a bucket count: the halves
+  are cut by workout count, so the grouping never changes them.
+
 ---
 
 ## 5. Cross-cutting patterns (fix once)
