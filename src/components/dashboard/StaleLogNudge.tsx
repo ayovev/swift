@@ -1,3 +1,4 @@
+import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilePickerButton } from "./FilePickerButton";
 import { shortDate } from "@/lib/analytics/overview";
@@ -32,7 +33,14 @@ export function StaleLogNudge({ staleness, today, onWorkoutFile, onSnooze }: Sta
       aria-label="Workout log may be out of date"
       className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-md border border-accent-border bg-accent-subtle px-4 py-2.5 text-sm"
     >
-      <p>{staleLogSentence(staleness, today)}</p>
+      {/* The icon matches the sample-mode strip's (accent-link, small, decorative) so the two
+          page-level notices read as one family. Top-aligned so it stays with the first line when
+          the sentence wraps at phone width. */}
+      <p className="flex items-start gap-2.5 leading-relaxed">
+        <History className="mt-0.5 size-4 shrink-0 text-accent-link" aria-hidden="true" />
+        {/* A non-breaking space inside each "Sep 11" so a date never splits across lines at phone width. */}
+        <span>{staleLogSentence(staleness, today).replace(/([A-Z][a-z]{2}) (\d)/g, "$1\u00a0$2")}</span>
+      </p>
       <div className="flex items-center gap-2">
         <FilePickerButton
           variant="default"
