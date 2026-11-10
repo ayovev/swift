@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import {
+  loadWorkoutMeta,
   loadWorkoutRows,
+  saveWorkoutMeta,
   saveWorkoutRows,
 } from "@/lib/storage/workoutStorage";
 import { loadSampleRows } from "./fixtures/sampleRows";
@@ -26,5 +28,14 @@ describe("workoutStorage", () => {
     await saveWorkoutRows(rows);
     await idbClearAll();
     expect(await loadWorkoutRows()).toBeUndefined();
+  });
+
+  it("round-trips the upload meta, and is undefined for a cache saved before it existed", async () => {
+    expect(await loadWorkoutMeta()).toBeUndefined();
+    const meta = { uploadedAt: "2026-10-01T09:00:00.000Z", staleSnoozedUntil: "2026-10-08T09:00:00.000Z" };
+    await saveWorkoutMeta(meta);
+    expect(await loadWorkoutMeta()).toEqual(meta);
+    await idbClearAll();
+    expect(await loadWorkoutMeta()).toBeUndefined();
   });
 });

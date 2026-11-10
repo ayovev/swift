@@ -14,6 +14,7 @@ import { OverviewTab } from "./OverviewTab";
 import { LiftHistoryTab } from "./LiftHistoryTab";
 import { LiftsTab } from "./LiftsTab";
 import { TimelineTab } from "./TimelineTab";
+import { StaleLogNudge } from "./StaleLogNudge";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import {
   ALL_TABS,
@@ -30,7 +31,9 @@ import { formatDate } from "./charts/chartUtils";
 import type { DateRange, DateRangePreset } from "@/lib/analytics/dateRange";
 import { dailyGranularityFits, type Granularity } from "@/lib/analytics/granularity";
 import { capture } from "@/lib/posthog";
-import { overviewScopeSentence } from "@/lib/analytics/overview";
+import { lastLoggedDate, overviewScopeSentence } from "@/lib/analytics/overview";
+import { logStaleness } from "@/lib/analytics/staleness";
+import type { WorkoutMeta } from "@/lib/storage/workoutStorage";
 import { DOMAIN_LIST, type Domain } from "@/types/dashboard";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 import type { Insights } from "@/lib/analytics/buildInsights";
@@ -50,6 +53,8 @@ interface DashboardProps {
   onGranularityChange: (granularity: Granularity) => void;
   onReset: () => void;
   workoutRows: SugarWodRow[];
+  workoutMeta: WorkoutMeta | null;
+  onSnoozeStaleNudge: () => void;
   onWorkoutFile: (file: File) => void;
   bodyComp: BodyCompState;
   onBodyCompFile: (file: File) => void;
@@ -76,6 +81,8 @@ export function Dashboard({
   onGranularityChange,
   onReset,
   workoutRows,
+  workoutMeta,
+  onSnoozeStaleNudge,
   onWorkoutFile,
   bodyComp,
   onBodyCompFile,
@@ -101,6 +108,18 @@ export function Dashboard({
   // the selected range (see App.tsx and docs/overview.md).
   const usesRange = sectionOf(tab) !== "Insights" && sectionOf(tab) !== "Overview";
   const today = dayjs().format("YYYY-MM-DD");
+  // Only where the whole history is read as of today (Overview, Insights), and only for an
+  // athlete's own upload: sample data is generated up to today and is never stored.
+  const staleness =
+    source === "upload" && !usesRange
+      ? logStaleness({
+          uploadedAt: workoutMeta?.uploadedAt ?? null,
+          snoozedUntil: workoutMeta?.staleSnoozedUntil ?? null,
+          lastWorkoutOn: lastLoggedDate(insights.allRows, today),
+          today,
+          now: dayjs().toISOString(),
+        })
+      : null;
 
   // "All time" (range === null) has no explicit span of its own, so it falls
   // back to the log's own full bounds — the same span DateRangePicker uses
@@ -287,6 +306,14 @@ export function Dashboard({
               </div>
             ) : null}
           </div>
+          {staleness ? (
+            <StaleLogNudge
+              staleness={staleness}
+              today={today}
+              onWorkoutFile={onWorkoutFile}
+              onSnooze={onSnoozeStaleNudge}
+            />
+          ) : null}
           <SubNav value={tab} onValueChange={onTabChange} />
         </div>
 

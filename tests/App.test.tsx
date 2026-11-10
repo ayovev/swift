@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
-import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
+import { loadWorkoutMeta, loadWorkoutRows, saveWorkoutMeta, saveWorkoutRows } from "@/lib/storage/workoutStorage";
 import { loadSampleInBodyRows } from "./fixtures/sampleInBodyRows";
 import { loadSampleCsvText, loadSampleRows } from "./fixtures/sampleRows";
 import { logRow } from "./fixtures/rows";
@@ -401,5 +401,48 @@ describe("App — daily granularity gating", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Grouped by week" })).toBeInTheDocument();
     });
+  });
+});
+
+describe("App — stale workout log nudge", () => {
+  const staleLine = () => screen.queryByRole("complementary", { name: "Workout log may be out of date" });
+
+  it("shows on Overview for an old upload and not for a fresh one", async () => {
+    const rows = (await loadSampleRows()).slice(0, 5);
+    await saveWorkoutRows(rows);
+    await saveWorkoutMeta({ uploadedAt: new Date(Date.now() - 45 * 86_400_000).toISOString() });
+    const first = renderApp();
+    await findDashboard();
+    expect(staleLine()).not.toBeNull();
+    first.unmount();
+
+    await saveWorkoutMeta({ uploadedAt: new Date().toISOString() });
+    renderApp();
+    await findDashboard();
+    expect(staleLine()).toBeNull();
+  });
+
+  it("falls back to the last workout for a cache with no upload date", async () => {
+    await saveWorkoutRows([graceRow("01/05/2020")]);
+    renderApp();
+    await findDashboard();
+    expect(staleLine()).not.toBeNull();
+  });
+
+  it("'Remind me later' hides it and persists the snooze", async () => {
+    await saveWorkoutRows([graceRow("01/05/2020")]);
+    await saveWorkoutMeta({ uploadedAt: new Date(Date.now() - 45 * 86_400_000).toISOString() });
+    renderApp();
+    await findDashboard();
+    fireEvent.click(screen.getByRole("button", { name: "Remind me later" }));
+    expect(staleLine()).toBeNull();
+    await waitFor(async () => expect((await loadWorkoutMeta())?.staleSnoozedUntil).toBeTruthy());
+  });
+
+  it("does not show on a Training view, where the date range applies", async () => {
+    await saveWorkoutRows([graceRow("01/05/2020")]);
+    renderApp();
+    await findRangeView();
+    expect(staleLine()).toBeNull();
   });
 });

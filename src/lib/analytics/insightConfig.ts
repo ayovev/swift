@@ -79,6 +79,20 @@ export const NOISE_DEFAULT_WEIGHT_BAND_LB = 3;
  */
 export const OVERVIEW_RECENT_DAYS = 90;
 
+/**
+ * How old the workout log can get before the dashboard suggests uploading a
+ * fresh export. Measured from when the file was loaded into this browser
+ * (`uploadedAt`), not from the last logged workout: an athlete who loads a
+ * current file after a six-week layoff has a current file, however old its last
+ * workout is. Only a cache saved before `uploadedAt` existed falls back to the
+ * last workout's age. Tunable, a first draft: check it against how often
+ * athletes actually re-export.
+ */
+export const STALE_LOG_DAYS = 30;
+
+/** How long "Remind me later" hides the stale-log line. Tunable. */
+export const STALE_LOG_SNOOZE_DAYS = 7;
+
 // ── Rep schemes and body-weight readings (insights/) ────────────────────
 
 /**
