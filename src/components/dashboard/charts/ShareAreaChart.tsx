@@ -67,6 +67,7 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity }:
           stroke={color}
           strokeWidth={2}
           fill={`url(#fill-${seriesLabel.replace(/\W/g, "")})`}
+          isAnimationActive={false}
         />
       </AreaChart>
     </ChartContainer>

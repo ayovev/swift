@@ -105,6 +105,7 @@ export function ConsistencyChart({
           fillOpacity={barOpacity("count")}
           style={barStyle}
           radius={[3, 3, 0, 0]}
+          isAnimationActive={false}
         />
         {dual ? (
           <Bar
@@ -113,6 +114,7 @@ export function ConsistencyChart({
             fillOpacity={barOpacity("secondaryCount")}
             style={barStyle}
             radius={[3, 3, 0, 0]}
+            isAnimationActive={false}
           />
         ) : null}
         {dual ? <ChartLegend content={<ChartLegendContent onActiveKeyChange={setActiveKey} />} /> : null}

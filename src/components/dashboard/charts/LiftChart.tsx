@@ -187,7 +187,7 @@ export function LiftChart({
               );
             }}
           />
-          <Scatter data={data} shape={<LiftDot colorFor={colorFor} />} />
+          <Scatter data={data} shape={<LiftDot colorFor={colorFor} />} isAnimationActive={false} />
         </ScatterChart>
       </ChartContainer>
     </div>

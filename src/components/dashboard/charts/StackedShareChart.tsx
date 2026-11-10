@@ -93,6 +93,7 @@ export function StackedShareChart({
               fill={`var(${chartColorVar(key)})`}
               fillOpacity={dimmed(key) ? DIMMED_OPACITY : 1}
               style={DIM_TRANSITION}
+              isAnimationActive={false}
               {...(key === lastKey ? { radius: [3, 3, 0, 0] as [number, number, number, number] } : {})}
             />
           ) : (
@@ -106,6 +107,7 @@ export function StackedShareChart({
               fillOpacity={dimmed(key) ? DIMMED_OPACITY : 0.85}
               style={DIM_TRANSITION}
               strokeWidth={0}
+              isAnimationActive={false}
             />
           )
         )}
