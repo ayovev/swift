@@ -201,7 +201,7 @@ export function Dashboard({
       {/* The first stop for a keyboard: past the strip, the four sections and Settings, straight to the page (WCAG 2.4.1). */}
       <a
         href="#content"
-        className="sr-only rounded-md bg-background px-3 py-2 text-sm font-medium shadow-md ring-2 ring-ring focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
       >
         Skip to content
       </a>
