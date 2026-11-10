@@ -2,7 +2,6 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EvidenceChart } from "@/components/dashboard/progress/EvidenceChart";
 import { ProgressRowItem } from "@/components/dashboard/progress/ProgressRowItem";
-import { changeScale } from "@/components/dashboard/progress/ChangeBar";
 import { classifySubjects, type ProgressRow } from "@/lib/analytics/insights/headline";
 import { buildProgressSubjects } from "@/lib/analytics/insights/sessions";
 import { loadSampleRows } from "./fixtures/sampleRows";
@@ -15,19 +14,18 @@ async function sampleRow(name: string): Promise<{ row: ProgressRow; rows: Progre
 }
 
 describe("a collapsed Progress row", () => {
-  it("shows the verdict, the change, the windows and a change bar, and opens to the rest", async () => {
+  it("shows the verdict, the change and the windows, and opens to the rest", async () => {
     const { row, rows } = await sampleRow("Power Snatch");
     expect(row.verdict?.record).toBe(true);
     const twin = rows.find((r) => r.subject.movement === row.subject.movement && r.subject.status === "SCALED")?.subject ?? null;
     const { container } = render(
       <ul>
-        <ProgressRowItem row={row} twin={twin} scale={changeScale(rows)} readings={[{ date: "2023-02-06", weightLb: 170 }, { date: "2026-03-10", weightLb: 180 }]} bandLb={3} />
+        <ProgressRowItem row={row} twin={twin} readings={[{ date: "2023-02-06", weightLb: 170 }, { date: "2026-03-10", weightLb: 180 }]} bandLb={3} />
       </ul>
     );
     const li = container.querySelector("li") as HTMLElement;
     expect(within(li).getByText(/est\. 1RM\), \+/)).toBeInTheDocument();
     expect(within(li).getByText(/^Last \d: /)).toBeInTheDocument();
-    expect(li.querySelector("[data-change-bar]")).not.toBeNull();
     // Collapsed: no new-best note, no body-weight lines.
     expect(within(li).queryByText(/^New best/)).not.toBeInTheDocument();
     expect(within(li).queryByText(/^Body weight/)).not.toBeInTheDocument();
@@ -47,63 +45,6 @@ describe("a collapsed Progress row", () => {
     expect(within(container).getByText(/^Recent sessions span \d+ months/)).toBeInTheDocument();
   });
 
-  it("draws every row's change on one scale: longer for a bigger change, right for better, left for worse", async () => {
-    const { rows } = await sampleRow("Back Squat");
-    const scale = changeScale(rows);
-    const barOf = (row: ProgressRow) => {
-      const { container, unmount } = render(
-        <ul>
-          <ProgressRowItem row={row} twin={null} readings={[]} bandLb={3} scale={scale} />
-        </ul>
-      );
-      const bar = container.querySelector("[data-change-bar] [data-bar]") as HTMLElement;
-      const zero = Number((container.querySelector("[data-change-bar] > span:not([data-threshold]):not([data-bar])") as HTMLElement).style.left.replace("%", ""));
-      const out = { left: parseFloat(bar.style.left), width: parseFloat(bar.style.width.replace(/^max\(/, "")), zero, change: row.verdict!.change };
-      unmount();
-      return out;
-    };
-    // The sample's biggest and a smaller improvement, and a decline, whatever their names on this date.
-    const better = rows.filter((r) => r.verdict && r.verdict.change > 0).sort((a, b) => b.verdict!.change - a.verdict!.change);
-    const worse = rows.find((r) => r.verdict && r.verdict.change < 0)!;
-    const big = barOf(better[0]!);
-    const small = barOf(better[better.length - 1]!);
-    const down = barOf(worse);
-    expect(big.change).toBeGreaterThan(small.change);
-    // Same scale: the ratio of the bars is the ratio of the changes.
-    expect(big.width / small.width).toBeCloseTo(big.change / small.change, 1);
-    // Better runs right of zero, worse left of it.
-    expect(big.left).toBeCloseTo(big.zero, 5);
-    expect(down.left + down.width).toBeCloseTo(down.zero, 5);
-  });
-
-  it("marks the verdict's threshold on every bar, so a small change reads as small", async () => {
-    const { rows } = await sampleRow("Deadlift");
-    const scale = changeScale(rows);
-    expect(scale.lo).toBeLessThan(-5);
-    expect(scale.hi).toBeGreaterThan(5);
-    const deadlift = rows.find((r) => r.subject.name === "Deadlift" && r.subject.status === "RX")!;
-    // An Up from a record: its +4.4% stops short of the +5% tick.
-    expect(deadlift.verdict!.record).toBe(true);
-    expect(deadlift.verdict!.change).toBeLessThan(5);
-    const { container } = render(
-      <ul>
-        <ProgressRowItem row={deadlift} twin={null} readings={[]} bandLb={3} scale={scale} />
-      </ul>
-    );
-    const ticks = [...container.querySelectorAll("[data-change-bar] [data-threshold]")] as HTMLElement[];
-    expect(ticks).toHaveLength(2);
-    const bar = container.querySelector("[data-change-bar] [data-bar]") as HTMLElement;
-    const barEnd = parseFloat(bar.style.left) + parseFloat(bar.style.width.replace(/^max\(/, ""));
-    expect(barEnd).toBeLessThan(Math.max(...ticks.map((t) => parseFloat(t.style.left))));
-    expect(container.querySelector("[data-change-bar]")?.getAttribute("aria-hidden")).toBe("true");
-  });
-
-  it("takes the scale from every verdict, not the rows a filter shows", async () => {
-    const { rows } = await sampleRow("Back Squat");
-    const all = changeScale(rows);
-    const fewer = changeScale(rows.filter((r) => r.subject.name === "Deadlift"));
-    expect(all.hi).toBeGreaterThan(fewer.hi);
-  });
 });
 
 describe("the evidence chart's size", () => {

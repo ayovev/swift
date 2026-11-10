@@ -602,10 +602,9 @@ than the engine behind them.
   Enter, Escape) came with it, as did a keyboard-only focus ring on charts (WCAG 2.4.7); pointer focus no longer draws a box
   round the plot. The custom range label keeps its capitals and reads one day as one date.
 
-- **#8:** a collapsed verdict row is its name and pill, a change bar, the change and the windows (plus the long-gap caveat).
-  The bar is the row's percentage change on one scale shared by every row, right for better and left for worse, with ticks at
-  the verdict's ±5% threshold. It replaced the 120×24 dot sparkline first built here, which at that size was a smudge of dots
-  on a scale of its own per row and showed nothing of the comparison the verdict makes. The new
+- **#8:** a collapsed verdict row is its name and pill, the change and the windows (plus the long-gap caveat). The inline
+  sparkline the recommendation asked for was built and removed, and so was a change bar tried in its place: at row size neither
+  added anything the row's words didn't, and both read as clutter. The new
   best, the RX or Scaled cross-reference and the body-weight lines open with the chart. The evidence chart is drawn at its
   measured width, so its text is 11px on a phone and on a desktop (it was about 6px and 20px), with solid gridlines and as many
   date ticks as fit. The Progress page at 1280px is 18% shorter (2,709px to 2,222px), not the half estimated: the headline

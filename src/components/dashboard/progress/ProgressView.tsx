@@ -14,7 +14,6 @@ import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { PeriodFilter } from "./PeriodFilter";
 import { ProgressRowItem } from "./ProgressRowItem";
-import { changeScale } from "./ChangeBar";
 
 const GROUPS: { id: ProgressGroup; title: string; open: boolean }[] = [
   { id: "up", title: "Up", open: true },
@@ -46,8 +45,6 @@ export function ProgressView({ workouts, scans, weighIns = [], asOf, onSeeOnTime
   const today = useMemo(() => asOf ?? dayjs().format("YYYY-MM-DD"), [asOf]);
   const { subjects, unused } = useMemo(() => buildProgressSubjects(workouts), [workouts]);
   const { rows, headline } = useMemo(() => classifySubjects(subjects, today), [subjects, today]);
-  // One scale for every row's change bar, from all verdicts rather than the filtered list, so filtering never rescales the bars.
-  const scale = useMemo(() => changeScale(rows), [rows]);
   const readings = useMemo(() => pooledReadings(readingsFromInBody(scans), weighIns), [scans, weighIns]);
   const band = useMemo(() => weightBandLb(pooledScanRows(scans, weighIns)), [scans, weighIns]);
   const [preset, setPreset] = useState<PeriodPreset>("all");
@@ -119,7 +116,7 @@ export function ProgressView({ workouts, scans, weighIns = [], asOf, onSeeOnTime
           const list = (
             <ul>
               {items.map((r) => (
-                <ProgressRowItem key={r.subject.key} row={r} twin={twins.get(r.subject.key) ?? null} readings={readings} bandLb={band} focused={r.subject.key === focusSubjectKey} scale={scale} {...(onSeeOnTimeline ? { onSeeOnTimeline } : {})} />
+                <ProgressRowItem key={r.subject.key} row={r} twin={twins.get(r.subject.key) ?? null} readings={readings} bandLb={band} focused={r.subject.key === focusSubjectKey} {...(onSeeOnTimeline ? { onSeeOnTimeline } : {})} />
               ))}
             </ul>
           );

@@ -7,7 +7,6 @@ import type { ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession } from "@/lib/analytics/insights/verdict";
 import { cn } from "@/lib/utils";
 import { EvidenceChart } from "./EvidenceChart";
-import { ChangeBar, type ChangeScale } from "./ChangeBar";
 import { VerdictPill, type VerdictKind } from "./verdictMark";
 
 
@@ -21,20 +20,21 @@ interface ProgressRowItemProps {
   onSeeOnTimeline?: (subjectKey: string) => void;
   /** Start opened and scrolled into view: the row was reached from Overview's "What moved". */
   focused?: boolean;
-  /** The change bar's scale, shared by every row on the page (ChangeBar.tsx). Without it a row shows no bar. */
-  scale?: ChangeScale;
 }
 
 /**
  * One subject. A verdict row shows what it compared and the change; a subject below the gate shows a facts line and no verdict word, a
  * percentage or a pill; a move up to RX shows its reason and does not open. A row opens to its evidence chart.
  *
- * Collapsed, a verdict row is its name and pill, a change bar on the page's shared scale (ChangeBar.tsx), the change and the windows compared
+ * Collapsed, a verdict row is its name and pill, the change and the windows compared
  * (and the long-gap caveat when there is one, since it qualifies the verdict). Everything else (the new best, the RX or Scaled
  * cross-reference, the body-context lines) opens with the chart: a row of five to seven lines buried the verdict, and ten of them
  * made a page of text with the evidence hidden. A move up to RX does not open, so its lines stay on the row.
+ *
+ * No inline chart on the collapsed row: a dot sparkline and then a change bar on a shared scale were both tried here and removed. At
+ * that size neither added anything the row's words don't say, and both read as clutter. The evidence is the opened chart.
  */
-export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, focused = false, scale }: ProgressRowItemProps) {
+export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, focused = false }: ProgressRowItemProps) {
   const { subject, verdict, group, moveUp, moveUpVotes } = row;
   const isMove = !verdict && moveUpVotes && !!moveUp;
   const openable = !isMove && subject.sessions.length >= 2;
@@ -67,7 +67,6 @@ export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, 
         {displayName(subject)}
         {pill && (verdict || isMove) ? <VerdictPill kind={(isMove ? "move-up" : group) as VerdictKind} /> : null}
       </span>
-      {verdict && scale ? <ChangeBar change={verdict.change} kind={verdict.state} scale={scale} /> : null}
     </div>
   );
 
