@@ -7,6 +7,7 @@ import type { ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession } from "@/lib/analytics/insights/verdict";
 import { cn } from "@/lib/utils";
 import { EvidenceChart } from "./EvidenceChart";
+import { Sparkline } from "./Sparkline";
 import { VerdictPill, type VerdictKind } from "./verdictMark";
 
 
@@ -24,8 +25,12 @@ interface ProgressRowItemProps {
 
 /**
  * One subject. A verdict row shows what it compared and the change; a subject below the gate shows a facts line and no verdict word, a
- * percentage or a pill; a move up to RX shows its reason and does not open. Body-context lines sit on the rows of Up, Down and Not tested
- * since, and on a No clear change row once it is opened. A row opens to its evidence chart.
+ * percentage or a pill; a move up to RX shows its reason and does not open. A row opens to its evidence chart.
+ *
+ * Collapsed, a verdict row is its name and pill, a sparkline of the same dots the chart draws, the change and the windows compared
+ * (and the long-gap caveat when there is one, since it qualifies the verdict). Everything else (the new best, the RX or Scaled
+ * cross-reference, the body-context lines) opens with the chart: a row of five to seven lines buried the verdict, and ten of them
+ * made a page of text with the evidence hidden. A move up to RX does not open, so its lines stay on the row.
  */
 export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, focused = false }: ProgressRowItemProps) {
   const { subject, verdict, group, moveUp, moveUpVotes } = row;
@@ -42,7 +47,9 @@ export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, 
   const text = verdict ? verdictText(subject, verdict) : null;
   const earlierBest = verdict ? bestSession(subject.sessions.slice(0, subject.sessions.length - verdict.window), subject.lowerIsBetter) : null;
   const newBest = verdict && earlierBest ? newBestText(subject, verdict, earlierBest) : null;
-  const showBody = group === "up" || group === "down" || group === "not-tested-since" || (group === "no-clear-change" && open);
+  // With a verdict, the detail lines open with the chart; a row that can't open keeps them.
+  const detailShown = !verdict || !openable || open;
+  const showBody = detailShown && (group === "up" || group === "down" || group === "not-tested-since" || group === "no-clear-change" || isMove);
   const body = showBody
     ? verdict
       ? bodyContextLines({ subject, state: verdict.state, change: verdict.change, from: verdict.previousBest.date, to: verdict.recentBest.date, bests: { previous: verdict.previousBest.value, recent: verdict.recentBest.value } }, readings, bandLb)
@@ -53,19 +60,20 @@ export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, 
   const notRecent = group === "not-recent" ? `Not recent: last logged ${monthYear(row.latest)}.` : null;
 
   const header = (
-    <div className="flex items-baseline justify-between gap-3">
+    <div className="flex items-center justify-between gap-3">
       <span className="min-w-0 text-sm font-medium">
         {displayName(subject)}
         {pill && (verdict || isMove) ? <VerdictPill kind={(isMove ? "move-up" : group) as VerdictKind} /> : null}
       </span>
+      {verdict && subject.sessions.length >= 2 ? <Sparkline subject={subject} verdict={verdict} /> : null}
     </div>
   );
 
   return (
     <li ref={ref} className="flex flex-col gap-1 border-t border-border px-4 py-3 first:border-t-0" data-group={group}>
       {openable ? (
-        <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex w-full items-baseline justify-between gap-3 text-left">
-          {header}
+        <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between gap-3 text-left">
+          <span className="min-w-0 flex-1">{header}</span>
           <ChevronDown className={cn("size-4 shrink-0 self-center text-muted-foreground transition-transform", open && "rotate-180")} aria-hidden />
         </button>
       ) : (
@@ -77,12 +85,12 @@ export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, 
           <p className="text-sm">{text.change}</p>
           <p className="text-xs text-muted-foreground">{text.windows}</p>
           {text.longGap ? <p className="text-xs text-muted-foreground">{text.longGap}</p> : null}
-          {newBest ? <p className="text-xs text-muted-foreground">{newBest}</p> : null}
+          {newBest && detailShown ? <p className="text-xs text-muted-foreground">{newBest}</p> : null}
         </>
       ) : null}
       {!verdict && !isMove ? <p className="text-sm text-muted-foreground">{factsLine(subject)}</p> : null}
       {notRecent ? <p className="text-xs text-muted-foreground">{notRecent}</p> : null}
-      {twin ? <p className="text-xs text-muted-foreground">{crossReference(twin)}</p> : null}
+      {twin && detailShown ? <p className="text-xs text-muted-foreground">{crossReference(twin)}</p> : null}
       {body ? (
         <div className="flex flex-col gap-0.5 pt-0.5">
           <p className="text-xs text-muted-foreground">{body.first}</p>

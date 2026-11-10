@@ -592,7 +592,7 @@ than the engine behind them.
 9. **#21** The unclassified line next to the M/W/G charts.
 10. **#18** Relabel the Insights filters.
 
-**Also built since: #2 and #4.**
+**Also built since: #2, #4 and #8.**
 
 - **#2:** every verdict now has its own glyph and Timeline mark (`progress/verdictMark.tsx`), and colour only repeats it, so Up
   and Down stay distinct with the red accent and in greyscale. "Not tested since" lost its hardcoded amber and is grey and
@@ -602,6 +602,11 @@ than the engine behind them.
   Enter, Escape) came with it, as did a keyboard-only focus ring on charts (WCAG 2.4.7); pointer focus no longer draws a box
   round the plot. The custom range label keeps its capitals and reads one day as one date.
 
+- **#8:** a collapsed verdict row is its name and pill, a sparkline, the change and the windows (plus the long-gap caveat). The new
+  best, the RX or Scaled cross-reference and the body-weight lines open with the chart. The evidence chart is drawn at its
+  measured width, so its text is 11px on a phone and on a desktop (it was about 6px and 20px), with solid gridlines and as many
+  date ticks as fit. The Progress page at 1280px is 18% shorter (2,709px to 2,222px), not the half estimated: the headline
+  card, group headers and closed groups stay as they were.
 **Status: all ten are built**, one commit each, with tests. Where the build differs from the recommendation above:
 
 - **#1:** The verdict line reads "+35 lb (223 to 258 lb est. 1RM), +15.4%" rather than starting with "Est. 1RM", so the same

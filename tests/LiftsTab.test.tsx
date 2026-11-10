@@ -96,7 +96,11 @@ describe("the Insights front door", () => {
     expect(screen.queryByText(/Body weight|No body weight/)).not.toBeInTheDocument();
     unmount();
     renderSample("2026-09-11", [scanRow("2023-02-06", { "Weight(lb)": "170" }), scanRow("2026-03-10", { "Weight(lb)": "172" })]);
-    expect(screen.getAllByText(/Body weight 170 to 172 lb, within normal variation\./).length).toBeGreaterThan(0);
+    // Body-context lines open with the row's chart; a collapsed verdict row is its name, change and windows.
+    const row = within(group("Up")).getByText("Power Snatch").closest("li") as HTMLElement;
+    expect(within(row).queryByText(/Body weight/)).not.toBeInTheDocument();
+    fireEvent.click(within(row).getByRole("button"));
+    expect(within(row).getAllByText(/Body weight 170 to 172 lb, within normal variation\./).length).toBeGreaterThan(0);
   });
 
   it("draws the body-weight lines from manual weigh-ins alone", () => {
@@ -112,6 +116,7 @@ describe("the Insights front door", () => {
       />
     );
     const row = within(group("Up")).getByText("Power Snatch").closest("li") as HTMLElement;
+    fireEvent.click(within(row).getByRole("button"));
     expect(within(row).getByText("Body weight 170 to 180 lb (+10 lb) over the same span.")).toBeInTheDocument();
     expect(within(row).getByText("About half of this change is body weight.")).toBeInTheDocument();
   });

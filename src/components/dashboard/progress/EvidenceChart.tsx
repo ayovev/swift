@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { trendLine } from "@/lib/analytics/insights/chart";
 import { AXIS_TICK_COUNT, CLOCK_STEPS, ROUNDS_REPS_STEPS, formatDate, formatTimeTick, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
 import { formatClock, formatSession, loggedSetText, roundsReps } from "@/lib/analytics/insights/display";
@@ -6,15 +6,42 @@ import { PV_MAX_REPS } from "@/lib/analytics/insightConfig";
 import { REPS_PER_ROUND, type ProgressSession, type ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/lib/analytics/insights/verdict";
 
-const W = 560;
-const H = 170;
+/**
+ * The chart is drawn at its real pixel width, so its text is the size it says. A fixed 560-wide viewBox scaled to the card made the
+ * 10-unit labels about 20px on a desktop and 6px on a phone (measured): the whole chart, text and all, stretched with the card.
+ * Before the first measurement (and in jsdom, which has no ResizeObserver) it falls back to this width.
+ */
+const FALLBACK_W = 560;
+/** Height grows with width, within these bounds, so a wide card isn't a thin strip and a phone keeps a readable plot. */
+const MIN_H = 170;
+const MAX_H = 240;
+/** The room a date label at 11px needs on the x axis. */
+const MIN_TICK_GAP_PX = 64;
+const heightFor = (w: number): number => Math.round(Math.min(MAX_H, Math.max(MIN_H, w * 0.3)));
+
+/** The width of an element, kept up to date as it resizes. */
+function useWidth(): [RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [w, setW] = useState(FALLBACK_W);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      const next = Math.round(entry?.contentRect.width ?? 0);
+      if (next > 0) setW(next);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, w];
+}
 const PAD = { l: 52, r: 44, t: 22, b: 30 };
 /** Every dot is the same size: colour alone says which group it is in. */
 const DOT_R = 3.5;
 const DAY_MS = 86_400_000;
-/** Rough size of a 10px label in chart units, to tell whether the trend line would run through it. */
-const LABEL_CHAR_W = 5.6;
-const LABEL_H = 10;
+/** Rough size of an 11px label in pixels (one chart unit is a pixel), to tell whether the trend line would run through it. */
+const LABEL_CHAR_W = 6.2;
+const LABEL_H = 11;
 const HIT_R = 9;
 
 /**
@@ -25,6 +52,8 @@ const HIT_R = 9;
  * verdict (a facts line) gets the dots alone. The y-axis is a plain number line, larger values on top, for a time as for a load: a faster time is drawn lower.
  */
 export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressSubject; verdict: ProgressVerdict | null; domain?: { start: string; end: string } }) {
+  const [frame, W] = useWidth();
+  const H = heightFor(W);
   const model = useMemo(() => {
     const sessions = subject.sessions;
     const days = sessions.map((s) => dayNumber(s.date));
@@ -66,7 +95,9 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
           const hi = sessions.reduce((a, b) => (b.value > a.value ? b : a));
           return (lo === hi ? [lo] : [lo, hi]).map((t) => ({ y: Y(t.value), label: formatSession(subject, t) }));
         })();
-    const dates = niceTimeTicks(x0 * DAY_MS, x1 * DAY_MS);
+    // As many date ticks as fit at 11px: an "Mmm 'YY" label needs about 64px. Drawn at its real width, a phone's chart has room for
+    // four or five, where the old scaled-down chart squeezed in eight of 6px text.
+    const dates = niceTimeTicks(x0 * DAY_MS, x1 * DAY_MS, Math.max(2, Math.min(AXIS_TICK_COUNT, Math.floor((W - PAD.l - PAD.r) / MIN_TICK_GAP_PX))));
     const xTicks = dates.ticks.map((t) => ({ x: X(t / DAY_MS), label: formatTimeTick(t, dates.unit) }));
     // A value label sits above its dot, or below it when the trend line would run through it (and the axis is clear).
     const trendAt = (x: number): number | null => {
@@ -97,7 +128,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
       : [];
     if (newBest) newBest = { ...newBest, labelY: labelBaseline(newBest.x, newBest.y, newBest.label, "end", 10) };
     return { sessions, X, Y, previous, recent, trend, newBest, yTicks, xTicks, valueLabels };
-  }, [subject, verdict, domain]);
+  }, [subject, verdict, domain, W, H]);
 
   // Lifts only: every benchmark session is a max effort, so a ring on each dot would say nothing.
   const [hovered, setHovered] = useState<ProgressSession | null>(null);
@@ -112,10 +143,10 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
 
   return (
     <figure className="flex flex-col gap-1">
-      <div className="relative" onMouseLeave={() => setHovered(null)}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Sessions of ${subject.name}${estimated ? ", as estimated one-rep maxes" : ""}`}>
+      <div ref={frame} className="relative" onMouseLeave={() => setHovered(null)}>
+      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block max-w-full" role="img" aria-label={`Sessions of ${subject.name}${estimated ? ", as estimated one-rep maxes" : ""}`}>
         {estimated ? (
-          <text x={4} y={9} className="fill-muted-foreground text-[10px]">
+          <text x={4} y={9} className="fill-muted-foreground text-[11px]">
             Est. 1RM
           </text>
         ) : null}
@@ -123,8 +154,9 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
         <line x1={PAD.l} x2={W - PAD.r} y1={H - PAD.b + 6} y2={H - PAD.b + 6} className="stroke-border" strokeWidth={1} />
         {model.yTicks.map((t) => (
           <g key={t.label}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={t.y} y2={t.y} className="stroke-border" strokeWidth={0.5} strokeDasharray="2 3" />
-            <text x={PAD.l - 6} y={t.y + 3} textAnchor="end" className="fill-muted-foreground text-[10px]">
+            {/* Solid hairlines: a dashed grid reads as a threshold or a projection. The dashed line here is the trend. */}
+            <line x1={PAD.l} x2={W - PAD.r} y1={t.y} y2={t.y} className="stroke-border" strokeWidth={1} />
+            <text x={PAD.l - 6} y={t.y + 3} textAnchor="end" className="fill-muted-foreground text-[11px]">
               {t.label}
             </text>
           </g>
@@ -132,7 +164,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
         {model.xTicks.map((t) => (
           <g key={t.x}>
             <line x1={t.x} x2={t.x} y1={H - PAD.b + 6} y2={H - PAD.b + 10} className="stroke-border" strokeWidth={1} />
-            <text x={t.x} y={H - PAD.b + 21} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+            <text x={t.x} y={H - PAD.b + 21} textAnchor="middle" className="fill-muted-foreground text-[11px]">
               {t.label}
             </text>
           </g>
@@ -148,7 +180,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
               strokeWidth={1.25}
               strokeDasharray="4 3"
             />
-            <text x={X(model.trend.to.x) + 12} y={Y(model.trend.to.y) + 3} className="fill-muted-foreground text-[10px]">
+            <text x={X(model.trend.to.x) + 12} y={Y(model.trend.to.y) + 3} className="fill-muted-foreground text-[11px]">
               Trend
             </text>
           </g>
@@ -169,13 +201,13 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
           );
         })}
         {model.valueLabels.map((l) => (
-          <text key={l.key} x={l.x} y={l.y} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+          <text key={l.key} x={l.x} y={l.y} textAnchor="middle" className="fill-muted-foreground text-[11px]">
             {l.text}
           </text>
         ))}
         {model.newBest ? (
           <g>
-            <text x={model.newBest.x} y={model.newBest.labelY ?? model.newBest.y - 10} textAnchor="end" className="fill-accent-link text-[10px] font-medium">
+            <text x={model.newBest.x} y={model.newBest.labelY ?? model.newBest.y - 10} textAnchor="end" className="fill-accent-link text-[11px] font-medium">
               {model.newBest.label}
             </text>
           </g>
