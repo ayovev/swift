@@ -13,6 +13,7 @@ import type { BucketCount, DashboardData } from "@/types/dashboard";
 import type { InBodyRow } from "@/types/inbody";
 import type { WeighIn } from "@/types/weighIn";
 import { readingsFromInBody } from "@/lib/analytics/insights/bodyReadings";
+import { longDate } from "@/lib/analytics/insights/display";
 import { WeighInsPanel } from "./WeighInsPanel";
 
 export type BodyCompState =
@@ -99,7 +100,11 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
     );
   }
 
-  const latest = data.points[data.points.length - 1];
+  // The newest scan inside the range, as a date: the bucket key ("2026-11") read as a code, not a day.
+  const latestScan = readingsFromInBody(filterInBodyRowsByRange(state.status === "ready" ? state.rows : [], range)).reduce<string | null>(
+    (max, r) => (max === null || r.date > max ? r.date : max),
+    null
+  );
   const hasEnoughHistory = data.points.length >= 2;
 
   // Days trained in the same buckets the scan history covers — aligned by
@@ -126,14 +131,13 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
           </p>
           <p className="text-sm text-muted-foreground tabular">
             {data.points.length.toLocaleString()} {GRANULARITY_NOUN[granularity]}
-            {data.points.length === 1 ? "" : "s"} of scans
-            {latest ? `, most recent in ${latest.bucket}` : ""}
+            {data.points.length === 1 ? "" : "s"} with a scan
+            {latestScan ? `, most recent ${longDate(latestScan)}` : ""}
           </p>
         </CardContent>
       </Card>
 
-      {weighInsPanel}
-
+      {/* Trends before the reading list: overview first, the 100-odd rows behind it after. */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Trends</CardTitle>
@@ -144,8 +148,9 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
               <div>
                 <div className="mb-1 flex items-baseline justify-between gap-2">
                   <h3 className="text-sm font-medium">Days trained</h3>
+                  {/* Only the buckets with a scan are charted, so this is not the all-time count on Overview; it says which it is. */}
                   <span className="text-xs text-muted-foreground tabular">
-                    {totalTrainingDays.toLocaleString()} total
+                    {totalTrainingDays.toLocaleString()} in {GRANULARITY_NOUN[granularity]}s with a scan
                   </span>
                 </div>
                 <ConsistencyChart
@@ -174,6 +179,8 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
           )}
         </CardContent>
       </Card>
+
+      {weighInsPanel}
     </div>
   );
 }
