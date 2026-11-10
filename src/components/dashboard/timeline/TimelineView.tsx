@@ -20,11 +20,15 @@ import { EntryDetail } from "./EntryDetail";
 import { EntryDialog } from "./EntryDialog";
 import { LANE_GROUPS, TimelineChart, type Selection } from "./TimelineChart";
 
+/**
+ * How much of the axis is shown. A zoom, named as one: it changes what fits on screen, never a verdict or which sessions count,
+ * and "Last year" beside "the date range doesn't apply here" read as the date range it isn't.
+ */
 type RangeId = "all" | "year" | "6m";
 const RANGES: { id: RangeId; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "year", label: "Last year" },
-  { id: "6m", label: "Last 6 months" },
+  { id: "year", label: "1 year" },
+  { id: "6m", label: "6 months" },
 ];
 
 interface TimelineViewProps {
@@ -114,7 +118,10 @@ export function TimelineView({ workouts, scans, weighIns = [], timeline, onAddEn
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="max-w-full overflow-x-auto">
+        <div className="flex max-w-full items-center gap-2 overflow-x-auto">
+          <span id="timeline-zoom" className="text-xs font-medium text-muted-foreground">
+            Zoom
+          </span>
           <SegmentedControl
             value={range}
             onChange={(next) => {
@@ -122,7 +129,7 @@ export function TimelineView({ workouts, scans, weighIns = [], timeline, onAddEn
               capture({ name: "interaction_used", props: { interaction: "timeline_range_changed" } });
             }}
             options={RANGES}
-            ariaLabel="Range"
+            ariaLabel="Zoom"
           />
         </div>
         <Button type="button" onClick={() => setDialog({ entry: null })}>

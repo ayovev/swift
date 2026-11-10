@@ -120,7 +120,10 @@ describe("the Timeline view (A1-TLN-18 to 31)", () => {
 
   it("TLN-27 narrows the range, clipping entries and calling a subject wholly outside it so", () => {
     render(<Harness initial={[cut]} />);
-    fireEvent.click(screen.getByRole("button", { name: "Last 6 months" }));
+    // A zoom, labelled as one, so it isn't read as the Training date range the scope line says doesn't apply.
+    const zoom = screen.getByRole("group", { name: "Zoom" });
+    expect(within(zoom).getAllByRole("button").map((b) => b.textContent)).toEqual(["All", "1 year", "6 months"]);
+    fireEvent.click(within(zoom).getByRole("button", { name: "6 months" }));
     expect(screen.queryByRole("button", { name: /^Spring cut/ })).not.toBeInTheDocument();
     expect(screen.getByText("No entries in this range.")).toBeInTheDocument();
     expect(screen.getAllByText("Outside this range").length).toBeGreaterThan(0);

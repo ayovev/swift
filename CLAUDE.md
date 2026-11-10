@@ -273,7 +273,7 @@ Read each file's header comment before changing it; the cases are `tests/progres
 - **`headline.ts`**: six groups, move-ups to RX (an up vote for 12 months), the label (`Improving`, `Steady`, `Declining` from the counts) and the
   reference date, always passed in and never read from the clock.
 - **`display.ts`**, **`bodyContext.ts`**, **`period.ts`**, **`chart.ts`**: the words (RX unmarked, Scaled as a qualifier), the body-context lines,
-  the "Logged in" filter and the evidence chart's numbers. Body composition never feeds a verdict or a count.
+  the "last logged in" filter (labelled "Show lifts and benchmarks last logged in": it only hides rows) and the evidence chart's numbers. Body composition never feeds a verdict or a count.
 - **A lift's pounds are always called an estimate.** Every lift sentence carries "est. 1RM" (or "est." on a facts line), a record names the
   logged set it came from ("from 225 × 5", `ProgressSession.logged`), and the evidence chart is titled "Est. 1RM". Without it, "New best:
   258 lb" on Progress read as a lift one tab away from a logged best of 230 on Lifts. `tests/progressDisplay.test.ts` (DSP-12) checks it
@@ -547,7 +547,7 @@ home. Read the header comments of the files named here before moving anything be
   rather than in the global header. It sits in its own row under a thin rule (with "Stored in
   this browser only" on the right, for uploaded data), so the heading block (title and, on
   domain pages, CrossFit's definition) ends visibly before the view controls begin. Insights
-  views show a plain "uses your full history" sentence instead, because `App.tsx` computes them
+  views show a plain sentence instead ("Verdicts use your full history, as of today. The Training date range doesn't apply here."), because `App.tsx` computes them
   from the whole unfiltered log as of today — a date control there would silently do nothing.
   Overview does the same, adding the last logged date ("Uses your full history, as of today. Last
   workout logged Nov 6."), so an old export explains its own low recent numbers.

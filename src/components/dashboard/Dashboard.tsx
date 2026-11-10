@@ -295,7 +295,7 @@ export function Dashboard({
               // from the full, unfiltered history as of today — saying so
               // beats showing a date control that silently does nothing here.
               <p className="text-base text-muted-foreground">
-                Uses your full history, as of today — the date range doesn't apply here.
+                Verdicts use your full history, as of today. The Training date range doesn't apply here.
               </p>
             )}
             {/* Sample mode already says so in the strip above the header. */}

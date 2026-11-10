@@ -349,7 +349,7 @@ describe("App — view scope", () => {
     // Progress and the Timeline are computed from the full
     // history as of today (App.tsx), never the selected range.
     fireEvent.click(screen.getByRole("button", { name: "Insights" }));
-    expect(await screen.findByText(/uses your full history, as of today/i)).toBeInTheDocument();
+    expect(await screen.findByText(/^Verdicts use your full history, as of today\. The Training date range doesn.t apply here\.$/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Grouped by/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^all time/i })).not.toBeInTheDocument();
   });
