@@ -405,16 +405,6 @@ describe("App — daily granularity gating", () => {
 });
 
 describe("App — stale workout log nudge", () => {
-  it("opens the SugarWOD export steps in place from 'How to export'", async () => {
-    await saveWorkoutRows([graceRow("01/05/2020")]);
-    renderApp();
-    await findDashboard();
-    expect(screen.queryByText(/Choose Export Workouts/)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /how to export/i }));
-    expect(screen.getByText(/Choose Export Workouts/)).toBeInTheDocument();
-    expect(screen.getByText(/Choose Replace file here/)).toBeInTheDocument();
-  });
-
   it("names the last workout on Insights, where nothing above it does, but not on Overview", async () => {
     await saveWorkoutRows([graceRow("01/05/2020")]);
     await saveWorkoutMeta({ uploadedAt: new Date(Date.now() - 45 * 86_400_000).toISOString() });

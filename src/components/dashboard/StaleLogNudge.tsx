@@ -1,7 +1,5 @@
-import { useState } from "react";
-import { ChevronDown, History } from "lucide-react";
+import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ExportStepList, SUGARWOD_EXPORT_STEPS } from "@/components/landing/ExportGuide";
 import { FilePickerButton } from "./FilePickerButton";
 import { shortDate } from "@/lib/analytics/overview";
 import type { LogStaleness } from "@/lib/analytics/staleness";
@@ -19,11 +17,6 @@ interface StaleLogNudgeProps {
   onWorkoutFile: (file: File) => void;
   onSnooze: () => void;
 }
-
-const EXPORT_STEPS = [
-  ...SUGARWOD_EXPORT_STEPS,
-  "SugarWOD gives you a CSV. Choose Replace file here and pick it.",
-];
 
 /**
  * The facts the nudge states, in the voice of the rest of the app: what is true, then the way out.
@@ -43,14 +36,9 @@ export function staleLogSentence(s: LogStaleness, today: string, includeLastWork
 /**
  * A quiet line, not a banner or dialog: the log is old enough that a newer
  * export probably exists. Shown on Overview and the Insights views, which read
- * the whole history as of today; see Dashboard.tsx. "How to export" opens the
- * same SugarWOD steps the landing page has, in place, because the athlete often
- * does not have a current CSV and would otherwise have to leave to find out how.
+ * the whole history as of today; see Dashboard.tsx.
  */
 export function StaleLogNudge({ staleness, today, includeLastWorkout, onWorkoutFile, onSnooze }: StaleLogNudgeProps) {
-  const [showSteps, setShowSteps] = useState(false);
-  const stepsId = "stale-log-export-steps";
-
   return (
     <aside
       aria-label="Workout log may be out of date"
@@ -81,20 +69,6 @@ export function StaleLogNudge({ staleness, today, includeLastWorkout, onWorkoutF
             variant="ghost"
             size="sm"
             className="h-8 text-muted-foreground"
-            aria-expanded={showSteps}
-            aria-controls={stepsId}
-            onClick={() => setShowSteps((v) => !v)}
-          >
-            How to export
-            <ChevronDown
-              className={`size-3.5 transition-transform ${showSteps ? "rotate-180" : ""}`}
-              aria-hidden="true"
-            />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-muted-foreground"
             onClick={() => {
               capture({ name: "interaction_used", props: { interaction: "stale_log_snoozed" } });
               onSnooze();
@@ -104,11 +78,6 @@ export function StaleLogNudge({ staleness, today, includeLastWorkout, onWorkoutF
           </Button>
         </div>
       </div>
-      {showSteps ? (
-        <div id={stepsId} className="max-w-md bg-background rounded-lg">
-          <ExportStepList steps={EXPORT_STEPS} />
-        </div>
-      ) : null}
     </aside>
   );
 }
