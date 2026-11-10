@@ -519,8 +519,9 @@ home. Read the header comments of the files named here before moving anything be
   view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
   header — in line with them it read as one more tab. Workouts and Lifts share an unlabelled
   group (the record of what was done) and Movements is a group of one, so neither has a header;
-  Workouts comes first, so selecting Training opens the log. Training is the long row (16 tabs) and scrolls
-  sideways on a phone; a third nav level for it would break "never a dropdown", so it hasn't
+  Workouts comes first, so selecting Training opens the log. Training is the long row (16 tabs): it fits from `xl`
+  (1280px) with tightened gaps, and below that scrolls sideways, with a fade (and on a pointer device a button) at each edge that
+  has more tabs past it and the selected tab scrolled into view; a third nav level for it would break "never a dropdown", so it hasn't
   been added. `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
   `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress view

@@ -146,3 +146,59 @@ describe("SubNav", () => {
     }
   });
 });
+
+describe("SubNav overflow", () => {
+  /** jsdom has no layout, so the row's widths are stubbed: `scrollWidth` wide content in a `clientWidth` row. */
+  function stubRow(scrollWidth: number, clientWidth: number) {
+    const sw = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(scrollWidth);
+    const cw = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(clientWidth);
+    return () => {
+      sw.mockRestore();
+      cw.mockRestore();
+    };
+  }
+
+  it("marks the edge with more tabs past it, and moves the mark as the row scrolls", () => {
+    const restore = stubRow(1350, 350);
+    try {
+      render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+      const nav = screen.getByRole("navigation", { name: "Training views" });
+      const row = nav.parentElement as HTMLElement;
+      expect(row).toHaveAttribute("data-overflow-right", "true");
+      expect(row).not.toHaveAttribute("data-overflow-left");
+
+      nav.scrollLeft = 1000;
+      fireEvent.scroll(nav);
+      expect(row).toHaveAttribute("data-overflow-left", "true");
+      expect(row).not.toHaveAttribute("data-overflow-right");
+    } finally {
+      restore();
+    }
+  });
+
+  it("shows no edge when every tab fits", () => {
+    const restore = stubRow(1216, 1216);
+    try {
+      render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+      const row = screen.getByRole("navigation", { name: "Training views" }).parentElement as HTMLElement;
+      expect(row).not.toHaveAttribute("data-overflow-left");
+      expect(row).not.toHaveAttribute("data-overflow-right");
+    } finally {
+      restore();
+    }
+  });
+
+  it("scrolls the selected tab into view whenever it changes", () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { value: scrollIntoView, configurable: true });
+    try {
+      const { rerender } = render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+      rerender(<SubNav value={MOVEMENTS_TAB} onValueChange={() => {}} />);
+      const last = scrollIntoView.mock.contexts.at(-1) as HTMLElement;
+      expect(last).toHaveTextContent("Movements");
+      expect(scrollIntoView).toHaveBeenLastCalledWith({ inline: "nearest", block: "nearest" });
+    } finally {
+      delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+});
