@@ -7,13 +7,8 @@ import type { ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession } from "@/lib/analytics/insights/verdict";
 import { cn } from "@/lib/utils";
 import { EvidenceChart } from "./EvidenceChart";
+import { VerdictPill, type VerdictKind } from "./verdictMark";
 
-const PILL: Record<string, { label: string; className: string }> = {
-  up: { label: "Up", className: "bg-accent-subtle text-accent-link" },
-  down: { label: "Down", className: "bg-destructive/10 text-destructive" },
-  "not-tested-since": { label: "Not tested since", className: "border border-border bg-muted text-foreground" },
-  "no-clear-change": { label: "No clear change", className: "bg-muted text-muted-foreground" },
-};
 
 interface ProgressRowItemProps {
   row: ProgressRow;
@@ -42,7 +37,8 @@ export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, 
     // jsdom has no scrollIntoView; a real browser does.
     if (focused) ref.current?.scrollIntoView?.({ block: "start" });
   }, [focused]);
-  const pill = PILL[group];
+  // Only the four verdict groups carry a pill; a subject below the gate or not recent shows none.
+  const pill = group === "up" || group === "down" || group === "not-tested-since" || group === "no-clear-change";
   const text = verdict ? verdictText(subject, verdict) : null;
   const earlierBest = verdict ? bestSession(subject.sessions.slice(0, subject.sessions.length - verdict.window), subject.lowerIsBetter) : null;
   const newBest = verdict && earlierBest ? newBestText(subject, verdict, earlierBest) : null;
@@ -60,11 +56,7 @@ export function ProgressRowItem({ row, twin, readings, bandLb, onSeeOnTimeline, 
     <div className="flex items-baseline justify-between gap-3">
       <span className="min-w-0 text-sm font-medium">
         {displayName(subject)}
-        {pill && (verdict || isMove) ? (
-          <span className={cn("ml-2 rounded-full px-2 py-0.5 align-middle text-[11px] font-semibold", PILL[isMove ? "up" : group]?.className)}>
-            {PILL[isMove ? "up" : group]?.label}
-          </span>
-        ) : null}
+        {pill && (verdict || isMove) ? <VerdictPill kind={(isMove ? "move-up" : group) as VerdictKind} /> : null}
       </span>
     </div>
   );

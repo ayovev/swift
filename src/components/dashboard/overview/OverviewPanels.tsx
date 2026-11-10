@@ -17,7 +17,7 @@ import {
   type MonthMix,
 } from "@/lib/analytics/overview";
 import { entryName, entrySpanText } from "@/lib/analytics/timeline";
-import { cn } from "@/lib/utils";
+import { VerdictPill } from "../progress/verdictMark";
 import { AREA_LABEL } from "@/types/timeline";
 
 /**
@@ -300,10 +300,7 @@ export function TrainingPanel({
 
 // ── Insights ──────────────────────────────────────────────────────────────
 
-const VERDICT_PILL = {
-  up: { label: "Up", className: "bg-accent-subtle text-accent-link" },
-  down: { label: "Down", className: "bg-destructive/10 text-destructive" },
-} as const;
+
 
 /** The change in Progress's own words: the verdict's change, or the move up to RX. */
 function movedText(row: ProgressRow): string {
@@ -340,14 +337,11 @@ export function InsightsPanel({
         {moved.length ? (
           <ul className="flex flex-col">
             {moved.map((r) => {
-              const pill = VERDICT_PILL[r.group as "up" | "down"];
               const body = (
                 <>
                   <span className="text-sm font-medium">
                     {displayName(r.subject)}
-                    <span className={cn("ml-2 rounded-full px-2 py-0.5 align-middle text-[11px] font-semibold", pill.className)}>
-                      {pill.label}
-                    </span>
+                    <VerdictPill kind={r.group === "down" ? "down" : r.moveUp && !r.verdict ? "move-up" : "up"} />
                   </span>
                   <span className="text-xs text-muted-foreground">{movedText(r)}</span>
                 </>

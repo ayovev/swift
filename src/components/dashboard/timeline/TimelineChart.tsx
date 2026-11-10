@@ -5,17 +5,11 @@ import { displayName } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
 import { dayNumber } from "@/lib/analytics/insights/verdict";
 import { cn } from "@/lib/utils";
+import { LaneEnd, VERDICT_STYLE, VerdictGlyph, laneLineStyle, type VerdictKind } from "../progress/verdictMark";
 import type { TimelineEntry } from "@/types/timeline";
 
 export type Selection = { kind: "entry"; id: string } | { kind: "subject"; key: string } | null;
 
-const STATE_LABEL: Record<string, string> = { up: "Up", down: "Down", "not-tested-since": "Not tested since", "no-clear-change": "No clear change" };
-const LINE: Record<string, string> = {
-  up: "bg-accent-link",
-  down: "bg-destructive",
-  "not-tested-since": "bg-amber-500",
-  "no-clear-change": "bg-muted-foreground/60",
-};
 
 /** The groups that have a lane, in the front door's order. */
 export const LANE_GROUPS = ["up", "down", "not-tested-since", "no-clear-change"] as const;
@@ -167,14 +161,24 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
             const from = r.verdict ? r.verdict.previousBest.date : (r.moveUp as NonNullable<typeof r.moveUp>).scaledDate;
             const to = r.verdict ? r.verdict.recentBest.date : (r.moveUp as NonNullable<typeof r.moveUp>).date;
             const outside = to < start || from > end;
-            const state = r.verdict ? r.verdict.state : "up";
-            const text = move ? "Moved up to RX" : `${STATE_LABEL[state]} ${r.verdict && r.verdict.change !== 0 ? `${r.verdict.change > 0 ? "+" : "−"}${Math.abs(r.verdict.change).toFixed(1)}%` : ""}`.trim();
+            // How the lane is marked: shape and glyph per verdict (verdictMark.tsx), never the accent alone.
+            const kind: VerdictKind = move ? "move-up" : r.verdict ? r.verdict.state : "up";
+            const text = move ? "Moved up to RX" : `${VERDICT_STYLE[kind].label} ${r.verdict && r.verdict.change !== 0 ? `${r.verdict.change > 0 ? "+" : "−"}${Math.abs(r.verdict.change).toFixed(1)}%` : ""}`.trim();
             const isSelected = selected?.kind === "subject" && selected.key === r.subject.key;
             const name = displayName(r.subject);
             const label = (
               <span className="flex min-w-0 items-baseline justify-between gap-3 text-sm">
                 <span className="truncate font-medium">{name}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{outside ? "Outside this range" : text}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {outside ? (
+                    "Outside this range"
+                  ) : (
+                    <>
+                      <VerdictGlyph kind={kind} className="mr-0.5" />
+                      {text}
+                    </>
+                  )}
+                </span>
               </span>
             );
             return (
@@ -189,9 +193,13 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
                 <div className="relative h-3">
                   {!outside ? (
                     <>
-                      <span className={cn("absolute top-1/2 h-0.5 -translate-y-1/2", LINE[state])} style={{ left: `${pct(from)}%`, width: `${Math.max(pct(to) - pct(from), 0)}%` }} />
+                      <span
+                        data-line={VERDICT_STYLE[kind].line.dash}
+                        className="absolute top-1/2 h-0 -translate-y-1/2"
+                        style={{ left: `${pct(from)}%`, width: `${Math.max(pct(to) - pct(from), 0)}%`, ...laneLineStyle(kind) }}
+                      />
                       {from >= start ? <span className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground" style={{ left: `${pct(from)}%` }} /> : null}
-                      {to <= end ? <span className={cn("absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full", LINE[state])} style={{ left: `${pct(to)}%` }} /> : null}
+                      {to <= end ? <LaneEnd kind={kind} left={`${pct(to)}%`} /> : null}
                     </>
                   ) : null}
                 </div>

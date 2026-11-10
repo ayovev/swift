@@ -279,6 +279,12 @@ Read each file's header comment before changing it; the cases are `tests/progres
   258 lb" on Progress read as a lift one tab away from a logged best of 230 on Lifts. `tests/progressDisplay.test.ts` (DSP-12) checks it
   over the sample.
 
+- **A verdict never rests on colour.** `progress/verdictMark.tsx` is the one place a verdict's look is defined (Progress pills, Overview's
+  What moved, Timeline lanes): each verdict has its own glyph (↑, ↓, –, a dashed circle) and its own lane end (dot, ring, diamond, small
+  dot) and line dash, and colour only repeats it. Up had been the accent alone, so with the red accent Up and Down were both red.
+  `tests/verdictMark.test.tsx` checks the marks stay distinct, and that no component uses a fixed Tailwind palette colour (the old
+  "Not tested since" amber).
+
 The weight noise band (`weightNoiseBand.ts`) is the one older pipeline that remains: `weightBandLb` uses it to decide whether a body-weight change
 is "within normal variation".
 
