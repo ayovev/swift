@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
-import { modalityColor } from "./charts/chartUtils";
+import { modalityColor, unclassifiedNote } from "./charts/chartUtils";
 import { TrendStat } from "./TrendStat";
 import { WorkoutList } from "./WorkoutList";
 import { GRANULARITY_NOUN, granularityLabel, type Granularity } from "@/lib/analytics/granularity";
@@ -49,6 +49,9 @@ export function ModalityTab({
               appears in {overall.count.toLocaleString()} of{" "}
               {data.classified_count.toLocaleString()} workouts
             </div>
+            {unclassifiedNote(data.unclassified_count) ? (
+              <p className="w-full text-xs text-muted-foreground">{unclassifiedNote(data.unclassified_count)}</p>
+            ) : null}
           </div>
         </CardContent>
       </Card>

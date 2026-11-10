@@ -255,11 +255,19 @@ describe("monthlyModalityMix", () => {
     );
     const aug = mix.find((m) => m.month === "2026-08")!;
     expect(aug.workouts).toBe(2);
+    expect(aug.unclassified).toBe(1);
     expect(aug.split!.M).toBe(50);
     expect(aug.split!.M + aug.split!.W + aug.split!.G).toBeCloseTo(100, 5);
-    expect(mix.find((m) => m.month === "2026-09")).toEqual({ month: "2026-09", split: null, workouts: 0, partial: false });
+    expect(mix.find((m) => m.month === "2026-09")).toEqual({ month: "2026-09", split: null, workouts: 0, unclassified: 0, partial: false });
     expect(mix.find((m) => m.month === "2026-10")?.split).toEqual({ M: 100, W: 0, G: 0 });
     expect(mix.at(-1)).toMatchObject({ month: "2026-11", partial: true, split: null });
+  });
+
+  it("says beside the chart how many workouts it left out", () => {
+    const rows = [logRow(daysAgo(3), "RUN", "5k run"), logRow(daysAgo(4), "REST DAY", "mobility notes only"), logRow(daysAgo(5), "NOTES", "felt good")];
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} />);
+    const mix = screen.getByRole("region", { name: "What it was made of" });
+    expect(within(mix).getByText("2 workouts with no recognised movement are left out.")).toBeInTheDocument();
   });
 
   it("reads the same 12 months whatever the athlete's grouping", () => {

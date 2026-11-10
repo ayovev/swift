@@ -315,6 +315,8 @@ export interface MonthMix {
   split: ModalitySplit | null;
   /** Classified workouts that month; unclassified ones are excluded, never counted as zeroes. */
   workouts: number;
+  /** Workouts that month with no recognised movement, left out of the split; the panel says how many, beside the chart. */
+  unclassified: number;
   partial: boolean;
 }
 
@@ -329,6 +331,7 @@ export function monthlyModalityMix(rows: readonly ParsedRow[], today: string): M
   const months = monthlyDaysTrained(rows, today);
   if (months.length === 0) return [];
   const byMonth = new Map<string, { weights: Record<Modality, number>; workouts: number }>();
+  const unclassified = new Map<string, number>();
   const first = months[0]!.month;
   for (const r of rows) {
     const d = iso(r);
@@ -336,7 +339,10 @@ export function monthlyModalityMix(rows: readonly ParsedRow[], today: string): M
     const m = d.slice(0, 7);
     if (m < first) continue;
     const c = classifyMovements(r.movements);
-    if (!c.classified) continue;
+    if (!c.classified) {
+      unclassified.set(m, (unclassified.get(m) ?? 0) + 1);
+      continue;
+    }
     const acc = byMonth.get(m) ?? { weights: { M: 0, W: 0, G: 0 }, workouts: 0 };
     acc.workouts++;
     for (const k of MODALITY_LIST) acc.weights[k] += c.split[k];
@@ -344,9 +350,10 @@ export function monthlyModalityMix(rows: readonly ParsedRow[], today: string): M
   }
   return months.map(({ month, partial }) => {
     const acc = byMonth.get(month);
-    if (!acc) return { month, split: null, workouts: 0, partial };
+    const left = unclassified.get(month) ?? 0;
+    if (!acc) return { month, split: null, workouts: 0, unclassified: left, partial };
     const total = MODALITY_LIST.reduce((n, k) => n + acc.weights[k], 0);
-    return { month, split: sharesTo100(acc.weights, total), workouts: acc.workouts, partial };
+    return { month, split: sharesTo100(acc.weights, total), workouts: acc.workouts, unclassified: left, partial };
   });
 }
 

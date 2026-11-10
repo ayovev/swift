@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, modalityKeyLabel, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
+import { AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, modalityKeyLabel, unclassifiedNote, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
 import type { BodyReading } from "@/lib/analytics/insights/bodyContext";
 import { displayName, moveUpText, verdictText } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
@@ -256,6 +256,7 @@ export function TrainingPanel({
   onSeeWorkouts?: (() => void) | undefined;
 }) {
   const anyMix = mix.some((m) => m.split);
+  const leftOut = unclassifiedNote(mix.reduce((n, m) => n + m.unclassified, 0));
   return (
     <Card>
       <PanelHeader title="Showing up" caption={`Last ${OVERVIEW_CHART_MONTHS} months, by month`} />
@@ -284,6 +285,7 @@ export function TrainingPanel({
                     {modalityKeyLabel(m)}
                   </span>
                 ))}
+                {leftOut ? <span className="text-xs text-muted-foreground">{leftOut}</span> : null}
               </div>
             </>
           ) : (

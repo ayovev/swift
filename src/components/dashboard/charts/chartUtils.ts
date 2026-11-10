@@ -361,6 +361,15 @@ export const FIXED_REPMAX_COLORS: Record<RepMaxCategory, string> = {
  */
 export const MODALITY_DRAW_ORDER: readonly Modality[] = ["W", "G", "M"];
 
+/**
+ * "35 workouts with no recognised movement are left out." The modality shares are averages over classified workouts only, so the
+ * caveat sits beside the chart it qualifies, not only in the page footer.
+ */
+export function unclassifiedNote(n: number): string | null {
+  if (n <= 0) return null;
+  return n === 1 ? "1 workout with no recognised movement is left out." : `${n.toLocaleString()} workouts with no recognised movement are left out.`;
+}
+
 /** A key item: the letter and the word ("W · Weightlifting"), so each teaches the other and the "M 33 / W 67" text elsewhere reads at a glance. */
 export function modalityKeyLabel(m: Modality): string {
   return `${m} · ${MODALITY_SHORT_LABELS[m]}`;
