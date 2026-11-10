@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 interface UploadRevealProps {
   workoutCount: number;
   prCount: number;
+  /** Entries not in the file this one replaced; absent on a first upload. */
+  newCount?: number | undefined;
 }
 
 function useCountUp(target: number, durationMs = 350): number {
@@ -38,7 +40,7 @@ function useCountUp(target: number, durationMs = 350): number {
  * occupied, so nothing jumps, and App.tsx swaps this out for the dashboard
  * a beat later.
  */
-export function UploadReveal({ workoutCount, prCount }: UploadRevealProps) {
+export function UploadReveal({ workoutCount, prCount, newCount }: UploadRevealProps) {
   const workouts = useCountUp(workoutCount);
   const prs = useCountUp(prCount);
 
@@ -50,6 +52,13 @@ export function UploadReveal({ workoutCount, prCount }: UploadRevealProps) {
       <p className="tabular text-sm font-medium">
         {workouts.toLocaleString()} workouts logged · {prs.toLocaleString()} personal records
       </p>
+      {newCount !== undefined ? (
+        <p className="text-sm">
+          {newCount === 0
+            ? "No new workouts since your last upload."
+            : `${newCount.toLocaleString()} new ${newCount === 1 ? "workout" : "workouts"} since your last upload.`}
+        </p>
+      ) : null}
       <p className="text-xs text-muted-foreground">Pulling up your dashboard…</p>
     </div>
   );

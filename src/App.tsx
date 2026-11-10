@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
 import { Dashboard } from "@/components/dashboard/Dashboard";
@@ -19,7 +19,15 @@ import { removeWeighIn, upsertWeighIn } from "@/lib/analytics/weighIns";
 import type { WeighIn } from "@/types/weighIn";
 import { idbClearAll } from "@/lib/storage/idbStore";
 import { loadViewPreferences, saveViewPreferences } from "@/lib/storage/viewPreferencesStorage";
-import { loadWorkoutRows, saveWorkoutRows } from "@/lib/storage/workoutStorage";
+import {
+  loadWorkoutMeta,
+  loadWorkoutRows,
+  saveWorkoutMeta,
+  saveWorkoutRows,
+  type WorkoutMeta,
+} from "@/lib/storage/workoutStorage";
+import { countNewRows } from "@/lib/analytics/newRows";
+import { STALE_LOG_SNOOZE_DAYS } from "@/lib/analytics/insightConfig";
 import type { InBodyRow } from "@/types/inbody";
 import type { TimelineEntry } from "@/types/timeline";
 import type { SugarWodRow } from "@/types/sugarwod";
@@ -29,6 +37,8 @@ export type DataSource = "upload" | "sample";
 interface RevealSummary {
   workoutCount: number;
   prCount: number;
+  /** Entries not in the log this load replaced. Absent when nothing was loaded before it. */
+  newCount?: number;
 }
 
 type AppState =
@@ -80,6 +90,10 @@ export default function App() {
   const [bodyComp, setBodyComp] = useState<BodyCompState>({ status: "idle" });
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [weighIns, setWeighIns] = useState<WeighIn[]>([]);
+  // When the stored workout log reached this browser, and its stale-log snooze. Null for sample data and for caches saved before this existed.
+  // The uploaded log currently on screen, kept so a replacement can say what it added. Cleared by reset().
+  const previousRowsRef = useRef<SugarWodRow[] | null>(null);
+  const [workoutMeta, setWorkoutMeta] = useState<WorkoutMeta | null>(null);
 
   // Restore whatever was uploaded last time — persistence is local-only (see
   // CLAUDE.md) and lasts until "Start over" clears it. Sample data is never
@@ -87,8 +101,9 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const [rows, bodyRows, viewPrefs, storedTimeline, storedWeighIns] = await Promise.all([
+      const [rows, storedMeta, bodyRows, viewPrefs, storedTimeline, storedWeighIns] = await Promise.all([
         loadWorkoutRows(),
+        loadWorkoutMeta(),
         loadBodyCompRows(),
         loadViewPreferences(),
         loadTimeline(),
@@ -97,6 +112,7 @@ export default function App() {
       if (cancelled) return;
       if (rows && rows.length > 0) {
         setState({ status: "ready", rows, source: "upload" });
+        if (storedMeta) setWorkoutMeta(storedMeta);
       } else {
         setState({ status: "idle" });
       }
@@ -152,6 +168,10 @@ export default function App() {
     });
   }, [rangePreset, range]);
 
+  useEffect(() => {
+    if (state.status === "ready" && state.source === "upload") previousRowsRef.current = state.rows;
+  }, [state]);
+
   const insights = useMemo(
     () => (state.status === "ready" ? buildInsights(state.rows, range, granularity) : null),
     [state, range, granularity]
@@ -183,9 +203,14 @@ export default function App() {
     // upload's fresh defaults are worth persisting too, so a reload
     // right after doesn't restore a previous file's leftover view prefs.
     if (source === "upload") {
+      // A new file starts a new clock, and clears any snooze left by the old one.
+      const meta: WorkoutMeta = { uploadedAt: new Date().toISOString() };
+      setWorkoutMeta(meta);
       void saveWorkoutRows(rows);
+      void saveWorkoutMeta(meta);
       void saveViewPreferences({ granularity: "monthly", rangePreset: "all_time", customRange: null });
     } else {
+      setWorkoutMeta(null);
       // Fill in the datasets the Progress, Timeline and Body Comp views need, so
       // sample mode has something for them to show instead of their empty
       // states — entirely in memory, never persisted (see the generators' own
@@ -197,6 +222,7 @@ export default function App() {
       const generatedTimeline = generateSampleTimeline(rows);
       setTimeline((prev) => (prev.length > 0 ? prev : generatedTimeline));
     }
+    const previous = source === "upload" ? previousRowsRef.current : null;
     setState({
       status: "reveal",
       rows,
@@ -204,6 +230,7 @@ export default function App() {
       summary: {
         workoutCount: rows.length,
         prCount: rows.filter((r) => r.pr === "PR").length,
+        ...(previous ? { newCount: countNewRows(previous, rows) } : {}),
       },
     });
   }, []);
@@ -262,6 +289,19 @@ export default function App() {
     },
     [finishSuccessfulLoad]
   );
+
+  // "Remind me later" on the stale-log line. Persisted like the rows it belongs to, and only for an upload.
+  const snoozeStaleNudge = useCallback(() => {
+    setWorkoutMeta((prev) => {
+      if (!prev) return prev;
+      const next: WorkoutMeta = {
+        ...prev,
+        staleSnoozedUntil: dayjs().add(STALE_LOG_SNOOZE_DAYS, "day").toISOString(),
+      };
+      void saveWorkoutMeta(next);
+      return next;
+    });
+  }, []);
 
   const handleFile = useCallback(
     (file: File) => void run("upload", () => Promise.resolve(file)),
@@ -387,6 +427,8 @@ export default function App() {
     setBodyComp({ status: "idle" });
     setTimeline([]);
     setWeighIns([]);
+    setWorkoutMeta(null);
+    previousRowsRef.current = null;
     // "Start over" is also the one clear-my-data control: without wiping
     // storage here, a reload would silently restore the data this button
     // just appeared to discard.
@@ -405,6 +447,8 @@ export default function App() {
         onGranularityChange={persistGranularity}
         onReset={reset}
         workoutRows={state.rows}
+        workoutMeta={workoutMeta}
+        onSnoozeStaleNudge={snoozeStaleNudge}
         onWorkoutFile={handleFile}
         bodyComp={bodyComp}
         onBodyCompFile={handleBodyCompFile}

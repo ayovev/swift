@@ -561,6 +561,22 @@ confirmation since nothing from the sample is stored. The totals on Overview are
 rather than a card (they're the page's headline, not one panel among several), and a view's
 first card doesn't repeat the page title above it.
 
+## Architecture: the stale-log nudge
+
+When the stored workout log is old, Overview and the Insights views show one quiet line (`StaleLogNudge.tsx`) with "Replace file" (the same
+`handleFile` Settings uses) and "Remind me later". `lib/analytics/staleness.ts` decides: stale means the **upload** is `STALE_LOG_DAYS` (30) old,
+measured from `uploadedAt`, **not** from the last workout, because a layoff leaves an old last workout in a perfectly current file. Only a cache
+saved before `uploadedAt` existed falls back to the last workout's age. `today` and `now` are passed in, never read from the clock.
+
+- `uploadedAt` and the snooze live in `workout-meta` (`workoutStorage.ts`), a separate key from the rows so sync and backup keep validating bare
+  rows. `finishSuccessfulLoad` stamps it, so a sync or backup restore is stamped when it **arrived**, not when the export was made (neither format
+  carries the date; an old backup can look fresher than it is). A new file clears the snooze; Start over wipes the key. Sample data gets none
+  and never nags.
+- The sentence leads with the upload's age; the last workout's date is added only where the page does not already print it (Insights, not Overview).
+  A replacement's reveal says how many entries it added (`countNewRows`, `lib/analytics/newRows.ts`: a multiset on day, title, description and
+  score, so an edited score counts as new) and says "No new workouts" when none; a first upload has no such line.
+- Per-device, so it does not sync or back up. Analytics: `stale_log_replace_clicked` and `stale_log_snoozed`, value-free.
+
 ## Architecture: app state and local persistence
 
 `src/App.tsx` owns two independent state machines — `AppState` (SugarWOD rows) and
