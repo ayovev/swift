@@ -600,10 +600,12 @@ than the engine behind them.
 - **#3:** W, G, M from the baseline. `tests/modalityColors.test.ts` simulates the deficiencies on the real tokens: every
   adjacent pair clears 21 under deutan and protan in both modes. The one pair still under target is green against blue under
   tritanopia (5.3 light, 4.5 dark), pinned as a known limitation and carried by the 2px gap.
-- **#10:** M is "Monostructural" everywhere. If "Metabolic conditioning" is preferred, it is one constant in
-  `src/types/modality.ts`.
-- **#11:** The longer "Monostructural" label made the row 1255px at 1280, so the gaps also tighten from `xl`, where the whole
-  row now fits (1216px in 1216px). Below `xl` it scrolls, with fades and scroll buttons.
+- **#10:** M is "Cardio" everywhere in the app (tab, page title, keys, tooltips, copy), with keys pairing the word and the letter
+  ("M · Cardio"). The duplicate "Cardio" tab label is kept on purpose: the Domains and Modalities headers tell the two apart. M
+  was first renamed "Monostructural" and then reverted: it is the textbook term, not how athletes talk, and it was long enough
+  to push the tab row over at 1280px.
+- **#11:** With the gaps tightened from `lg`, the whole row fits at 1280px (1216px in 1216px, no room to spare). Below that it
+  scrolls, with fades and, on pointer devices, scroll buttons.
 - **#12:** The two-line InBody source card stays at the top, since it explains the charts and holds Replace file. Trends then
   come before the reading list. Days trained reads "730 in months with a scan".
 - **#19:** The "too short to compare" guard is 8 weeks from the first workout to the last, not a bucket count: the halves

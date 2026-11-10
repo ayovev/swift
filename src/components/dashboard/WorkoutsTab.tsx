@@ -78,7 +78,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
           </p>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Every workout in this export, most recent first, with its proportional split across
-            weightlifting, gymnastics and monostructural work.
+            weightlifting, gymnastics and cardio.
           </p>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4">

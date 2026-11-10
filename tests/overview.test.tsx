@@ -352,7 +352,7 @@ describe("OverviewTab panels", () => {
     expect(screen.queryByText("Where your training went")).not.toBeInTheDocument();
     expect(screen.queryByText("Cardio, weights, gymnastics")).not.toBeInTheDocument();
     // The Training panel's mix is a 12-month chart now; the most-trained list is gone.
-    expect(screen.getByText("Weightlifting, gymnastics, monostructural")).toBeInTheDocument();
+    expect(screen.getByText("Weightlifting, gymnastics, cardio")).toBeInTheDocument();
     expect(screen.queryByText(/Most trained/)).not.toBeInTheDocument();
     expect(screen.queryByText("Last 90 days")).not.toBeInTheDocument();
   });

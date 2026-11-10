@@ -28,10 +28,20 @@ describe("ALL_TABS", () => {
     expect(ALL_TABS).toHaveLength(1 + 1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
   });
 
-  it("never gives two tabs the same label", () => {
-    // The Cardio domain and the M modality were both "Cardio", side by side in Training's row: a tag and a share under one name.
+  it("never gives two tabs in one group the same label", () => {
+    for (const group of new Set(ALL_TABS.map((t) => t.group))) {
+      const labels = ALL_TABS.filter((t) => t.group === group).map((t) => t.label);
+      expect(new Set(labels).size, group).toBe(labels.length);
+    }
+  });
+
+  it("calls both the Cardio domain and the M modality Cardio, under different group headers", () => {
+    // Deliberate (see MODALITY_NAMES): "Cardio" is what athletes call both, and the Domains and Modalities headers above Training's
+    // row are what tell a tag from a share. Only these two tabs share a label.
+    const cardio = ALL_TABS.filter((t) => t.label === "Cardio");
+    expect(cardio.map((t) => t.group).sort()).toEqual(["Domains", "Modalities"]);
     const labels = ALL_TABS.map((t) => t.label);
-    expect(new Set(labels).size).toBe(labels.length);
+    expect(labels.length - new Set(labels).size).toBe(1);
   });
 });
 

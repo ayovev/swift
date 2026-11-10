@@ -182,8 +182,8 @@ function OverflowEdge({ side, onScroll }: { side: "left" | "right"; onScroll: ()
  * Training's sixteen tabs can be wider than the row, even on a 1280px window, so the row scrolls sideways; the hidden part is
  * never silent. A fade (and on a pointer device a button) marks each edge with more tabs past it, and the selected tab is
  * scrolled into view whenever it changes, so arriving at Movements from a link doesn't leave Workouts as the only visible tab.
- * From `lg` up the gaps tighten, and from `xl` (1280px) they tighten again, which is what fits the whole row there: measured, it
- * was 1255px wide in a 1216px row with "Monostructural" in it. The group headers above Domains and Modalities still mark the breaks.
+ * From `lg` up the gaps tighten, which is what fits the whole row at 1280px: measured, it was 1293px in a 1216px row before
+ * and is 1216px after, with no room to spare, so a longer tab label would bring the fades back.
  */
 export function SubNav({ value, onValueChange }: { value: string; onValueChange: (v: string) => void }) {
   const section = SECTIONS.find((s) => s.id === sectionOf(value))!;
@@ -210,7 +210,7 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
         aria-label={`${section.id} views`}
         // overflow-x-auto makes the y axis scroll too; the tabs' -mb-px overhangs the
         // bottom edge by 1px, which is what made this row scroll vertically.
-        className="flex items-end gap-10 overflow-x-auto overflow-y-hidden border-b border-border lg:gap-6 xl:gap-4"
+        className="flex items-end gap-10 overflow-x-auto overflow-y-hidden border-b border-border lg:gap-6"
       >
         {section.groups.map((g, i) => (
           // A labelled group puts its label *above* its tabs, as a header —
@@ -221,7 +221,7 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
                 {g.label}
               </span>
             ) : null}
-            <div className="flex items-stretch gap-5 lg:gap-4 xl:gap-3.5">
+            <div className="flex items-stretch gap-5 lg:gap-4">
               {g.values.map((v) => {
                 const isActive = v === value;
                 return (

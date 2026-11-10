@@ -171,7 +171,7 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
 /**
  * The M/W/G split per month, on the same 12 months, margins and axis width as
  * MonthlyDaysChart above it, so each month's column lines up under its days
- * bar. Each bar is that month's share of weightlifting, gymnastics and monostructural work,
+ * bar. Each bar is that month's share of weightlifting, gymnastics and cardio,
  * summing to 100; a month with no classified workout has no bar. The current
  * month is a share, not an amount, so it is not hatched: a partial month's
  * split is as valid as a full one's, and its tooltip still says "so far".
@@ -190,8 +190,8 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
   const last = mix[mix.length - 1];
   const aria =
     first && last
-      ? `Stacked bar chart of each month's weightlifting, gymnastics and monostructural share, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
-      : "Stacked bar chart of each month's weightlifting, gymnastics and monostructural share";
+      ? `Stacked bar chart of each month's weightlifting, gymnastics and cardio share, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
+      : "Stacked bar chart of each month's weightlifting, gymnastics and cardio share";
   return (
     <ChartContainer config={MODALITY_FIXED_CHART_CONFIG} className="h-[160px] w-full min-w-0" role="img" aria-label={aria}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} maxBarSize={MAX_BAR_PX}>
@@ -274,7 +274,7 @@ export function TrainingPanel({
           )}
         </div>
         <section aria-label="What it was made of" className="flex flex-col gap-2 border-t border-border pt-4">
-          <h3 className="text-sm font-medium">Weightlifting, gymnastics, monostructural</h3>
+          <h3 className="text-sm font-medium">Weightlifting, gymnastics, cardio</h3>
           {anyMix ? (
             <>
               <MonthlyMixChart mix={mix} />
