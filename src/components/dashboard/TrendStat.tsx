@@ -14,7 +14,7 @@ interface TrendStatProps {
 }
 
 /** "Meaningful" here is a judgement call, stated once rather than scattered. */
-const MEANINGFUL_DELTA = 1;
+export const MEANINGFUL_DELTA = 1;
 
 /**
  * Under this, from the first workout to the last, the two halves are too close together to call a change "over time": a month's
@@ -26,9 +26,14 @@ export const TREND_MIN_SPAN_DAYS = 56;
 const DAY_MS = 86_400_000;
 const spanDays = (h: TrendHalves): number => (Date.parse(h.late.to) - Date.parse(h.early.from)) / DAY_MS;
 
+/** Whether the two halves are far enough apart to call a difference between them a change over time. */
+export function halvesComparable(halves: TrendHalves | null): halves is TrendHalves {
+  return halves !== null && spanDays(halves) >= TREND_MIN_SPAN_DAYS;
+}
+
 /** Early-vs-late comparison, each half named by its dates. */
 export function TrendStat({ earlyPct, latePct, delta, unitLabel, halves }: TrendStatProps) {
-  if (!halves || spanDays(halves) < TREND_MIN_SPAN_DAYS) {
+  if (!halvesComparable(halves)) {
     return (
       <p className="text-sm text-muted-foreground">
         Too short a range to compare halves. Widen the date range to see whether this has changed.

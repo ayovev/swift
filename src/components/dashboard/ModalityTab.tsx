@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartViewToggle } from "./charts/ChartTable";
+import { ModalityStrip } from "./charts/ComparisonStrip";
 import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
 import { modalityColor, splitText, unclassifiedNote } from "./charts/chartUtils";
@@ -24,12 +25,15 @@ export function ModalityTab({
   data,
   granularity,
   coverage,
+  onOpen = () => {},
 }: {
   modality: Modality;
   data: ModalityData;
   granularity: Granularity;
   /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
   coverage?: { start: string; end: string } | undefined;
+  /** Opens another view by its tab id: the comparison strip's bars. Omit to draw the strip without links. */
+  onOpen?: ((tab: string) => void) | undefined;
 }) {
   const trend = data.modality_trends[modality];
   const direction = data.modality_trend_direction[modality];
@@ -70,6 +74,7 @@ export function ModalityTab({
               <p className="w-full text-xs text-muted-foreground">{unclassifiedNote(data.unclassified_count)}</p>
             ) : null}
           </div>
+          <ModalityStrip data={data} current={modality} onOpen={onOpen} />
         </CardContent>
       </Card>
 

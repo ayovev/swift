@@ -363,13 +363,13 @@ export function Dashboard({
 
           {DOMAIN_LIST.map((domain: Domain) => (
             <TabsContent key={domain} value={`domain:${domain}`}>
-              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} />
+              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} onOpen={onTabChange} />
             </TabsContent>
           ))}
 
           {MODALITY_LIST.map((modality: Modality) => (
             <TabsContent key={modality} value={`modality:${modality}`}>
-              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} />
+              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} onOpen={onTabChange} />
             </TabsContent>
           ))}
 

@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartViewToggle } from "./charts/ChartTable";
+import { DomainStrip } from "./charts/ComparisonStrip";
 import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
 import { domainColor } from "./charts/chartUtils";
@@ -18,12 +19,15 @@ export function DomainTab({
   data,
   granularity,
   coverage,
+  onOpen = () => {},
 }: {
   domain: Domain;
   data: DashboardData;
   granularity: Granularity;
   /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
   coverage?: { start: string; end: string } | undefined;
+  /** Opens another view by its tab id: the comparison strip's bars. Omit to draw the strip without links. */
+  onOpen?: ((tab: string) => void) | undefined;
 }) {
   const trend = data.domain_trends[domain];
   const direction = data.trend_direction[domain];
@@ -52,6 +56,7 @@ export function DomainTab({
               {overall.count.toLocaleString()} of {data.summary.total_logged.toLocaleString()} logged
             </div>
           </div>
+          <DomainStrip data={data} current={domain} onOpen={onOpen} />
         </CardContent>
       </Card>
 

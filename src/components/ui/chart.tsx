@@ -10,7 +10,7 @@ const THEMES = { light: "", dark: ".dark" } as const
 
 /**
  * A ChartConfig key becomes a CSS custom-property name (below, and wherever
- * a chart reads one back via `var(...)` — see StackedShareChart.tsx). Some
+ * a chart reads one back via `var(...)`). Some
  * keys are domain names like "Cardiovascular/Respiratory Endurance", which
  * contain characters a CSS identifier can't hold unescaped; CSS.escape()
  * is the standard way to turn an arbitrary string into a valid one. Both

@@ -162,6 +162,9 @@ remote-config features (exception capture, dead clicks, heatmaps, surveys) off i
   the same always-present treatment (they need only the SugarWOD log).
   `buildModalityData`'s output shape deliberately mirrors `buildDashboardData`'s so those two
   components stay near-identical; keep that symmetry.
+  Each opens with a comparison strip (`charts/ComparisonStrip.tsx`): all ten domains as separate bars on one shared 0 to 100%
+  axis, sorted, since they are tags that add up to about 300%, and the three modalities as one stacked bar that adds to 100. The
+  two forms are the point, so don't unify them. Each bar opens its own view through the same tab change as the nav.
 
 The **Movements** view (`MovementsTab.tsx`, under Training) lists what the lexicon can recognise: families
 (`movementFamilies.ts`, every variant counts) and single movements, picked by id. It reads

@@ -311,7 +311,7 @@ export function niceTimeTicks(
 /**
  * Formats a niceTimeTicks() tick to match the calendar unit that was chosen
  * for it — the same short, two-digit-year grammar formatBucketLabel() uses
- * for the granularity-bucketed charts (ConsistencyChart, StackedShareChart,
+ * for the granularity-bucketed charts (ConsistencyChart,
  * ShareAreaChart, BodyCompLineChart), so every chart's x-axis reads as one
  * consistent date style instead of LiftChart's own full "Mar 14, 2025"
  * (formatDate() stays that verbose form for prose contexts — tooltips, the
