@@ -592,7 +592,7 @@ than the engine behind them.
 9. **#21** The unclassified line next to the M/W/G charts.
 10. **#18** Relabel the Insights filters.
 
-**Also built since: #2, #4 and #8.**
+**Also built since: #2, #4, #5 and #8.**
 
 - **#2:** every verdict now has its own glyph and Timeline mark (`progress/verdictMark.tsx`), and colour only repeats it, so Up
   and Down stay distinct with the red accent and in greyscale. "Not tested since" lost its hardcoded amber and is grey and
@@ -609,6 +609,9 @@ than the engine behind them.
   measured width, so its text is 11px on a phone and on a desktop (it was about 6px and 20px), with solid gridlines and as many
   date ticks as fit. The Progress page at 1280px is 18% shorter (2,709px to 2,222px), not the half estimated: the headline
   card, group headers and closed groups stay as they were.
+- **#5:** as recommended, with one choice made: a first or last bucket counts as partial when the date range, or at all time the
+  log itself, starts or ends inside it, so the log's first month (from the 21st) is dashed as well as the month under way. A
+  thin bucket's whole neighbours, left without a partner in the area, get a filled dot so they don't vanish.
 **Status: all ten are built**, one commit each, with tests. Where the build differs from the recommendation above:
 
 - **#1:** The verdict line reads "+35 lb (223 to 258 lb est. 1RM), +15.4%" rather than starting with "Est. 1RM", so the same

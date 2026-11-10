@@ -65,6 +65,14 @@ export function modalityColor(modality: Modality): string {
   return `var(--chart-${MODALITY_LIST.indexOf(modality) * 4 + 1})`;
 }
 
+/**
+ * Below this many workouts, a bucket's share is drawn as a lone hollow dot rather than part of a share chart's line. With four
+ * workouts, one more or fewer moves the share by 20 to 25 points: drawn into the line, weekly grouping over a long range read as a
+ * 0 to 100% sawtooth of mostly two- and three-workout weeks. Five is a judgement, not a measured cut-off: the point where a single
+ * workout moves the share by no more than 20 points.
+ */
+export const THIN_BUCKET_WORKOUTS = 5;
+
 /** Shared axis styling — muted, small, and out of the way of the data. */
 export const AXIS_PROPS = {
   stroke: "var(--muted-foreground)",

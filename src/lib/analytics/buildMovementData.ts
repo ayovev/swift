@@ -103,8 +103,8 @@ export function buildMovementOptions(data: MovementData): {
   return { families, movements };
 }
 
-/** Share of each bucket's workouts that include the selection, zero-filled. */
-export function trendFor(data: MovementData, sel: MovementSelection): { bucket: string; value: number }[] {
+/** Share of each bucket's workouts that include the selection, zero-filled, with the count behind it. */
+export function trendFor(data: MovementData, sel: MovementSelection): { bucket: string; value: number; count: number; total: number }[] {
   const ids = new Set(selectionIds(sel));
   const totals = new Map<string, { n: number; hit: number }>();
   for (const w of data.workouts) {
@@ -115,7 +115,7 @@ export function trendFor(data: MovementData, sel: MovementSelection): { bucket: 
   }
   return data.buckets.map((bucket) => {
     const t = totals.get(bucket)!;
-    return { bucket, value: Math.round((t.hit / t.n) * 1000) / 10 };
+    return { bucket, value: Math.round((t.hit / t.n) * 1000) / 10, count: t.hit, total: t.n };
   });
 }
 

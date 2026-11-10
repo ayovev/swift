@@ -39,12 +39,12 @@ describe("movements view data", () => {
 
   it("shares each bucket's workouts, zero-filled", () => {
     expect(trendFor(data, { kind: "family", id: "clean" })).toEqual([
-      { bucket: "2024-01", value: 100 },
-      { bucket: "2024-02", value: 50 },
+      { bucket: "2024-01", value: 100, count: 2, total: 2 },
+      { bucket: "2024-02", value: 50, count: 1, total: 2 },
     ]);
     expect(trendFor(data, { kind: "movement", id: "run" })).toEqual([
-      { bucket: "2024-01", value: 50 },
-      { bucket: "2024-02", value: 0 },
+      { bucket: "2024-01", value: 50, count: 1, total: 2 },
+      { bucket: "2024-02", value: 0, count: 0, total: 2 },
     ]);
   });
 

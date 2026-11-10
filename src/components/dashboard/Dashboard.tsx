@@ -127,6 +127,8 @@ export function Dashboard({
   // to size its calendar.
   const effectiveRange = range ?? insights.dateBounds;
   const dailyDisabled = effectiveRange ? !dailyGranularityFits(effectiveRange) : false;
+  // The days the Training charts' data covers, so a share chart can mark a first or last bucket only partly inside it.
+  const coverage = effectiveRange ? { start: effectiveRange.start.format("YYYY-MM-DD"), end: effectiveRange.end.format("YYYY-MM-DD") } : undefined;
 
   // Built once per data change, not on every render — JSON.stringify-ing the
   // full unfiltered workout log (and body comp, if present) is real work at
@@ -354,18 +356,18 @@ export function Dashboard({
 
           {DOMAIN_LIST.map((domain: Domain) => (
             <TabsContent key={domain} value={`domain:${domain}`}>
-              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} />
+              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} />
             </TabsContent>
           ))}
 
           {MODALITY_LIST.map((modality: Modality) => (
             <TabsContent key={modality} value={`modality:${modality}`}>
-              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} />
+              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} />
             </TabsContent>
           ))}
 
           <TabsContent value={MOVEMENTS_TAB}>
-            <MovementsTab data={insights.movements} granularity={granularity} />
+            <MovementsTab data={insights.movements} granularity={granularity} coverage={coverage} />
           </TabsContent>
 
           <TabsContent value={BODY_COMP_TAB}>

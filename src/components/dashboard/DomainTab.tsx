@@ -16,10 +16,13 @@ export function DomainTab({
   domain,
   data,
   granularity,
+  coverage,
 }: {
   domain: Domain;
   data: DashboardData;
   granularity: Granularity;
+  /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
+  coverage?: { start: string; end: string } | undefined;
 }) {
   const trend = data.domain_trends[domain];
   const direction = data.trend_direction[domain];
@@ -59,7 +62,8 @@ export function DomainTab({
         </CardHeader>
         <CardContent>
           <ShareAreaChart
-            data={trend.map((p) => ({ bucket: p.bucket, value: p.pct }))}
+            data={trend.map((p) => ({ bucket: p.bucket, value: p.pct, total: p.total, basis: `${p.count} of ${p.total} ${p.total === 1 ? "workout" : "workouts"}` }))}
+            coverage={coverage}
             color={domainColor(domain)}
             seriesLabel={domain}
             label={`${granularityLabel(granularity)} share of workouts touching ${domain}`}

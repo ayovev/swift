@@ -30,7 +30,16 @@ const keyOf = (s: MovementSelection) => `${s.kind}:${s.id}`;
  * a heuristic, and an athlete whose gym words things unusually needs to see
  * why a workout is here.
  */
-export function MovementsTab({ data, granularity }: { data: MovementData; granularity: Granularity }) {
+export function MovementsTab({
+  data,
+  granularity,
+  coverage,
+}: {
+  data: MovementData;
+  granularity: Granularity;
+  /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
+  coverage?: { start: string; end: string } | undefined;
+}) {
   const options = useMemo(() => buildMovementOptions(data), [data]);
   const first = options.families[0] ?? options.movements[0];
   const [picked, setPicked] = useState<string | null>(null);
@@ -156,7 +165,8 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
         </CardHeader>
         <CardContent>
           <ShareAreaChart
-            data={trend}
+            data={trend.map((p) => ({ ...p, basis: `${p.count} of ${p.total} ${p.total === 1 ? "workout" : "workouts"}` }))}
+            coverage={coverage}
             color="var(--primary)"
             seriesLabel={name}
             label={`${granularityLabel(granularity)} share of workouts that included ${name}`}

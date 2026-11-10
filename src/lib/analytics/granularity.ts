@@ -69,6 +69,33 @@ export function bucketKey(date: Dayjs, granularity: Granularity): string {
   }
 }
 
+/**
+ * The first and last day a bucket key covers, YYYY-MM-DD: what tells a chart a bucket is only partly inside the range (the first month
+ * of a log that started on the 21st, or the month under way). Weeks start on Sunday, as in `bucketKey`.
+ */
+export function bucketBounds(key: string, granularity: Granularity): { start: string; end: string } {
+  const f = (d: Dayjs) => d.format("YYYY-MM-DD");
+  switch (granularity) {
+    case "daily":
+      return { start: key, end: key };
+    case "weekly": {
+      const d = dayjs(key);
+      return { start: f(d), end: f(d.add(6, "day")) };
+    }
+    case "monthly": {
+      const d = dayjs(`${key}-01`);
+      return { start: f(d), end: f(d.endOf("month")) };
+    }
+    case "quarterly": {
+      const [year, q] = key.split("-Q");
+      const d = dayjs(`${year}-01-01`).add((Number(q) - 1) * 3, "month");
+      return { start: f(d), end: f(d.add(2, "month").endOf("month")) };
+    }
+    case "yearly":
+      return { start: `${key}-01-01`, end: `${key}-12-31` };
+  }
+}
+
 /** Human-readable axis/tooltip label for a bucket key produced by `bucketKey`. */
 export function formatBucketLabel(key: string, granularity: Granularity): string {
   switch (granularity) {

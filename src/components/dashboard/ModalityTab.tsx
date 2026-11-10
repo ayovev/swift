@@ -22,10 +22,13 @@ export function ModalityTab({
   modality,
   data,
   granularity,
+  coverage,
 }: {
   modality: Modality;
   data: ModalityData;
   granularity: Granularity;
+  /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
+  coverage?: { start: string; end: string } | undefined;
 }) {
   const trend = data.modality_trends[modality];
   const direction = data.modality_trend_direction[modality];
@@ -77,7 +80,8 @@ export function ModalityTab({
         </CardHeader>
         <CardContent>
           <ShareAreaChart
-            data={trend.map((p) => ({ bucket: p.bucket, value: p.avg_share }))}
+            data={trend.map((p) => ({ bucket: p.bucket, value: p.avg_share, total: p.total, basis: `Average of ${p.total} classified ${p.total === 1 ? "workout" : "workouts"}` }))}
+            coverage={coverage}
             color={modalityColor(modality)}
             seriesLabel={name}
             label={`${granularityLabel(granularity)} average share of training spent on ${name}`}
