@@ -183,7 +183,7 @@ were measured in Chromium with touch; Recharts' own `onClick` reports no point f
 
 **Share-over-time charts draw each bucket for what it is** (`charts/ShareAreaChart.tsx`, `shareRows`): a bucket with fewer than
 `THIN_BUCKET_WORKOUTS` (5) workouts is a hollow dot off the line, a first or last bucket the range or the log only partly covers
-(`coverage`, from `Dashboard.tsx`; `bucketBounds` in `granularity.ts`) is dashed with a "from" or "to" day in its tooltip, the line
+(`coverage`, from `Dashboard.tsx`; `bucketBounds` in `granularity.ts`) stays shaded but its line is dashed, with a "from" or "to" day in its tooltip, the line
 is straight, every tooltip names its denominator ("9 of 15 workouts"), a key names the marks when they appear, and under three
 buckets the chart is a sentence. The grouping menu says weekly is noisy over a range longer than a year.
 

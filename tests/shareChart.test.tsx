@@ -29,6 +29,7 @@ describe("shareRows", () => {
     const rows = shareRows([point("2024-01", 80, 20), point("2024-02", 100, THIN_BUCKET_WORKOUTS - 1), point("2024-03", 70, 20)], "monthly");
     expect(rows.map((r) => r.thin)).toEqual([false, true, false]);
     expect(rows[1]!.solid).toBeNull();
+    expect(rows[1]!.shade).toBeNull();
     expect(rows[1]!.thinValue).toBe(100);
     // Its whole neighbours each lose their partner in the area, so each gets a dot of its own.
     expect(rows[0]!.lone).toBe(80);
@@ -45,6 +46,8 @@ describe("shareRows", () => {
     const data = [point("2022-11", 73, 15), point("2022-12", 82, 20), point("2023-01", 79, 20), point("2023-02", 100, 8)];
     const rows = shareRows(data, "monthly", { start: "2022-11-21", end: "2023-02-10" });
     expect(rows[0]).toMatchObject({ partial: true, from: "2022-11-21", to: null, solid: null, edge: 73 });
+    // Still shaded: only the line is dashed.
+    expect(rows.map((r) => r.shade)).toEqual([73, 82, 79, 100]);
     expect(rows[1]).toMatchObject({ partial: false, solid: 82, edge: 82 });
     expect(rows[2]).toMatchObject({ partial: false, solid: 79, edge: 79 });
     expect(rows[3]).toMatchObject({ partial: true, from: null, to: "2023-02-10", solid: null, edge: 100 });

@@ -36,8 +36,10 @@ interface ShareAreaChartProps {
 
 /**
  * The rows a share chart draws, one per bucket: what kind of bucket it is (thin, partial at either end) and the value each drawn
- * series takes there. `solid` feeds the area and is null for a thin or partial bucket, so the area breaks there; `edge` is a partial
- * bucket and its whole neighbour, for the dashed segment; `thinValue` is a thin bucket's hollow dot; `lone` is a whole bucket with no
+ * series takes there. `shade` feeds the area's fill and is null only for a thin bucket, so a partial first or last bucket stays
+ * shaded (a range of a few months is mostly its ends, and an area with its ends cut off read as missing data); `solid` is the solid
+ * line, null for a thin or partial bucket, so the line breaks there; `edge` is a partial bucket and its whole neighbour, for the
+ * dashed segment; `thinValue` is a thin bucket's hollow dot; `lone` is a whole bucket with no
  * whole neighbour, which an area can't draw, as a filled dot. Pure, so the rules are tested without a chart.
  */
 export function shareRows(data: readonly SharePoint[], granularity: Granularity, coverage?: { start: string; end: string }) {
@@ -53,7 +55,7 @@ export function shareRows(data: readonly SharePoint[], granularity: Granularity,
     const solid = solidAt(i) ? r.value : null;
     // A whole bucket with no whole neighbour draws no area of its own (an area needs two points), so it gets a filled dot.
     const lone = solid !== null && !solidAt(i - 1) && !solidAt(i + 1) ? r.value : null;
-    return { ...r, solid, lone, thinValue: r.thin ? r.value : null, edge: null as number | null };
+    return { ...r, shade: r.thin ? null : r.value, solid, lone, thinValue: r.thin ? r.value : null, edge: null as number | null };
   });
   // A partial bucket joins its whole neighbour with a dashed segment: the edge series holds just those two points.
   rows.forEach((r, i) => {
@@ -77,8 +79,8 @@ const MIN_BUCKETS = 3;
  * Every bucket is drawn for what it is, not as one more point on a smooth curve:
  * - a bucket with fewer than THIN_BUCKET_WORKOUTS workouts is a hollow dot, not joined to the line: a share of three workouts swings by
  *   a third with one workout, and drawn into the line it made weekly grouping a 0 to 100% sawtooth;
- * - a first or last bucket only partly inside `coverage` (a log that began on the 21st, the month under way) is joined by a dashed
- *   segment and ends in a hollow dot, and its tooltip says from or to which day, as Overview's "so far" month does;
+ * - a first or last bucket only partly inside `coverage` (a log that began on the 21st, the month under way) is still shaded, but
+ *   joined by a dashed segment rather than the solid line and ends in a hollow dot, and its tooltip says from or to which day, as Overview's "so far" month does;
  * - the line is straight between buckets (a monotone spline drew curves between months that never happened);
  * - every tooltip names its denominator;
  * - with fewer than MIN_BUCKETS buckets there is no chart, only a sentence saying so.
@@ -171,7 +173,8 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity, c
                 );
               }}
             />
-            <Area dataKey="solid" type="linear" stroke={color} strokeWidth={2} fill={`url(#${gradientId})`} connectNulls={false} isAnimationActive={false} />
+            <Area dataKey="shade" type="linear" stroke="none" fill={`url(#${gradientId})`} connectNulls={false} activeDot={false} isAnimationActive={false} />
+            <Line dataKey="solid" type="linear" stroke={color} strokeWidth={2} dot={false} connectNulls={false} isAnimationActive={false} />
             <Line dataKey="edge" type="linear" stroke={color} strokeWidth={2} strokeDasharray="4 3" connectNulls={false} dot={(p) => hollow(p, true)} activeDot={false} isAnimationActive={false} />
             <Line dataKey="thinValue" stroke="none" dot={(p) => hollow(p, false)} activeDot={false} legendType="none" isAnimationActive={false} />
             <Line dataKey="lone" stroke="none" dot={{ r: 3, fill: color, stroke: color }} activeDot={false} legendType="none" isAnimationActive={false} />
