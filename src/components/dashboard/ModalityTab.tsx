@@ -80,6 +80,7 @@ export function ModalityTab({
             latePct={direction.late_pct}
             delta={direction.delta}
             unitLabel={`share of training spent on ${name.toLowerCase()}`}
+            halves={data.modality_trend_halves}
           />
         </CardContent>
       </Card>

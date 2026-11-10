@@ -1,3 +1,4 @@
+import type { TrendHalves } from "./dashboard";
 // Shapes for the M/W/G modality classifier.
 //
 // Unlike the 10 GPP domains — which are independent yes/no tags — the three
@@ -172,6 +173,8 @@ export interface ModalityData {
   modality_trends: Record<Modality, ModalityTrendPoint[]>;
   modality_overall: Record<Modality, ModalityOverallStat>;
   modality_trend_direction: Record<Modality, ModalityTrendDirectionStat>;
+  /** The dates of modality_trend_direction's two halves, over classified workouts only (see buildModalityData). */
+  modality_trend_halves: TrendHalves | null;
   modality_workout_lists: Record<Modality, ModalityWorkoutEntry[]>;
   /** Every logged workout, most recent first — the Workouts tab's source list. */
   all_workouts: AllWorkoutsEntry[];

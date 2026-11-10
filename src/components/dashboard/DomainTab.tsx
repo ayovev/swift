@@ -70,6 +70,7 @@ export function DomainTab({
             latePct={direction.late_pct}
             delta={direction.delta}
             unitLabel={`share of training in ${domain}`}
+            halves={data.trend_halves}
           />
         </CardContent>
       </Card>
