@@ -32,18 +32,21 @@ export function SegmentedControl<T extends string>({
   onChange,
   options,
   ariaLabel,
+  wrap = false,
 }: {
   value: T;
   onChange: (value: T) => void;
   options: readonly SegmentedControlOption<T>[];
   ariaLabel: string;
+  /** Let the options wrap onto a second row when they don't fit, rather than run past the edge. */
+  wrap?: boolean;
 }) {
   return (
     <TooltipProvider>
       <div
         role="group"
         aria-label={ariaLabel}
-        className="flex items-center gap-0.5 rounded-md border border-border p-0.5"
+        className={cn("flex items-center gap-0.5 rounded-md border border-border p-0.5", wrap && "flex-wrap")}
       >
         {options.map((option) => {
           const button = (

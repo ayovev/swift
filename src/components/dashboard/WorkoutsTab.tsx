@@ -146,9 +146,10 @@ export function WorkoutsTab({
                 </caption>
                 <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Date</th>
+                    {/* On a phone the date moves under the title, so the three columns don't squeeze the split to a sliver. */}
+                    <th scope="col" className="hidden px-3 py-2 text-left font-medium sm:table-cell">Date</th>
                     <th scope="col" className="px-3 py-2 text-left font-medium">Workout</th>
-                    <th scope="col" className="w-48 px-3 py-2 text-left font-medium sm:w-64">
+                    <th scope="col" className="w-24 px-3 py-2 text-left font-medium sm:w-64">
                       {/* In draw order, as the bar and the text under it run (MODALITY_DRAW_ORDER). */}
                       W / G / M
                     </th>
@@ -162,7 +163,7 @@ export function WorkoutsTab({
                     return (
                       <Fragment key={key}>
                         <tr className="border-t border-border align-top">
-                          <td className="whitespace-nowrap px-3 py-2 text-muted-foreground tabular">
+                          <td className="hidden whitespace-nowrap px-3 py-2 text-muted-foreground tabular sm:table-cell">
                             {formatShortDate(w.date)}
                           </td>
                           <td className="px-3 py-2">
@@ -185,6 +186,7 @@ export function WorkoutsTab({
                                 aria-hidden="true"
                               />
                               <span>
+                                <div className="text-xs text-muted-foreground tabular sm:hidden">{formatShortDate(w.date)}</div>
                                 <div>{w.title || <span className="text-muted-foreground">Untitled</span>}</div>
                                 {w.movements.length > 0 ? (
                                   <div className="mt-0.5 text-xs text-muted-foreground">
@@ -196,7 +198,8 @@ export function WorkoutsTab({
                           </td>
                           <td className="px-3 py-2">
                             <ModalityBar split={w.split} classified={w.classified} />
-                            <div className="mt-1 text-xs text-muted-foreground tabular">
+                            {/* The numbers are in the bar's label and, on a phone, too wide for the column. */}
+                            <div className="mt-1 hidden text-xs text-muted-foreground tabular sm:block">
                               {w.classified
                                 ? splitText(w.split)
                                 : "not classified"}

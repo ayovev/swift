@@ -198,6 +198,13 @@ export function Dashboard({
 
   return (
     <div className="min-h-svh bg-background">
+      {/* The first stop for a keyboard: past the strip, the four sections and Settings, straight to the page (WCAG 2.4.1). */}
+      <a
+        href="#content"
+        className="sr-only rounded-md bg-background px-3 py-2 text-sm font-medium shadow-md ring-2 ring-ring focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
+      >
+        Skip to content
+      </a>
       {/* The one sample-mode indicator: a full-width strip above the header,
           rather than a chip in it or notes scattered through the page. */}
       {source === "sample" ? (
@@ -260,7 +267,7 @@ export function Dashboard({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
+      <main id="content" tabIndex={-1} className="mx-auto w-full max-w-7xl px-5 py-8 outline-none sm:px-8 sm:py-12">
         <div className="mb-8 flex flex-col gap-6">
           <div className="flex flex-col gap-2.5">
             <div className="font-mono text-xs tracking-[0.08em] text-muted-foreground uppercase">

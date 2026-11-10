@@ -100,7 +100,8 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
     // four or five, where the old scaled-down chart squeezed in eight of 6px text.
     const dates = niceTimeTicks(x0 * DAY_MS, x1 * DAY_MS, Math.max(2, Math.min(AXIS_TICK_COUNT, Math.floor((W - PAD.l - PAD.r) / MIN_TICK_GAP_PX))));
     const xTicks = dates.ticks.map((t) => ({ x: X(t / DAY_MS), label: formatTimeTick(t, dates.unit) }));
-    // A value label sits above its dot, or below it when the trend line would run through it (and the axis is clear).
+    // A value label sits where it covers the least: above its dot, below it, or nudged to either side above it, counting the trend line
+    // and every other dot its box would cross (on a phone the dots are close, and "223" sat on its neighbours). Above wins a tie.
     const trendAt = (x: number): number | null => {
       if (!trend) return null;
       const ax = X(trend.from.x);
@@ -109,22 +110,45 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
       return Y(trend.from.y) + ((Y(trend.to.y) - Y(trend.from.y)) * (x - ax)) / (bx - ax || 1);
     };
     const axisY = H - PAD.b + 6;
-    const labelBaseline = (x: number, y: number, text: string, anchor: "middle" | "end", gap: number): number => {
-      const width = text.length * LABEL_CHAR_W;
-      const from = anchor === "end" ? x - width : x - width / 2;
-      const hits = (baseline: number): boolean =>
-        Array.from({ length: 6 }, (_, i) => trendAt(from + (width * i) / 5)).some((ty) => ty !== null && ty > baseline - LABEL_H - 2 && ty < baseline + 3);
-      const above = y - gap;
-      const below = y + gap + LABEL_H;
-      return hits(above) && !hits(below) && below + 3 < axisY ? below : above;
+    const dots = sessions.map((s) => ({ x: X(dayNumber(s.date)), y: Y(s.value) }));
+    type Anchor = "start" | "middle" | "end";
+    const covered = (left: number, width: number, baseline: number, own: { x: number; y: number }): number => {
+      const top = baseline - LABEL_H - 1;
+      const bottom = baseline + 3;
+      const trendHit = Array.from({ length: 6 }, (_, i) => trendAt(left + (width * i) / 5)).some((ty) => ty !== null && ty > top - 1 && ty < bottom);
+      const dotHits = dots.filter(
+        (d) => (d.x !== own.x || d.y !== own.y) && d.x > left - DOT_R - 1 && d.x < left + width + DOT_R + 1 && d.y > top - DOT_R - 1 && d.y < bottom + DOT_R + 1
+      ).length;
+      return dotHits + (trendHit ? 1 : 0);
     };
+    const placeLabel = (x: number, y: number, text: string, prefer: Anchor, gap: number): { y: number; anchor: Anchor } => {
+      const width = text.length * LABEL_CHAR_W;
+      const leftOf = (a: Anchor, at: number) => (a === "end" ? at - width : a === "start" ? at : at - width / 2);
+      const candidates: { y: number; anchor: Anchor; at: number }[] = [
+        { y: y - gap, anchor: prefer, at: x },
+        { y: y + gap + LABEL_H, anchor: prefer, at: x },
+        { y: y - gap, anchor: "end" as Anchor, at: x - 4 },
+        { y: y - gap, anchor: "start" as Anchor, at: x + 4 },
+        { y: y + gap + LABEL_H, anchor: "end" as Anchor, at: x - 4 },
+        { y: y + gap + LABEL_H, anchor: "start" as Anchor, at: x + 4 },
+        { y: y - gap - LABEL_H, anchor: prefer, at: x },
+      ].filter((c) => c.y + 3 < axisY && c.y - LABEL_H > 0 && leftOf(c.anchor, c.at) >= PAD.l - 4 && leftOf(c.anchor, c.at) + width <= W - 2);
+      let best: { y: number; anchor: Anchor; at: number; score: number } | null = null;
+      for (const c of candidates) {
+        const score = covered(leftOf(c.anchor, c.at), width, c.y, { x, y });
+        if (!best || score < best.score) best = { ...c, score };
+      }
+      return best ? { y: best.y, anchor: best.anchor } : { y: y - gap, anchor: prefer };
+    };
+    const labelBaseline = (x: number, y: number, text: string, anchor: "middle" | "end", gap: number): number => placeLabel(x, y, text, anchor, gap).y;
     const valueLabels = verdict
       ? [verdict.previousBest, verdict.recentBest].flatMap((b, i) => {
           if (newBest && i === 1) return [];
           const text = formatSession(subject, b).replace(" lb", "");
           const x = X(dayNumber(b.date));
           const y = Y(b.value);
-          return [{ key: b.date, x, y: labelBaseline(x, y, text, "middle", 8), text }];
+          const placed = placeLabel(x, y, text, "middle", 8);
+          return [{ key: b.date, x: placed.anchor === "end" ? x - 4 : placed.anchor === "start" ? x + 4 : x, y: placed.y, anchor: placed.anchor, text }];
         })
       : [];
     if (newBest) newBest = { ...newBest, labelY: labelBaseline(newBest.x, newBest.y, newBest.label, "end", 10) };
@@ -250,7 +274,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
           );
         })}
         {model.valueLabels.map((l) => (
-          <text key={l.key} x={l.x} y={l.y} textAnchor="middle" className="fill-muted-foreground text-[11px]">
+          <text key={l.key} x={l.x} y={l.y} textAnchor={l.anchor} className="fill-muted-foreground text-[11px]">
             {l.text}
           </text>
         ))}

@@ -23,9 +23,8 @@ export function PeriodFilter({ preset, onPreset, custom, onCustom, invalid, show
         {PERIOD_FILTER_LABEL}
       </span>
       <div aria-labelledby="progress-logged-in" className="flex flex-wrap items-center gap-3">
-        <div className="max-w-full overflow-x-auto">
-          <SegmentedControl value={preset} onChange={onPreset} options={PERIOD_OPTIONS} ariaLabel={PERIOD_FILTER_LABEL} />
-        </div>
+        {/* Six options don't fit a phone's width; they wrap onto a second row rather than scroll with nothing to say they do. */}
+        <SegmentedControl value={preset} onChange={onPreset} options={PERIOD_OPTIONS} ariaLabel={PERIOD_FILTER_LABEL} wrap />
         {preset === "custom" ? (
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <label className="flex items-center gap-1.5">

@@ -336,7 +336,8 @@ body fat have no band, because nothing compares them.
 - **RX and Scaled for lifts** are judged separately; whether to merge them needs an athlete who logs Scaled lifts.
 - **Noise band.** `weightNoiseBand.ts`'s band comes from `paired-scans`, `residual` or `default`; anyone scanning monthly or less lands on `residual` or
   `default` (3 lb for weight), which is why manual weigh-ins exist.
-- **Weigh-in delete has no confirmation**; an entry delete does.
+- **Weigh-in delete has no confirmation; it has Undo** for ten seconds (`WeighInsPanel.tsx`, `weigh_in_delete_undone`). An entry delete
+  has a confirmation.
 - **Entries reach a before and after rarely on sparse logs** (3 of 8 demo entries on the sample), so the facts lines carry weight.
 - **Chart drag-to-select and period bands are gone** with Compare; nothing replaces them on the date-range charts.
 - **Sync.** Verified by unit tests and by hand on two devices, not by an automated two-device test.
@@ -381,7 +382,7 @@ The entry panel is on the Body Comp view (`WeighInsPanel.tsx`), which lists InBo
 `lib/analytics/weighIns.ts` pools weigh-ins with InBody scans into one body-weight series: on a day with both, the scan is used and the weigh-in is kept,
 listed as "Not used: an InBody scan the same day". Lean and fat mass come from scans only. The noise band is measured from the pooled series (as scan
 rows carrying only a weight, `pooledScanRows`), so frequent weigh-ins reach a measured band where scans months apart fell to the 3 lb default. No
-smoothing. Analytics: `weigh_in_saved` and `weigh_in_deleted`, value-free like every other interaction.
+smoothing. Analytics: `weigh_in_saved`, `weigh_in_deleted` and `weigh_in_delete_undone`, value-free like every other interaction. A delete has ten seconds of Undo rather than a confirmation.
 
 ## Architecture: cross-device sync
 

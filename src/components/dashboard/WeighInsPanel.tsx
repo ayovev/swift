@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,13 @@ interface WeighInsPanelProps {
 
 const SHOWN = 12;
 
+/**
+ * How long a deleted weigh-in can be brought back. Delete has no confirmation: a weigh-in is small, typed again in seconds, and a
+ * dialog on every delete is a step for the many deletes that were meant. Undo covers the few that weren't (WCAG 3.3.4's
+ * "reversible"). Ten seconds is long enough to notice a wrong tap, short enough that the line doesn't linger.
+ */
+const UNDO_MS = 10_000;
+
 const longDate = (iso: string): string => dayjs(iso).format("MMM D, YYYY");
 
 /**
@@ -37,6 +44,12 @@ export function WeighInsPanel({ scans, weighIns, onSave, onDelete, today }: Weig
   const rows = useMemo(() => bodyWeightRows(scans, weighIns), [scans, weighIns]);
   const weight = typedWeight ?? (rows[0] ? String(rows[0].weightLb) : "");
   const shown = all ? rows : rows.slice(0, SHOWN);
+  const [deleted, setDeleted] = useState<WeighIn | null>(null);
+  useEffect(() => {
+    if (!deleted) return;
+    const timer = setTimeout(() => setDeleted(null), UNDO_MS);
+    return () => clearTimeout(timer);
+  }, [deleted]);
 
   const save = () => {
     const result = validateWeighIn({ date, weightLb: weight.trim() === "" ? null : Number(weight), notes: note }, todayIso);
@@ -45,6 +58,7 @@ export function WeighInsPanel({ scans, weighIns, onSave, onDelete, today }: Weig
       return;
     }
     setErrors([]);
+    setDeleted(null);
     onSave(result.value);
     capture({ name: "interaction_used", props: { interaction: "weigh_in_saved" } });
     setWeight(null);
@@ -100,6 +114,24 @@ export function WeighInsPanel({ scans, weighIns, onSave, onDelete, today }: Weig
             ))}
           </ul>
         ) : null}
+        {deleted ? (
+          <p role="status" className="flex flex-wrap items-center gap-x-3 rounded-md bg-muted/60 px-3 text-sm">
+            <span className="py-2">
+              Deleted the {longDate(deleted.date)} weigh-in ({deleted.weightLb} lb).
+            </span>
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center text-accent-link underline underline-offset-2 sm:min-h-8"
+              onClick={() => {
+                onSave(deleted);
+                setDeleted(null);
+                capture({ name: "interaction_used", props: { interaction: "weigh_in_delete_undone" } });
+              }}
+            >
+              Undo
+            </button>
+          </p>
+        ) : null}
         {rows.length ? (
           <ul className="flex flex-col">
             {shown.map((r) => (
@@ -131,6 +163,7 @@ export function WeighInsPanel({ scans, weighIns, onSave, onDelete, today }: Weig
                       type="button"
                       className="text-destructive underline underline-offset-2"
                       onClick={() => {
+                        setDeleted(weighIns.find((w) => w.date === r.date) ?? null);
                         onDelete(r.date);
                         capture({ name: "interaction_used", props: { interaction: "weigh_in_deleted" } });
                       }}

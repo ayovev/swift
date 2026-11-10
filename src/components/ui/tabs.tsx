@@ -77,9 +77,13 @@ function TabsContent({
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Content>) {
   return (
+    // Out of the tab order by default: Radix makes a panel a focus stop (tabIndex 0), and with "outline-none" that was a stop with no
+    // visible focus between the header and the page (WCAG 2.4.7). The dashboard's views are reached by its own section buttons, and
+    // the skip link lands on <main>; a caller can still pass tabIndex.
     <TabsPrimitive.Content
       data-slot="tabs-content"
       className={cn("flex-1 outline-none", className)}
+      tabIndex={-1}
       {...props}
     />
   )

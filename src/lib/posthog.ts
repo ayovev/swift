@@ -48,6 +48,7 @@ export type InteractionName =
   | "backup_imported"
   | "weigh_in_saved"
   | "weigh_in_deleted"
+  | "weigh_in_delete_undone"
   | "stale_log_replace_clicked"
   | "stale_log_snoozed"
   // A chart point picked (the list below narrows to it), and a picked point followed to its workouts on another view. Never which

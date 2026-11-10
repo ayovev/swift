@@ -28,10 +28,13 @@ interface TimelineChartProps {
   onAddAt: (date: string) => void;
 }
 
-/** A tick at each month start, spaced so about six fit. */
-function ticks(start: string, end: string): { date: string; label: string }[] {
+/** A "Mmm YYYY" axis label in the 10px mono face needs about this much room, gap included. */
+const TICK_ROOM_PX = 76;
+
+/** A tick at each month start, spaced so at most `count` fit (six on a desktop, as many as the width allows on a phone). */
+function ticks(start: string, end: string, count = 6): { date: string; label: string }[] {
   const months = Math.max(1, dayjs(end).diff(dayjs(start), "month"));
-  const step = Math.max(1, Math.ceil(months / 6));
+  const step = Math.max(1, Math.ceil(months / Math.max(2, count)));
   const out: { date: string; label: string }[] = [];
   let d = dayjs(start).startOf("month");
   if (d.isBefore(dayjs(start), "day")) d = d.add(1, "month");
@@ -68,10 +71,15 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
         const b = Math.max(px(entryEnd(entry, asOf)), a + 10);
         const label = (entryName(entry).length + (entry.endDate === null ? 2 : 0)) * 7 + 8;
         const inside = b - a >= label + 12;
-        const left = !inside && b + label > width;
-        const lo = !inside && left ? a - label : a;
-        const hi = inside ? b : left ? b : Math.max(b, b + label);
-        return { entry, lo, hi, inside, left };
+        // Outside the bar, the label goes right when it fits, else left when that fits, else to the side with more room, cut to fit
+        // with an ellipsis: on a phone a long name ("Switched to a protein-forward diet") fitted neither side and ran off the box.
+        const roomRight = width - b - 6;
+        const roomLeft = a - 6;
+        const left = !inside && label > roomRight && (label <= roomLeft || roomLeft > roomRight);
+        const fit = inside ? label : Math.min(label, Math.max(40, left ? roomLeft : roomRight));
+        const lo = !inside && left ? a - fit : a;
+        const hi = inside ? b : left ? b : Math.max(b, b + fit);
+        return { entry, lo, hi, inside, left, maxLabel: fit < label ? fit : null };
       })
       .sort((x, y) => x.entry.startDate.localeCompare(y.entry.startDate) || x.entry.id.localeCompare(y.entry.id));
     const ends: number[] = [];
@@ -83,7 +91,8 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
     });
     return { placed: out, lanes: ends.length };
   }, [visible, start, span, width, asOf]);
-  const axis = useMemo(() => ticks(start, end), [start, end]);
+  // As many ticks as fit the measured width: six labels overlapped on a phone once the end labels were held inside the axis.
+  const axis = useMemo(() => ticks(start, end, width > 0 ? Math.min(6, Math.floor(width / TICK_ROOM_PX)) : 6), [start, end, width]);
 
   const verdictLanes = rows.filter((r) => (LANE_GROUPS as readonly string[]).includes(r.group) && (r.verdict || (r.moveUpVotes && r.moveUp)));
 
@@ -108,7 +117,7 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
           style={{ height: Math.max(1, lanes) * 28 + 8 }}
         >
           {visible.length === 0 ? <p className="pointer-events-none px-3 py-2 text-sm text-muted-foreground">No entries in this range.</p> : null}
-          {placed.map(({ entry, lane, inside, left: labelLeft }) => {
+          {placed.map(({ entry, lane, inside, left: labelLeft, maxLabel }) => {
             const left = pct(entry.startDate);
             const right = pct(entryEnd(entry, asOf));
             const barWidth = Math.max(right - left, 0);
@@ -133,7 +142,8 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
                 {inside ? <span className="truncate px-1.5">{name}{ongoing ? " →" : ""}</span> : null}
                 {!inside ? (
                   <span
-                    className={cn("absolute whitespace-nowrap text-foreground", labelLeft ? "right-full mr-1.5" : "left-full ml-1.5")}
+                    className={cn("absolute truncate whitespace-nowrap text-foreground", labelLeft ? "right-full mr-1.5" : "left-full ml-1.5")}
+                    style={maxLabel !== null ? { maxWidth: maxLabel } : undefined}
                   >
                     {name}
                     {ongoing ? " →" : ""}
@@ -147,7 +157,15 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
 
       <div aria-hidden className="relative h-5 border-t border-border">
         {axis.map((t) => (
-          <span key={t.date} className="absolute top-0.5 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] text-muted-foreground" style={{ left: `${pct(t.date)}%` }}>
+          // Centred on its date, except near either end, where it is held inside the axis rather than cut off.
+          <span
+            key={t.date}
+            className={cn(
+              "absolute top-0.5 whitespace-nowrap font-mono text-[10px] text-muted-foreground",
+              pct(t.date) < 8 ? "translate-x-0" : pct(t.date) > 92 ? "-translate-x-full" : "-translate-x-1/2"
+            )}
+            style={{ left: `${pct(t.date)}%` }}
+          >
             {t.label}
           </span>
         ))}

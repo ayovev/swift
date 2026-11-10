@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import dayjs from "dayjs";
 import { currentTrackedPrs } from "@/lib/analytics/repMax";
 import { REP_MAX_CATEGORY_ORDER, formatDate } from "./chartUtils";
 import type { LiftEntry } from "@/types/dashboard";
@@ -8,6 +9,9 @@ import type { LiftEntry } from "@/types/dashboard";
  * (1/2/3/5RM), with a column per scheme — a quick-reference summary so an
  * athlete doesn't have to hunt through a dozen scatter charts to see where
  * their numbers currently stand.
+ *
+ * On a phone the five columns left each date wrapping over three lines ("Jul / 5, / 2023"), so below `sm` it is a list instead: one
+ * lift per entry, each rep max on its own line with a short date. Same rows, same order.
  */
 export function RepMaxPrTable({ lifts }: { lifts: Record<string, LiftEntry[]> }) {
   const rows = useMemo(
@@ -22,7 +26,22 @@ export function RepMaxPrTable({ lifts }: { lifts: Record<string, LiftEntry[]> })
   if (rows.length === 0) return null;
 
   return (
-    <div className="mb-4 overflow-x-auto">
+    <>
+    <ul className="mb-4 flex flex-col sm:hidden" aria-label="Current PR at each rep max">
+      {rows.map(({ name, prs }) => (
+        <li key={name} className="border-b border-border py-2 last:border-0">
+          <span className="text-sm font-medium">{name}</span>
+          <span className="mt-0.5 grid grid-cols-2 gap-x-4 text-xs text-muted-foreground tabular">
+            {REP_MAX_CATEGORY_ORDER.filter((c) => prs[c]).map((c) => (
+              <span key={c}>
+                {c} <span className="font-medium text-foreground">{prs[c]!.value.toLocaleString()}</span> · {dayjs(prs[c]!.date).format("MMM 'YY")}
+              </span>
+            ))}
+          </span>
+        </li>
+      ))}
+    </ul>
+    <div className="mb-4 hidden overflow-x-auto sm:block">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border text-left text-xs text-muted-foreground">
@@ -60,5 +79,6 @@ export function RepMaxPrTable({ lifts }: { lifts: Record<string, LiftEntry[]> })
         </tbody>
       </table>
     </div>
+    </>
   );
 }

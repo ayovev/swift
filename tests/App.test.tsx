@@ -468,3 +468,21 @@ describe("App — stale workout log nudge", () => {
     expect(staleLine()).toBeNull();
   });
 });
+
+describe("App — keyboard entry", () => {
+  it("starts at a skip link to the page, and keeps the view panels out of the tab order", async () => {
+    await saveWorkoutRows([graceRow("01/05/2020")]);
+    renderApp();
+    await findDashboard();
+    const skip = screen.getByRole("link", { name: "Skip to content" });
+    expect(skip).toHaveAttribute("href", "#content");
+    const main = document.getElementById("content") as HTMLElement;
+    expect(main.tagName).toBe("MAIN");
+    expect(main).toHaveAttribute("tabindex", "-1");
+    // The skip link comes before every other focusable control on the page.
+    const focusable = [...document.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])")];
+    expect(focusable[0]).toBe(skip);
+    // Radix makes a tab panel a focus stop; here it was an invisible one between the header and the page.
+    for (const panel of document.querySelectorAll('[data-slot="tabs-content"]')) expect(panel).toHaveAttribute("tabindex", "-1");
+  });
+});
