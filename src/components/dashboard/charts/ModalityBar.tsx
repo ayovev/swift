@@ -1,4 +1,6 @@
-import { MODALITY_SHORT_LABELS, type ModalitySplit } from "@/types/modality";
+import { Fragment } from "react";
+import { MODALITY_SHORT_LABELS, type Modality, type ModalitySplit } from "@/types/modality";
+import { cn } from "@/lib/utils";
 import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER } from "./chartUtils";
 
 /**
@@ -49,5 +51,48 @@ export function ModalityBar({ split, classified }: { split: ModalitySplit; class
         ))}
       </div>
     </div>
+  );
+}
+
+/** A modality's colour as a small dot, for a label that sits next to a bar of that colour. Decorative: the letter beside it carries the meaning. */
+export function ModalityDot({ m, className }: { m: Modality; className?: string }) {
+  return <span className={cn("inline-block size-2 shrink-0 rounded-full", className)} style={{ backgroundColor: FIXED_MODALITY_COLORS[m] }} aria-hidden="true" />;
+}
+
+/**
+ * The letters of a split in the bar's own order, each after its colour: the column header over the Workouts bars. It stays in view
+ * (the header is sticky), so every bar has its colours named directly above it, where the page's key scrolls away after a few rows.
+ */
+export function ModalityHeaderKey() {
+  return (
+    <span className="inline-flex items-center gap-2.5 sm:gap-3">
+      {MODALITY_DRAW_ORDER.map((m) => (
+        <span key={m} className="inline-flex items-center gap-1">
+          <ModalityDot m={m} />
+          {m}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * A split as text with each value after its colour: "● W 67 · ● G 0 · ● M 33". The text stays grey: the fixed modality colours are
+ * not dark enough for small text, and the letters already mean the colour is never the only cue. The dots are decorative, so the
+ * text reads as splitText() once spacing is normalised (the separators are their own flex items, so the gaps either side match).
+ */
+export function SplitLine({ split }: { split: ModalitySplit }) {
+  return (
+    <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+      {MODALITY_DRAW_ORDER.map((m, i) => (
+        <Fragment key={m}>
+          {i > 0 ? <span aria-hidden="true">·</span> : null}
+          <span className="inline-flex items-center gap-1">
+            <ModalityDot m={m} className="size-1.5" />
+            {`${m} ${split[m].toFixed(0)}`}
+          </span>
+        </Fragment>
+      ))}
+    </span>
   );
 }

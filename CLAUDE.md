@@ -699,7 +699,8 @@ element the athlete controls. Every token in `src/index.css` is achromatic (chro
 with two fixed exceptions that never derive from the accent: `--destructive`, the error/delete-action
 red, and the `--repmax-1/2/3/5` tokens (red/orange/green/blue). The `--repmax-*` tokens colour the
 lift-chart dots and legend by rep scheme (`FIXED_REPMAX_COLORS` in `chartUtils.ts`), and the
-Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). Those bars are drawn in
+Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). On Workouts each bar's colours are named beside it: a dot before each letter in the sticky column header and before each
+value under the bar (`ModalityHeaderKey`, `SplitLine` in `ModalityBar.tsx`), since the page key scrolls away. Those bars are drawn in
 `MODALITY_DRAW_ORDER` (W, G, M), never `MODALITY_LIST`'s M, W, G: the canonical order stacks red onto green, which
 deuteranopia can barely tell apart, and `tests/modalityColors.test.ts` measures every adjacent pair from the real tokens.
 Overview's days-trained bars sit in the same card, so they use neutral ink rather than the accent, which matched one of the

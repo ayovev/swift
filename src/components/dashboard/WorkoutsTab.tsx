@@ -3,8 +3,8 @@ import { ChevronRight, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ModalityBar } from "./charts/ModalityBar";
-import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, formatShortDate, modalityKeyLabel, splitText } from "./charts/chartUtils";
+import { ModalityBar, ModalityHeaderKey, SplitLine } from "./charts/ModalityBar";
+import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, formatShortDate, modalityKeyLabel } from "./charts/chartUtils";
 import { formatWorkoutDescription, isLevelLabel } from "@/lib/format/workoutDescription";
 import { cn } from "@/lib/utils";
 import type { ModalityData } from "@/types/modality";
@@ -138,20 +138,22 @@ export function WorkoutsTab({
           {total === 0 ? (
             <p className="text-sm text-muted-foreground">No workouts in {ranged ? "this range" : "this export"}.</p>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
+            // overflow-clip, not overflow-hidden: hidden makes a scroll container, and the header would then stick to it, not the page.
+            <div className="overflow-clip rounded-lg border border-border">
               <table className="w-full text-sm">
                 <caption className="sr-only">
                   Every logged workout with its M/W/G split; each row
                   expands to the full description and score
                 </caption>
-                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                {/* Sticky and opaque, so the colour key over the bars stays in view while the list scrolls. */}
+                <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     {/* On a phone the date moves under the title, so the three columns don't squeeze the split to a sliver. */}
                     <th scope="col" className="hidden px-3 py-2 text-left font-medium sm:table-cell">Date</th>
                     <th scope="col" className="px-3 py-2 text-left font-medium">Workout</th>
-                    <th scope="col" className="w-24 px-3 py-2 text-left font-medium sm:w-64">
-                      {/* In draw order, as the bar and the text under it run (MODALITY_DRAW_ORDER). */}
-                      W / G / M
+                    {/* In draw order, as the bar and the text under it run (MODALITY_DRAW_ORDER), each letter after its colour. */}
+                    <th scope="col" aria-label="W / G / M" className="w-28 px-3 py-2 text-left font-medium sm:w-64">
+                      <ModalityHeaderKey />
                     </th>
                   </tr>
                 </thead>
@@ -200,9 +202,7 @@ export function WorkoutsTab({
                             <ModalityBar split={w.split} classified={w.classified} />
                             {/* The numbers are in the bar's label and, on a phone, too wide for the column. */}
                             <div className="mt-1 hidden text-xs text-muted-foreground tabular sm:block">
-                              {w.classified
-                                ? splitText(w.split)
-                                : "not classified"}
+                              {w.classified ? <SplitLine split={w.split} /> : "not classified"}
                             </div>
                           </td>
                         </tr>
