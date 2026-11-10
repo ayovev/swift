@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartViewToggle } from "./charts/ChartTable";
 import { Label } from "@/components/ui/label";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
 import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
@@ -158,10 +159,11 @@ export function MovementsTab({
       </Card>
 
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
           <CardTitle className="text-sm font-medium">
             Workouts with {labelInSentence(name)}, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
           </CardTitle>
+          <ChartViewToggle />
         </CardHeader>
         <CardContent>
           <ShareAreaChart

@@ -88,7 +88,10 @@ describe("the Insights front door", () => {
     expect(within(row).getByText(/Needs 1 more session for a verdict\./)).toBeInTheDocument();
     fireEvent.click(within(row).getByRole("button"));
     expect(within(row).getByText("Each dot is the best result of a day. Loads are estimated one-rep maxes from sets of 1 to 8 reps.")).toBeInTheDocument();
-    expect(within(row).getByRole("img", { name: "Sessions of Hang Power Clean, as estimated one-rep maxes" })).toHaveTextContent(/^Est\. 1RM/);
+    const chart = within(row).getByRole("img", { name: "Sessions of Hang Power Clean, as estimated one-rep maxes" });
+    expect(chart).toHaveTextContent(/Est\. 1RM/);
+    // Its text alternative: the span, the low, high and latest sessions, and how to step through them by keyboard.
+    expect(chart.querySelector("desc")?.textContent).toMatch(/^Hang Power Clean, estimated one-rep max, .+ to .+\. Lowest .+ lb .+highest .+ lb .+latest .+ lb .+Use the arrow keys/);
   });
 
   it("shows no body-context line without body data and one with it", () => {

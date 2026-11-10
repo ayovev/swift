@@ -592,7 +592,7 @@ than the engine behind them.
 9. **#21** The unclassified line next to the M/W/G charts.
 10. **#18** Relabel the Insights filters.
 
-**Also built since: #2, #4, #5 and #8.**
+**Also built since: #2, #4, #5, #8 and #14.**
 
 - **#2:** every verdict now has its own glyph and Timeline mark (`progress/verdictMark.tsx`), and colour only repeats it, so Up
   and Down stay distinct with the red accent and in greyscale. "Not tested since" lost its hardcoded amber and is grey and
@@ -612,6 +612,10 @@ than the engine behind them.
 - **#5:** as recommended, with one choice made: a first or last bucket counts as partial when the date range, or at all time the
   log itself, starts or ends inside it, so the log's first month (from the 21st) is dashed as well as the month under way. A
   thin bucket's whole neighbours, left without a partner in the area, get a filled dot so they don't vanish.
+- **#14:** one Table switch for every chart rather than one per chart (a reader who needs tables needs them everywhere), still
+  remembered per device. Each chart's name is a summary sentence (span, lowest, highest, latest); the evidence chart is reachable
+  by keyboard with an announced tooltip. Tick text is not separately hidden: with the summary as the svg's title, a focused chart
+  now announces the summary rather than its ticks.
 **Status: all ten are built**, one commit each, with tests. Where the build differs from the recommendation above:
 
 - **#1:** The verdict line reads "+35 lb (223 to 258 lb est. 1RM), +15.4%" rather than starting with "Est. 1RM", so the same

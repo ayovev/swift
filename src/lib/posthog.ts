@@ -53,7 +53,9 @@ export type InteractionName =
   // A chart point picked (the list below narrows to it), and a picked point followed to its workouts on another view. Never which
   // point, bucket, date, lift or count: only that it happened.
   | "chart_point_selected"
-  | "chart_point_opened";
+  | "chart_point_opened"
+  // Charts shown as tables, or back: only that the switch was used, not which way.
+  | "chart_view_toggled";
 
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }

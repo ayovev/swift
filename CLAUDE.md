@@ -187,6 +187,13 @@ were measured in Chromium with touch; Recharts' own `onClick` reports no point f
 is straight, every tooltip names its denominator ("9 of 15 workouts"), a key names the marks when they appear, and under three
 buckets the chart is a sentence. The grouping menu says weekly is noisy over a range longer than a year.
 
+**Every chart has a table twin and a text alternative** (`charts/ChartTable.tsx`). One "Table" switch, shown in each chart card's
+header, flips every chart to its table at once, because whoever wants tables wants them everywhere; it is a per-device preference in
+`localStorage` (`swift.chartView`, try/catch, in-memory only when storage throws), never synced or backed up, and its analytics name
+`chart_view_toggled` says only that it was used. Tables list their newest row first. Each chart's accessible name (and svg `title` or
+`desc`) is a `seriesSummary()` sentence: span, lowest, highest and latest. The evidence chart is one tab stop whose arrow keys, Home,
+End and Escape walk its sessions with the hover tooltip and an `aria-live` announcement.
+
 Two things that look like the same idea but are not — don't unify them:
 
 - **The 10 GPP domains are independent, non-exclusive tags.** Most workouts hit three or

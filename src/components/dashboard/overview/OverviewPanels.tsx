@@ -19,6 +19,7 @@ import {
 import { entryName, entrySpanText } from "@/lib/analytics/timeline";
 import { VerdictPill } from "../progress/verdictMark";
 import { ChartPickNote, PickHint, capturePick, usePointPick } from "../charts/ChartPick";
+import { ChartViewToggle, DataTable, seriesSummary, useChartView } from "../charts/ChartTable";
 import { AREA_LABEL } from "@/types/timeline";
 
 /**
@@ -42,11 +43,14 @@ function PanelLink({ label, onClick }: { label: string; onClick?: (() => void) |
   );
 }
 
-function PanelHeader({ title, caption }: { title: string; caption?: string }) {
+function PanelHeader({ title, caption, toggle = false }: { title: string; caption?: string; toggle?: boolean }) {
   return (
     <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      {caption ? <span className="text-xs text-muted-foreground">{caption}</span> : null}
+      <span className="flex items-baseline gap-4">
+        {caption ? <span className="text-xs text-muted-foreground">{caption}</span> : null}
+        {toggle ? <ChartViewToggle /> : null}
+      </span>
     </CardHeader>
   );
 }
@@ -131,12 +135,11 @@ function MonthlyDaysChart({ months, picked, pick }: { months: MonthDays[] } & Mo
   const best = Math.max(1, ...months.map((m) => m.days));
   const { domain, ticks } = niceAxisTicks(0, best, AXIS_TICK_COUNT, true);
   const config: ChartConfig = { days: { label: "Days trained", color: DAYS_INK } };
-  const first = months[0];
-  const last = months[months.length - 1];
-  const aria =
-    first && last
-      ? `Bar chart of days trained per month, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
-      : "Bar chart of days trained per month";
+  const aria = seriesSummary(
+    "Days trained per month",
+    months.map((m) => ({ label: `${dayjs(`${m.month}-01`).format("MMM YYYY")}${m.partial ? " so far" : ""}`, value: m.days })),
+    (v) => `${v} ${v === 1 ? "day" : "days"}`
+  );
   return (
     <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={pick ? "[&_.recharts-surface]:cursor-pointer" : undefined}>
     <ChartContainer config={config} className="h-[200px] w-full min-w-0" role="img" aria-label={aria}>
@@ -295,10 +298,31 @@ export function TrainingPanel({
   const pickedMix = picked ? mix.find((m) => m.month === picked) : undefined;
   const anyMix = mix.some((m) => m.split);
   const leftOut = unclassifiedNote(mix.reduce((n, m) => n + m.unclassified, 0));
+  const [view] = useChartView();
+  const mixByMonth = new Map(mix.map((m) => [m.month, m]));
   return (
     <Card>
-      <PanelHeader title="Showing up" caption={`Last ${OVERVIEW_CHART_MONTHS} months, by month`} />
+      <PanelHeader title="Showing up" caption={`Last ${OVERVIEW_CHART_MONTHS} months, by month`} toggle={months.some((m) => m.days > 0)} />
       <CardContent className="flex flex-col gap-5">
+        {view === "table" && months.some((m) => m.days > 0) ? (
+          // Both charts' months in one table: the columns line up the way the two charts' columns do.
+          <div className="flex flex-col gap-2">
+            <DataTable
+              caption={`Days trained and the weightlifting, gymnastics and cardio split, each of the last ${OVERVIEW_CHART_MONTHS} months`}
+              columns={[{ label: "Month" }, { label: "Days trained", numeric: true }, ...MODALITY_DRAW_ORDER.map((m) => ({ label: m, numeric: true }))]}
+              rows={[...months].reverse().map((m) => {
+                const split = mixByMonth.get(m.month)?.split;
+                return [
+                  `${dayjs(`${m.month}-01`).format("MMMM YYYY")}${m.partial ? " (so far)" : ""}`,
+                  m.days,
+                  ...MODALITY_DRAW_ORDER.map((k) => (split ? `${Math.round(split[k])}%` : "—")),
+                ];
+              })}
+            />
+            {leftOut ? <span className="text-xs text-muted-foreground">{leftOut}</span> : null}
+          </div>
+        ) : (
+        <>
         <div className="flex flex-col gap-2">
           {months.some((m) => m.days > 0) ? (
             <>
@@ -330,7 +354,9 @@ export function TrainingPanel({
             <p className="text-sm text-muted-foreground">No classified workouts in the last {OVERVIEW_CHART_MONTHS} months.</p>
           )}
         </section>
-        {picked && pickedDays && onOpenMonth ? (
+        </>
+        )}
+        {view !== "table" && picked && pickedDays && onOpenMonth ? (
           <ChartPickNote
             onClear={() => setPicked(null)}
             action={
@@ -468,14 +494,25 @@ function WeightChart({ readings }: { readings: BodyReading[] }) {
   const config: ChartConfig = { weight: { label: "Body weight", color: "var(--primary)" } };
   const first = data[0]!;
   const last = data[data.length - 1]!;
+  const summary = seriesSummary("Body weight", data.map((d) => ({ label: dayjs(d.date).format("MMM D, YYYY"), value: d.weight })), (v) => weightText(v));
+  const [view] = useChartView();
+  if (view === "table") {
+    return (
+      <DataTable
+        caption={summary}
+        columns={[{ label: "Date" }, { label: "Weight", numeric: true }]}
+        rows={[...data].reverse().map((d) => [dayjs(d.date).format("MMM D, YYYY"), weightText(d.weight)])}
+      />
+    );
+  }
   return (
     <ChartContainer
       config={config}
       className="h-[200px] w-full min-w-0"
       role="img"
-      aria-label={`Line chart of body weight, ${dayjs(first.date).format("MMM YYYY")} to ${dayjs(last.date).format("MMM YYYY")}, latest ${weightText(last.weight)}`}
+      aria-label={summary}
     >
-      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} title={summary}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis
           dataKey="t"
@@ -525,7 +562,7 @@ export function BodyPanel({
 }) {
   return (
     <Card>
-      <PanelHeader title="Body weight" {...(readings.length > 1 && sources ? { caption: sources } : {})} />
+      <PanelHeader title="Body weight" toggle={readings.length > 1} {...(readings.length > 1 && sources ? { caption: sources } : {})} />
       <CardContent className="flex flex-col gap-4">
         {readings.length > 1 ? (
           <WeightChart readings={readings} />

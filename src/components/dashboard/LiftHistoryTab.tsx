@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartViewToggle } from "./charts/ChartTable";
 import { BenchmarkCards } from "./charts/BenchmarkCards";
 import { LiftGrid, type RepMaxFilter } from "./charts/LiftChart";
 import { PrTimeline } from "./charts/PrTimeline";
@@ -90,8 +91,9 @@ export function LiftHistoryTab({
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
           <CardTitle className="text-sm font-medium">What got heavier</CardTitle>
+          <ChartViewToggle />
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-sm text-muted-foreground">

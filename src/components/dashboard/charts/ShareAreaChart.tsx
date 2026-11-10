@@ -2,6 +2,7 @@ import { Area, AreaChart, CartesianGrid, Line, ReferenceLine, XAxis, YAxis, type
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { AXIS_PROPS, PCT_AXIS_WIDTH, THIN_BUCKET_WORKOUTS, formatDate, niceAxisTicks } from "./chartUtils";
 import { PickHint, usePointPick } from "./ChartPick";
+import { DataTable, seriesSummary, useChartView } from "./ChartTable";
 import { GRANULARITY_NOUN, bucketBounds, bucketTickInterval, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
 
 /** One bucket of a share chart: its share, and the workouts behind it. */
@@ -85,6 +86,7 @@ const MIN_BUCKETS = 3;
  */
 export function ShareAreaChart({ data, color, label, seriesLabel, granularity, coverage, selected = null, onSelect }: ShareAreaChartProps) {
   const { track, onPointerUp, onKeyDown } = usePointPick(onSelect, selected);
+  const [view] = useChartView();
   const noun = GRANULARITY_NOUN[granularity];
 
   if (data.length < MIN_BUCKETS) {
@@ -97,6 +99,26 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity, c
   }
 
   const rows = shareRows(data, granularity, coverage);
+  const summary = seriesSummary(label, rows, (v) => `${v.toFixed(1)}%`);
+  const periodText = (r: (typeof rows)[number]) =>
+    `${r.label}${r.from ? `, from ${formatDate(r.from).replace(/, \d{4}$/, "")}` : ""}${r.to ? `, to ${formatDate(r.to).replace(/, \d{4}$/, "")}` : ""}`;
+
+  if (view === "table") {
+    return (
+      <DataTable
+        caption={summary}
+        columns={[{ label: noun[0]!.toUpperCase() + noun.slice(1) }, { label: "Share", numeric: true }, { label: "Of" }]}
+        rows={[...rows].reverse().map((r) => [
+          periodText(r),
+          `${r.value.toFixed(1)}%`,
+          <span className="text-muted-foreground">
+            {r.basis}
+            {r.thin ? ", too few to join the line" : ""}
+          </span>,
+        ])}
+      />
+    );
+  }
   const anyThin = rows.some((r) => r.thin);
   const anyPartial = rows.some((r) => r.partial && !r.thin);
 
@@ -114,8 +136,8 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity, c
   return (
     <div>
       <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={onSelect ? "[&_.recharts-surface]:cursor-pointer" : undefined}>
-        <ChartContainer config={config} className="h-[260px] w-full min-w-0" role="img" aria-label={label}>
-          <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <ChartContainer config={config} className="h-[260px] w-full min-w-0" role="img" aria-label={summary}>
+          <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} title={summary}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={color} stopOpacity={0.5} />
@@ -140,11 +162,7 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity, c
                 if (!props.active || !p) return null;
                 return (
                   <div className="grid min-w-[9rem] gap-0.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
-                    <span className="font-medium">
-                      {p.label}
-                      {p.from ? `, from ${formatDate(p.from).replace(/, \d{4}$/, "")}` : ""}
-                      {p.to ? `, to ${formatDate(p.to).replace(/, \d{4}$/, "")}` : ""}
-                    </span>
+                    <span className="font-medium">{periodText(p)}</span>
                     <span className="font-medium tabular">{p.value.toFixed(1)}%</span>
                     <span className="text-muted-foreground tabular">{p.basis}</span>
                     {p.thin ? <span className="text-muted-foreground">Too few workouts to join the line</span> : null}

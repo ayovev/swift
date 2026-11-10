@@ -5,9 +5,11 @@ import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import { BodyCompLineChart } from "./charts/BodyCompLineChart";
 import { ConsistencyChart } from "./charts/ConsistencyChart";
 import { FilePickerButton } from "./FilePickerButton";
+import { ChartViewToggle, DataTable, useChartView } from "./charts/ChartTable";
+import { withUnit } from "./charts/BodyCompLineChart";
 import { buildBodyCompData, filterInBodyRowsByRange } from "@/lib/analytics/buildBodyCompData";
 import type { DateRange } from "@/lib/analytics/dateRange";
-import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
+import { GRANULARITY_NOUN, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
 import type { BodyCompPoint } from "@/types/bodyComp";
 import type { BucketCount, DashboardData } from "@/types/dashboard";
 import type { InBodyRow } from "@/types/inbody";
@@ -76,6 +78,7 @@ function InBodySourceMark() {
  */
 export function BodyCompTab({ state, granularity, range, onFile, dashboard, weighIns, onSaveWeighIn, onDeleteWeighIn }: BodyCompTabProps) {
   const scanReadings = useMemo(() => (state.status === "ready" ? readingsFromInBody(state.rows) : []), [state]);
+  const [view] = useChartView();
   const weighInsPanel =
     weighIns && onSaveWeighIn && onDeleteWeighIn ? <WeighInsPanel scans={scanReadings} weighIns={weighIns} onSave={onSaveWeighIn} onDelete={onDeleteWeighIn} /> : null;
   const data = useMemo(
@@ -139,11 +142,23 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
 
       {/* Trends before the reading list: overview first, the 100-odd rows behind it after. */}
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
           <CardTitle className="text-sm font-medium">Trends</CardTitle>
+          {hasEnoughHistory ? <ChartViewToggle /> : null}
         </CardHeader>
         <CardContent>
-          {hasEnoughHistory ? (
+          {hasEnoughHistory && view === "table" ? (
+            // Every trend's buckets in one table, most recent first: each chart above is one column of it.
+            <DataTable
+              caption={`Days trained and body composition, ${GRANULARITY_NOUN[granularity]} by ${GRANULARITY_NOUN[granularity]}, each a ${GRANULARITY_NOUN[granularity]}'s average of its scans`}
+              columns={[{ label: GRANULARITY_NOUN[granularity][0]!.toUpperCase() + GRANULARITY_NOUN[granularity].slice(1) }, { label: "Days trained", numeric: true }, ...METRICS.map((m) => ({ label: m.label, numeric: true }))]}
+              rows={[...data.points].reverse().map((p) => [
+                formatBucketLabel(p.bucket, granularity),
+                dayCountByBucket.get(p.bucket) ?? 0,
+                ...METRICS.map((m) => (p[m.key] === null ? "—" : withUnit(Number(p[m.key]).toFixed(1), m.unit))),
+              ])}
+            />
+          ) : hasEnoughHistory ? (
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
               <div>
                 <div className="mb-1 flex items-baseline justify-between gap-2">

@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartViewToggle } from "./charts/ChartTable";
 import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
 import { modalityColor, splitText, unclassifiedNote } from "./charts/chartUtils";
@@ -73,10 +74,11 @@ export function ModalityTab({
       </Card>
 
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
           <CardTitle className="text-sm font-medium">
             Share of training, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
           </CardTitle>
+          <ChartViewToggle />
         </CardHeader>
         <CardContent>
           <ShareAreaChart

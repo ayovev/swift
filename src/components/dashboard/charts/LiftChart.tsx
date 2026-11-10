@@ -19,6 +19,7 @@ import {
 } from "./chartUtils";
 import type { LiftEntry } from "@/types/dashboard";
 import { ChartPickNote, PickHint, capturePick, usePointPick } from "./ChartPick";
+import { DataTable, seriesSummary, useChartView } from "./ChartTable";
 
 const CONFIG = {
   value: { label: "Load", color: "var(--primary)" },
@@ -127,6 +128,7 @@ export function LiftChart({
       }
     : undefined;
   const { track, onPointerUp, onKeyDown } = usePointPick(pick, picked);
+  const [view] = useChartView();
   const allData = useMemo(
     () =>
       entries
@@ -150,6 +152,7 @@ export function LiftChart({
 
   if (data.length < 2) return null;
   const pickedPoint = picked ? data.find((d) => d.date === picked) : undefined;
+  const summary = seriesSummary(`${liftName}, logged loads`, data.map((d) => ({ label: formatDate(d.date), value: d.value })), (v) => `${v.toLocaleString()} lb`);
 
   const best = Math.max(...data.map((d) => d.value));
   const worst = Math.min(...data.map((d) => d.value));
@@ -165,14 +168,22 @@ export function LiftChart({
           best {best.toLocaleString()}
         </span>
       </div>
+      {view === "table" ? (
+        <DataTable
+          caption={summary}
+          columns={[{ label: "Date" }, { label: "Load", numeric: true }, { label: "Rep scheme" }, { label: "PR" }]}
+          rows={[...data].reverse().map((d) => [formatDate(d.date), `${d.value.toLocaleString()} lb`, d.scheme, d.pr ? "PR" : ""])}
+        />
+      ) : (
+      <>
       <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={onOpenDay ? "[&_.recharts-symbols]:cursor-pointer" : undefined}>
       <ChartContainer
         config={CONFIG}
         className="h-[180px] w-full min-w-0"
         role="img"
-        aria-label={`${liftName} progression: ${data.length} logged efforts, best ${best}`}
+        aria-label={summary}
       >
-        <ScatterChart margin={{ top: 8, right: 10, bottom: 0, left: 0 }}>
+        <ScatterChart margin={{ top: 8, right: 10, bottom: 0, left: 0 }} title={summary}>
           <CartesianGrid vertical={false} stroke="var(--border)" />
           <XAxis
             dataKey="t"
@@ -231,6 +242,8 @@ export function LiftChart({
         </ScatterChart>
       </ChartContainer>
       </div>
+      </>
+      )}
       {pickedPoint && onOpenDay ? (
         <ChartPickNote onClear={() => setPicked(null)} action={{ label: "See this workout", onClick: () => onOpenDay(pickedPoint.date) }}>
           <span className="font-medium">{formatDate(pickedPoint.date)}</span>: {pickedPoint.value.toLocaleString()} lb, {pickedPoint.scheme}

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { trendLine } from "@/lib/analytics/insights/chart";
 import { AXIS_TICK_COUNT, CLOCK_STEPS, ROUNDS_REPS_STEPS, formatDate, formatTimeTick, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
 import { formatClock, formatSession, loggedSetText, roundsReps } from "@/lib/analytics/insights/display";
 import { PV_MAX_REPS } from "@/lib/analytics/insightConfig";
+import { ChartViewToggle, DataTable, seriesSummary, useChartView } from "@/components/dashboard/charts/ChartTable";
 import { REPS_PER_ROUND, type ProgressSession, type ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/lib/analytics/insights/verdict";
 
@@ -132,6 +133,33 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
 
   // Lifts only: every benchmark session is a max effort, so a ring on each dot would say nothing.
   const [hovered, setHovered] = useState<ProgressSession | null>(null);
+  const [view] = useChartView();
+  // Keyboard: the chart is one tab stop, and the arrow keys walk its sessions in date order, showing each one's tooltip and
+  // announcing it, so every dot a pointer can hover is reachable without one (WCAG 2.1.1).
+  const onKeyDown = (e: KeyboardEvent) => {
+    const list = model.sessions;
+    if (list.length === 0) return;
+    const at = hovered ? list.findIndex((s) => s.date === hovered.date) : -1;
+    const go = (i: number) => {
+      e.preventDefault();
+      setHovered(list[Math.max(0, Math.min(list.length - 1, i))] ?? null);
+    };
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") go(at < 0 ? list.length - 1 : at + 1);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") go(at < 0 ? list.length - 1 : at - 1);
+    else if (e.key === "Home") go(0);
+    else if (e.key === "End") go(list.length - 1);
+    else if (e.key === "Escape" && hovered) {
+      e.preventDefault();
+      setHovered(null);
+    }
+  };
+  const windowOf = (s: ProgressSession): string => (model.recent.has(s.date) ? "Recent" : model.previous.has(s.date) ? "Previous" : "");
+  const valueText = (s: ProgressSession): string => `${formatSession(subject, s)}${subject.format === "load" ? " est." : ""}`;
+  const summary = seriesSummary(
+    `${subject.name}${subject.format === "load" ? ", estimated one-rep max" : ""}`,
+    model.sessions.map((s) => ({ label: formatDate(s.date), value: s.value })),
+    (v) => (subject.format === "load" ? `${Math.round(v)} lb` : subject.format === "time" ? formatClock(v) : String(v))
+  );
   const rings = verdict && subject.kind === "lift" && (verdict.state === "down" || verdict.state === "not-tested-since");
   const { X, Y } = model;
   const caption = verdict
@@ -143,8 +171,29 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
 
   return (
     <figure className="flex flex-col gap-1">
+      <div className="flex justify-end">
+        <ChartViewToggle />
+      </div>
+      {view === "table" ? (
+        <DataTable
+          caption={summary}
+          columns={[{ label: "Date" }, { label: estimated ? "Est. 1RM" : "Result", numeric: true }, { label: "Compared as" }, ...(subject.kind === "lift" ? [{ label: "Max effort" }] : [])]}
+          rows={[...model.sessions].reverse().map((s) => [formatDate(s.date), valueText(s), windowOf(s), ...(subject.kind === "lift" ? [s.maxEffort ? "Yes" : ""] : [])])}
+        />
+      ) : (
       <div ref={frame} className="relative" onMouseLeave={() => setHovered(null)}>
-      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block max-w-full" role="img" aria-label={`Sessions of ${subject.name}${estimated ? ", as estimated one-rep maxes" : ""}`}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        width={W}
+        height={H}
+        className="block max-w-full rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        role="img"
+        aria-label={`Sessions of ${subject.name}${estimated ? ", as estimated one-rep maxes" : ""}`}
+        tabIndex={0}
+        onKeyDown={onKeyDown}
+        onBlur={() => setHovered(null)}
+      >
+        <desc>{summary} Use the arrow keys to step through the sessions.</desc>
         {estimated ? (
           <text x={4} y={9} className="fill-muted-foreground text-[11px]">
             Est. 1RM
@@ -214,7 +263,12 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
         ) : null}
       </svg>
       {hovered ? <DotTooltip subject={subject} session={hovered} x={model.X(dayNumber(hovered.date)) / W} y={model.Y(hovered.value) / H} /> : null}
+      {/* What the keyboard has reached, read out (the tooltip itself isn't announced). */}
+      <span className="sr-only" aria-live="polite">
+        {hovered ? `${valueText(hovered)} on ${formatDate(hovered.date)}${windowOf(hovered) ? `, ${windowOf(hovered).toLowerCase()} window` : ""}${subject.kind === "lift" && hovered.maxEffort ? ", max effort" : ""}` : ""}
+      </span>
       </div>
+      )}
       <figcaption className="text-xs text-muted-foreground">{fullCaption}</figcaption>
     </figure>
   );
