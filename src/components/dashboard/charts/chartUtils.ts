@@ -82,6 +82,13 @@ export const AXIS_PROPS = {
 } as const;
 
 /**
+ * Every time axis's labels, on every chart: angled at -35 degrees so they don't collide as the grouping gets finer (a weekly or daily
+ * axis has many more labels than a monthly one), and one angle everywhere so every chart reads the same. Flat labels were tried on
+ * Lifts and Overview and dropped for this standard.
+ */
+export const TIME_AXIS_PROPS = { angle: -35, textAnchor: "end", height: 50 } as const;
+
+/**
  * Y-axis widths, sized for the LONGEST label each axis can produce.
  *
  * Recharts renders axis labels inside the SVG canvas, so a negative left chart

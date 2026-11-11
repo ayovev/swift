@@ -622,7 +622,7 @@ than the engine behind them.
 - **#7:** as recommended, except the line: a step line of the highlighted scheme's best so far, not every effort joined (joined,
   each light day read as a drop). And the highlighted scheme is named in each chart's header ("● 1RM, latest 215 lb") rather than at
   the line's end, where on the sample it landed on other dots. "Also logged" is a plain line, not links: Workouts has no way to be
-  opened filtered to one lift. Charts on the sample drop from 18 to 14, and the time ticks are flat.
+  opened filtered to one lift. Charts on the sample drop from 18 to 14. Its time ticks were made flat, then put back to the shared angle (see section 5).
 - **#16, #17, #22, #23:** on a phone the PR table is a list and Workouts puts the date under the title, Timeline labels and axis
   ticks stay inside the chart, and the "last logged in" filter wraps. A skip link leads to the view, and tab panels are no longer
   stray tab stops (only the landing page's export guide keeps one, for its scrollable text). A weigh-in delete has ten seconds of
@@ -664,6 +664,8 @@ than the engine behind them.
    ("181.0 lb", "79%"), and the top y tick carries the unit. Time ticks are horizontal, with `minTickGap` and short
    labels ("Jan '24" for monthly, "Q1 '24", "2024", "Mar 8" for weekly), instead of the -35° rotation used on every
    Recharts time axis. Overview's Showing up already does this and reads better.
+   **Decided otherwise:** time ticks stay angled at -35 degrees on every chart (`TIME_AXIS_PROPS`), so they don't collide at finer
+   groupings. Flat ticks were tried on Lifts and Overview and reverted.
 3. **One bucket model for honesty**: every bucket carries `n` and `partial: boolean`, and every time chart draws
    partial and thin buckets the same way (#5), copying Overview's "so far" convention.
 4. **Status encoding separate from the accent** (#2): one `VerdictMark` component (glyph, chip, end-marker) used by

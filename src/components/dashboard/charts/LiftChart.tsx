@@ -17,6 +17,7 @@ import {
   formatTimeTick,
   niceAxisTicks,
   niceTimeTicks,
+  TIME_AXIS_PROPS,
   type TimeUnit,
 } from "./chartUtils";
 import type { LiftEntry } from "@/types/dashboard";
@@ -223,11 +224,9 @@ export function LiftChart({
             type="number"
             domain={xDomain}
             ticks={xTicks}
+            interval={0} // see niceAxisTicks() in chartUtils.ts for why
             tickFormatter={(t: number) => formatTimeTick(t, xTickUnit)}
-            // Flat, and thinned to fit, instead of -35 degrees: slanted labels took a quarter of the chart's height on a phone.
-            interval="preserveStartEnd"
-            minTickGap={12}
-            height={24}
+            {...TIME_AXIS_PROPS}
             {...AXIS_PROPS}
           />
           <YAxis

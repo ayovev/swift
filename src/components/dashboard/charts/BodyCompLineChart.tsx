@@ -1,6 +1,6 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, NUM_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
+import { AXIS_PROPS, NUM_AXIS_WIDTH, niceAxisTicks, TIME_AXIS_PROPS } from "./chartUtils";
 import {
   bucketTickInterval,
   formatBucketLabel,
@@ -69,9 +69,7 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
             dataKey="label"
             interval={bucketTickInterval(rows.length)}
             padding={{ left: 12, right: 12 }}
-            angle={-35}
-            textAnchor="end"
-            height={50}
+            {...TIME_AXIS_PROPS}
             {...AXIS_PROPS}
           />
           <YAxis

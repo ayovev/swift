@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, modalityKeyLabel, unclassifiedNote, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
+import { AXIS_PROPS, TIME_AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, modalityKeyLabel, unclassifiedNote, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
 import type { BodyReading } from "@/lib/analytics/insights/bodyContext";
 import { displayName, moveUpText, verdictText } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
@@ -148,7 +148,7 @@ function MonthlyDaysChart({ months, picked, pick }: { months: MonthDays[] } & Mo
           <InProgressPattern id={patternId} />
         </defs>
         <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...AXIS_PROPS} />
+        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...TIME_AXIS_PROPS} {...AXIS_PROPS} />
         <YAxis width={NUM_AXIS_WIDTH} domain={domain} ticks={ticks} interval={0} {...AXIS_PROPS} />
         <ChartTooltip
           cursor={{ fill: "var(--muted)", opacity: 0.4 }}
@@ -217,7 +217,7 @@ function MonthlyMixChart({ mix, picked, pick }: { mix: MonthMix[] } & MonthPick)
     <ChartContainer config={MODALITY_FIXED_CHART_CONFIG} className="h-[160px] w-full min-w-0" role="img" aria-label={aria}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} maxBarSize={MAX_BAR_PX}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...AXIS_PROPS} />
+        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...TIME_AXIS_PROPS} {...AXIS_PROPS} />
         <YAxis
           width={NUM_AXIS_WIDTH}
           domain={[0, 100]}
@@ -521,6 +521,7 @@ function WeightChart({ readings }: { readings: BodyReading[] }) {
           domain={[first.t, last.t]}
           tickFormatter={(t: number) => dayjs(t).format("MMM 'YY")}
           tickCount={4}
+          {...TIME_AXIS_PROPS}
           {...AXIS_PROPS}
         />
         <YAxis width={NUM_AXIS_WIDTH} domain={domain} ticks={ticks} interval={0} {...AXIS_PROPS} />

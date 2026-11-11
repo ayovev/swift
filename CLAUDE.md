@@ -190,6 +190,10 @@ were measured in Chromium with touch; Recharts' own `onClick` reports no point f
 is straight, every tooltip names its denominator ("9 of 15 workouts"), a key names the marks when they appear, and under three
 buckets the chart is a sentence. The grouping menu says weekly is noisy over a range longer than a year.
 
+**Every time axis is angled the same way** (`TIME_AXIS_PROPS` in `chartUtils.ts`, -35 degrees): angled so labels don't collide as the
+grouping gets finer, and one angle on every chart. Flat labels were tried on Lifts and Overview and dropped; `tests/timeAxis.test.ts`
+fails if an `<XAxis>` sets its own angle or leaves the shared setting out.
+
 **Every chart has a table twin and a text alternative** (`charts/ChartTable.tsx`). One "Table" switch, shown in each chart card's
 header, flips every chart to its table at once, because whoever wants tables wants them everywhere; it is a per-device preference in
 `localStorage` (`swift.chartView`, try/catch, in-memory only when storage throws), never synced or backed up, and its analytics name

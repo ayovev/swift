@@ -8,7 +8,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { AXIS_PROPS, AXIS_TICK_COUNT, NUM_AXIS_WIDTH, mergeBucketCounts, niceAxisTicks } from "./chartUtils";
+import { AXIS_PROPS, AXIS_TICK_COUNT, NUM_AXIS_WIDTH, mergeBucketCounts, niceAxisTicks, TIME_AXIS_PROPS } from "./chartUtils";
 import {
   bucketTickInterval,
   formatBucketLabel,
@@ -86,9 +86,7 @@ export function ConsistencyChart({
         <XAxis
           dataKey="label"
           interval={bucketTickInterval(data.length)}
-          angle={-35}
-          textAnchor="end"
-          height={50}
+          {...TIME_AXIS_PROPS}
           {...AXIS_PROPS}
         />
         <YAxis

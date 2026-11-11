@@ -1,6 +1,6 @@
 import { Area, AreaChart, CartesianGrid, Line, ReferenceLine, XAxis, YAxis, type TooltipContentProps } from "recharts";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, PCT_AXIS_WIDTH, THIN_BUCKET_WORKOUTS, formatDate, niceAxisTicks } from "./chartUtils";
+import { AXIS_PROPS, PCT_AXIS_WIDTH, THIN_BUCKET_WORKOUTS, formatDate, niceAxisTicks, TIME_AXIS_PROPS } from "./chartUtils";
 import { PickHint, usePointPick } from "./ChartPick";
 import { DataTable, seriesSummary, useChartView } from "./ChartTable";
 import { GRANULARITY_NOUN, bucketBounds, bucketTickInterval, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
@@ -147,7 +147,7 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity, c
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} stroke="var(--border)" />
-            <XAxis dataKey="label" interval={bucketTickInterval(rows.length)} angle={-35} textAnchor="end" height={50} {...AXIS_PROPS} />
+            <XAxis dataKey="label" interval={bucketTickInterval(rows.length)} {...TIME_AXIS_PROPS} {...AXIS_PROPS} />
             <YAxis
               width={PCT_AXIS_WIDTH}
               domain={yDomain}
