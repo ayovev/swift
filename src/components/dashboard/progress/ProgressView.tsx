@@ -154,7 +154,8 @@ function HowCounted({ rows, unused, asOfLog }: { rows: ProgressRow[]; unused: Re
   const unusedCount = unused.loadRows - unused.used;
   return (
     <Collapsible>
-      <CollapsibleTrigger className="text-sm text-accent-link underline underline-offset-2">How this was counted</CollapsibleTrigger>
+      {/* Supporting detail, not an action: muted like the caption above it, so the accent stays for the controls. */}
+      <CollapsibleTrigger className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">How this was counted</CollapsibleTrigger>
       <CollapsibleContent className="mt-2 flex flex-col gap-3 text-sm text-muted-foreground">
         <p>
           Counted ({counted.length}): {counted.map((r) => `${displayName(r.subject)} (${r.group === "no-clear-change" ? "no clear change" : r.group})`).join(", ") || "none"}.

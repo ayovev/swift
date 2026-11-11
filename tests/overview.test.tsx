@@ -324,6 +324,15 @@ describe("whatMoved", () => {
     const moved = screen.getByText("What moved").closest("[data-slot=card]") as HTMLElement;
     expect(within(moved).getAllByText("Down")).toHaveLength(1);
   });
+
+  it("names a move up to RX in its pill, as the Timeline does, rather than a bare Up", async () => {
+    const rows = await loadSampleRows();
+    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} />);
+    const moved = screen.getByText("What moved").closest("[data-slot=card]") as HTMLElement;
+    const moves = [...moved.querySelectorAll("[data-verdict=move-up]")];
+    expect(moves.length).toBeGreaterThan(0);
+    for (const m of moves) expect(m.textContent).toBe("Moved up to RX");
+  });
 });
 
 describe("latestTimelineEntry", () => {
