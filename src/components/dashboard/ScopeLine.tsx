@@ -26,6 +26,12 @@ const GRANULARITY_PHRASE: Record<Granularity, string> = {
 const MAX_DAILY_SPAN_YEARS = Math.round(MAX_DAILY_SPAN_DAYS / 365);
 const DAILY_DISABLED_REASON = `Ranges under ${MAX_DAILY_SPAN_YEARS} year${MAX_DAILY_SPAN_YEARS === 1 ? "" : "s"}`;
 
+/**
+ * Over a span longer than this, weekly grouping is mostly thin weeks of two or three workouts, so its share charts are mostly hollow
+ * dots (see ShareAreaChart): the menu still offers it, and says so.
+ */
+const WEEKLY_NOISY_AFTER_DAYS = 365;
+
 interface ScopeLineProps {
   /** The uploaded log's own full span — bounds and disables the calendar. */
   dateBounds: DateRange;
@@ -79,12 +85,15 @@ export function ScopeLine(props: ScopeLineProps) {
           >
             {GRANULARITY_OPTIONS.map((o) => {
               const disabled = o.id === "daily" && props.dailyDisabled;
+              const span = props.range ?? props.dateBounds;
+              const noisy = o.id === "weekly" && span.end.diff(span.start, "day") > WEEKLY_NOISY_AFTER_DAYS;
               return (
                 <DropdownMenuRadioItem key={o.id} value={o.id} disabled={disabled}>
                   {o.label}
                   {disabled ? (
                     <span className="ml-3 text-xs text-muted-foreground">{DAILY_DISABLED_REASON}</span>
                   ) : null}
+                  {noisy ? <span className="ml-3 text-xs text-muted-foreground">Noisy over this range</span> : null}
                 </DropdownMenuRadioItem>
               );
             })}

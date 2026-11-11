@@ -11,17 +11,20 @@ interface PeriodFilterProps {
   showing: string | null;
 }
 
-/** "Logged in": chooses which subjects are listed. It changes no verdict, label, count or chart, and is not saved. */
+/**
+ * Chooses which subjects are listed, by when each was last logged. It changes no verdict, label, count or chart, and is not saved.
+ * Labelled by what it does: a bare "Logged in" sat right under "the date range doesn't apply here" and read as a date range.
+ */
+export const PERIOD_FILTER_LABEL = "Show lifts and benchmarks last logged in";
 export function PeriodFilter({ preset, onPreset, custom, onCustom, invalid, showing }: PeriodFilterProps) {
   return (
     <div className="flex flex-col gap-2">
-      <span id="progress-logged-in" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        Logged in
+      <span id="progress-logged-in" className="text-xs font-medium text-muted-foreground">
+        {PERIOD_FILTER_LABEL}
       </span>
       <div aria-labelledby="progress-logged-in" className="flex flex-wrap items-center gap-3">
-        <div className="max-w-full overflow-x-auto">
-          <SegmentedControl value={preset} onChange={onPreset} options={PERIOD_OPTIONS} ariaLabel="Logged in" />
-        </div>
+        {/* Six options don't fit a phone's width; they wrap onto a second row rather than scroll with nothing to say they do. */}
+        <SegmentedControl value={preset} onChange={onPreset} options={PERIOD_OPTIONS} ariaLabel={PERIOD_FILTER_LABEL} wrap />
         {preset === "custom" ? (
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <label className="flex items-center gap-1.5">

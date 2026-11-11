@@ -134,6 +134,16 @@ export interface OverallDomainStat {
   pct: number;
 }
 
+/**
+ * The dates each half of "Then versus now" covers (YYYY-MM-DD). The workouts are split in half by count, oldest first, so the two
+ * halves are rarely equal spans of time and a percentage without its dates said nothing about when "then" was. Null when a half
+ * is empty (fewer than two workouts).
+ */
+export interface TrendHalves {
+  early: { from: string; to: string };
+  late: { from: string; to: string };
+}
+
 export interface TrendDirectionStat {
   early_pct: number;
   late_pct: number;
@@ -193,6 +203,8 @@ export interface DashboardData {
   domain_trends: Record<Domain, DomainTrendPoint[]>;
   overall: Record<Domain, OverallDomainStat>;
   trend_direction: Record<Domain, TrendDirectionStat>;
+  /** ADDITIVE (not in the Python reference). The dates of trend_direction's two halves. */
+  trend_halves: TrendHalves | null;
   workout_lists: Record<Domain, WorkoutListEntry[]>;
   stacked: Stacked;
 }

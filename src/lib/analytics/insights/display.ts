@@ -3,6 +3,10 @@
  * reps for Rounds + Reps), the percentage second; a time reads "faster" or "slower", never a signed number. RX is unmarked and
  * Scaled is the only qualifier ("Back Squat", "Nancy (Scaled)"): RX is the standard, and a suffix on every row says nothing.
  * Percentages are the already-rounded ones from the verdict.
+ *
+ * A lift's value is an estimated 1RM, never a load that was lifted, so every lift sentence says so ("est. 1RM", or "est." on a facts
+ * line) and a record names the logged set it came from. Without it "New best: 258 lb" read as a lift, one tab away from a logged
+ * best of 230 on Lifts.
  */
 import { PV_LONG_GAP_DAYS, PV_MIN_SESSIONS_PER_SIDE } from "../insightConfig";
 import type { MoveUp, ProgressHeadline } from "./headline";
@@ -54,6 +58,14 @@ export function formatSession(subject: ProgressSubject, session: ProgressSession
   return session.display ?? String(session.value);
 }
 
+/** What follows a lift's pounds: the value is an estimate, and the words never let it read as a load that was lifted. */
+export const EST_1RM = "est. 1RM";
+
+/** "225 × 5", the logged set behind a lift session's estimate, or null for a benchmark. */
+export function loggedSetText(session: ProgressSession): string | null {
+  return session.logged ? `${Math.round(session.logged.load)} × ${session.logged.reps}` : null;
+}
+
 /** The number only ("184"), for ranges like "184 to 200 lb". */
 function formatBare(subject: ProgressSubject, session: ProgressSession): string {
   return subject.format === "load" ? String(Math.round(session.value)) : formatSession(subject, session);
@@ -76,7 +88,10 @@ export function verdictText(subject: ProgressSubject, v: ProgressVerdict): Verdi
   let change: string;
   if (subject.format === "load") {
     const diff = Math.round(v.recentBest.value) - Math.round(v.previousBest.value);
-    change = diff === 0 ? `no change in the best (${a} and ${b} lb)` : `${signed(diff, "lb")} (${a} to ${b} lb), ${percent(v.change)}`;
+    change =
+      diff === 0
+        ? `no change in the best (${a} and ${b} lb ${EST_1RM})`
+        : `${signed(diff, "lb")} (${a} to ${b} lb ${EST_1RM}), ${percent(v.change)}`;
   } else if (subject.format === "time") {
     const better = v.change >= 0;
     const diff = Math.abs(Math.round(v.recentBest.value) - Math.round(v.previousBest.value));
@@ -95,14 +110,20 @@ export function verdictText(subject: ProgressSubject, v: ProgressVerdict): Verdi
   return { windows, change, longGap };
 }
 
-/** The note under a record: "New best: 111 lb on Dec 10, 2025, 3.7% above the previous best of 107 lb." (a lift). */
+/**
+ * The note under a record. A lift: "New best est. 1RM: 111 lb on Dec 10, 2025 (from 105 × 2), 3.7% above the previous best of 107 lb."
+ * A benchmark: "New best: 12:00 on Dec 10, 2025, 10.0% above the previous best of 13:20."
+ */
 export function newBestText(subject: ProgressSubject, v: ProgressVerdict, earlierBest: ProgressSession): string | null {
   if (!v.record) return null;
   const d = v.recentBest.date;
   const day = `${monthOf(d)} ${Number(d.slice(8, 10))}, ${d.slice(0, 4)}`;
   const sign = subject.lowerIsBetter ? -1 : 1;
   const pct = roundHalfAway(((v.recentBest.value - earlierBest.value) / earlierBest.value) * sign * 100, 1);
-  return `New best: ${formatSession(subject, v.recentBest)} on ${day}, ${pct.toFixed(1)}% above the previous best of ${formatSession(subject, earlierBest)}.`;
+  const lift = subject.format === "load";
+  const set = lift ? loggedSetText(v.recentBest) : null;
+  const head = lift ? `New best ${EST_1RM}` : "New best";
+  return `${head}: ${formatSession(subject, v.recentBest)} on ${day}${set ? ` (from ${set})` : ""}, ${pct.toFixed(1)}% above the previous best of ${formatSession(subject, earlierBest)}.`;
 }
 
 const sessionsWord = (n: number): string => (n === 1 ? "session" : "sessions");
@@ -175,12 +196,12 @@ export function moveUpText(m: MoveUp): string {
   return `Moved up to RX in ${monthYear(m.date)}, after ${m.scaledBefore} Scaled ${m.scaledBefore === 1 ? "session" : "sessions"}.`;
 }
 
-/** "Also logged as RX: 1 session (Dec 2025), 9:13" for a subject with a twin of the other status. Facts only; it counts nothing. */
+/** "Also logged as RX: 1 session (Dec 2025), 9:13" (a lift's value carries "est.") for a subject with a twin of the other status. Facts only; it counts nothing. */
 export function crossReference(twin: ProgressSubject): string {
   const n = twin.sessions.length;
   const first = (twin.sessions[0] as ProgressSession).date;
   const latest = twin.sessions[n - 1] as ProgressSession;
-  const value = formatSession(twin, latest);
+  const value = `${formatSession(twin, latest)}${twin.format === "load" ? " est." : ""}`;
   const status = twin.status === "SCALED" ? "Scaled" : "RX";
   return `Also logged as ${status}: ${n} ${sessionsWord(n)} (${monthSpan(first, latest.date)}), ${n === 1 ? value : `latest ${value}`}`;
 }

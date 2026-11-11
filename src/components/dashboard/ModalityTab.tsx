@@ -1,6 +1,10 @@
+import { useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartViewToggle } from "./charts/ChartTable";
+import { ModalityStrip } from "./charts/ComparisonStrip";
+import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
-import { modalityColor } from "./charts/chartUtils";
+import { modalityColor, splitText, unclassifiedNote } from "./charts/chartUtils";
 import { TrendStat } from "./TrendStat";
 import { WorkoutList } from "./WorkoutList";
 import { GRANULARITY_NOUN, granularityLabel, type Granularity } from "@/lib/analytics/granularity";
@@ -20,16 +24,36 @@ export function ModalityTab({
   modality,
   data,
   granularity,
+  coverage,
+  onOpen = () => {},
+  describe,
 }: {
   modality: Modality;
   data: ModalityData;
   granularity: Granularity;
+  /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
+  coverage?: { start: string; end: string } | undefined;
+  /** Opens another view by its tab id: the comparison strip's bars. Omit to draw the strip without links. */
+  onOpen?: ((tab: string) => void) | undefined;
+  /** A workout's description by its date and title, so a listed workout opens to it. */
+  describe?: ((date: string, title: string) => string | undefined) | undefined;
 }) {
   const trend = data.modality_trends[modality];
   const direction = data.modality_trend_direction[modality];
   const overall = data.modality_overall[modality];
   const workouts = data.modality_workout_lists[modality];
   const name = MODALITY_NAMES[modality];
+  // Picking a month on the chart narrows the list below to it (ChartPick.tsx).
+  const { picked, pick, clear, inPicked, label: pickedLabel } = useBucketPick(granularity, `${modality}|${data.classified_count}|${trend.length}`);
+  const listRef = useRef<HTMLDivElement>(null);
+  const point = picked ? trend.find((p) => p.bucket === picked) : undefined;
+  const rows = workouts.map((w) => ({
+    date: w.date,
+    title: w.title,
+    reason: `${w.share.toFixed(0)}%`,
+    detail: `${w.movements.join(", ") || "—"} · ${splitText(w.split)}`,
+  }));
+  const shown = picked ? rows.filter((r) => inPicked(r.date)) : rows;
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,24 +73,41 @@ export function ModalityTab({
               appears in {overall.count.toLocaleString()} of{" "}
               {data.classified_count.toLocaleString()} workouts
             </div>
+            {unclassifiedNote(data.unclassified_count) ? (
+              <p className="w-full text-xs text-muted-foreground">{unclassifiedNote(data.unclassified_count)}</p>
+            ) : null}
           </div>
+          <ModalityStrip data={data} current={modality} onOpen={onOpen} />
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
           <CardTitle className="text-sm font-medium">
             Share of training, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
           </CardTitle>
+          <ChartViewToggle />
         </CardHeader>
         <CardContent>
           <ShareAreaChart
-            data={trend.map((p) => ({ bucket: p.bucket, value: p.avg_share }))}
+            data={trend.map((p) => ({ bucket: p.bucket, value: p.avg_share, total: p.total, basis: `Average of ${p.total} classified ${p.total === 1 ? "workout" : "workouts"}` }))}
+            coverage={coverage}
             color={modalityColor(modality)}
             seriesLabel={name}
             label={`${granularityLabel(granularity)} average share of training spent on ${name}`}
             granularity={granularity}
+            selected={picked}
+            onSelect={pick}
           />
+          {picked && pickedLabel ? (
+            <ChartPickNote
+              onClear={clear}
+              action={shown.length ? { label: `List ${shown.length === 1 ? "it" : "them"}`, onClick: () => scrollToList(listRef.current) } : undefined}
+            >
+              <span className="font-medium">{pickedLabel}</span>: {name.toLowerCase()} in {shown.length.toLocaleString()} of{" "}
+              {(point?.total ?? 0).toLocaleString()} classified workouts, {(point?.avg_share ?? 0).toFixed(1)}% on average
+            </ChartPickNote>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -80,11 +121,12 @@ export function ModalityTab({
             latePct={direction.late_pct}
             delta={direction.delta}
             unitLabel={`share of training spent on ${name.toLowerCase()}`}
+            halves={data.modality_trend_halves}
           />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card ref={listRef}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Every workout with {name} in it</CardTitle>
         </CardHeader>
@@ -94,13 +136,10 @@ export function ModalityTab({
           </p>
           <WorkoutList
             reasonLabel="share"
-            rows={workouts.map((w) => ({
-              date: w.date,
-              title: w.title,
-              reason: `${w.share.toFixed(0)}%`,
-              detail: `${w.movements.join(", ") || "—"} · M ${w.split.M.toFixed(0)} / W ${w.split.W.toFixed(0)} / G ${w.split.G.toFixed(0)}`,
-            }))}
-            emptyMessage={`No workouts in this export involved ${name.toLowerCase()}.`}
+            rows={shown}
+            emptyMessage={picked ? `No workouts in ${pickedLabel} involved ${name.toLowerCase()}.` : `No workouts in this export involved ${name.toLowerCase()}.`}
+            scope={picked && pickedLabel ? { label: pickedLabel, onClear: clear } : undefined}
+            describe={describe}
           />
         </CardContent>
       </Card>

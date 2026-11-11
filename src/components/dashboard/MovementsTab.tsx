@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartViewToggle } from "./charts/ChartTable";
 import { Label } from "@/components/ui/label";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
+import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { WorkoutList } from "./WorkoutList";
 import {
   buildMovementOptions,
@@ -29,7 +31,19 @@ const keyOf = (s: MovementSelection) => `${s.kind}:${s.id}`;
  * a heuristic, and an athlete whose gym words things unusually needs to see
  * why a workout is here.
  */
-export function MovementsTab({ data, granularity }: { data: MovementData; granularity: Granularity }) {
+export function MovementsTab({
+  data,
+  granularity,
+  coverage,
+  describe,
+}: {
+  data: MovementData;
+  granularity: Granularity;
+  /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
+  coverage?: { start: string; end: string } | undefined;
+  /** A workout's description by its date and title, so a listed workout opens to it. */
+  describe?: ((date: string, title: string) => string | undefined) | undefined;
+}) {
   const options = useMemo(() => buildMovementOptions(data), [data]);
   const first = options.families[0] ?? options.movements[0];
   const [picked, setPicked] = useState<string | null>(null);
@@ -37,6 +51,13 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
 
   const all = [...options.families, ...options.movements];
   const chosen = all.find((o) => keyOf(o) === picked) ?? first;
+  // Picking a month on the chart narrows the list below to it (ChartPick.tsx); another movement, implement or range starts unpicked.
+  // Above the early return below, as hooks must be.
+  const { picked: bucket, pick: pickBucket, clear: clearBucket, label: bucketLabel } = useBucketPick(
+    granularity,
+    `${chosen ? keyOf(chosen) : ""}|${implement}|${data.workouts.length}`
+  );
+  const listRef = useRef<HTMLDivElement>(null);
 
   if (!chosen) {
     return (
@@ -61,6 +82,8 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
   const name = selectionLabel(sel);
   const matches = workoutsFor(data, sel);
   const trend = trendFor(data, sel);
+  const shownMatches = bucket ? matches.filter(({ workout }) => workout.bucket === bucket) : matches;
+  const bucketTotal = bucket ? data.workouts.filter((w) => w.bucket === bucket).length : 0;
   const members = memberBreakdown(data, sel);
   const share = data.workouts.length === 0 ? 0 : (matches.length / data.workouts.length) * 100;
 
@@ -139,35 +162,51 @@ export function MovementsTab({ data, granularity }: { data: MovementData; granul
       </Card>
 
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
           <CardTitle className="text-sm font-medium">
             Workouts with {labelInSentence(name)}, {GRANULARITY_NOUN[granularity]} by {GRANULARITY_NOUN[granularity]}
           </CardTitle>
+          <ChartViewToggle />
         </CardHeader>
         <CardContent>
           <ShareAreaChart
-            data={trend}
+            data={trend.map((p) => ({ ...p, basis: `${p.count} of ${p.total} ${p.total === 1 ? "workout" : "workouts"}` }))}
+            coverage={coverage}
             color="var(--primary)"
             seriesLabel={name}
             label={`${granularityLabel(granularity)} share of workouts that included ${name}`}
             granularity={granularity}
+            selected={bucket}
+            onSelect={pickBucket}
           />
+          {bucket && bucketLabel ? (
+            <ChartPickNote
+              onClear={clearBucket}
+              action={shownMatches.length ? { label: `List ${shownMatches.length === 1 ? "it" : "them"}`, onClick: () => scrollToList(listRef.current) } : undefined}
+            >
+              <span className="font-medium">{bucketLabel}</span>: {labelInSentence(name)} in {shownMatches.length.toLocaleString()} of {bucketTotal.toLocaleString()} workouts
+            </ChartPickNote>
+          ) : null}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card ref={listRef}>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Every workout with {labelInSentence(name)} in it</CardTitle>
         </CardHeader>
         <CardContent>
           <WorkoutList
-            rows={[...matches].reverse().map(({ workout, matched }) => ({
+            rows={[...shownMatches].reverse().map(({ workout, matched }) => ({
               date: workout.date,
               title: workout.title,
               reason: matched.map((m) => (m.implement === undefined ? m.label : `${m.label} (${m.implement})`)).join(", "),
               detail: `matched on ${matched.map((m) => (m.source === "barbell_lift" ? `"${m.phrase}" (lift field)` : `"${m.phrase}"`)).join(", ")}`,
+              // A lift-field match isn't in the text, so only the text's own phrases are marked.
+              highlight: matched.filter((m) => m.source !== "barbell_lift").map((m) => m.phrase),
             }))}
-            emptyMessage={`No workouts in this range involved ${labelInSentence(name)}.`}
+            describe={describe}
+            emptyMessage={bucket ? `No workouts in ${bucketLabel} involved ${labelInSentence(name)}.` : `No workouts in this range involved ${labelInSentence(name)}.`}
+            scope={bucket && bucketLabel ? { label: bucketLabel, onClear: clearBucket } : undefined}
           />
         </CardContent>
       </Card>

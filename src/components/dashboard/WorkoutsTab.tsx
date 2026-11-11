@@ -3,11 +3,11 @@ import { ChevronRight, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ModalityBar } from "./charts/ModalityBar";
-import { FIXED_MODALITY_COLORS, formatShortDate } from "./charts/chartUtils";
+import { ModalityBar, ModalityHeaderKey, SplitLine } from "./charts/ModalityBar";
+import { FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, formatShortDate, modalityKeyLabel } from "./charts/chartUtils";
 import { formatWorkoutDescription, isLevelLabel } from "@/lib/format/workoutDescription";
 import { cn } from "@/lib/utils";
-import { MODALITY_LIST, MODALITY_SHORT_LABELS, type ModalityData } from "@/types/modality";
+import type { ModalityData } from "@/types/modality";
 import type { DashboardSummary } from "@/types/dashboard";
 
 const PAGE_SIZE = 50;
@@ -41,7 +41,16 @@ export function workoutsSummaryParts(summary: DashboardSummary): string[] {
  * data already sitting in ParsedRow.raw and unused elsewhere in this tab, so
  * no new parsing or fetch is involved, just surfacing it on click.
  */
-export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: DashboardSummary }) {
+export function WorkoutsTab({
+  data,
+  summary,
+  ranged = false,
+}: {
+  data: ModalityData;
+  summary: DashboardSummary;
+  /** A date range narrows the list (anything but all time), so the copy says "this range", not "this export". */
+  ranged?: boolean;
+}) {
   const [query, setQuery] = useState("");
   const [visible, setVisible] = useState(PAGE_SIZE);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
@@ -77,19 +86,19 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
             {workoutsSummaryParts(summary).join(" · ")}
           </p>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Every workout in this export, most recent first, with its proportional split across
-            metabolic conditioning, weightlifting and gymnastics.
+            Every workout in {ranged ? "this range" : "this export"}, most recent first, with its proportional split across
+            weightlifting, gymnastics and cardio.
           </p>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-border pt-4">
-            {MODALITY_LIST.map((m) => (
+            {MODALITY_DRAW_ORDER.map((m) => (
               <span key={m} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: FIXED_MODALITY_COLORS[m] }}
                   aria-hidden="true"
                 />
-                {MODALITY_SHORT_LABELS[m]}
+                {modalityKeyLabel(m)}
               </span>
             ))}
             {data.unclassified_count > 0 ? (
@@ -127,20 +136,24 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
           </div>
 
           {total === 0 ? (
-            <p className="text-sm text-muted-foreground">No workouts in this export.</p>
+            <p className="text-sm text-muted-foreground">No workouts in {ranged ? "this range" : "this export"}.</p>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
+            // overflow-clip, not overflow-hidden: hidden makes a scroll container, and the header would then stick to it, not the page.
+            <div className="overflow-clip rounded-lg border border-border">
               <table className="w-full text-sm">
                 <caption className="sr-only">
-                  Every logged workout with its metabolic/weightlifting/gymnastics split; each row
+                  Every logged workout with its M/W/G split; each row
                   expands to the full description and score
                 </caption>
-                <thead className="bg-muted/50 text-xs uppercase tracking-wide text-muted-foreground">
+                {/* Sticky and opaque, so the colour key over the bars stays in view while the list scrolls. */}
+                <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-3 py-2 text-left font-medium">Date</th>
+                    {/* On a phone the date moves under the title, so the three columns don't squeeze the split to a sliver. */}
+                    <th scope="col" className="hidden px-3 py-2 text-left font-medium sm:table-cell">Date</th>
                     <th scope="col" className="px-3 py-2 text-left font-medium">Workout</th>
-                    <th scope="col" className="w-48 px-3 py-2 text-left font-medium sm:w-64">
-                      M / W / G
+                    {/* In draw order, as the bar and the text under it run (MODALITY_DRAW_ORDER), each letter after its colour. */}
+                    <th scope="col" aria-label="W / G / M" className="w-28 px-3 py-2 text-left font-medium sm:w-64">
+                      <ModalityHeaderKey />
                     </th>
                   </tr>
                 </thead>
@@ -152,7 +165,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
                     return (
                       <Fragment key={key}>
                         <tr className="border-t border-border align-top">
-                          <td className="whitespace-nowrap px-3 py-2 text-muted-foreground tabular">
+                          <td className="hidden whitespace-nowrap px-3 py-2 text-muted-foreground tabular sm:table-cell">
                             {formatShortDate(w.date)}
                           </td>
                           <td className="px-3 py-2">
@@ -175,6 +188,7 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
                                 aria-hidden="true"
                               />
                               <span>
+                                <div className="text-xs text-muted-foreground tabular sm:hidden">{formatShortDate(w.date)}</div>
                                 <div>{w.title || <span className="text-muted-foreground">Untitled</span>}</div>
                                 {w.movements.length > 0 ? (
                                   <div className="mt-0.5 text-xs text-muted-foreground">
@@ -186,10 +200,9 @@ export function WorkoutsTab({ data, summary }: { data: ModalityData; summary: Da
                           </td>
                           <td className="px-3 py-2">
                             <ModalityBar split={w.split} classified={w.classified} />
-                            <div className="mt-1 text-xs text-muted-foreground tabular">
-                              {w.classified
-                                ? `M ${w.split.M.toFixed(0)} / W ${w.split.W.toFixed(0)} / G ${w.split.G.toFixed(0)}`
-                                : "not classified"}
+                            {/* The numbers are in the bar's label and, on a phone, too wide for the column. */}
+                            <div className="mt-1 hidden text-xs text-muted-foreground tabular sm:block">
+                              {w.classified ? <SplitLine split={w.split} /> : "not classified"}
                             </div>
                           </td>
                         </tr>

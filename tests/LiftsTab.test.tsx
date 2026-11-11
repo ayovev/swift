@@ -46,7 +46,7 @@ describe("the Insights front door", () => {
   it("writes a verdict with its change in pounds first", () => {
     renderSample();
     const row = within(group("Up")).getByText("Power Snatch").closest("li") as HTMLElement;
-    expect(within(row).getByText("+21 lb (124 to 145 lb), +16.8%")).toBeInTheDocument();
+    expect(within(row).getByText("+21 lb (124 to 145 lb est. 1RM), +16.8%")).toBeInTheDocument();
     const nancy = within(group("Down")).getByText("Nancy (Scaled)").closest("li") as HTMLElement;
     expect(within(nancy).getByText("0:50 slower (13:47 to 14:37), 6.0% slower")).toBeInTheDocument();
   });
@@ -56,6 +56,8 @@ describe("the Insights front door", () => {
     const fran = within(group("Up")).getByText("Fran").closest("li") as HTMLElement;
     expect(within(fran).getByText("Moved up to RX in Dec 2025, after 3 Scaled sessions.")).toBeInTheDocument();
     expect(within(fran).queryByRole("button")).not.toBeInTheDocument();
+    // Its pill names it, as on Overview and the Timeline, rather than a bare Up.
+    expect(fran.querySelector("[data-verdict=move-up]")?.textContent).toBe("Moved up to RX");
   });
 
   it("opens a row to its chart", () => {
@@ -87,7 +89,11 @@ describe("the Insights front door", () => {
     const row = screen.getByText(/^Hang Power Clean: 5 sessions\./).closest("li") as HTMLElement;
     expect(within(row).getByText(/Needs 1 more session for a verdict\./)).toBeInTheDocument();
     fireEvent.click(within(row).getByRole("button"));
-    expect(within(row).getByText("Each dot is the best result of a day.")).toBeInTheDocument();
+    expect(within(row).getByText("Each dot is the best result of a day. Loads are estimated one-rep maxes from sets of 1 to 8 reps.")).toBeInTheDocument();
+    const chart = within(row).getByRole("img", { name: "Sessions of Hang Power Clean, as estimated one-rep maxes" });
+    expect(chart).toHaveTextContent(/Est\. 1RM/);
+    // Its text alternative: the span, the low, high and latest sessions, and how to step through them by keyboard.
+    expect(chart.querySelector("desc")?.textContent).toMatch(/^Hang Power Clean, estimated one-rep max, .+ to .+\. Lowest .+ lb .+highest .+ lb .+latest .+ lb .+Use the arrow keys/);
   });
 
   it("shows no body-context line without body data and one with it", () => {
@@ -95,7 +101,11 @@ describe("the Insights front door", () => {
     expect(screen.queryByText(/Body weight|No body weight/)).not.toBeInTheDocument();
     unmount();
     renderSample("2026-09-11", [scanRow("2023-02-06", { "Weight(lb)": "170" }), scanRow("2026-03-10", { "Weight(lb)": "172" })]);
-    expect(screen.getAllByText(/Body weight 170 to 172 lb, within normal variation\./).length).toBeGreaterThan(0);
+    // Body-context lines open with the row's chart; a collapsed verdict row is its name, change and windows.
+    const row = within(group("Up")).getByText("Power Snatch").closest("li") as HTMLElement;
+    expect(within(row).queryByText(/Body weight/)).not.toBeInTheDocument();
+    fireEvent.click(within(row).getByRole("button"));
+    expect(within(row).getAllByText(/Body weight 170 to 172 lb, within normal variation\./).length).toBeGreaterThan(0);
   });
 
   it("draws the body-weight lines from manual weigh-ins alone", () => {
@@ -111,6 +121,7 @@ describe("the Insights front door", () => {
       />
     );
     const row = within(group("Up")).getByText("Power Snatch").closest("li") as HTMLElement;
+    fireEvent.click(within(row).getByRole("button"));
     expect(within(row).getByText("Body weight 170 to 180 lb (+10 lb) over the same span.")).toBeInTheDocument();
     expect(within(row).getByText("About half of this change is body weight.")).toBeInTheDocument();
   });
@@ -122,6 +133,7 @@ describe("the Insights front door", () => {
     expect(screen.getByText("Improving in 8 of 14 lifts and benchmarks (5 no clear change, 1 down).")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Last month" }));
     expect(screen.getByText("Showing 5 of 45 subjects.")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Show lifts and benchmarks last logged in" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "All" }));
     expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
   });

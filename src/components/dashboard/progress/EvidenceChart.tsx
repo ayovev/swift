@@ -1,19 +1,48 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { trendLine } from "@/lib/analytics/insights/chart";
 import { AXIS_TICK_COUNT, CLOCK_STEPS, ROUNDS_REPS_STEPS, formatDate, formatTimeTick, niceAxisTicks, niceTimeTicks } from "@/components/dashboard/charts/chartUtils";
-import { formatClock, formatSession, roundsReps } from "@/lib/analytics/insights/display";
+import { formatClock, formatSession, loggedSetText, roundsReps } from "@/lib/analytics/insights/display";
+import { PV_MAX_REPS } from "@/lib/analytics/insightConfig";
+import { ChartViewToggle, DataTable, seriesSummary, useChartView } from "@/components/dashboard/charts/ChartTable";
 import { REPS_PER_ROUND, type ProgressSession, type ProgressSubject } from "@/lib/analytics/insights/sessions";
 import { bestSession, dayNumber, roundHalfAway, type ProgressVerdict } from "@/lib/analytics/insights/verdict";
 
-const W = 560;
-const H = 170;
+/**
+ * The chart is drawn at its real pixel width, so its text is the size it says. A fixed 560-wide viewBox scaled to the card made the
+ * 10-unit labels about 20px on a desktop and 6px on a phone (measured): the whole chart, text and all, stretched with the card.
+ * Before the first measurement (and in jsdom, which has no ResizeObserver) it falls back to this width.
+ */
+const FALLBACK_W = 560;
+/** Height grows with width, within these bounds, so a wide card isn't a thin strip and a phone keeps a readable plot. */
+const MIN_H = 170;
+const MAX_H = 240;
+/** The room a date label at 11px needs on the x axis. */
+const MIN_TICK_GAP_PX = 64;
+const heightFor = (w: number): number => Math.round(Math.min(MAX_H, Math.max(MIN_H, w * 0.3)));
+
+/** The width of an element, kept up to date as it resizes. */
+function useWidth(): [RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [w, setW] = useState(FALLBACK_W);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      const next = Math.round(entry?.contentRect.width ?? 0);
+      if (next > 0) setW(next);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, w];
+}
 const PAD = { l: 52, r: 44, t: 22, b: 30 };
 /** Every dot is the same size: colour alone says which group it is in. */
 const DOT_R = 3.5;
 const DAY_MS = 86_400_000;
-/** Rough size of a 10px label in chart units, to tell whether the trend line would run through it. */
-const LABEL_CHAR_W = 5.6;
-const LABEL_H = 10;
+/** Rough size of an 11px label in pixels (one chart unit is a pixel), to tell whether the trend line would run through it. */
+const LABEL_CHAR_W = 6.2;
+const LABEL_H = 11;
 const HIT_R = 9;
 
 /**
@@ -24,6 +53,8 @@ const HIT_R = 9;
  * verdict (a facts line) gets the dots alone. The y-axis is a plain number line, larger values on top, for a time as for a load: a faster time is drawn lower.
  */
 export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressSubject; verdict: ProgressVerdict | null; domain?: { start: string; end: string } }) {
+  const [frame, W] = useWidth();
+  const H = heightFor(W);
   const model = useMemo(() => {
     const sessions = subject.sessions;
     const days = sessions.map((s) => dayNumber(s.date));
@@ -65,9 +96,12 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
           const hi = sessions.reduce((a, b) => (b.value > a.value ? b : a));
           return (lo === hi ? [lo] : [lo, hi]).map((t) => ({ y: Y(t.value), label: formatSession(subject, t) }));
         })();
-    const dates = niceTimeTicks(x0 * DAY_MS, x1 * DAY_MS);
+    // As many date ticks as fit at 11px: an "Mmm 'YY" label needs about 64px. Drawn at its real width, a phone's chart has room for
+    // four or five, where the old scaled-down chart squeezed in eight of 6px text.
+    const dates = niceTimeTicks(x0 * DAY_MS, x1 * DAY_MS, Math.max(2, Math.min(AXIS_TICK_COUNT, Math.floor((W - PAD.l - PAD.r) / MIN_TICK_GAP_PX))));
     const xTicks = dates.ticks.map((t) => ({ x: X(t / DAY_MS), label: formatTimeTick(t, dates.unit) }));
-    // A value label sits above its dot, or below it when the trend line would run through it (and the axis is clear).
+    // A value label sits where it covers the least: above its dot, below it, or nudged to either side above it, counting the trend line
+    // and every other dot its box would cross (on a phone the dots are close, and "223" sat on its neighbours). Above wins a tie.
     const trendAt = (x: number): number | null => {
       if (!trend) return null;
       const ax = X(trend.from.x);
@@ -76,46 +110,126 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
       return Y(trend.from.y) + ((Y(trend.to.y) - Y(trend.from.y)) * (x - ax)) / (bx - ax || 1);
     };
     const axisY = H - PAD.b + 6;
-    const labelBaseline = (x: number, y: number, text: string, anchor: "middle" | "end", gap: number): number => {
-      const width = text.length * LABEL_CHAR_W;
-      const from = anchor === "end" ? x - width : x - width / 2;
-      const hits = (baseline: number): boolean =>
-        Array.from({ length: 6 }, (_, i) => trendAt(from + (width * i) / 5)).some((ty) => ty !== null && ty > baseline - LABEL_H - 2 && ty < baseline + 3);
-      const above = y - gap;
-      const below = y + gap + LABEL_H;
-      return hits(above) && !hits(below) && below + 3 < axisY ? below : above;
+    const dots = sessions.map((s) => ({ x: X(dayNumber(s.date)), y: Y(s.value) }));
+    type Anchor = "start" | "middle" | "end";
+    const covered = (left: number, width: number, baseline: number, own: { x: number; y: number }): number => {
+      const top = baseline - LABEL_H - 1;
+      const bottom = baseline + 3;
+      const trendHit = Array.from({ length: 6 }, (_, i) => trendAt(left + (width * i) / 5)).some((ty) => ty !== null && ty > top - 1 && ty < bottom);
+      const dotHits = dots.filter(
+        (d) => (d.x !== own.x || d.y !== own.y) && d.x > left - DOT_R - 1 && d.x < left + width + DOT_R + 1 && d.y > top - DOT_R - 1 && d.y < bottom + DOT_R + 1
+      ).length;
+      return dotHits + (trendHit ? 1 : 0);
     };
+    const placeLabel = (x: number, y: number, text: string, prefer: Anchor, gap: number): { y: number; anchor: Anchor } => {
+      const width = text.length * LABEL_CHAR_W;
+      const leftOf = (a: Anchor, at: number) => (a === "end" ? at - width : a === "start" ? at : at - width / 2);
+      const candidates: { y: number; anchor: Anchor; at: number }[] = [
+        { y: y - gap, anchor: prefer, at: x },
+        { y: y + gap + LABEL_H, anchor: prefer, at: x },
+        { y: y - gap, anchor: "end" as Anchor, at: x - 4 },
+        { y: y - gap, anchor: "start" as Anchor, at: x + 4 },
+        { y: y + gap + LABEL_H, anchor: "end" as Anchor, at: x - 4 },
+        { y: y + gap + LABEL_H, anchor: "start" as Anchor, at: x + 4 },
+        { y: y - gap - LABEL_H, anchor: prefer, at: x },
+      ].filter((c) => c.y + 3 < axisY && c.y - LABEL_H > 0 && leftOf(c.anchor, c.at) >= PAD.l - 4 && leftOf(c.anchor, c.at) + width <= W - 2);
+      let best: { y: number; anchor: Anchor; at: number; score: number } | null = null;
+      for (const c of candidates) {
+        const score = covered(leftOf(c.anchor, c.at), width, c.y, { x, y });
+        if (!best || score < best.score) best = { ...c, score };
+      }
+      return best ? { y: best.y, anchor: best.anchor } : { y: y - gap, anchor: prefer };
+    };
+    const labelBaseline = (x: number, y: number, text: string, anchor: "middle" | "end", gap: number): number => placeLabel(x, y, text, anchor, gap).y;
     const valueLabels = verdict
       ? [verdict.previousBest, verdict.recentBest].flatMap((b, i) => {
           if (newBest && i === 1) return [];
           const text = formatSession(subject, b).replace(" lb", "");
           const x = X(dayNumber(b.date));
           const y = Y(b.value);
-          return [{ key: b.date, x, y: labelBaseline(x, y, text, "middle", 8), text }];
+          const placed = placeLabel(x, y, text, "middle", 8);
+          return [{ key: b.date, x: placed.anchor === "end" ? x - 4 : placed.anchor === "start" ? x + 4 : x, y: placed.y, anchor: placed.anchor, text }];
         })
       : [];
     if (newBest) newBest = { ...newBest, labelY: labelBaseline(newBest.x, newBest.y, newBest.label, "end", 10) };
     return { sessions, X, Y, previous, recent, trend, newBest, yTicks, xTicks, valueLabels };
-  }, [subject, verdict, domain]);
+  }, [subject, verdict, domain, W, H]);
 
   // Lifts only: every benchmark session is a max effort, so a ring on each dot would say nothing.
   const [hovered, setHovered] = useState<ProgressSession | null>(null);
+  const [view] = useChartView();
+  // Keyboard: the chart is one tab stop, and the arrow keys walk its sessions in date order, showing each one's tooltip and
+  // announcing it, so every dot a pointer can hover is reachable without one (WCAG 2.1.1).
+  const onKeyDown = (e: KeyboardEvent) => {
+    const list = model.sessions;
+    if (list.length === 0) return;
+    const at = hovered ? list.findIndex((s) => s.date === hovered.date) : -1;
+    const go = (i: number) => {
+      e.preventDefault();
+      setHovered(list[Math.max(0, Math.min(list.length - 1, i))] ?? null);
+    };
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") go(at < 0 ? list.length - 1 : at + 1);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") go(at < 0 ? list.length - 1 : at - 1);
+    else if (e.key === "Home") go(0);
+    else if (e.key === "End") go(list.length - 1);
+    else if (e.key === "Escape" && hovered) {
+      e.preventDefault();
+      setHovered(null);
+    }
+  };
+  const windowOf = (s: ProgressSession): string => (model.recent.has(s.date) ? "Recent" : model.previous.has(s.date) ? "Previous" : "");
+  const valueText = (s: ProgressSession): string => `${formatSession(subject, s)}${subject.format === "load" ? " est." : ""}`;
+  const summary = seriesSummary(
+    `${subject.name}${subject.format === "load" ? ", estimated one-rep max" : ""}`,
+    model.sessions.map((s) => ({ label: formatDate(s.date), value: s.value })),
+    (v) => (subject.format === "load" ? `${Math.round(v)} lb` : subject.format === "time" ? formatClock(v) : String(v))
+  );
   const rings = verdict && subject.kind === "lift" && (verdict.state === "down" || verdict.state === "not-tested-since");
   const { X, Y } = model;
   const caption = verdict
     ? `Each dot is the best result of a day. Dark dots are the ${verdict.window} sessions before the recent ${verdict.window}; accent dots are the recent ${verdict.window}, which are compared. Grey dots are other sessions.${model.trend ? " The dashed line is the long-run trend." : ""}${rings ? " Rings mark max efforts." : ""}`
     : "Each dot is the best result of a day.";
+  // A lift's dots are estimated 1RMs, not loads that were lifted: the axis is titled so and the caption says where they come from.
+  const estimated = subject.format === "load";
+  const fullCaption = estimated ? `${caption} Loads are estimated one-rep maxes from sets of 1 to ${PV_MAX_REPS} reps.` : caption;
 
   return (
     <figure className="flex flex-col gap-1">
-      <div className="relative" onMouseLeave={() => setHovered(null)}>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`Sessions of ${subject.name}`}>
+      <div className="flex justify-end">
+        <ChartViewToggle />
+      </div>
+      {view === "table" ? (
+        <DataTable
+          caption={summary}
+          columns={[{ label: "Date" }, { label: estimated ? "Est. 1RM" : "Result", numeric: true }, { label: "Compared as" }, ...(subject.kind === "lift" ? [{ label: "Max effort" }] : [])]}
+          rows={[...model.sessions].reverse().map((s) => [formatDate(s.date), valueText(s), windowOf(s), ...(subject.kind === "lift" ? [s.maxEffort ? "Yes" : ""] : [])])}
+        />
+      ) : (
+      <div ref={frame} className="relative" onMouseLeave={() => setHovered(null)}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        width={W}
+        height={H}
+        className="block max-w-full rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        role="img"
+        aria-label={`Sessions of ${subject.name}${estimated ? ", as estimated one-rep maxes" : ""}`}
+        tabIndex={0}
+        onKeyDown={onKeyDown}
+        onBlur={() => setHovered(null)}
+      >
+        <desc>{summary} Use the arrow keys to step through the sessions.</desc>
+        {estimated ? (
+          <text x={4} y={9} className="fill-muted-foreground text-[11px]">
+            Est. 1RM
+          </text>
+        ) : null}
         <line x1={PAD.l} x2={PAD.l} y1={PAD.t - 6} y2={H - PAD.b + 6} className="stroke-border" strokeWidth={1} />
         <line x1={PAD.l} x2={W - PAD.r} y1={H - PAD.b + 6} y2={H - PAD.b + 6} className="stroke-border" strokeWidth={1} />
         {model.yTicks.map((t) => (
           <g key={t.label}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={t.y} y2={t.y} className="stroke-border" strokeWidth={0.5} strokeDasharray="2 3" />
-            <text x={PAD.l - 6} y={t.y + 3} textAnchor="end" className="fill-muted-foreground text-[10px]">
+            {/* Solid hairlines: a dashed grid reads as a threshold or a projection. The dashed line here is the trend. */}
+            <line x1={PAD.l} x2={W - PAD.r} y1={t.y} y2={t.y} className="stroke-border" strokeWidth={1} />
+            <text x={PAD.l - 6} y={t.y + 3} textAnchor="end" className="fill-muted-foreground text-[11px]">
               {t.label}
             </text>
           </g>
@@ -123,7 +237,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
         {model.xTicks.map((t) => (
           <g key={t.x}>
             <line x1={t.x} x2={t.x} y1={H - PAD.b + 6} y2={H - PAD.b + 10} className="stroke-border" strokeWidth={1} />
-            <text x={t.x} y={H - PAD.b + 21} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+            <text x={t.x} y={H - PAD.b + 21} textAnchor="middle" className="fill-muted-foreground text-[11px]">
               {t.label}
             </text>
           </g>
@@ -139,7 +253,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
               strokeWidth={1.25}
               strokeDasharray="4 3"
             />
-            <text x={X(model.trend.to.x) + 12} y={Y(model.trend.to.y) + 3} className="fill-muted-foreground text-[10px]">
+            <text x={X(model.trend.to.x) + 12} y={Y(model.trend.to.y) + 3} className="fill-muted-foreground text-[11px]">
               Trend
             </text>
           </g>
@@ -160,21 +274,26 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
           );
         })}
         {model.valueLabels.map((l) => (
-          <text key={l.key} x={l.x} y={l.y} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+          <text key={l.key} x={l.x} y={l.y} textAnchor={l.anchor} className="fill-muted-foreground text-[11px]">
             {l.text}
           </text>
         ))}
         {model.newBest ? (
           <g>
-            <text x={model.newBest.x} y={model.newBest.labelY ?? model.newBest.y - 10} textAnchor="end" className="fill-accent-link text-[10px] font-medium">
+            <text x={model.newBest.x} y={model.newBest.labelY ?? model.newBest.y - 10} textAnchor="end" className="fill-accent-link text-[11px] font-medium">
               {model.newBest.label}
             </text>
           </g>
         ) : null}
       </svg>
       {hovered ? <DotTooltip subject={subject} session={hovered} x={model.X(dayNumber(hovered.date)) / W} y={model.Y(hovered.value) / H} /> : null}
+      {/* What the keyboard has reached, read out (the tooltip itself isn't announced). */}
+      <span className="sr-only" aria-live="polite">
+        {hovered ? `${valueText(hovered)} on ${formatDate(hovered.date)}${windowOf(hovered) ? `, ${windowOf(hovered).toLowerCase()} window` : ""}${subject.kind === "lift" && hovered.maxEffort ? ", max effort" : ""}` : ""}
+      </span>
       </div>
-      <figcaption className="text-xs text-muted-foreground">{caption}</figcaption>
+      )}
+      <figcaption className="text-xs text-muted-foreground">{fullCaption}</figcaption>
     </figure>
   );
 }
@@ -199,6 +318,7 @@ function DotTooltip({ subject, session, x, y }: { subject: ProgressSubject; sess
         {lift ? " est." : ""}
       </span>
       <span className="text-muted-foreground">{formatDate(session.date)}</span>
+      {lift && loggedSetText(session) ? <span className="text-muted-foreground">from {loggedSetText(session)}</span> : null}
       {lift && session.maxEffort ? <span className="text-accent-link">Max effort</span> : null}
     </div>
   );

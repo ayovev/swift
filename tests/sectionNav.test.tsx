@@ -27,6 +27,22 @@ describe("ALL_TABS", () => {
   it("has one entry per Overview, Workouts, Lifts, GPP domain, modality, Movements, Body Comp, Progress and Timeline", () => {
     expect(ALL_TABS).toHaveLength(1 + 1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
   });
+
+  it("never gives two tabs in one group the same label", () => {
+    for (const group of new Set(ALL_TABS.map((t) => t.group))) {
+      const labels = ALL_TABS.filter((t) => t.group === group).map((t) => t.label);
+      expect(new Set(labels).size, group).toBe(labels.length);
+    }
+  });
+
+  it("calls both the Cardio domain and the M modality Cardio, under different group headers", () => {
+    // Deliberate (see MODALITY_NAMES): "Cardio" is what athletes call both, and the Domains and Modalities headers above Training's
+    // row are what tell a tag from a share. Only these two tabs share a label.
+    const cardio = ALL_TABS.filter((t) => t.label === "Cardio");
+    expect(cardio.map((t) => t.group).sort()).toEqual(["Domains", "Modalities"]);
+    const labels = ALL_TABS.map((t) => t.label);
+    expect(labels.length - new Set(labels).size).toBe(1);
+  });
 });
 
 describe("SECTIONS", () => {
@@ -137,6 +153,89 @@ describe("SubNav", () => {
       const { container, unmount } = render(<SubNav value={value} onValueChange={vi.fn()} />);
       expect(container).toBeEmptyDOMElement();
       unmount();
+    }
+  });
+});
+
+describe("SubNav overflow", () => {
+  /** jsdom has no layout, so the row's widths are stubbed: `scrollWidth` wide content in a `clientWidth` row. */
+  function stubRow(scrollWidth: number, clientWidth: number) {
+    const sw = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(scrollWidth);
+    const cw = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(clientWidth);
+    return () => {
+      sw.mockRestore();
+      cw.mockRestore();
+    };
+  }
+
+  it("marks the edge with more tabs past it, and moves the mark as the row scrolls", () => {
+    const restore = stubRow(1350, 350);
+    try {
+      render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+      const nav = screen.getByRole("navigation", { name: "Training views" });
+      const row = nav.parentElement as HTMLElement;
+      expect(row).toHaveAttribute("data-overflow-right", "true");
+      expect(row).not.toHaveAttribute("data-overflow-left");
+
+      nav.scrollLeft = 1000;
+      fireEvent.scroll(nav);
+      expect(row).toHaveAttribute("data-overflow-left", "true");
+      expect(row).not.toHaveAttribute("data-overflow-right");
+    } finally {
+      restore();
+    }
+  });
+
+  it("puts its scroll buttons beside the row, never over a tab, disabled at the end they can't scroll past", () => {
+    const restore = stubRow(1350, 350);
+    try {
+      render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+      const nav = screen.getByRole("navigation", { name: "Training views" });
+      const row = nav.parentElement as HTMLElement;
+      const left = document.querySelector("[data-scroll-button=left]") as HTMLButtonElement;
+      const right = document.querySelector("[data-scroll-button=right]") as HTMLButtonElement;
+      // Siblings of the row, not inside it, so neither can sit on top of a tab.
+      expect(row.contains(left) || row.contains(right)).toBe(false);
+      expect(left.parentElement).toBe(row.parentElement);
+      expect(left).toBeDisabled();
+      expect(right).toBeEnabled();
+      // The fades take no clicks.
+      for (const fade of row.querySelectorAll("div[aria-hidden=true]")) expect(fade.className).toMatch(/pointer-events-none/);
+    } finally {
+      restore();
+    }
+  });
+
+  it("keeps a group's label in view while its tabs scroll", () => {
+    render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+    const labels = [...document.querySelectorAll("[data-group-label]")];
+    expect(labels.map((l) => l.textContent)).toEqual(["Domains", "Modalities"]);
+    for (const l of labels) expect(l.className.split(" ")).toEqual(expect.arrayContaining(["sticky", "left-0", "bg-background"]));
+  });
+
+  it("shows no edge when every tab fits", () => {
+    const restore = stubRow(1216, 1216);
+    try {
+      render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+      const row = screen.getByRole("navigation", { name: "Training views" }).parentElement as HTMLElement;
+      expect(row).not.toHaveAttribute("data-overflow-left");
+      expect(row).not.toHaveAttribute("data-overflow-right");
+    } finally {
+      restore();
+    }
+  });
+
+  it("scrolls the selected tab into view whenever it changes", () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", { value: scrollIntoView, configurable: true });
+    try {
+      const { rerender } = render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+      rerender(<SubNav value={MOVEMENTS_TAB} onValueChange={() => {}} />);
+      const last = scrollIntoView.mock.contexts.at(-1) as HTMLElement;
+      expect(last).toHaveTextContent("Movements");
+      expect(scrollIntoView).toHaveBeenLastCalledWith({ inline: "nearest", block: "nearest" });
+    } finally {
+      delete (HTMLElement.prototype as { scrollIntoView?: unknown }).scrollIntoView;
     }
   });
 });

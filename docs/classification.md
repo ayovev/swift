@@ -12,7 +12,7 @@ Substring matching also gets most inflections for free — `run` finds `runs` an
 
 **The M/W/G modality mix** is proportional rather than a single label, and it follows canonical CrossFit semantics:
 
-- **M — Metabolic conditioning**: monostructural work only. Running, rowing, biking, skiing, jumping rope. Not "anything that makes you breathe hard".
+- **M — Metabolic conditioning** (Cardio in the app): monostructural work only. Running, rowing, biking, skiing, jumping rope. Not "anything that makes you breathe hard".
 - **W — Weightlifting**: an external load moved by you. Barbell, dumbbell, kettlebell, odd objects.
 - **G — Gymnastics**: your own bodyweight moved through space.
 

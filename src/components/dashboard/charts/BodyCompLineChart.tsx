@@ -1,6 +1,6 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, NUM_AXIS_WIDTH, niceAxisTicks } from "./chartUtils";
+import { AXIS_PROPS, NUM_AXIS_WIDTH, niceAxisTicks, TIME_AXIS_PROPS } from "./chartUtils";
 import {
   bucketTickInterval,
   formatBucketLabel,
@@ -14,6 +14,12 @@ interface BodyCompLineChartProps {
   /** e.g. "lb" or "%" — appended to axis ticks and the tooltip value. */
   unit: string;
   granularity: Granularity;
+}
+
+/** "181.0 lb", "15.1%", "26.0": a space before a word unit, none before a percent sign. */
+export function withUnit(value: string, unit: string): string {
+  if (!unit) return value;
+  return unit === "%" ? `${value}%` : `${value} ${unit}`;
 }
 
 /**
@@ -38,23 +44,24 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
   const worst = Math.min(...rows.map((r) => r.value));
   const pad = Math.max(1, (best - worst) * 0.15);
   const { domain: yDomain, ticks: yTicks } = niceAxisTicks(worst - pad, best + pad);
-  const latest = rows[rows.length - 1]!.value;
+  const last = rows[rows.length - 1]!;
+  const latest = last.value;
+  // Each point is the average of the scans in its bucket (buildBodyCompData), so the header says so: "latest 181.0" beside
+  // Overview's "180.9 lb" (the latest single reading) read as two answers to one question.
+  const headline = `${last.label} average ${withUnit(latest.toFixed(1), unit)}`;
   const config: ChartConfig = { value: { label: seriesLabel, color: "var(--primary)" } };
 
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between gap-2">
         <h3 className="text-sm font-medium">{seriesLabel}</h3>
-        <span className="text-xs text-muted-foreground tabular">
-          latest {latest.toFixed(1)}
-          {unit}
-        </span>
+        <span className="text-xs text-muted-foreground tabular">{headline}</span>
       </div>
       <ChartContainer
         config={config}
         className="h-[200px] w-full min-w-0"
         role="img"
-        aria-label={`${seriesLabel} over time, ${granularityLabel(granularity).toLowerCase()} by ${granularityLabel(granularity).toLowerCase()}, latest ${latest.toFixed(1)}${unit}`}
+        aria-label={`${seriesLabel} over time, ${granularityLabel(granularity).toLowerCase()} by ${granularityLabel(granularity).toLowerCase()}, ${headline}`}
       >
         <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" />
@@ -62,9 +69,7 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
             dataKey="label"
             interval={bucketTickInterval(rows.length)}
             padding={{ left: 12, right: 12 }}
-            angle={-35}
-            textAnchor="end"
-            height={50}
+            {...TIME_AXIS_PROPS}
             {...AXIS_PROPS}
           />
           <YAxis
@@ -72,17 +77,14 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
             domain={yDomain}
             ticks={yTicks}
             interval={0} // see niceAxisTicks() in chartUtils.ts for why
-            tickFormatter={(v: number) => `${v}${unit}`}
+            tickFormatter={(v: number) => withUnit(String(v), unit)}
             {...AXIS_PROPS}
           />
           <ChartTooltip
             content={
               <ChartTooltipContent
                 formatter={(value) => (
-                  <span className="font-medium tabular">
-                    {Number(value).toFixed(1)}
-                    {unit}
-                  </span>
+                  <span className="font-medium tabular">{withUnit(Number(value).toFixed(1), unit)}</span>
                 )}
               />
             }

@@ -1,3 +1,4 @@
+import type { TrendHalves } from "./dashboard";
 // Shapes for the M/W/G modality classifier.
 //
 // Unlike the 10 GPP domains — which are independent yes/no tags — the three
@@ -12,8 +13,17 @@ export const MODALITY_LIST = ["M", "W", "G"] as const;
 
 export type Modality = (typeof MODALITY_LIST)[number];
 
+/**
+ * One name per modality, used for its tab, page title, key, tooltip and copy alike. M is "Cardio", the word athletes use for it; it
+ * had also been "Metabolic Conditioning" as a page title and "metabolic conditioning" in copy, several names for one thing.
+ * "Monostructural" was tried and reverted: it is the textbook term, not how CrossFitters talk, and it read as jargon.
+ *
+ * The Cardiovascular/Respiratory Endurance domain's tab is also "Cardio", on purpose. The two sit under different group headers in
+ * Training's tab row (Domains, Modalities), which is what tells a tag from a share there, and a key always pairs the word with its
+ * letter ("M · Cardio"). tests/sectionNav.test.tsx pins both.
+ */
 export const MODALITY_NAMES: Record<Modality, string> = {
-  M: "Metabolic Conditioning",
+  M: "Cardio",
   W: "Weightlifting",
   G: "Gymnastics",
 };
@@ -166,6 +176,8 @@ export interface ModalityData {
   modality_trends: Record<Modality, ModalityTrendPoint[]>;
   modality_overall: Record<Modality, ModalityOverallStat>;
   modality_trend_direction: Record<Modality, ModalityTrendDirectionStat>;
+  /** The dates of modality_trend_direction's two halves, over classified workouts only (see buildModalityData). */
+  modality_trend_halves: TrendHalves | null;
   modality_workout_lists: Record<Modality, ModalityWorkoutEntry[]>;
   /** Every logged workout, most recent first — the Workouts tab's source list. */
   all_workouts: AllWorkoutsEntry[];

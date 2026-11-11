@@ -1,21 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import dayjs from "dayjs";
 import { entryEnd, entryName } from "@/lib/analytics/timeline";
-import { displayName } from "@/lib/analytics/insights/display";
+import { displayName, monthSpan, monthYear } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
 import { dayNumber } from "@/lib/analytics/insights/verdict";
 import { cn } from "@/lib/utils";
+import { VerdictPill, type VerdictKind } from "../progress/verdictMark";
 import type { TimelineEntry } from "@/types/timeline";
 
 export type Selection = { kind: "entry"; id: string } | { kind: "subject"; key: string } | null;
 
-const STATE_LABEL: Record<string, string> = { up: "Up", down: "Down", "not-tested-since": "Not tested since", "no-clear-change": "No clear change" };
-const LINE: Record<string, string> = {
-  up: "bg-accent-link",
-  down: "bg-destructive",
-  "not-tested-since": "bg-amber-500",
-  "no-clear-change": "bg-muted-foreground/60",
-};
 
 /** The groups that have a lane, in the front door's order. */
 export const LANE_GROUPS = ["up", "down", "not-tested-since", "no-clear-change"] as const;
@@ -34,10 +28,13 @@ interface TimelineChartProps {
   onAddAt: (date: string) => void;
 }
 
-/** A tick at each month start, spaced so about six fit. */
-function ticks(start: string, end: string): { date: string; label: string }[] {
+/** A "Mmm YYYY" axis label in the 10px mono face needs about this much room, gap included. */
+const TICK_ROOM_PX = 76;
+
+/** A tick at each month start, spaced so at most `count` fit (six on a desktop, as many as the width allows on a phone). */
+function ticks(start: string, end: string, count = 6): { date: string; label: string }[] {
   const months = Math.max(1, dayjs(end).diff(dayjs(start), "month"));
-  const step = Math.max(1, Math.ceil(months / 6));
+  const step = Math.max(1, Math.ceil(months / Math.max(2, count)));
   const out: { date: string; label: string }[] = [];
   let d = dayjs(start).startOf("month");
   if (d.isBefore(dayjs(start), "day")) d = d.add(1, "month");
@@ -74,10 +71,15 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
         const b = Math.max(px(entryEnd(entry, asOf)), a + 10);
         const label = (entryName(entry).length + (entry.endDate === null ? 2 : 0)) * 7 + 8;
         const inside = b - a >= label + 12;
-        const left = !inside && b + label > width;
-        const lo = !inside && left ? a - label : a;
-        const hi = inside ? b : left ? b : Math.max(b, b + label);
-        return { entry, lo, hi, inside, left };
+        // Outside the bar, the label goes right when it fits, else left when that fits, else to the side with more room, cut to fit
+        // with an ellipsis: on a phone a long name ("Switched to a protein-forward diet") fitted neither side and ran off the box.
+        const roomRight = width - b - 6;
+        const roomLeft = a - 6;
+        const left = !inside && label > roomRight && (label <= roomLeft || roomLeft > roomRight);
+        const fit = inside ? label : Math.min(label, Math.max(40, left ? roomLeft : roomRight));
+        const lo = !inside && left ? a - fit : a;
+        const hi = inside ? b : left ? b : Math.max(b, b + fit);
+        return { entry, lo, hi, inside, left, maxLabel: fit < label ? fit : null };
       })
       .sort((x, y) => x.entry.startDate.localeCompare(y.entry.startDate) || x.entry.id.localeCompare(y.entry.id));
     const ends: number[] = [];
@@ -89,7 +91,8 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
     });
     return { placed: out, lanes: ends.length };
   }, [visible, start, span, width, asOf]);
-  const axis = useMemo(() => ticks(start, end), [start, end]);
+  // As many ticks as fit the measured width: six labels overlapped on a phone once the end labels were held inside the axis.
+  const axis = useMemo(() => ticks(start, end, width > 0 ? Math.min(6, Math.floor(width / TICK_ROOM_PX)) : 6), [start, end, width]);
 
   const verdictLanes = rows.filter((r) => (LANE_GROUPS as readonly string[]).includes(r.group) && (r.verdict || (r.moveUpVotes && r.moveUp)));
 
@@ -114,7 +117,7 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
           style={{ height: Math.max(1, lanes) * 28 + 8 }}
         >
           {visible.length === 0 ? <p className="pointer-events-none px-3 py-2 text-sm text-muted-foreground">No entries in this range.</p> : null}
-          {placed.map(({ entry, lane, inside, left: labelLeft }) => {
+          {placed.map(({ entry, lane, inside, left: labelLeft, maxLabel }) => {
             const left = pct(entry.startDate);
             const right = pct(entryEnd(entry, asOf));
             const barWidth = Math.max(right - left, 0);
@@ -139,7 +142,8 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
                 {inside ? <span className="truncate px-1.5">{name}{ongoing ? " →" : ""}</span> : null}
                 {!inside ? (
                   <span
-                    className={cn("absolute whitespace-nowrap text-foreground", labelLeft ? "right-full mr-1.5" : "left-full ml-1.5")}
+                    className={cn("absolute truncate whitespace-nowrap text-foreground", labelLeft ? "right-full mr-1.5" : "left-full ml-1.5")}
+                    style={maxLabel !== null ? { maxWidth: maxLabel } : undefined}
                   >
                     {name}
                     {ongoing ? " →" : ""}
@@ -153,7 +157,15 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
 
       <div aria-hidden className="relative h-5 border-t border-border">
         {axis.map((t) => (
-          <span key={t.date} className="absolute top-0.5 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] text-muted-foreground" style={{ left: `${pct(t.date)}%` }}>
+          // Centred on its date, except near either end, where it is held inside the axis rather than cut off.
+          <span
+            key={t.date}
+            className={cn(
+              "absolute top-0.5 whitespace-nowrap font-mono text-[10px] text-muted-foreground",
+              pct(t.date) < 8 ? "translate-x-0" : pct(t.date) > 92 ? "-translate-x-full" : "-translate-x-1/2"
+            )}
+            style={{ left: `${pct(t.date)}%` }}
+          >
             {t.label}
           </span>
         ))}
@@ -166,15 +178,33 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
             const move = !r.verdict && r.moveUp;
             const from = r.verdict ? r.verdict.previousBest.date : (r.moveUp as NonNullable<typeof r.moveUp>).scaledDate;
             const to = r.verdict ? r.verdict.recentBest.date : (r.moveUp as NonNullable<typeof r.moveUp>).date;
-            const outside = to < start || from > end;
-            const state = r.verdict ? r.verdict.state : "up";
-            const text = move ? "Moved up to RX" : `${STATE_LABEL[state]} ${r.verdict && r.verdict.change !== 0 ? `${r.verdict.change > 0 ? "+" : "−"}${Math.abs(r.verdict.change).toFixed(1)}%` : ""}`.trim();
+            const span = (list: readonly { date: string }[]): [string, string] => {
+              const ds = list.map((x) => x.date).sort();
+              return [ds[0]!, ds[ds.length - 1]!];
+            };
+            const windows = r.verdict ? { previous: span(r.verdict.previous), recent: span(r.verdict.recent) } : null;
+            const first = windows ? windows.previous[0] : from;
+            const last = windows ? windows.recent[1] : to;
+            const outside = last < start || first > end;
+            // How the lane is marked: shape and glyph per verdict (verdictMark.tsx), never the accent alone.
+            const kind: VerdictKind = move ? "move-up" : r.verdict ? r.verdict.state : "up";
+            const change = !move && r.verdict && r.verdict.change !== 0 ? `${r.verdict.change > 0 ? "+" : "−"}${Math.abs(r.verdict.change).toFixed(1)}%` : null;
             const isSelected = selected?.kind === "subject" && selected.key === r.subject.key;
             const name = displayName(r.subject);
             const label = (
               <span className="flex min-w-0 items-baseline justify-between gap-3 text-sm">
                 <span className="truncate font-medium">{name}</span>
-                <span className="shrink-0 text-xs text-muted-foreground">{outside ? "Outside this range" : text}</span>
+                <span className="shrink-0 text-xs text-muted-foreground">
+                  {outside ? (
+                    "Outside this range"
+                  ) : (
+                    // The same pill as Progress and Overview, so a verdict looks the same wherever it is shown.
+                    <span className="inline-flex items-center gap-1.5">
+                      <VerdictPill kind={kind} className="ml-0" />
+                      {change ? <span className="tabular">{change}</span> : null}
+                    </span>
+                  )}
+                </span>
               </span>
             );
             return (
@@ -186,15 +216,15 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
                     {label}
                   </button>
                 )}
-                <div className="relative h-3">
-                  {!outside ? (
-                    <>
-                      <span className={cn("absolute top-1/2 h-0.5 -translate-y-1/2", LINE[state])} style={{ left: `${pct(from)}%`, width: `${Math.max(pct(to) - pct(from), 0)}%` }} />
-                      {from >= start ? <span className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground" style={{ left: `${pct(from)}%` }} /> : null}
-                      {to <= end ? <span className={cn("absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full", LINE[state])} style={{ left: `${pct(to)}%` }} /> : null}
-                    </>
-                  ) : null}
-                </div>
+                {/* When, in words. The lane used to draw the two windows on the date axis; every drawing tried (a line between the bests,
+                    then bands with the bests as dots) read as something it wasn't, so the dates are text until a better pattern is found. */}
+                {!outside ? (
+                  <p className="pl-0 text-xs text-muted-foreground tabular" data-compared>
+                    {windows
+                      ? `Compared ${monthSpan(windows.previous[0], windows.previous[1])} with ${monthSpan(windows.recent[0], windows.recent[1])}`
+                      : `Last Scaled ${monthYear(from)}, first RX ${monthYear(to)}`}
+                  </p>
+                ) : null}
               </li>
             );
           })}

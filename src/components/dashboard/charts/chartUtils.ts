@@ -65,6 +65,14 @@ export function modalityColor(modality: Modality): string {
   return `var(--chart-${MODALITY_LIST.indexOf(modality) * 4 + 1})`;
 }
 
+/**
+ * Below this many workouts, a bucket's share is drawn as a lone hollow dot rather than part of a share chart's line. With four
+ * workouts, one more or fewer moves the share by 20 to 25 points: drawn into the line, weekly grouping over a long range read as a
+ * 0 to 100% sawtooth of mostly two- and three-workout weeks. Five is a judgement, not a measured cut-off: the point where a single
+ * workout moves the share by no more than 20 points.
+ */
+export const THIN_BUCKET_WORKOUTS = 5;
+
 /** Shared axis styling — muted, small, and out of the way of the data. */
 export const AXIS_PROPS = {
   stroke: "var(--muted-foreground)",
@@ -72,6 +80,13 @@ export const AXIS_PROPS = {
   tickLine: false,
   axisLine: false,
 } as const;
+
+/**
+ * Every time axis's labels, on every chart: angled at -35 degrees so they don't collide as the grouping gets finer (a weekly or daily
+ * axis has many more labels than a monthly one), and one angle everywhere so every chart reads the same. Flat labels were tried on
+ * Lifts and Overview and dropped for this standard.
+ */
+export const TIME_AXIS_PROPS = { angle: -35, textAnchor: "end", height: 50 } as const;
 
 /**
  * Y-axis widths, sized for the LONGEST label each axis can produce.
@@ -303,7 +318,7 @@ export function niceTimeTicks(
 /**
  * Formats a niceTimeTicks() tick to match the calendar unit that was chosen
  * for it — the same short, two-digit-year grammar formatBucketLabel() uses
- * for the granularity-bucketed charts (ConsistencyChart, StackedShareChart,
+ * for the granularity-bucketed charts (ConsistencyChart,
  * ShareAreaChart, BodyCompLineChart), so every chart's x-axis reads as one
  * consistent date style instead of LiftChart's own full "Mar 14, 2025"
  * (formatDate() stays that verbose form for prose contexts — tooltips, the
@@ -351,6 +366,38 @@ export const FIXED_REPMAX_COLORS: Record<RepMaxCategory, string> = {
  * there are only three modalities to color. Deliberately NOT modalityColor()
  * below, which derives from the athlete's accent hue — this bar stays fixed.
  */
+/**
+ * The order every M/W/G mark is drawn in: bottom to top in a stacked bar, left to right in a row's bar, and the order of its key
+ * and tooltip. Not MODALITY_LIST's canonical M, W, G (which tabs, copy and the classifier keep), because that order stacks M's red
+ * straight onto W's green: under deuteranopia that pair is about 4 apart in OKLab (x100), against a target of 8, and it is the
+ * pair a stack asks the eye to compare. With G in the middle, red only ever touches blue and green only touches blue, and every
+ * adjacent pair clears the target in both modes (tests/modalityColors.test.ts). W sits on the baseline because it is usually
+ * the largest share, and a share read off the baseline reads most exactly.
+ */
+export const MODALITY_DRAW_ORDER: readonly Modality[] = ["W", "G", "M"];
+
+/**
+ * "35 workouts with no recognised movement are left out." The modality shares are averages over classified workouts only, so the
+ * caveat sits beside the chart it qualifies, not only in the page footer.
+ */
+export function unclassifiedNote(n: number): string | null {
+  if (n <= 0) return null;
+  return n === 1 ? "1 workout with no recognised movement is left out." : `${n.toLocaleString()} workouts with no recognised movement are left out.`;
+}
+
+/**
+ * A workout's split as text, in the same order its bar is drawn (MODALITY_DRAW_ORDER): "W 67 · G 0 · M 33". The bar runs W, G, M left
+ * to right; text in the canonical M, W, G order under it read the segments backwards.
+ */
+export function splitText(split: Record<Modality, number>): string {
+  return MODALITY_DRAW_ORDER.map((m) => `${m} ${split[m].toFixed(0)}`).join(" · ");
+}
+
+/** A key item: the letter and the word ("W · Weightlifting"), so each teaches the other and the "M 33 / W 67" text elsewhere reads at a glance. */
+export function modalityKeyLabel(m: Modality): string {
+  return `${m} · ${MODALITY_SHORT_LABELS[m]}`;
+}
+
 export const FIXED_MODALITY_COLORS: Record<Modality, string> = {
   M: "var(--repmax-1)",
   W: "var(--repmax-3)",
@@ -364,7 +411,7 @@ export const FIXED_MODALITY_COLORS: Record<Modality, string> = {
  * athlete's accent.
  */
 export const MODALITY_FIXED_CHART_CONFIG: ChartConfig = Object.fromEntries(
-  MODALITY_LIST.map((modality) => [
+  MODALITY_DRAW_ORDER.map((modality) => [
     modality,
     { label: MODALITY_SHORT_LABELS[modality], color: FIXED_MODALITY_COLORS[modality] },
   ])

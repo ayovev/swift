@@ -5,14 +5,17 @@ import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import { BodyCompLineChart } from "./charts/BodyCompLineChart";
 import { ConsistencyChart } from "./charts/ConsistencyChart";
 import { FilePickerButton } from "./FilePickerButton";
+import { ChartViewToggle, DataTable, useChartView } from "./charts/ChartTable";
+import { withUnit } from "./charts/BodyCompLineChart";
 import { buildBodyCompData, filterInBodyRowsByRange } from "@/lib/analytics/buildBodyCompData";
 import type { DateRange } from "@/lib/analytics/dateRange";
-import { GRANULARITY_NOUN, type Granularity } from "@/lib/analytics/granularity";
+import { GRANULARITY_NOUN, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
 import type { BodyCompPoint } from "@/types/bodyComp";
 import type { BucketCount, DashboardData } from "@/types/dashboard";
 import type { InBodyRow } from "@/types/inbody";
 import type { WeighIn } from "@/types/weighIn";
 import { readingsFromInBody } from "@/lib/analytics/insights/bodyReadings";
+import { longDate } from "@/lib/analytics/insights/display";
 import { WeighInsPanel } from "./WeighInsPanel";
 
 export type BodyCompState =
@@ -75,6 +78,7 @@ function InBodySourceMark() {
  */
 export function BodyCompTab({ state, granularity, range, onFile, dashboard, weighIns, onSaveWeighIn, onDeleteWeighIn }: BodyCompTabProps) {
   const scanReadings = useMemo(() => (state.status === "ready" ? readingsFromInBody(state.rows) : []), [state]);
+  const [view] = useChartView();
   const weighInsPanel =
     weighIns && onSaveWeighIn && onDeleteWeighIn ? <WeighInsPanel scans={scanReadings} weighIns={weighIns} onSave={onSaveWeighIn} onDelete={onDeleteWeighIn} /> : null;
   const data = useMemo(
@@ -99,7 +103,11 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
     );
   }
 
-  const latest = data.points[data.points.length - 1];
+  // The newest scan inside the range, as a date: the bucket key ("2026-11") read as a code, not a day.
+  const latestScan = readingsFromInBody(filterInBodyRowsByRange(state.status === "ready" ? state.rows : [], range)).reduce<string | null>(
+    (max, r) => (max === null || r.date > max ? r.date : max),
+    null
+  );
   const hasEnoughHistory = data.points.length >= 2;
 
   // Days trained in the same buckets the scan history covers — aligned by
@@ -126,26 +134,38 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
           </p>
           <p className="text-sm text-muted-foreground tabular">
             {data.points.length.toLocaleString()} {GRANULARITY_NOUN[granularity]}
-            {data.points.length === 1 ? "" : "s"} of scans
-            {latest ? `, most recent in ${latest.bucket}` : ""}
+            {data.points.length === 1 ? "" : "s"} with a scan
+            {latestScan ? `, most recent ${longDate(latestScan)}` : ""}
           </p>
         </CardContent>
       </Card>
 
-      {weighInsPanel}
-
+      {/* Trends before the reading list: overview first, the 100-odd rows behind it after. */}
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
           <CardTitle className="text-sm font-medium">Trends</CardTitle>
+          {hasEnoughHistory ? <ChartViewToggle /> : null}
         </CardHeader>
         <CardContent>
-          {hasEnoughHistory ? (
+          {hasEnoughHistory && view === "table" ? (
+            // Every trend's buckets in one table, most recent first: each chart above is one column of it.
+            <DataTable
+              caption={`Days trained and body composition, ${GRANULARITY_NOUN[granularity]} by ${GRANULARITY_NOUN[granularity]}, each a ${GRANULARITY_NOUN[granularity]}'s average of its scans`}
+              columns={[{ label: GRANULARITY_NOUN[granularity][0]!.toUpperCase() + GRANULARITY_NOUN[granularity].slice(1) }, { label: "Days trained", numeric: true }, ...METRICS.map((m) => ({ label: m.label, numeric: true }))]}
+              rows={[...data.points].reverse().map((p) => [
+                formatBucketLabel(p.bucket, granularity),
+                dayCountByBucket.get(p.bucket) ?? 0,
+                ...METRICS.map((m) => (p[m.key] === null ? "—" : withUnit(Number(p[m.key]).toFixed(1), m.unit))),
+              ])}
+            />
+          ) : hasEnoughHistory ? (
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
               <div>
                 <div className="mb-1 flex items-baseline justify-between gap-2">
                   <h3 className="text-sm font-medium">Days trained</h3>
+                  {/* Only the buckets with a scan are charted, so this is not the all-time count on Overview; it says which it is. */}
                   <span className="text-xs text-muted-foreground tabular">
-                    {totalTrainingDays.toLocaleString()} total
+                    {totalTrainingDays.toLocaleString()} in {GRANULARITY_NOUN[granularity]}s with a scan
                   </span>
                 </div>
                 <ConsistencyChart
@@ -174,6 +194,8 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
           )}
         </CardContent>
       </Card>
+
+      {weighInsPanel}
     </div>
   );
 }

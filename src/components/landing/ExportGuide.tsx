@@ -55,7 +55,8 @@ export function ExportGuide() {
             ))}
           </TabsList>
           {SOURCES.map((source) => (
-            <TabsContent key={source.id} value={source.id}>
+            // A real tab widget with text-only panels, so each panel stays a focus stop (the WAI-ARIA tabs pattern), with a visible ring.
+            <TabsContent key={source.id} value={source.id} tabIndex={0} className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
               <ol className="flex flex-col gap-3 rounded-lg border border-border p-4">
                 {source.steps.map((step, i) => (
                   <li key={step} className="flex gap-3">

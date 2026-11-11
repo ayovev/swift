@@ -1,6 +1,6 @@
 import { classifyMovements, movementsFor, sharesTo100 } from "@/lib/classify/classifyModality";
 import { MODALITY_LIST } from "@/types/modality";
-import type { ParsedRow } from "./buildDashboardData";
+import { trendHalves, type ParsedRow } from "./buildDashboardData";
 import type {
   AllWorkoutsEntry,
   Modality,
@@ -141,6 +141,10 @@ export function buildModalityData(parsedRows: readonly ParsedRow[]): ModalityDat
     modality_trends,
     modality_overall,
     modality_trend_direction,
+    modality_trend_halves: trendHalves(
+      early.map((r) => r.row),
+      late.map((r) => r.row)
+    ),
     modality_workout_lists,
     all_workouts,
     modality_stacked: { modality_names: MODALITY_LIST, bucket_shares },

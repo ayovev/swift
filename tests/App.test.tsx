@@ -349,7 +349,7 @@ describe("App — view scope", () => {
     // Progress and the Timeline are computed from the full
     // history as of today (App.tsx), never the selected range.
     fireEvent.click(screen.getByRole("button", { name: "Insights" }));
-    expect(await screen.findByText(/uses your full history, as of today/i)).toBeInTheDocument();
+    expect(await screen.findByText(/^Verdicts use your full history, as of today\. The Training date range doesn.t apply here\.$/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Grouped by/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^all time/i })).not.toBeInTheDocument();
   });
@@ -466,5 +466,23 @@ describe("App — stale workout log nudge", () => {
     renderApp();
     await findRangeView();
     expect(staleLine()).toBeNull();
+  });
+});
+
+describe("App — keyboard entry", () => {
+  it("starts at a skip link to the page, and keeps the view panels out of the tab order", async () => {
+    await saveWorkoutRows([graceRow("01/05/2020")]);
+    renderApp();
+    await findDashboard();
+    const skip = screen.getByRole("link", { name: "Skip to content" });
+    expect(skip).toHaveAttribute("href", "#content");
+    const main = document.getElementById("content") as HTMLElement;
+    expect(main.tagName).toBe("MAIN");
+    expect(main).toHaveAttribute("tabindex", "-1");
+    // The skip link comes before every other focusable control on the page.
+    const focusable = [...document.querySelectorAll<HTMLElement>("a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])")];
+    expect(focusable[0]).toBe(skip);
+    // Radix makes a tab panel a focus stop; here it was an invisible one between the header and the page.
+    for (const panel of document.querySelectorAll('[data-slot="tabs-content"]')) expect(panel).toHaveAttribute("tabindex", "-1");
   });
 });

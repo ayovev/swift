@@ -162,12 +162,46 @@ remote-config features (exception capture, dead clicks, heatmaps, surveys) off i
   the same always-present treatment (they need only the SugarWOD log).
   `buildModalityData`'s output shape deliberately mirrors `buildDashboardData`'s so those two
   components stay near-identical; keep that symmetry.
+  Each opens with a comparison strip (`charts/ComparisonStrip.tsx`): all ten domains as separate bars on one shared 0 to 100%
+  axis, sorted, since they are tags that add up to about 300%, and the three modalities as one stacked bar that adds to 100. The
+  two forms are the point, so don't unify them. Each bar opens its own view through the same tab change as the nav.
 
 The **Movements** view (`MovementsTab.tsx`, under Training) lists what the lexicon can recognise: families
 (`movementFamilies.ts`, every variant counts) and single movements, picked by id. It reads
 `Insights.movements` (`buildMovementData.ts`), a thin reduction of the same `ParsedRow.movements`
 `buildModalityData` uses, so nothing is classified twice. The workout list shows the phrase that matched,
-because the matcher is a heuristic. Its analytics events are the value-free `movement_selected` and `implement_selected`.
+because the matcher is a heuristic. Every such list (`WorkoutList.tsx`, also under each domain and modality chart) shows its first
+`INITIAL_ROWS` (10) without a click, and a row opens to the workout's description with the matched text in a `<mark>`; descriptions
+come from `all_workouts` by day and title (`Dashboard.tsx`'s `describe`), so `workout_lists` keeps the shape the parity test pins. Its analytics events are the value-free `movement_selected` and `implement_selected`.
+
+**Picking a chart point** (`charts/ChartPick.tsx`) is the one way into the workouts behind a chart. A click, a tap or Enter on a
+focused chart picks a point and a line under the chart says what it is, with an action and Clear; Escape clears. It is the same on
+every input on purpose: a tap picks rather than navigating, because a phone's first tap is also what shows the tooltip. Where the
+workouts are on the same page (the domain, modality and Movements charts) the list narrows to the picked bucket and opens
+(`useBucketPick`, `WorkoutList`'s `scope`), and a new grouping or range clears the pick. Where they are on another view (Overview's
+months, a lift's dot) the line links there, and `Dashboard.tsx`'s `openWorkouts` sets a custom date range through the same handler
+the date picker uses, so the scope line says what is showing. Picking reads the point from the tooltip (Recharts moves it with the
+pointer, a finger, or the arrow keys) on pointer up, two frames late, because a tap briefly activates the first point; a lift dot
+names its own point (`data-pick`, a 24px hit circle), because a scatter hides its tooltip before a tap's pointer up. Both timings
+were measured in Chromium with touch; Recharts' own `onClick` reports no point for a tap. Analytics: `chart_point_selected` and
+`chart_point_opened`, value-free.
+
+**Share-over-time charts draw each bucket for what it is** (`charts/ShareAreaChart.tsx`, `shareRows`): a bucket with fewer than
+`THIN_BUCKET_WORKOUTS` (5) workouts is a hollow dot off the line, a first or last bucket the range or the log only partly covers
+(`coverage`, from `Dashboard.tsx`; `bucketBounds` in `granularity.ts`) stays shaded but its line is dashed, with a "from" or "to" day in its tooltip, the line
+is straight, every tooltip names its denominator ("9 of 15 workouts"), a key names the marks when they appear, and under three
+buckets the chart is a sentence. The grouping menu says weekly is noisy over a range longer than a year.
+
+**Every time axis is angled the same way** (`TIME_AXIS_PROPS` in `chartUtils.ts`, -35 degrees): angled so labels don't collide as the
+grouping gets finer, and one angle on every chart. Flat labels were tried on Lifts and Overview and dropped; `tests/timeAxis.test.ts`
+fails if an `<XAxis>` sets its own angle or leaves the shared setting out.
+
+**Every chart has a table twin and a text alternative** (`charts/ChartTable.tsx`). One "Table" switch, shown in each chart card's
+header, flips every chart to its table at once, because whoever wants tables wants them everywhere; it is a per-device preference in
+`localStorage` (`swift.chartView`, try/catch, in-memory only when storage throws), never synced or backed up, and its analytics name
+`chart_view_toggled` says only that it was used. Tables list their newest row first. Each chart's accessible name (and svg `title` or
+`desc`) is a `seriesSummary()` sentence: span, lowest, highest and latest. The evidence chart is one tab stop whose arrow keys, Home,
+End and Escape walk its sessions with the hover tooltip and an `aria-live` announcement.
 
 Two things that look like the same idea but are not — don't unify them:
 
@@ -273,7 +307,18 @@ Read each file's header comment before changing it; the cases are `tests/progres
 - **`headline.ts`**: six groups, move-ups to RX (an up vote for 12 months), the label (`Improving`, `Steady`, `Declining` from the counts) and the
   reference date, always passed in and never read from the clock.
 - **`display.ts`**, **`bodyContext.ts`**, **`period.ts`**, **`chart.ts`**: the words (RX unmarked, Scaled as a qualifier), the body-context lines,
-  the "Logged in" filter and the evidence chart's numbers. Body composition never feeds a verdict or a count.
+  the "last logged in" filter (labelled "Show lifts and benchmarks last logged in": it only hides rows) and the evidence chart's numbers. Body composition never feeds a verdict or a count.
+- **A lift's pounds are always called an estimate.** Every lift sentence carries "est. 1RM" (or "est." on a facts line), a record names the
+  logged set it came from ("from 225 × 5", `ProgressSession.logged`), and the evidence chart is titled "Est. 1RM". Without it, "New best:
+  258 lb" on Progress read as a lift one tab away from a logged best of 230 on Lifts. `tests/progressDisplay.test.ts` (DSP-12) checks it
+  over the sample.
+
+- **A verdict never rests on colour.** `progress/verdictMark.tsx` is the one place a verdict's look is defined (Progress pills, Overview's
+  What moved, Timeline rows): each verdict has its own glyph (↑, ↓, –, a dashed circle) beside its word, and colour only repeats it: green (`--positive`) for Up
+  and a move up to RX, the destructive red for Down, grey for the neutral two. `headlineLabelClass` colours the Progress headline the same
+  way (Improving green, Declining red, Steady plain). Up had been the accent alone, so with the red accent Up and Down were both red.
+  `tests/verdictMark.test.tsx` checks the marks stay distinct, and that no component uses a fixed Tailwind palette colour (the old
+  "Not tested since" amber).
 
 The weight noise band (`weightNoiseBand.ts`) is the one older pipeline that remains: `weightBandLb` uses it to decide whether a body-weight change
 is "within normal variation".
@@ -301,9 +346,24 @@ body fat have no band, because nothing compares them.
 - **RX and Scaled for lifts** are judged separately; whether to merge them needs an athlete who logs Scaled lifts.
 - **Noise band.** `weightNoiseBand.ts`'s band comes from `paired-scans`, `residual` or `default`; anyone scanning monthly or less lands on `residual` or
   `default` (3 lb for weight), which is why manual weigh-ins exist.
-- **Weigh-in delete has no confirmation**; an entry delete does.
+- **Weigh-in delete has no confirmation; it has Undo** for ten seconds (`WeighInsPanel.tsx`, `weigh_in_delete_undone`). An entry delete
+  has a confirmation.
 - **Entries reach a before and after rarely on sparse logs** (3 of 8 demo entries on the sample), so the facts lines carry weight.
-- **Chart drag-to-select and period bands are gone** with Compare; nothing replaces them on the date-range charts.
+- **Chart drag-to-select and period bands are gone** with Compare; nothing replaces them on the date-range charts. Planned: drag
+  across a Training chart to set the date range (on a phone, a strip under the chart, so the page still scrolls), through the same
+  `persistRangeSelection` path as the picker.
+- **Design decisions kept for now, by the owner** (from the 2026 design critique, since deleted; its reasons now live next to the code):
+  the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
+  orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps
+  its 16 tabs (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); and the red accent
+  stays as it is, a known overlap with `--destructive`. Measured as OKLab distance x100 from `--destructive`, the red swatch's button
+  colour is 8.8 (light) and 5.2 (dark), where every other swatch is above 10. Moving its hue to 0 cleared 8 but read as pink beside
+  magenta; hue 45 at chroma 0.14 cleared it (12.1, 9.1) but read as rust, not red. A later redesign of the swatches, or a free colour
+  picker, should keep the button and link colours at least 8 from `--destructive` in both modes, as a test.
+- **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
+  is a separate, unbuilt idea.
+- **Not yet checked**: a real screen reader pass, forced-colors mode, and an export from a second athlete. The usability study plan
+  (five tasks on the core questions) is issue #67.
 - **Sync.** Verified by unit tests and by hand on two devices, not by an automated two-device test.
 - **Backup encryption.** The iteration count (600,000) and the strength bands are first drafts: measure derive time on a mid-range phone before
   raising the former. The strength hint is length-only by design, with one guard for fewer than 5 distinct characters; long predictable
@@ -325,7 +385,10 @@ a received list (`validateEntryList`, shape only so another device's clock canno
   none. With fewer than 3 counted subjects it shows a shortfall sentence and facts lines, never a weaker claim. Body weight appears once over the
   entry's span (`entryDisplay.ts`), with no sentence relating it to the verdict.
 - **The view** (`TimelineTab.tsx`, tab id `timeline`, over `components/dashboard/timeline/`): entries as bars stacked in lanes above one lane per
-  verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide, one
+  verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide. A
+  verdict row is words only for now: name, the verdict pill (as on Progress) and change, then "Compared Jan to Jun 2024 with Jul 2024 to Oct 2026" (the months of
+  the two windows). Two drawings were tried and dropped: a line between the two bests (its length read as the size of the change), and
+  the two windows as bands with the best of each as a dot (the dot fell anywhere in its band, so rows looked irregular). One
   Selected panel, the entry form in a dialog, delete behind a confirmation. A row on Progress opens its lane through "See on timeline" under its
   opened chart (not for a subject without a lane, nor a move up to RX).
 - **Storage and names.** Key `"timeline-entries"` (`storage/timelineStorage.ts`), persisted only when `source === "upload"`, wiped by Start over,
@@ -346,7 +409,7 @@ The entry panel is on the Body Comp view (`WeighInsPanel.tsx`), which lists InBo
 `lib/analytics/weighIns.ts` pools weigh-ins with InBody scans into one body-weight series: on a day with both, the scan is used and the weigh-in is kept,
 listed as "Not used: an InBody scan the same day". Lean and fat mass come from scans only. The noise band is measured from the pooled series (as scan
 rows carrying only a weight, `pooledScanRows`), so frequent weigh-ins reach a measured band where scans months apart fell to the 3 lb default. No
-smoothing. Analytics: `weigh_in_saved` and `weigh_in_deleted`, value-free like every other interaction.
+smoothing. Analytics: `weigh_in_saved`, `weigh_in_deleted` and `weigh_in_delete_undone`, value-free like every other interaction. A delete has ten seconds of Undo rather than a confirmation.
 
 ## Architecture: cross-device sync
 
@@ -515,8 +578,10 @@ home. Read the header comments of the files named here before moving anything be
   view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
   header — in line with them it read as one more tab. Workouts and Lifts share an unlabelled
   group (the record of what was done) and Movements is a group of one, so neither has a header;
-  Workouts comes first, so selecting Training opens the log. Training is the long row (16 tabs) and scrolls
-  sideways on a phone; a third nav level for it would break "never a dropdown", so it hasn't
+  Workouts comes first, so selecting Training opens the log. Training is the long row (16 tabs): it fits at 1280px with
+  the gaps tightened from `lg`, and below that scrolls sideways, with a fade (and on a pointer device a button) at each edge that
+  has more tabs past it and the selected tab scrolled into view. The Cardio domain and the M modality are both labelled "Cardio" on
+  purpose: the Domains and Modalities headers tell them apart (`MODALITY_NAMES`, pinned in `tests/sectionNav.test.tsx`). A third nav level for it would break "never a dropdown", so it hasn't
   been added. `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
   `tests/sectionNav.test.tsx` asserts every tab lands in exactly one section. The Progress view
@@ -542,7 +607,7 @@ home. Read the header comments of the files named here before moving anything be
   rather than in the global header. It sits in its own row under a thin rule (with "Stored in
   this browser only" on the right, for uploaded data), so the heading block (title and, on
   domain pages, CrossFit's definition) ends visibly before the view controls begin. Insights
-  views show a plain "uses your full history" sentence instead, because `App.tsx` computes them
+  views show a plain sentence instead ("Verdicts use your full history, as of today. The Training date range doesn't apply here."), because `App.tsx` computes them
   from the whole unfiltered log as of today — a date control there would silently do nothing.
   Overview does the same, adding the last logged date ("Uses your full history, as of today. Last
   workout logged Nov 6."), so an old export explains its own low recent numbers.
@@ -659,9 +724,18 @@ This doesn't relax hard constraint #1 above — the cache is still local-only an
 Black-and-white base in both modes, plus **one** user-selected accent — the only chromatic
 element the athlete controls. Every token in `src/index.css` is achromatic (chroma exactly 0),
 with two fixed exceptions that never derive from the accent: `--destructive`, the error/delete-action
-red, and the `--repmax-1/2/3/5` tokens (red/orange/green/blue). The `--repmax-*` tokens colour the
-lift-chart dots and legend by rep scheme (`FIXED_REPMAX_COLORS` in `chartUtils.ts`), and the
-Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). They are fixed on
+red, the `--repmax-1/2/3/5` tokens (red/orange/green/blue), and `--positive`/`--positive-subtle`, the fixed green of a verdict that
+went the athlete's way (Up, a move up to RX, the "Improving" headline on Progress and Overview). Verdicts used to take the accent for Up,
+so with the red accent Up sat beside Down; now a verdict looks the same whatever the accent, and `tests/positiveColor.test.ts` checks the
+green's contrast in both modes. The `--repmax-*` tokens colour the
+highlighted rep scheme on each lift chart (`FIXED_REPMAX_COLORS` in `chartUtils.ts`; one scheme per chart, with a step line of its best so far
+and named in the chart's header, every other effort grey, so no two rep-max colours ever need telling apart), and the
+Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). On Workouts each bar's colours are named beside it: a dot before each letter in the sticky column header and before each
+value under the bar (`ModalityHeaderKey`, `SplitLine` in `ModalityBar.tsx`), since the page key scrolls away. Those bars are drawn in
+`MODALITY_DRAW_ORDER` (W, G, M), never `MODALITY_LIST`'s M, W, G: the canonical order stacks red onto green, which
+deuteranopia can barely tell apart, and `tests/modalityColors.test.ts` measures every adjacent pair from the real tokens.
+Overview's days-trained bars sit in the same card, so they use neutral ink rather than the accent, which matched one of the
+three modality colours for half the swatches. They are fixed on
 purpose: an accent-derived alternative was tried side by side and dropped, so there is no colour-mode
 toggle and no `accentRepMaxColors()`; don't reintroduce one. The accent itself arrives as CSS custom
 properties written to `:root` by `src/lib/theme/useTheme.ts`, so shadcn primitives, focus rings

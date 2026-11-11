@@ -18,6 +18,7 @@ import type {
   PrTimelineEntry,
   StackedBucketShare,
   SugarWodRow,
+  TrendHalves,
   TrendDirectionStat,
   WorkoutListEntry,
 } from "@/types/dashboard";
@@ -84,6 +85,15 @@ export interface ParsedRow {
  * Parse, classify, and sort rows oldest-first. Exported because the modality
  * pipeline consumes the same parsed rows rather than re-parsing the file.
  */
+/** The first and last dates of each half of an oldest-first split, for "Then versus now". */
+export function trendHalves(early: readonly ParsedRow[], late: readonly ParsedRow[]): TrendHalves | null {
+  const span = (half: readonly ParsedRow[]) => ({
+    from: half[0]!.dateParsed.format("YYYY-MM-DD"),
+    to: half[half.length - 1]!.dateParsed.format("YYYY-MM-DD"),
+  });
+  return early.length && late.length ? { early: span(early), late: span(late) } : null;
+}
+
 export function parseRows(rows: SugarWodRow[], granularity: Granularity = "monthly"): ParsedRow[] {
   const parsed: ParsedRow[] = [];
 
@@ -293,6 +303,7 @@ export function buildFromParsedRows(df: readonly ParsedRow[]): DashboardData {
     domain_trends,
     overall,
     trend_direction,
+    trend_halves: trendHalves(early, late),
     workout_lists,
     stacked: { domain_names: DOMAIN_LIST, bucket_shares },
   };

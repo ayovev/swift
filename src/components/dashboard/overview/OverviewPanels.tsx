@@ -1,10 +1,10 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import dayjs from "dayjs";
 import { ArrowRight } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_FIXED_CHART_CONFIG, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
+import { AXIS_PROPS, TIME_AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, modalityKeyLabel, unclassifiedNote, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
 import type { BodyReading } from "@/lib/analytics/insights/bodyContext";
 import { displayName, moveUpText, verdictText } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
@@ -17,8 +17,9 @@ import {
   type MonthMix,
 } from "@/lib/analytics/overview";
 import { entryName, entrySpanText } from "@/lib/analytics/timeline";
-import { cn } from "@/lib/utils";
-import { MODALITY_LIST, MODALITY_SHORT_LABELS } from "@/types/modality";
+import { VerdictPill } from "../progress/verdictMark";
+import { ChartPickNote, PickHint, capturePick, usePointPick } from "../charts/ChartPick";
+import { ChartViewToggle, DataTable, seriesSummary, useChartView } from "../charts/ChartTable";
 import { AREA_LABEL } from "@/types/timeline";
 
 /**
@@ -42,11 +43,14 @@ function PanelLink({ label, onClick }: { label: string; onClick?: (() => void) |
   );
 }
 
-function PanelHeader({ title, caption }: { title: string; caption?: string }) {
+function PanelHeader({ title, caption, toggle = false }: { title: string; caption?: string; toggle?: boolean }) {
   return (
     <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      {caption ? <span className="text-xs text-muted-foreground">{caption}</span> : null}
+      <span className="flex items-baseline gap-4">
+        {caption ? <span className="text-xs text-muted-foreground">{caption}</span> : null}
+        {toggle ? <ChartViewToggle /> : null}
+      </span>
     </CardHeader>
   );
 }
@@ -61,8 +65,17 @@ function PanelHeader({ title, caption }: { title: string; caption?: string }) {
 const MAX_BAR_PX = 72;
 
 /**
+ * The ink for the days-trained bars: the achromatic foreground, not the accent. The M/W/G chart sits in the same card in fixed
+ * red, green and blue, and an accent fill there matched one of them for half the swatches (blue is G, green is W, red and magenta
+ * read as M), which told the reader two different series were one (Gestalt similarity). A neutral bar can match none of them.
+ */
+const DAYS_INK = "var(--foreground)";
+/** How strongly a full month's bar is filled: dark enough to read as a solid bar (well over 3:1 on the card in both modes), light enough not to shout. */
+const DAYS_FILL_OPACITY = 0.7;
+
+/**
  * The fill that marks a month still under way: a single-direction 45° hatch in the
- * accent over a faint wash of it. A pattern rather than a lighter shade, so
+ * same ink as the full months, over a faint wash of it. A pattern rather than a lighter shade, so
  * "in progress" reads as a different kind of bar, not a smaller amount, and
  * survives without colour. One direction of lines rather than a cross-hatch: it is
  * the usual chart mark for "not final", it leaves the bar's top edge easy to
@@ -74,8 +87,8 @@ const MAX_BAR_PX = 72;
 function InProgressPattern({ id }: { id: string }) {
   return (
     <pattern id={id} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <rect width="6" height="6" fill="var(--primary)" fillOpacity={0.12} />
-      <path d="M0 0V6" stroke="var(--primary)" strokeWidth="2" />
+      <rect width="6" height="6" fill={DAYS_INK} fillOpacity={0.08} />
+      <path d="M0 0V6" stroke={DAYS_INK} strokeOpacity={DAYS_FILL_OPACITY} strokeWidth="2" />
     </pattern>
   );
 }
@@ -93,7 +106,7 @@ function InProgressKey() {
         <defs>
           <InProgressPattern id={id} />
         </defs>
-        <rect x="0.5" y="0.5" width="11" height="11" rx="2" fill={`url(#${id})`} stroke="var(--primary)" strokeWidth="1" />
+        <rect x="0.5" y="0.5" width="11" height="11" rx="2" fill={`url(#${id})`} stroke={DAYS_INK} strokeOpacity={DAYS_FILL_OPACITY} strokeWidth="1" />
       </svg>
       This month so far
     </span>
@@ -106,31 +119,42 @@ function InProgressKey() {
  * so a partial month doesn't read as a drop. No 90-day marker: 90 days rarely falls on a month boundary, so shading
  * whole bars would mark a different period from the one the totals count.
  */
-function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
+/** A month the athlete picked on either Training chart (YYYY-MM), shared by both so the two columns light up together, and how the chart reports one. */
+interface MonthPick {
+  picked: string | null;
+  pick?: ((month: string | null) => void) | undefined;
+}
+
+/** How much a month that isn't the picked one fades, so the picked column stands out in both charts (emphasis, not a new colour). */
+const UNPICKED_OPACITY = 0.3;
+
+function MonthlyDaysChart({ months, picked, pick }: { months: MonthDays[] } & MonthPick) {
+  const { track, onPointerUp, onKeyDown } = usePointPick(pick, picked);
   const patternId = useSvgId("in-progress");
   const data = months.map((m) => ({ ...m, label: dayjs(`${m.month}-01`).format("MMM") }));
   const best = Math.max(1, ...months.map((m) => m.days));
   const { domain, ticks } = niceAxisTicks(0, best, AXIS_TICK_COUNT, true);
-  const config: ChartConfig = { days: { label: "Days trained", color: "var(--primary)" } };
-  const first = months[0];
-  const last = months[months.length - 1];
-  const aria =
-    first && last
-      ? `Bar chart of days trained per month, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
-      : "Bar chart of days trained per month";
+  const config: ChartConfig = { days: { label: "Days trained", color: DAYS_INK } };
+  const aria = seriesSummary(
+    "Days trained per month",
+    months.map((m) => ({ label: `${dayjs(`${m.month}-01`).format("MMM YYYY")}${m.partial ? " so far" : ""}`, value: m.days })),
+    (v) => `${v} ${v === 1 ? "day" : "days"}`
+  );
   return (
+    <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={pick ? "[&_.recharts-surface]:cursor-pointer" : undefined}>
     <ChartContainer config={config} className="h-[200px] w-full min-w-0" role="img" aria-label={aria}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} maxBarSize={MAX_BAR_PX}>
         <defs>
           <InProgressPattern id={patternId} />
         </defs>
         <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...AXIS_PROPS} />
+        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...TIME_AXIS_PROPS} {...AXIS_PROPS} />
         <YAxis width={NUM_AXIS_WIDTH} domain={domain} ticks={ticks} interval={0} {...AXIS_PROPS} />
         <ChartTooltip
           cursor={{ fill: "var(--muted)", opacity: 0.4 }}
           content={({ active, payload }) => {
             const p = payload?.[0]?.payload as (MonthDays & { label: string }) | undefined;
+            track(active && p ? p.month : null);
             if (!active || !p) return null;
             return (
               <div className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs shadow-sm">
@@ -138,35 +162,41 @@ function MonthlyDaysChart({ months }: { months: MonthDays[] }) {
                 <div className="text-muted-foreground tabular">
                   {p.days} {p.days === 1 ? "day" : "days"} trained{p.partial ? " so far" : ""}
                 </div>
+                {pick && p.days ? <PickHint>Select to see this month</PickHint> : null}
               </div>
             );
           }}
         />
-        <Bar dataKey="days" fill="var(--primary)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+        <Bar dataKey="days" fill={DAYS_INK} radius={[3, 3, 0, 0]} isAnimationActive={false}>
           {data.map((m) => (
             <Cell
               key={m.month}
-              fill={m.partial ? `url(#${patternId})` : "var(--primary)"}
-              stroke={m.partial ? "var(--primary)" : "none"}
+              fill={m.partial ? `url(#${patternId})` : DAYS_INK}
+              fillOpacity={m.partial ? 1 : DAYS_FILL_OPACITY}
+              stroke={m.partial ? DAYS_INK : "none"}
+              strokeOpacity={DAYS_FILL_OPACITY}
               strokeWidth={m.partial ? 1 : 0}
+              opacity={picked && picked !== m.month ? UNPICKED_OPACITY : 1}
               data-partial={m.partial ? "true" : undefined}
             />
           ))}
         </Bar>
       </BarChart>
     </ChartContainer>
+    </div>
   );
 }
 
 /**
  * The M/W/G split per month, on the same 12 months, margins and axis width as
  * MonthlyDaysChart above it, so each month's column lines up under its days
- * bar. Each bar is that month's share of cardio, weightlifting and gymnastics,
+ * bar. Each bar is that month's share of weightlifting, gymnastics and cardio,
  * summing to 100; a month with no classified workout has no bar. The current
  * month is a share, not an amount, so it is not hatched: a partial month's
  * split is as valid as a full one's, and its tooltip still says "so far".
  */
-function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
+function MonthlyMixChart({ mix, picked, pick }: { mix: MonthMix[] } & MonthPick) {
+  const { track, onPointerUp, onKeyDown } = usePointPick(pick, picked);
   const data = mix.map((m) => ({
     month: m.month,
     label: dayjs(`${m.month}-01`).format("MMM"),
@@ -180,13 +210,14 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
   const last = mix[mix.length - 1];
   const aria =
     first && last
-      ? `Stacked bar chart of each month's cardio, weightlifting and gymnastics share, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
-      : "Stacked bar chart of each month's cardio, weightlifting and gymnastics share";
+      ? `Stacked bar chart of each month's weightlifting, gymnastics and cardio share, ${dayjs(`${first.month}-01`).format("MMM YYYY")} to ${dayjs(`${last.month}-01`).format("MMM YYYY")}`
+      : "Stacked bar chart of each month's weightlifting, gymnastics and cardio share";
   return (
+    <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={pick ? "[&_.recharts-surface]:cursor-pointer" : undefined}>
     <ChartContainer config={MODALITY_FIXED_CHART_CONFIG} className="h-[160px] w-full min-w-0" role="img" aria-label={aria}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} maxBarSize={MAX_BAR_PX}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
-        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...AXIS_PROPS} />
+        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={8} {...TIME_AXIS_PROPS} {...AXIS_PROPS} />
         <YAxis
           width={NUM_AXIS_WIDTH}
           domain={[0, 100]}
@@ -199,6 +230,7 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
           cursor={{ fill: "var(--muted)", opacity: 0.4 }}
           content={({ active, payload }) => {
             const p = payload?.[0]?.payload as (typeof data)[number] | undefined;
+            track(active && p ? p.month : null);
             if (!active || !p) return null;
             return (
               <div className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs shadow-sm">
@@ -208,27 +240,37 @@ function MonthlyMixChart({ mix }: { mix: MonthMix[] }) {
                 </div>
                 {p.workouts ? (
                   <div className="text-muted-foreground tabular">
-                    {MODALITY_LIST.map((m) => `${MODALITY_SHORT_LABELS[m]} ${Math.round(p[m])}%`).join(" · ")}
+                    {MODALITY_DRAW_ORDER.map((m) => `${m} ${Math.round(p[m])}%`).join(" · ")}
                   </div>
                 ) : (
                   <div className="text-muted-foreground">No classified workouts</div>
                 )}
+                {pick && p.workouts ? <PickHint>Select to see this month</PickHint> : null}
               </div>
             );
           }}
         />
-        {MODALITY_LIST.map((m, i) => (
+        {/* Drawn W, G, M from the baseline (MODALITY_DRAW_ORDER), with a 2px card-coloured stroke as the gap between segments,
+            so two segments never read as one block. */}
+        {MODALITY_DRAW_ORDER.map((m, i) => (
           <Bar
             key={m}
             dataKey={m}
             stackId="mix"
             fill={FIXED_MODALITY_COLORS[m]}
-            radius={i === MODALITY_LIST.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+            stroke="var(--card)"
+            strokeWidth={2}
+            radius={i === MODALITY_DRAW_ORDER.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
             isAnimationActive={false}
-          />
+          >
+            {data.map((d) => (
+              <Cell key={d.month} opacity={picked && picked !== d.month ? UNPICKED_OPACITY : 1} />
+            ))}
+          </Bar>
         ))}
       </BarChart>
     </ChartContainer>
+    </div>
   );
 }
 
@@ -236,20 +278,55 @@ export function TrainingPanel({
   months,
   mix,
   onSeeWorkouts,
+  onOpenMonth,
 }: {
   months: MonthDays[];
   mix: MonthMix[];
   onSeeWorkouts?: (() => void) | undefined;
+  /** Opens Workouts for a picked month: its first day to its last (or today, for the month under way), YYYY-MM-DD. */
+  onOpenMonth?: ((start: string, end: string) => void) | undefined;
 }) {
+  // A month picked on either chart (ChartPick.tsx): both fade the other months, and the note under them offers its workouts.
+  const [picked, setPicked] = useState<string | null>(null);
+  const pick = onOpenMonth
+    ? (month: string | null) => {
+        setPicked(month);
+        if (month) capturePick("selected");
+      }
+    : undefined;
+  const pickedDays = picked ? months.find((m) => m.month === picked) : undefined;
+  const pickedMix = picked ? mix.find((m) => m.month === picked) : undefined;
   const anyMix = mix.some((m) => m.split);
+  const leftOut = unclassifiedNote(mix.reduce((n, m) => n + m.unclassified, 0));
+  const [view] = useChartView();
+  const mixByMonth = new Map(mix.map((m) => [m.month, m]));
   return (
     <Card>
-      <PanelHeader title="Showing up" caption={`Last ${OVERVIEW_CHART_MONTHS} months, by month`} />
+      <PanelHeader title="Showing up" caption={`Last ${OVERVIEW_CHART_MONTHS} months, by month`} toggle={months.some((m) => m.days > 0)} />
       <CardContent className="flex flex-col gap-5">
+        {view === "table" && months.some((m) => m.days > 0) ? (
+          // Both charts' months in one table: the columns line up the way the two charts' columns do.
+          <div className="flex flex-col gap-2">
+            <DataTable
+              caption={`Days trained and the weightlifting, gymnastics and cardio split, each of the last ${OVERVIEW_CHART_MONTHS} months`}
+              columns={[{ label: "Month" }, { label: "Days trained", numeric: true }, ...MODALITY_DRAW_ORDER.map((m) => ({ label: m, numeric: true }))]}
+              rows={[...months].reverse().map((m) => {
+                const split = mixByMonth.get(m.month)?.split;
+                return [
+                  `${dayjs(`${m.month}-01`).format("MMMM YYYY")}${m.partial ? " (so far)" : ""}`,
+                  m.days,
+                  ...MODALITY_DRAW_ORDER.map((k) => (split ? `${Math.round(split[k])}%` : "—")),
+                ];
+              })}
+            />
+            {leftOut ? <span className="text-xs text-muted-foreground">{leftOut}</span> : null}
+          </div>
+        ) : (
+        <>
         <div className="flex flex-col gap-2">
           {months.some((m) => m.days > 0) ? (
             <>
-              <MonthlyDaysChart months={months} />
+              <MonthlyDaysChart months={months} picked={picked} pick={pick} />
               {months.some((m) => m.partial && m.days > 0) ? <InProgressKey /> : null}
             </>
           ) : (
@@ -259,23 +336,46 @@ export function TrainingPanel({
           )}
         </div>
         <section aria-label="What it was made of" className="flex flex-col gap-2 border-t border-border pt-4">
-          <h3 className="text-sm font-medium">Cardio, weightlifting, gymnastics</h3>
+          <h3 className="text-sm font-medium">Weightlifting, gymnastics, cardio</h3>
           {anyMix ? (
             <>
-              <MonthlyMixChart mix={mix} />
+              <MonthlyMixChart mix={mix} picked={picked} pick={pick} />
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                {MODALITY_LIST.map((m) => (
+                {MODALITY_DRAW_ORDER.map((m) => (
                   <span key={m} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: FIXED_MODALITY_COLORS[m] }} aria-hidden />
-                    {MODALITY_SHORT_LABELS[m]}
+                    {modalityKeyLabel(m)}
                   </span>
                 ))}
+                {leftOut ? <span className="text-xs text-muted-foreground">{leftOut}</span> : null}
               </div>
             </>
           ) : (
             <p className="text-sm text-muted-foreground">No classified workouts in the last {OVERVIEW_CHART_MONTHS} months.</p>
           )}
         </section>
+        </>
+        )}
+        {view !== "table" && picked && pickedDays && onOpenMonth ? (
+          <ChartPickNote
+            onClear={() => setPicked(null)}
+            action={
+              pickedDays.days
+                ? {
+                    label: "See these workouts",
+                    onClick: () => {
+                      const start = dayjs(`${picked}-01`);
+                      onOpenMonth(start.format("YYYY-MM-DD"), start.endOf("month").format("YYYY-MM-DD"));
+                    },
+                  }
+                : undefined
+            }
+          >
+            <span className="font-medium">{dayjs(`${picked}-01`).format("MMMM YYYY")}</span>: {pickedDays.days}{" "}
+            {pickedDays.days === 1 ? "day" : "days"} trained{pickedDays.partial ? " so far" : ""}
+            {pickedMix?.split ? ` · ${MODALITY_DRAW_ORDER.map((m) => `${m} ${Math.round(pickedMix.split![m])}%`).join(" · ")}` : ""}
+          </ChartPickNote>
+        ) : null}
         <PanelLink label="See workouts" onClick={onSeeWorkouts} />
       </CardContent>
     </Card>
@@ -284,10 +384,7 @@ export function TrainingPanel({
 
 // ── Insights ──────────────────────────────────────────────────────────────
 
-const VERDICT_PILL = {
-  up: { label: "Up", className: "bg-accent-subtle text-accent-link" },
-  down: { label: "Down", className: "bg-destructive/10 text-destructive" },
-} as const;
+
 
 /** The change in Progress's own words: the verdict's change, or the move up to RX. */
 function movedText(row: ProgressRow): string {
@@ -298,6 +395,7 @@ function movedText(row: ProgressRow): string {
 
 export function InsightsPanel({
   moved,
+  moreDown = 0,
   emptyText = "No lift or benchmark has changed enough to call.",
   latest,
   today,
@@ -306,6 +404,8 @@ export function InsightsPanel({
   onSeeTimeline,
 }: {
   moved: ProgressRow[];
+  /** Downs that didn't fit in the list (whatMoved), so the panel never shows fewer downs than Progress counts. */
+  moreDown?: number;
   /** Why nothing is listed (whatMovedEmptyText): nothing moved, or nothing could be compared yet. */
   emptyText?: string;
   latest: LatestEntry | null;
@@ -321,14 +421,11 @@ export function InsightsPanel({
         {moved.length ? (
           <ul className="flex flex-col">
             {moved.map((r) => {
-              const pill = VERDICT_PILL[r.group as "up" | "down"];
               const body = (
                 <>
                   <span className="text-sm font-medium">
                     {displayName(r.subject)}
-                    <span className={cn("ml-2 rounded-full px-2 py-0.5 align-middle text-[11px] font-semibold", pill.className)}>
-                      {pill.label}
-                    </span>
+                    <VerdictPill kind={r.group === "down" ? "down" : r.moveUp && !r.verdict ? "move-up" : "up"} />
                   </span>
                   <span className="text-xs text-muted-foreground">{movedText(r)}</span>
                 </>
@@ -353,6 +450,15 @@ export function InsightsPanel({
         ) : (
           <p className="text-sm text-muted-foreground">{emptyText}</p>
         )}
+        {moreDown > 0 ? (
+          onSeeProgress ? (
+            <button type="button" onClick={onSeeProgress} className="-mt-2 self-start text-xs text-accent-link underline-offset-2 hover:underline">
+              and {moreDown} more down
+            </button>
+          ) : (
+            <p className="-mt-2 text-xs text-muted-foreground">and {moreDown} more down</p>
+          )
+        ) : null}
 
         <div className="flex flex-col gap-1 border-t border-border pt-4">
           <span className="text-xs font-semibold tracking-[0.08em] uppercase">Timeline</span>
@@ -388,14 +494,25 @@ function WeightChart({ readings }: { readings: BodyReading[] }) {
   const config: ChartConfig = { weight: { label: "Body weight", color: "var(--primary)" } };
   const first = data[0]!;
   const last = data[data.length - 1]!;
+  const summary = seriesSummary("Body weight", data.map((d) => ({ label: dayjs(d.date).format("MMM D, YYYY"), value: d.weight })), (v) => weightText(v));
+  const [view] = useChartView();
+  if (view === "table") {
+    return (
+      <DataTable
+        caption={summary}
+        columns={[{ label: "Date" }, { label: "Weight", numeric: true }]}
+        rows={[...data].reverse().map((d) => [dayjs(d.date).format("MMM D, YYYY"), weightText(d.weight)])}
+      />
+    );
+  }
   return (
     <ChartContainer
       config={config}
       className="h-[200px] w-full min-w-0"
       role="img"
-      aria-label={`Line chart of body weight, ${dayjs(first.date).format("MMM YYYY")} to ${dayjs(last.date).format("MMM YYYY")}, latest ${weightText(last.weight)}`}
+      aria-label={summary}
     >
-      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+      <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} title={summary}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
         <XAxis
           dataKey="t"
@@ -404,6 +521,7 @@ function WeightChart({ readings }: { readings: BodyReading[] }) {
           domain={[first.t, last.t]}
           tickFormatter={(t: number) => dayjs(t).format("MMM 'YY")}
           tickCount={4}
+          {...TIME_AXIS_PROPS}
           {...AXIS_PROPS}
         />
         <YAxis width={NUM_AXIS_WIDTH} domain={domain} ticks={ticks} interval={0} {...AXIS_PROPS} />
@@ -445,7 +563,7 @@ export function BodyPanel({
 }) {
   return (
     <Card>
-      <PanelHeader title="Body weight" {...(readings.length > 1 && sources ? { caption: sources } : {})} />
+      <PanelHeader title="Body weight" toggle={readings.length > 1} {...(readings.length > 1 && sources ? { caption: sources } : {})} />
       <CardContent className="flex flex-col gap-4">
         {readings.length > 1 ? (
           <WeightChart readings={readings} />

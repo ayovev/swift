@@ -9,11 +9,13 @@ import { filterRowsByPeriod, periodRange, type PeriodPreset } from "@/lib/analyt
 import { buildProgressSubjects } from "@/lib/analytics/insights/sessions";
 import { parseWorkoutDate } from "@/lib/analytics/scanParsing";
 import { pooledReadings, pooledScanRows } from "@/lib/analytics/weighIns";
+import { cn } from "@/lib/utils";
 import type { WeighIn } from "@/types/weighIn";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { PeriodFilter } from "./PeriodFilter";
 import { ProgressRowItem } from "./ProgressRowItem";
+import { headlineLabelClass } from "./verdictMark";
 
 const GROUPS: { id: ProgressGroup; title: string; open: boolean }[] = [
   { id: "up", title: "Up", open: true },
@@ -88,7 +90,7 @@ export function ProgressView({ workouts, scans, weighIns = [], asOf, onSeeOnTime
           <p className="text-sm">No lift or benchmark was logged in the last 12 months.</p>
         ) : headline.label ? (
           <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-lg font-semibold text-accent-link">{headline.label}</span>
+            <span className={cn("text-lg font-semibold", headlineLabelClass(headline.label))}>{headline.label}</span>
             <span className="text-sm">{headlineSentence(headline.label, headline.up, headline.down, headline.noClearChange)}</span>
           </p>
         ) : (
@@ -152,7 +154,8 @@ function HowCounted({ rows, unused, asOfLog }: { rows: ProgressRow[]; unused: Re
   const unusedCount = unused.loadRows - unused.used;
   return (
     <Collapsible>
-      <CollapsibleTrigger className="text-sm text-accent-link underline underline-offset-2">How this was counted</CollapsibleTrigger>
+      {/* Supporting detail, not an action: muted like the caption above it, so the accent stays for the controls. */}
+      <CollapsibleTrigger className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground">How this was counted</CollapsibleTrigger>
       <CollapsibleContent className="mt-2 flex flex-col gap-3 text-sm text-muted-foreground">
         <p>
           Counted ({counted.length}): {counted.map((r) => `${displayName(r.subject)} (${r.group === "no-clear-change" ? "no clear change" : r.group})`).join(", ") || "none"}.

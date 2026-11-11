@@ -11,6 +11,7 @@ import { DomainTab } from "./DomainTab";
 import { ModalityTab } from "./ModalityTab";
 import { MovementsTab } from "./MovementsTab";
 import { OverviewTab } from "./OverviewTab";
+import { capturePick } from "./charts/ChartPick";
 import { LiftHistoryTab } from "./LiftHistoryTab";
 import { LiftsTab } from "./LiftsTab";
 import { TimelineTab } from "./TimelineTab";
@@ -126,6 +127,8 @@ export function Dashboard({
   // to size its calendar.
   const effectiveRange = range ?? insights.dateBounds;
   const dailyDisabled = effectiveRange ? !dailyGranularityFits(effectiveRange) : false;
+  // The days the Training charts' data covers, so a share chart can mark a first or last bucket only partly inside it.
+  const coverage = effectiveRange ? { start: effectiveRange.start.format("YYYY-MM-DD"), end: effectiveRange.end.format("YYYY-MM-DD") } : undefined;
 
   // Built once per data change, not on every render — JSON.stringify-ing the
   // full unfiltered workout log (and body comp, if present) is real work at
@@ -182,8 +185,37 @@ export function Dashboard({
     [source]
   );
 
+  // A workout's description by its day and title, for the domain, modality and Movements lists' opened rows. All three key their rows
+  // by the same YY-MM-DD date and raw title as all_workouts, so one lookup serves them; the first of a same-day, same-title pair wins.
+  const describe = useMemo(() => {
+    const byKey = new Map<string, string>();
+    for (const w of insights.modality.all_workouts) {
+      const k = `${w.date}|${w.title}`;
+      if (!byKey.has(k) && w.description) byKey.set(k, w.description);
+    }
+    return (date: string, title: string) => byKey.get(`${date}|${title}`);
+  }, [insights.modality.all_workouts]);
+
+  // A picked chart point followed to its workouts (ChartPick.tsx): a month on Overview or a lift's day on Lifts. It sets the same custom
+  // date range the date picker would, through the same handler, so the scope line says what is showing and the picker undoes it.
+  const openWorkouts = useCallback(
+    (start: string, end: string) => {
+      onRangeSelect({ start: dayjs(start).startOf("day"), end: dayjs(end).endOf("day") }, "custom");
+      onTabChange(WORKOUTS_TAB);
+      capturePick("opened");
+    },
+    [onRangeSelect, onTabChange]
+  );
+
   return (
     <div className="min-h-svh bg-background">
+      {/* The first stop for a keyboard: past the strip, the four sections and Settings, straight to the page (WCAG 2.4.1). */}
+      <a
+        href="#content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2.5 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        Skip to content
+      </a>
       {/* The one sample-mode indicator: a full-width strip above the header,
           rather than a chip in it or notes scattered through the page. */}
       {source === "sample" ? (
@@ -246,7 +278,7 @@ export function Dashboard({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12">
+      <main id="content" tabIndex={-1} className="mx-auto w-full max-w-7xl px-5 py-8 outline-none sm:px-8 sm:py-12">
         <div className="mb-8 flex flex-col gap-6">
           <div className="flex flex-col gap-2.5">
             <div className="font-mono text-xs tracking-[0.08em] text-muted-foreground uppercase">
@@ -295,7 +327,7 @@ export function Dashboard({
               // from the full, unfiltered history as of today — saying so
               // beats showing a date control that silently does nothing here.
               <p className="text-base text-muted-foreground">
-                Uses your full history, as of today — the date range doesn't apply here.
+                Verdicts use your full history, as of today. The Training date range doesn't apply here.
               </p>
             )}
             {/* Sample mode already says so in the strip above the header. */}
@@ -328,31 +360,32 @@ export function Dashboard({
               timeline={timeline}
               onNavigate={onTabChange}
               onOpenProgressSubject={onOpenProgressSubject}
+              onOpenWorkouts={openWorkouts}
             />
           </TabsContent>
 
           <TabsContent value={WORKOUTS_TAB}>
-            <WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} />
+            <WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} ranged={range !== null} />
           </TabsContent>
 
           <TabsContent value={LIFT_HISTORY_TAB}>
-            <LiftHistoryTab dashboard={insights.dashboard} />
+            <LiftHistoryTab dashboard={insights.dashboard} onOpenWorkouts={openWorkouts} />
           </TabsContent>
 
           {DOMAIN_LIST.map((domain: Domain) => (
             <TabsContent key={domain} value={`domain:${domain}`}>
-              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} />
+              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
             </TabsContent>
           ))}
 
           {MODALITY_LIST.map((modality: Modality) => (
             <TabsContent key={modality} value={`modality:${modality}`}>
-              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} />
+              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
             </TabsContent>
           ))}
 
           <TabsContent value={MOVEMENTS_TAB}>
-            <MovementsTab data={insights.movements} granularity={granularity} />
+            <MovementsTab data={insights.movements} granularity={granularity} coverage={coverage} describe={describe} />
           </TabsContent>
 
           <TabsContent value={BODY_COMP_TAB}>
@@ -398,7 +431,7 @@ export function Dashboard({
                 {" "}
                 {insights.modality.unclassified_count.toLocaleString()} of{" "}
                 {summary.total_logged.toLocaleString()} entries had no recognisable movement in them
-                and sit outside the cardio/weights/gymnastics split.
+                and sit outside the M/W/G split.
               </>
             ) : null}
           </p>
