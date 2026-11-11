@@ -198,6 +198,28 @@
   }
 }
 
+/* A lazily loaded view or dialog (ViewLoading.tsx) says nothing for its first 300ms, so a chunk that arrives
+   quickly never flashes a message, then fades its one line in. */
+@keyframes loading-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.loading-note {
+  opacity: 0;
+  animation: loading-in 150ms ease-out 300ms forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-note {
+    animation-duration: 1ms;
+  }
+}
+
 /* The Settings sheet (SettingsSheet.tsx) slides in from, and back out to, the right edge.
    Radix keeps it mounted until the closing animation ends. */
 @keyframes sheet-in {

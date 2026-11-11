@@ -6,15 +6,11 @@ import { SwiftMark } from "@/components/SwiftMark";
 import { ScopeLine } from "./ScopeLine";
 import { SectionLinks, SubNav, pageSubtitleOf, pageTitleOf, sectionOf } from "./SectionNav";
 import { SettingsSheet } from "./SettingsSheet";
-import { BodyCompTab, type BodyCompState } from "./BodyCompTab";
-import { DomainTab } from "./DomainTab";
-import { ModalityTab } from "./ModalityTab";
-import { MovementsTab } from "./MovementsTab";
+import type { BodyCompState } from "./BodyCompTab";
 import { OverviewTab } from "./OverviewTab";
+import { BodyCompTab, DomainTab, LiftHistoryTab, LiftsTab, ModalityTab, MovementsTab, TimelineTab, WorkoutsTab, preloadViews } from "./lazyViews";
+import { LazyView } from "@/components/ui/LazyView";
 import { capturePick } from "./charts/ChartPick";
-import { LiftHistoryTab } from "./LiftHistoryTab";
-import { LiftsTab } from "./LiftsTab";
-import { TimelineTab } from "./TimelineTab";
 import { StaleLogNudge } from "./StaleLogNudge";
 import type { OutgoingDataset } from "@/lib/sync/syncSession";
 import {
@@ -27,7 +23,6 @@ import {
   TIMELINE_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
-import { WorkoutsTab } from "./WorkoutsTab";
 import { formatDate } from "./charts/chartUtils";
 import type { DateRange, DateRangePreset } from "@/lib/analytics/dateRange";
 import { dailyGranularityFits, type Granularity } from "@/lib/analytics/granularity";
@@ -148,6 +143,12 @@ export function Dashboard({
     }
     return outgoing;
   }, [workoutRows, bodyComp, weighIns, timeline]);
+
+  // The other views are separate chunks. Once Overview has rendered they are fetched in idle time, so by the time one is
+  // opened it is already here and opens as fast as it did before they were split (see lazyViews.ts).
+  useEffect(() => {
+    preloadViews();
+  }, []);
 
   // Widening the range out from under an active daily view (via the date
   // picker, not this control) would otherwise leave a chart stuck rendering
@@ -365,58 +366,74 @@ export function Dashboard({
           </TabsContent>
 
           <TabsContent value={WORKOUTS_TAB}>
-            <WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} ranged={range !== null} />
+            <LazyView>
+              <WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} ranged={range !== null} />
+            </LazyView>
           </TabsContent>
 
           <TabsContent value={LIFT_HISTORY_TAB}>
-            <LiftHistoryTab dashboard={insights.dashboard} onOpenWorkouts={openWorkouts} />
+            <LazyView>
+              <LiftHistoryTab dashboard={insights.dashboard} onOpenWorkouts={openWorkouts} />
+            </LazyView>
           </TabsContent>
 
           {DOMAIN_LIST.map((domain: Domain) => (
             <TabsContent key={domain} value={`domain:${domain}`}>
-              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
+              <LazyView>
+                <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
+              </LazyView>
             </TabsContent>
           ))}
 
           {MODALITY_LIST.map((modality: Modality) => (
             <TabsContent key={modality} value={`modality:${modality}`}>
-              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
+              <LazyView>
+                <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
+              </LazyView>
             </TabsContent>
           ))}
 
           <TabsContent value={MOVEMENTS_TAB}>
-            <MovementsTab data={insights.movements} granularity={granularity} coverage={coverage} describe={describe} />
+            <LazyView>
+              <MovementsTab data={insights.movements} granularity={granularity} coverage={coverage} describe={describe} />
+            </LazyView>
           </TabsContent>
 
           <TabsContent value={BODY_COMP_TAB}>
-            <BodyCompTab
-              state={bodyComp}
-              granularity={granularity}
-              range={range}
-              onFile={onBodyCompFile}
-              dashboard={insights.dashboard}
-              weighIns={weighIns}
-              onSaveWeighIn={onSaveWeighIn}
-              onDeleteWeighIn={onDeleteWeighIn}
-            />
+            <LazyView>
+              <BodyCompTab
+                state={bodyComp}
+                granularity={granularity}
+                range={range}
+                onFile={onBodyCompFile}
+                dashboard={insights.dashboard}
+                weighIns={weighIns}
+                onSaveWeighIn={onSaveWeighIn}
+                onDeleteWeighIn={onDeleteWeighIn}
+              />
+            </LazyView>
           </TabsContent>
 
           <TabsContent value={LIFTS_TAB}>
-            <LiftsTab key={progressSubject?.nonce ?? 0} workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} onSeeOnTimeline={onSeeOnTimeline} focusSubjectKey={progressSubject?.key ?? null} />
+            <LazyView>
+              <LiftsTab key={progressSubject?.nonce ?? 0} workouts={workoutRows} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} onSeeOnTimeline={onSeeOnTimeline} focusSubjectKey={progressSubject?.key ?? null} />
+            </LazyView>
           </TabsContent>
 
           <TabsContent value={TIMELINE_TAB}>
-            <TimelineTab
-              key={timelineSubject?.nonce ?? 0}
-              workouts={workoutRows}
-              scans={bodyComp.status === "ready" ? bodyComp.rows : []}
-              weighIns={weighIns}
-              timeline={timeline}
-              onAddEntry={onAddEntry}
-              onUpdateEntry={onUpdateEntry}
-              onDeleteEntry={onDeleteEntry}
-              initialSubjectKey={timelineSubject?.key ?? null}
-            />
+            <LazyView>
+              <TimelineTab
+                key={timelineSubject?.nonce ?? 0}
+                workouts={workoutRows}
+                scans={bodyComp.status === "ready" ? bodyComp.rows : []}
+                weighIns={weighIns}
+                timeline={timeline}
+                onAddEntry={onAddEntry}
+                onUpdateEntry={onUpdateEntry}
+                onDeleteEntry={onDeleteEntry}
+                initialSubjectKey={timelineSubject?.key ?? null}
+              />
+            </LazyView>
           </TabsContent>
         </Tabs>
 

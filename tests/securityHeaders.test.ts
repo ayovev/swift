@@ -19,6 +19,13 @@ describe("deployment headers", () => {
     expect(csp).toContain(`'sha256-${hash}'`);
   });
 
+  // The bundle is split (CLAUDE.md, "Architecture: the bundle split"): lazy chunks and the PostHog library load from our own
+  // origin, so `'self'` covers them and a split needs no new host. A new script host here is a new place code can come from.
+  it("loads scripts only from our origin, the theme script's hash and PostHog's own asset host", () => {
+    const script = /(?:^|; )script-src ([^;]*)/.exec(csp)![1]!.split(" ");
+    expect(script.filter((s) => !s.startsWith("'sha256-")).sort()).toEqual(["'self'", "https://us-assets.i.posthog.com"]);
+  });
+
   it("limits where data can be sent", () => {
     expect(csp).toContain("default-src 'self'");
     const connect = /(?:^|; )connect-src ([^;]*)/.exec(csp)![1]!.split(" ").sort();
