@@ -355,8 +355,11 @@ body fat have no band, because nothing compares them.
 - **Design decisions kept for now, by the owner** (from the 2026 design critique, since deleted; its reasons now live next to the code):
   the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
   orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps
-  its 16 tabs (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); the red accent
-  swatch is undecided (it sits on top of `--destructive`; moving its hue far enough to separate them turns it pink, next to magenta).
+  its 16 tabs (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); and the red accent
+  stays as it is, a known overlap with `--destructive`. Measured as OKLab distance x100 from `--destructive`, the red swatch's button
+  colour is 8.8 (light) and 5.2 (dark), where every other swatch is above 10. Moving its hue to 0 cleared 8 but read as pink beside
+  magenta; hue 45 at chroma 0.14 cleared it (12.1, 9.1) but read as rust, not red. A later redesign of the swatches, or a free colour
+  picker, should keep the button and link colours at least 8 from `--destructive` in both modes, as a test.
 - **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
   is a separate, unbuilt idea.
 - **Not yet checked**: a real screen reader pass, forced-colors mode, and an export from a second athlete. The usability study plan
