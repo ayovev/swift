@@ -5,7 +5,7 @@ import { displayName, monthSpan, monthYear } from "@/lib/analytics/insights/disp
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
 import { dayNumber } from "@/lib/analytics/insights/verdict";
 import { cn } from "@/lib/utils";
-import { VERDICT_STYLE, VerdictGlyph, type VerdictKind } from "../progress/verdictMark";
+import { VerdictPill, type VerdictKind } from "../progress/verdictMark";
 import type { TimelineEntry } from "@/types/timeline";
 
 export type Selection = { kind: "entry"; id: string } | { kind: "subject"; key: string } | null;
@@ -188,7 +188,7 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
             const outside = last < start || first > end;
             // How the lane is marked: shape and glyph per verdict (verdictMark.tsx), never the accent alone.
             const kind: VerdictKind = move ? "move-up" : r.verdict ? r.verdict.state : "up";
-            const text = move ? "Moved up to RX" : `${VERDICT_STYLE[kind].label} ${r.verdict && r.verdict.change !== 0 ? `${r.verdict.change > 0 ? "+" : "−"}${Math.abs(r.verdict.change).toFixed(1)}%` : ""}`.trim();
+            const change = !move && r.verdict && r.verdict.change !== 0 ? `${r.verdict.change > 0 ? "+" : "−"}${Math.abs(r.verdict.change).toFixed(1)}%` : null;
             const isSelected = selected?.kind === "subject" && selected.key === r.subject.key;
             const name = displayName(r.subject);
             const label = (
@@ -198,10 +198,12 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
                   {outside ? (
                     "Outside this range"
                   ) : (
-                    <>
-                      <VerdictGlyph kind={kind} className="mr-0.5" />
-                      {text}
-                    </>
+                    // The same pill as Progress and Overview, so a verdict looks the same wherever it is shown; a move up to RX names
+                    // itself in the pill rather than reading "Up · Moved up to RX".
+                    <span className="inline-flex items-center gap-1.5">
+                      <VerdictPill kind={kind} className="ml-0" {...(move ? { label: "Moved up to RX" } : {})} />
+                      {change ? <span className="tabular">{change}</span> : null}
+                    </span>
                   )}
                 </span>
               </span>

@@ -10,9 +10,10 @@ import { cn } from "@/lib/utils";
  * reads; `tests/verdictMark.test.tsx` checks the glyphs are distinct. (A move up to RX shares Up's arrow: it is an Up vote, and its
  * own words say what kind.) The Timeline's lane marks (end shapes and dashes) went with its lane drawing.
  *
- * Colour: Up and a move up to RX keep the accent (the athlete's one colour, for the thing that went their way); Down keeps the fixed
- * destructive red; the two neutral verdicts are grey. "Not tested since" was a hardcoded amber, the only chromatic value outside the
- * theme's tokens; it is grey now, because it is "no evidence", not a warning.
+ * Colour: Up and a move up to RX are a fixed green (--positive), Down the fixed destructive red, and the two neutral verdicts grey, so
+ * a verdict looks the same whatever accent the athlete picks. Up used to take the accent, which with the red accent sat beside Down.
+ * "Not tested since" was a hardcoded amber, the only chromatic value outside the theme's tokens; it is grey now, because it is "no
+ * evidence", not a warning.
  */
 export type VerdictKind = "up" | "down" | "not-tested-since" | "no-clear-change" | "move-up";
 
@@ -27,12 +28,12 @@ export const VERDICT_STYLE: Record<VerdictKind, VerdictStyle> = {
   up: {
     label: "Up",
     Glyph: ArrowUp,
-    pill: "bg-accent-subtle text-accent-link",
+    pill: "bg-positive-subtle text-positive",
   },
   "move-up": {
     label: "Up",
     Glyph: ArrowUp,
-    pill: "bg-accent-subtle text-accent-link",
+    pill: "bg-positive-subtle text-positive",
   },
   down: {
     label: "Down",
@@ -52,7 +53,7 @@ export const VERDICT_STYLE: Record<VerdictKind, VerdictStyle> = {
 };
 
 /** The verdict pill: glyph and word, so it reads without its colour. */
-export function VerdictPill({ kind, className }: { kind: VerdictKind; className?: string }) {
+export function VerdictPill({ kind, className, label }: { kind: VerdictKind; className?: string; label?: string }) {
   const style = VERDICT_STYLE[kind];
   const { Glyph } = style;
   return (
@@ -61,13 +62,14 @@ export function VerdictPill({ kind, className }: { kind: VerdictKind; className?
       className={cn("ml-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 align-middle text-[11px] font-semibold", style.pill, className)}
     >
       <Glyph className="size-3 shrink-0" strokeWidth={2.5} aria-hidden data-glyph={kind === "move-up" ? "up" : kind} />
-      {style.label}
+      {label ?? style.label}
     </span>
   );
 }
 
-/** The glyph alone, for text that already names the verdict (a Timeline row's "Up +15.4%"). */
-export function VerdictGlyph({ kind, className }: { kind: VerdictKind; className?: string }) {
-  const { Glyph } = VERDICT_STYLE[kind];
-  return <Glyph className={cn("inline size-3 shrink-0 align-[-1px]", className)} strokeWidth={2.5} aria-hidden data-glyph={kind === "move-up" ? "up" : kind} />;
+/** The Progress headline's colour, on Progress and on Overview's totals row: the verdict colours, so "Improving" reads like an Up. */
+export function headlineLabelClass(label: string): string {
+  if (label === "Improving") return "text-positive";
+  if (label === "Declining") return "text-destructive";
+  return "text-foreground";
 }

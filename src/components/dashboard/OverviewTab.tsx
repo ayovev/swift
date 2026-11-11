@@ -29,6 +29,7 @@ import type { WeighIn } from "@/types/weighIn";
 import { BodyPanel, InsightsPanel, TrainingPanel, bodySourcesCaption } from "./overview/OverviewPanels";
 import { BODY_COMP_TAB, LIFTS_TAB, LIFT_HISTORY_TAB, TIMELINE_TAB, WORKOUTS_TAB } from "./tabs";
 import type { Insights } from "@/lib/analytics/buildInsights";
+import { headlineLabelClass } from "./progress/verdictMark";
 
 /**
  * One stat in the totals row: a large figure, what it is, and up to two muted
@@ -43,7 +44,10 @@ function Stat({
   numeric = true,
   onOpen,
   openLabel,
+  valueClassName,
 }: {
+  /** The Progress label takes its verdict colour (headlineLabelClass). */
+  valueClassName?: string;
   value: string;
   label: string;
   lines?: string[];
@@ -58,7 +62,8 @@ function Stat({
           "tracking-tight",
           numeric
             ? "font-mono text-3xl font-medium tabular sm:text-[44px] sm:leading-none"
-            : "text-2xl leading-tight font-semibold break-words sm:text-[28px]"
+            : "text-2xl leading-tight font-semibold break-words sm:text-[28px]",
+          valueClassName
         )}
       >
         {value}
@@ -210,6 +215,7 @@ export function OverviewTab({
         <Stat
           value={progress.value}
           numeric={false}
+          valueClassName={headlineLabelClass(progress.value)}
           label="progress"
           lines={progress.lines}
           {...open(LIFTS_TAB)}

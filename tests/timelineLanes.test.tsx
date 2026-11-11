@@ -30,6 +30,10 @@ describe("a verdict row", () => {
       checked++;
       if (row.verdict) expect(line.textContent).toBe(`Compared ${span(row.verdict.previous)} with ${span(row.verdict.recent)}`);
       else expect(line.textContent).toBe(`Last Scaled ${monthYear(row.moveUp!.scaledDate)}, first RX ${monthYear(row.moveUp!.date)}`);
+      // Each row carries the same verdict pill as Progress; a move up to RX names itself in the pill.
+      const pill = lane.querySelector("[data-verdict]");
+      if (!row.verdict) expect(pill?.textContent).toBe("Moved up to RX");
+      else expect(pill).not.toBeNull();
     }
     expect(checked).toBeGreaterThan(5);
     expect(container.querySelector("section[aria-label=Verdicts] [data-window], section[aria-label=Verdicts] [data-end]")).toBeNull();

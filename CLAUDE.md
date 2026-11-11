@@ -314,7 +314,9 @@ Read each file's header comment before changing it; the cases are `tests/progres
   over the sample.
 
 - **A verdict never rests on colour.** `progress/verdictMark.tsx` is the one place a verdict's look is defined (Progress pills, Overview's
-  What moved, Timeline rows): each verdict has its own glyph (↑, ↓, –, a dashed circle) beside its word, and colour only repeats it. Up had been the accent alone, so with the red accent Up and Down were both red.
+  What moved, Timeline rows): each verdict has its own glyph (↑, ↓, –, a dashed circle) beside its word, and colour only repeats it: green (`--positive`) for Up
+  and a move up to RX, the destructive red for Down, grey for the neutral two. `headlineLabelClass` colours the Progress headline the same
+  way (Improving green, Declining red, Steady plain). Up had been the accent alone, so with the red accent Up and Down were both red.
   `tests/verdictMark.test.tsx` checks the marks stay distinct, and that no component uses a fixed Tailwind palette colour (the old
   "Not tested since" amber).
 
@@ -370,7 +372,7 @@ a received list (`validateEntryList`, shape only so another device's clock canno
   entry's span (`entryDisplay.ts`), with no sentence relating it to the verdict.
 - **The view** (`TimelineTab.tsx`, tab id `timeline`, over `components/dashboard/timeline/`): entries as bars stacked in lanes above one lane per
   verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide. A
-  verdict row is words only for now: name, verdict and change, then "Compared Jan to Jun 2024 with Jul 2024 to Oct 2026" (the months of
+  verdict row is words only for now: name, the verdict pill (as on Progress) and change, then "Compared Jan to Jun 2024 with Jul 2024 to Oct 2026" (the months of
   the two windows). Two drawings were tried and dropped: a line between the two bests (its length read as the size of the change), and
   the two windows as bands with the best of each as a dot (the dot fell anywhere in its band, so rows looked irregular). One
   Selected panel, the entry form in a dialog, delete behind a confirmation. A row on Progress opens its lane through "See on timeline" under its
@@ -708,7 +710,10 @@ This doesn't relax hard constraint #1 above — the cache is still local-only an
 Black-and-white base in both modes, plus **one** user-selected accent — the only chromatic
 element the athlete controls. Every token in `src/index.css` is achromatic (chroma exactly 0),
 with two fixed exceptions that never derive from the accent: `--destructive`, the error/delete-action
-red, and the `--repmax-1/2/3/5` tokens (red/orange/green/blue). The `--repmax-*` tokens colour the
+red, the `--repmax-1/2/3/5` tokens (red/orange/green/blue), and `--positive`/`--positive-subtle`, the fixed green of a verdict that
+went the athlete's way (Up, a move up to RX, the "Improving" headline on Progress and Overview). Verdicts used to take the accent for Up,
+so with the red accent Up sat beside Down; now a verdict looks the same whatever the accent, and `tests/positiveColor.test.ts` checks the
+green's contrast in both modes. The `--repmax-*` tokens colour the
 highlighted rep scheme on each lift chart (`FIXED_REPMAX_COLORS` in `chartUtils.ts`; one scheme per chart, with a step line of its best so far
 and named in the chart's header, every other effort grey, so no two rep-max colours ever need telling apart), and the
 Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). On Workouts each bar's colours are named beside it: a dot before each letter in the sticky column header and before each

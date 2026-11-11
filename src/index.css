@@ -43,6 +43,14 @@
   --repmax-3: oklch(0.6 0.17 145);
   --repmax-5: oklch(0.55 0.18 250);
 
+  /*
+   * A verdict that went the athlete's way (Up, a move up to RX, an Improving headline), in a fixed green: a third exception to the
+   * achromatic base. It used to be the accent, so with the red accent Up looked like Down. --positive is text and --positive-subtle a
+   * pill's background; tests/themeContrast.test.ts checks the text passes 4.5:1 on the subtle background and on the page, both modes.
+   */
+  --positive: oklch(0.48 0.13 150);
+  --positive-subtle: oklch(0.95 0.05 150);
+
   /* Accent fallbacks, replaced at runtime by the derived ramp. */
   --primary: oklch(0.556 0 0);
   --primary-foreground: oklch(1 0 0);
@@ -87,6 +95,9 @@
   --repmax-3: oklch(0.75 0.16 145);
   --repmax-5: oklch(0.75 0.15 250);
 
+  --positive: oklch(0.8 0.15 150);
+  --positive-subtle: oklch(0.3 0.06 150);
+
   --primary: oklch(0.72 0 0);
   --primary-foreground: oklch(0.145 0 0);
   --primary-hover: oklch(0.808 0 0);
@@ -121,6 +132,8 @@
   --color-repmax-2: var(--repmax-2);
   --color-repmax-3: var(--repmax-3);
   --color-repmax-5: var(--repmax-5);
+  --color-positive: var(--positive);
+  --color-positive-subtle: var(--positive-subtle);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
