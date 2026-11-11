@@ -35,11 +35,14 @@ export function MovementsTab({
   data,
   granularity,
   coverage,
+  describe,
 }: {
   data: MovementData;
   granularity: Granularity;
   /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
   coverage?: { start: string; end: string } | undefined;
+  /** A workout's description by its date and title, so a listed workout opens to it. */
+  describe?: ((date: string, title: string) => string | undefined) | undefined;
 }) {
   const options = useMemo(() => buildMovementOptions(data), [data]);
   const first = options.families[0] ?? options.movements[0];
@@ -198,7 +201,10 @@ export function MovementsTab({
               title: workout.title,
               reason: matched.map((m) => (m.implement === undefined ? m.label : `${m.label} (${m.implement})`)).join(", "),
               detail: `matched on ${matched.map((m) => (m.source === "barbell_lift" ? `"${m.phrase}" (lift field)` : `"${m.phrase}"`)).join(", ")}`,
+              // A lift-field match isn't in the text, so only the text's own phrases are marked.
+              highlight: matched.filter((m) => m.source !== "barbell_lift").map((m) => m.phrase),
             }))}
+            describe={describe}
             emptyMessage={bucket ? `No workouts in ${bucketLabel} involved ${labelInSentence(name)}.` : `No workouts in this range involved ${labelInSentence(name)}.`}
             scope={bucket && bucketLabel ? { label: bucketLabel, onClear: clearBucket } : undefined}
           />

@@ -185,6 +185,17 @@ export function Dashboard({
     [source]
   );
 
+  // A workout's description by its day and title, for the domain, modality and Movements lists' opened rows. All three key their rows
+  // by the same YY-MM-DD date and raw title as all_workouts, so one lookup serves them; the first of a same-day, same-title pair wins.
+  const describe = useMemo(() => {
+    const byKey = new Map<string, string>();
+    for (const w of insights.modality.all_workouts) {
+      const k = `${w.date}|${w.title}`;
+      if (!byKey.has(k) && w.description) byKey.set(k, w.description);
+    }
+    return (date: string, title: string) => byKey.get(`${date}|${title}`);
+  }, [insights.modality.all_workouts]);
+
   // A picked chart point followed to its workouts (ChartPick.tsx): a month on Overview or a lift's day on Lifts. It sets the same custom
   // date range the date picker would, through the same handler, so the scope line says what is showing and the picker undoes it.
   const openWorkouts = useCallback(
@@ -363,18 +374,18 @@ export function Dashboard({
 
           {DOMAIN_LIST.map((domain: Domain) => (
             <TabsContent key={domain} value={`domain:${domain}`}>
-              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} onOpen={onTabChange} />
+              <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
             </TabsContent>
           ))}
 
           {MODALITY_LIST.map((modality: Modality) => (
             <TabsContent key={modality} value={`modality:${modality}`}>
-              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} onOpen={onTabChange} />
+              <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
             </TabsContent>
           ))}
 
           <TabsContent value={MOVEMENTS_TAB}>
-            <MovementsTab data={insights.movements} granularity={granularity} coverage={coverage} />
+            <MovementsTab data={insights.movements} granularity={granularity} coverage={coverage} describe={describe} />
           </TabsContent>
 
           <TabsContent value={BODY_COMP_TAB}>

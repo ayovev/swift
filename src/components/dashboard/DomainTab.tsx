@@ -20,6 +20,7 @@ export function DomainTab({
   granularity,
   coverage,
   onOpen = () => {},
+  describe,
 }: {
   domain: Domain;
   data: DashboardData;
@@ -28,6 +29,8 @@ export function DomainTab({
   coverage?: { start: string; end: string } | undefined;
   /** Opens another view by its tab id: the comparison strip's bars. Omit to draw the strip without links. */
   onOpen?: ((tab: string) => void) | undefined;
+  /** A workout's description by its date and title, so a listed workout opens to it. */
+  describe?: ((date: string, title: string) => string | undefined) | undefined;
 }) {
   const trend = data.domain_trends[domain];
   const direction = data.trend_direction[domain];
@@ -37,7 +40,7 @@ export function DomainTab({
   const { picked, pick, clear, inPicked, label: pickedLabel } = useBucketPick(granularity, `${domain}|${data.summary.total_logged}|${trend.length}`);
   const listRef = useRef<HTMLDivElement>(null);
   const point = picked ? trend.find((p) => p.bucket === picked) : undefined;
-  const rows = workouts.map(([date, title, reason]) => ({ date, title, reason }));
+  const rows = workouts.map(([date, title, reason]) => ({ date, title, reason, highlight: [reason] }));
   const shown = picked ? rows.filter((r) => inPicked(r.date)) : rows;
 
   return (
@@ -117,6 +120,7 @@ export function DomainTab({
             rows={shown}
             emptyMessage={picked ? `No workouts in ${pickedLabel} were classified as ${domain}.` : `No workouts in this export were classified as ${domain}.`}
             scope={picked && pickedLabel ? { label: pickedLabel, onClear: clear } : undefined}
+            describe={describe}
           />
         </CardContent>
       </Card>

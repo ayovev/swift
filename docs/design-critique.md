@@ -592,7 +592,7 @@ than the engine behind them.
 9. **#21** The unclassified line next to the M/W/G charts.
 10. **#18** Relabel the Insights filters.
 
-**Also built since: #2, #4, #5, #6, #7, #8, #9, #14, #16, #17, #22 and #23.**
+**Also built since: #2, #4, #5, #6, #7, #8, #9, #14, #16, #17, #20, #22 and #23.**
 
 - **#2:** every verdict now has its own glyph and Timeline mark (`progress/verdictMark.tsx`), and colour only repeats it, so Up
   and Down stay distinct with the red accent and in greyscale. "Not tested since" lost its hardcoded amber and is grey and
@@ -626,6 +626,10 @@ than the engine behind them.
 - **#9:** as recommended, except the verdict text stays right-aligned in each row (one column of changes is easier to compare
   than text that moves with each lane), and a one-line key says what the marks are. A lift logged rarely has windows that span
   years, so its recent band is long: length now means how long a window lasted, which the key says, but it still draws the eye.
+- **#20:** as recommended: the first 10 rows show, then pages of 50, and a row opens to its description with the matched text
+  in a `<mark>` (the keyword on a domain page, the matched phrases on Movements; the modality pages open without marks, since a
+  share is not text). Descriptions come from the same parse by day and title, so the domain lists keep the shape the parity test
+  pins. On a phone the date moves under the title, as on Workouts.
 - **#16, #17, #22, #23:** on a phone the PR table is a list and Workouts puts the date under the title, Timeline labels and axis
   ticks stay inside the chart, and the "last logged in" filter wraps. A skip link leads to the view, and tab panels are no longer
   stray tab stops (only the landing page's export guide keeps one, for its scrollable text). A weigh-in delete has ten seconds of

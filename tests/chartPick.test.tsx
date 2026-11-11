@@ -159,22 +159,13 @@ describe("ChartPickNote", () => {
 describe("WorkoutList narrowed to a picked point", () => {
   const rows = [{ date: "24-10-03", title: "FRAN", reason: "thrusters" }];
 
-  it("opens, names the point and offers every workout back", () => {
+  it("names the point and offers every workout back", () => {
     const onClear = vi.fn();
     render(<WorkoutList rows={rows} emptyMessage="none" scope={{ label: "Oct '24", onClear }} />);
-    // Open without a click: picking the point was the request to see its workouts.
     expect(screen.getByText("FRAN")).toBeInTheDocument();
     expect(screen.getByText("Oct '24")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Show every workout" }));
     expect(onClear).toHaveBeenCalledOnce();
-    // The rows are the picked point's, so the toggle says "these", not "all".
-    expect(screen.getByRole("button", { name: "Hide this workout" })).toBeInTheDocument();
-  });
-
-  it("stays closed without a pick, as before", () => {
-    render(<WorkoutList rows={rows} emptyMessage="none" />);
-    expect(screen.queryByText("FRAN")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Show all 1 workout" })).toBeInTheDocument();
   });
 });
 

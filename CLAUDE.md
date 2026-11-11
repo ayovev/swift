@@ -170,7 +170,9 @@ The **Movements** view (`MovementsTab.tsx`, under Training) lists what the lexic
 (`movementFamilies.ts`, every variant counts) and single movements, picked by id. It reads
 `Insights.movements` (`buildMovementData.ts`), a thin reduction of the same `ParsedRow.movements`
 `buildModalityData` uses, so nothing is classified twice. The workout list shows the phrase that matched,
-because the matcher is a heuristic. Its analytics events are the value-free `movement_selected` and `implement_selected`.
+because the matcher is a heuristic. Every such list (`WorkoutList.tsx`, also under each domain and modality chart) shows its first
+`INITIAL_ROWS` (10) without a click, and a row opens to the workout's description with the matched text in a `<mark>`; descriptions
+come from `all_workouts` by day and title (`Dashboard.tsx`'s `describe`), so `workout_lists` keeps the shape the parity test pins. Its analytics events are the value-free `movement_selected` and `implement_selected`.
 
 **Picking a chart point** (`charts/ChartPick.tsx`) is the one way into the workouts behind a chart. A click, a tap or Enter on a
 focused chart picks a point and a line under the chart says what it is, with an action and Clear; Escape clears. It is the same on

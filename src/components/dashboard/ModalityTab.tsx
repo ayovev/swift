@@ -26,6 +26,7 @@ export function ModalityTab({
   granularity,
   coverage,
   onOpen = () => {},
+  describe,
 }: {
   modality: Modality;
   data: ModalityData;
@@ -34,6 +35,8 @@ export function ModalityTab({
   coverage?: { start: string; end: string } | undefined;
   /** Opens another view by its tab id: the comparison strip's bars. Omit to draw the strip without links. */
   onOpen?: ((tab: string) => void) | undefined;
+  /** A workout's description by its date and title, so a listed workout opens to it. */
+  describe?: ((date: string, title: string) => string | undefined) | undefined;
 }) {
   const trend = data.modality_trends[modality];
   const direction = data.modality_trend_direction[modality];
@@ -136,6 +139,7 @@ export function ModalityTab({
             rows={shown}
             emptyMessage={picked ? `No workouts in ${pickedLabel} involved ${name.toLowerCase()}.` : `No workouts in this export involved ${name.toLowerCase()}.`}
             scope={picked && pickedLabel ? { label: pickedLabel, onClear: clear } : undefined}
+            describe={describe}
           />
         </CardContent>
       </Card>
