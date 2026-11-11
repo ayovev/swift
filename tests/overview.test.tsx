@@ -193,6 +193,8 @@ describe("OverviewTab totals", () => {
     for (let i = 1; i < labels.length; i++) {
       expect(labels[i - 1]!.compareDocumentPosition(labels[i]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
+    // Numbers share the sans face with the words beside them; mono set them apart.
+    expect(totals.querySelector(".font-mono")).toBeNull();
     // No InBody data or weigh-ins passed: the body stat says so.
     expect(within(totals).getByText("No body data yet")).toBeInTheDocument();
     // The old range-scoped totals have moved to Workouts.
@@ -414,7 +416,11 @@ describe("OverviewTab panels", () => {
       />
     );
     expect(screen.getByText("Read Nov 1")).toBeInTheDocument();
-    expect(screen.getAllByText(/183\.4 lb/)).toHaveLength(1);
+    // Once on the page; the unit is its own smaller element, so match the text, not one element.
+    expect(document.body.textContent!.match(/183\.4 lb/g)).toHaveLength(1);
+    const unit = screen.getByRole("region", { name: "Totals" }).querySelector("[data-unit]") as HTMLElement;
+    expect(unit.textContent).toBe("lb");
+    expect(unit.className).toMatch(/text-muted-foreground/);
     expect(screen.getByText("One reading so far. A second draws the line.")).toBeInTheDocument();
   });
 

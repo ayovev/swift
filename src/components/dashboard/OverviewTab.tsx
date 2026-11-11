@@ -31,11 +31,16 @@ import { BODY_COMP_TAB, LIFTS_TAB, LIFT_HISTORY_TAB, TIMELINE_TAB, WORKOUTS_TAB 
 import type { Insights } from "@/lib/analytics/buildInsights";
 import { headlineLabelClass } from "./progress/verdictMark";
 
+/** A unit at the end of a figure ("182.1 lb"). */
+const UNIT = / ([a-z]+)$/;
+
 /**
  * One stat in the totals row: a large figure, what it is, and up to two muted
- * lines. Numbers set in the large mono face; words (a PR's title, the Progress
- * label) one size down in the sans face, so a long title fits a quarter of
- * the row. With `onOpen` the whole cell is a button into the stat's section.
+ * lines. Numbers and words share the sans face, so the row reads as one
+ * headline (the numbers were mono, which set "740" apart from "Bench Press 5x5"
+ * beside it and left a wide gap before "lb"); a number's unit is smaller and
+ * muted, and words (a PR's title, the Progress label) are one size down, so a
+ * long title fits a quarter of the row. With `onOpen` the whole cell is a button into the stat's section.
  */
 function Stat({
   value,
@@ -61,12 +66,22 @@ function Stat({
         className={cn(
           "tracking-tight",
           numeric
-            ? "font-mono text-3xl font-medium tabular sm:text-[44px] sm:leading-none"
+            ? "text-3xl font-semibold sm:text-[44px] sm:leading-none"
             : "text-2xl leading-tight font-semibold break-words sm:text-[28px]",
           valueClassName
         )}
       >
-        {value}
+        {/* A trailing unit ("182.1 lb") is set smaller and muted, so the number carries the row. */}
+        {numeric && UNIT.test(value) ? (
+          <>
+            {value.replace(UNIT, "")}{" "}
+            <span className="text-lg font-medium text-muted-foreground sm:text-2xl" data-unit>
+              {value.match(UNIT)![1]}
+            </span>
+          </>
+        ) : (
+          value
+        )}
       </span>
       <span className="mt-1 text-sm">{label}</span>
       {lines.map((l) => (
