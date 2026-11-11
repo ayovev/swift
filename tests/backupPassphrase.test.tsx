@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "@/App";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { readBackup, serializeEncryptedBackup } from "@/lib/backup/backup";
@@ -43,6 +43,11 @@ async function pickWhenReady(file: File) {
 }
 
 const type = (label: string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
+
+// The dashboard is a lazy chunk; warm its cold module transform once so a slow runner does not spend a test's wait on it (see App.test.tsx).
+beforeAll(async () => {
+  await import("@/components/dashboard/Dashboard");
+}, 60_000);
 
 beforeEach(() => posthog.capture.mockClear());
 afterEach(async () => {

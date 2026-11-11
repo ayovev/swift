@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import App from "@/App";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { loadBodyCompRows, saveBodyCompRows } from "@/lib/storage/bodyCompStorage";
@@ -22,13 +22,20 @@ function renderApp() {
   );
 }
 
+// The dashboard is a lazy chunk (CLAUDE.md, "Architecture: the bundle split"). In the browser that is a network fetch; here the first
+// import transforms the whole dashboard module graph, which on a slow CI runner took longer than findBy's one second and failed the first test
+// that waited for it. Warm it once, with a generous hook timeout, so each test measures the app and not the cold transform.
+beforeAll(async () => {
+  await import("@/components/dashboard/Dashboard");
+}, 60_000);
+
 afterEach(async () => {
   await idbClearAll();
 });
 
 /** The dashboard's header always has exactly one Settings button once it's rendered. */
-function findDashboard(timeout?: number) {
-  return screen.findByRole("button", { name: "Settings" }, timeout ? { timeout } : undefined);
+function findDashboard(timeout = 3000) {
+  return screen.findByRole("button", { name: "Settings" }, { timeout });
 }
 
 /**
