@@ -37,13 +37,17 @@ export type RepMaxHighlight = "most" | TrackedRepMaxCategory;
 /** A lift needs this many logged efforts for a chart; fewer go in the "Also logged" line, since 3 to 5 points draw no trend. */
 export const MIN_CHART_EFFORTS = 6;
 
-/** The scheme a lift logged most often, tracked schemes winning ties in REP_MAX_CATEGORY_ORDER (1RM first). */
+/**
+ * The scheme a lift logged most often, tracked schemes winning ties in REP_MAX_CATEGORY_ORDER (1RM first). "Other" (no rep count read
+ * from the text, or a scheme like 4RM) is chosen only when the lift has no tracked scheme at all: Front Squat on the sample logged
+ * mostly "other" and highlighted it in black, which named nothing anyone trains to.
+ */
 export function mostLoggedScheme(entries: readonly LiftEntry[]): RepMaxCategory {
   const counts = new Map<RepMaxCategory, number>();
   for (const e of entries) if (e.value > 0) counts.set(repMaxCategory(e.repMax), (counts.get(repMaxCategory(e.repMax)) ?? 0) + 1);
   let best: RepMaxCategory = "other";
   let n = 0;
-  for (const c of [...REP_MAX_CATEGORY_ORDER, "other" as const]) {
+  for (const c of REP_MAX_CATEGORY_ORDER) {
     const k = counts.get(c) ?? 0;
     if (k > n) [best, n] = [c, k];
   }

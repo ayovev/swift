@@ -17,10 +17,12 @@ const e = (repMax: number | null, value = 100): LiftEntry => ({ date: "2024-01-0
 const efforts = (v: readonly LiftEntry[]) => v.filter((x) => x.value > 0).length;
 
 describe("mostLoggedScheme", () => {
-  it("picks the scheme with the most logged efforts, tracked schemes first on a tie, ignoring unlogged loads", () => {
+  it("picks the tracked scheme with the most logged efforts, 1RM first on a tie, ignoring unlogged loads", () => {
     expect(mostLoggedScheme([e(5), e(5), e(1), e(null)])).toBe("5RM");
     expect(mostLoggedScheme([e(3), e(1)])).toBe("1RM");
-    expect(mostLoggedScheme([e(null), e(null), e(1)])).toBe("other");
+    // "Other" outnumbers 1RM here, but a tracked scheme wins: other only when there is none.
+    expect(mostLoggedScheme([e(null), e(null), e(1)])).toBe("1RM");
+    expect(mostLoggedScheme([e(null), e(4)])).toBe("other");
     expect(mostLoggedScheme([e(5, 0), e(5, 0), e(1)])).toBe("1RM");
   });
 });

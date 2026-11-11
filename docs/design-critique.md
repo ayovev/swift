@@ -594,9 +594,12 @@ than the engine behind them.
 
 **Also built since: #2, #4, #5, #6, #7, #8, #9, #14, #16, #17, #20, #22 and #23.**
 
-- **#2:** every verdict now has its own glyph and Timeline mark (`progress/verdictMark.tsx`), and colour only repeats it, so Up
-  and Down stay distinct with the red accent and in greyscale. "Not tested since" lost its hardcoded amber and is grey and
-  dotted.
+- **#2:** every verdict now has its own glyph (`progress/verdictMark.tsx`), and colour only repeats it, so Up and Down stay
+  distinct in greyscale. "Not tested since" lost its hardcoded amber and is grey. Later, by the owner's decision, Up and a move
+  up to RX moved off the accent onto a fixed green (`--positive`), with Down red and the neutral verdicts grey, so a verdict
+  looks the same whatever the accent; the Progress headline follows (Improving green, Declining red, Steady plain) on Progress
+  and Overview. A move up to RX says "Moved up to RX" in its pill everywhere. The Timeline's lane marks went with its lanes
+  (see #9), and its rows carry the same pill as Progress.
 - **#4:** works as recommended, except on touch. A tap picks the point rather than showing a "See N workouts" button inside the
   tooltip; one tap is a shorter path, and the note under the chart carries the action and Clear. Keyboard picking (arrow keys,
   Enter, Escape) came with it, as did a keyboard-only focus ring on charts (WCAG 2.4.7); pointer focus no longer draws a box
@@ -622,7 +625,8 @@ than the engine behind them.
 - **#7:** as recommended, except the line: a step line of the highlighted scheme's best so far, not every effort joined (joined,
   each light day read as a drop). And the highlighted scheme is named in each chart's header ("● 1RM, latest 215 lb") rather than at
   the line's end, where on the sample it landed on other dots. "Also logged" is a plain line, not links: Workouts has no way to be
-  opened filtered to one lift. Charts on the sample drop from 18 to 14. Its time ticks were made flat, then put back to the shared angle (see section 5).
+  opened filtered to one lift. Charts on the sample drop from 18 to 14. Each lift highlights its most-logged tracked scheme (1RM to 5RM);
+  "Other schemes" only when it has none, since Front Squat highlighted "Other" in black, which named nothing. Its time ticks were made flat, then put back to the shared angle (see section 5).
 - **#9:** the joining line is gone, but no drawing replaced it. The recommended bands, with the best of each window as a dot, were
   built and then removed: the dot fell anywhere in its band, so rows read as irregular. A version without the dots was mocked up.
   Each row is now words only (name, verdict and change, then the months of the two windows compared) until a drawing that reads
@@ -649,7 +653,10 @@ than the engine behind them.
   was first renamed "Monostructural" and then reverted: it is the textbook term, not how athletes talk, and it was long enough
   to push the tab row over at 1280px.
 - **#11:** With the gaps tightened from `lg`, the whole row fits at 1280px (1216px in 1216px, no room to spare). Below that it
-  scrolls, with fades and, on pointer devices, scroll buttons.
+  scrolls, with fades and, on pointer devices, scroll buttons. Later: the buttons moved out of the fades into their own slots
+  beside the row, since over the fade they covered the last visible tab (and on a touch laptop a tap meant for it scrolled
+  instead), and the Domains and Modalities labels stick to the row's left edge while their tabs show, so on a phone the
+  Cardio modality keeps the label that tells it from the Cardio domain.
 - **#12:** The two-line InBody source card stays at the top, since it explains the charts and holds Replace file. Trends then
   come before the reading list. Days trained reads "730 in months with a scan".
 - **#19:** The "too short to compare" guard is 8 weeks from the first workout to the last, not a bucket count: the halves
@@ -725,8 +732,9 @@ than the engine behind them.
   Workouts row bar and any future M/W/G line chart (where all pairs compare) will still put red and green side by
   side. Consider keeping the rep-max colours fixed but taking the M/W/G colours from a validated CVD-safe triad
   (blue, orange, and a dark neutral, for example), validated with `validate_palette.js --pairs all`.
-- **The red accent swatch plus the destructive red.** Even with #2, a red accent puts the athlete's one colour on top
-  of the app's only warning colour. Either drop the red swatch or test accent-to-destructive separation in
+- **The red accent swatch plus the destructive red.** Verdicts no longer use the accent (Up is a fixed green), so the
+  worst case, Up looking like Down, is gone. A red accent still puts the athlete's one colour on top of the app's only
+  warning colour for errors and delete actions. Either drop the red swatch or test accent-to-destructive separation in
   `themeContrast.test.ts`.
 - **"Tabs are a visible row, never a dropdown" at 16 tabs.** #11 makes the row workable, but ten domain tabs are ten
   copies of one view. A "Domains" view with the comparison strip and a domain selector inside it (a segmented row,
