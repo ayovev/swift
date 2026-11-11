@@ -51,6 +51,24 @@ function ticks(start: string, end: string, count = 6): { date: string; label: st
 export function TimelineChart({ entries, rows, start, end, asOf, selected, onSelect, onAddAt }: TimelineChartProps) {
   const span = Math.max(1, dayNumber(end) - dayNumber(start));
   const pct = (iso: string): number => Math.min(100, Math.max(0, ((dayNumber(iso) - dayNumber(start)) / span) * 100));
+  const inRange = (iso: string) => iso >= start && iso <= end;
+  /**
+   * One verdict window, from its first session to its last, clipped to the range: grey for the previous window, the verdict's own
+   * colour and dash for the recent one (verdictMark.tsx). A window of one session, or of a few days, still shows as a short stub.
+   */
+  const Band = ({ from: a, to: b, kind: k }: { from: string; to: string; kind: VerdictKind | null }) => {
+    if (b < start || a > end) return null;
+    const left = pct(a < start ? start : a);
+    const width = Math.max(pct(b > end ? end : b) - left, 0.6);
+    return (
+      <span
+        data-window={k ? "recent" : "previous"}
+        data-line={k ? VERDICT_STYLE[k].line.dash : undefined}
+        className="absolute top-1/2 h-0 -translate-y-1/2"
+        style={{ left: `${left}%`, width: `${width}%`, ...(k ? { ...laneLineStyle(k), borderTopWidth: 4 } : { borderTopWidth: 4, borderTopStyle: "solid", borderTopColor: "color-mix(in oklch, var(--foreground) 30%, transparent)" }) }}
+      />
+    );
+  };
 
   const visible = useMemo(() => entries.filter((e) => e.startDate <= end && entryEnd(e, asOf) >= start), [entries, start, end, asOf]);
   // The width of the entries area, so a label's room can be counted in pixels: a lane is free only when neither the bar nor its name
@@ -173,12 +191,24 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
 
       <section aria-label="Verdicts" className="flex flex-col gap-1">
         <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Verdicts</h2>
+        {/* What a lane's marks are, once: without it, two bands per row read as one long bar. */}
+        <p className="text-xs text-muted-foreground" data-lane-key>
+          Each row: the sessions compared, previous in grey and recent in the verdict's mark, with a dot at the best of each. The
+          percentage is the change between the two bests.
+        </p>
         <ul className="flex flex-col">
           {verdictLanes.map((r) => {
             const move = !r.verdict && r.moveUp;
             const from = r.verdict ? r.verdict.previousBest.date : (r.moveUp as NonNullable<typeof r.moveUp>).scaledDate;
             const to = r.verdict ? r.verdict.recentBest.date : (r.moveUp as NonNullable<typeof r.moveUp>).date;
-            const outside = to < start || from > end;
+            const span = (list: readonly { date: string }[]): [string, string] => {
+              const ds = list.map((x) => x.date).sort();
+              return [ds[0]!, ds[ds.length - 1]!];
+            };
+            const windows = r.verdict ? { previous: span(r.verdict.previous), recent: span(r.verdict.recent) } : null;
+            const first = windows ? windows.previous[0] : from;
+            const last = windows ? windows.recent[1] : to;
+            const outside = last < start || first > end;
             // How the lane is marked: shape and glyph per verdict (verdictMark.tsx), never the accent alone.
             const kind: VerdictKind = move ? "move-up" : r.verdict ? r.verdict.state : "up";
             const text = move ? "Moved up to RX" : `${VERDICT_STYLE[kind].label} ${r.verdict && r.verdict.change !== 0 ? `${r.verdict.change > 0 ? "+" : "−"}${Math.abs(r.verdict.change).toFixed(1)}%` : ""}`.trim();
@@ -208,17 +238,24 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
                     {label}
                   </button>
                 )}
-                <div className="relative h-3">
+                <div className="relative h-3" data-windows>
                   {!outside ? (
-                    <>
-                      <span
-                        data-line={VERDICT_STYLE[kind].line.dash}
-                        className="absolute top-1/2 h-0 -translate-y-1/2"
-                        style={{ left: `${pct(from)}%`, width: `${Math.max(pct(to) - pct(from), 0)}%`, ...laneLineStyle(kind) }}
-                      />
-                      {from >= start ? <span className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground" style={{ left: `${pct(from)}%` }} /> : null}
-                      {to <= end ? <LaneEnd kind={kind} left={`${pct(to)}%`} /> : null}
-                    </>
+                    windows ? (
+                      <>
+                        {/* The two windows the verdict compared, as bands, and the best of each as a dot inside its band. Nothing
+                            joins them: a line from one best to the other made length read as the size of the change. */}
+                        <Band from={windows.previous[0]} to={windows.previous[1]} kind={null} />
+                        <Band from={windows.recent[0]} to={windows.recent[1]} kind={kind} />
+                        {inRange(from) ? <span data-best="previous" className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground" style={{ left: `${pct(from)}%` }} /> : null}
+                        {inRange(to) ? <LaneEnd kind={kind} left={`${pct(to)}%`} /> : null}
+                      </>
+                    ) : (
+                      <>
+                        {/* A move up to RX: the last Scaled and the first RX session, marks only. */}
+                        {inRange(from) ? <span className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground" style={{ left: `${pct(from)}%` }} /> : null}
+                        {inRange(to) ? <LaneEnd kind={kind} left={`${pct(to)}%`} /> : null}
+                      </>
+                    )
                   ) : null}
                 </div>
               </li>

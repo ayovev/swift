@@ -368,7 +368,8 @@ a received list (`validateEntryList`, shape only so another device's clock canno
   none. With fewer than 3 counted subjects it shows a shortfall sentence and facts lines, never a weaker claim. Body weight appears once over the
   entry's span (`entryDisplay.ts`), with no sentence relating it to the verdict.
 - **The view** (`TimelineTab.tsx`, tab id `timeline`, over `components/dashboard/timeline/`): entries as bars stacked in lanes above one lane per
-  verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide, one
+  verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide, each verdict lane drawn as the two windows it compared (previous grey, recent in the verdict's
+  mark, the best of each as a dot, nothing joining them, since a joining line's length read as the size of the change), one
   Selected panel, the entry form in a dialog, delete behind a confirmation. A row on Progress opens its lane through "See on timeline" under its
   opened chart (not for a subject without a lane, nor a move up to RX).
 - **Storage and names.** Key `"timeline-entries"` (`storage/timelineStorage.ts`), persisted only when `source === "upload"`, wiped by Start over,

@@ -49,7 +49,9 @@ describe("verdict marks", () => {
       if (!end) continue; // the recent end falls outside the axis
       checked++;
       expect(end.getAttribute("data-end"), row.subject.key).toBe(VERDICT_STYLE[kind].end);
-      expect(lane.querySelector("[data-line]")?.getAttribute("data-line")).toBe(VERDICT_STYLE[kind].line.dash);
+      // The recent window carries the verdict's dash; a move up to RX has no windows, only its two marks.
+      if (kind === "move-up") expect(lane.querySelector("[data-line]")).toBeNull();
+      else expect(lane.querySelector("[data-window=recent]")?.getAttribute("data-line")).toBe(VERDICT_STYLE[kind].line.dash);
       expect(within(lane).getAllByText((_, el) => el?.getAttribute("data-glyph") !== null && el?.tagName.toLowerCase() === "svg").length).toBeGreaterThan(0);
     }
     // The sample has ups, a down and no-clear-change lanes, so the check above covered more than one kind.
