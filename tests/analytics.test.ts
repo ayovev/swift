@@ -15,6 +15,12 @@ async function loadAnalytics(key: string) {
   return import("@/lib/posthog");
 }
 
+/** PostHog is a separate chunk fetched after the first paint, so `init` runs a moment after initAnalytics(). */
+async function started(init: () => void) {
+  init();
+  await vi.waitFor(() => expect(mocked.init).toHaveBeenCalledOnce());
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -42,7 +48,7 @@ describe("analytics — disabled without a key (the shipped default)", () => {
 describe("analytics — privacy-preserving configuration", () => {
   it("disables person profiles, session recording and autocapture", async () => {
     const { initAnalytics } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
     expect(mocked.init).toHaveBeenCalledOnce();
     const [key, config] = mocked.init.mock.calls[0]!;
     expect(key).toBe("phc_test");
@@ -68,7 +74,7 @@ describe("analytics — privacy-preserving configuration", () => {
 
   it("never identifies anyone — v1 has no accounts to identify", async () => {
     const { initAnalytics, capture } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
     capture({ name: "app_opened" });
     capture({ name: "upload_attempted" });
     expect(mocked.identify).not.toHaveBeenCalled();
@@ -79,7 +85,7 @@ describe("analytics — event payloads carry no workout content", () => {
   it("sends the key lifecycle events named in the acceptance criteria", async () => {
     const { initAnalytics, capture, bucketRowCount, bucketDuration } =
       await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
 
     capture({ name: "app_opened" });
     capture({ name: "upload_attempted" });
@@ -110,7 +116,7 @@ describe("analytics — event payloads carry no workout content", () => {
 
   it("sends only a closed-vocabulary failure reason, never file content", async () => {
     const { initAnalytics, capture } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
     capture({ name: "upload_failed", props: { reason: "malformed" } });
     const [, props] = mocked.capture.mock.calls[0]!;
     expect(props).toEqual({ reason: "malformed" });
@@ -119,7 +125,7 @@ describe("analytics — event payloads carry no workout content", () => {
   it("leaks no workout text through any event payload", async () => {
     const { initAnalytics, capture, bucketRowCount, bucketDuration } =
       await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
 
     capture({ name: "app_opened" });
     capture({
@@ -155,12 +161,48 @@ describe("analytics — event payloads carry no workout content", () => {
 describe("analytics — backup", () => {
   it("reports export and import as bare interaction names, nothing about the file", async () => {
     const { initAnalytics, capture } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
     capture({ name: "interaction_used", props: { interaction: "backup_exported" } });
     capture({ name: "interaction_used", props: { interaction: "backup_imported" } });
     const calls = mocked.capture.mock.calls;
     expect(calls.map((c) => c[1])).toEqual([{ interaction: "backup_exported" }, { interaction: "backup_imported" }]);
     // No filename, no counts: the name is the whole payload.
     expect(JSON.stringify(calls)).not.toMatch(/swift-backup|\.json|\d{4}-\d{2}-\d{2}/);
+  });
+});
+
+describe("analytics — PostHog loads after the first paint", () => {
+  it("does not touch PostHog synchronously, and holds events until it is up", async () => {
+    const { initAnalytics, capture } = await loadAnalytics("phc_test");
+    initAnalytics();
+    capture({ name: "app_opened" });
+    capture({ name: "sample_data_used" });
+    // Nothing has been sent and nothing initialised yet: the library is still a pending chunk.
+    expect(mocked.init).not.toHaveBeenCalled();
+    expect(mocked.capture).not.toHaveBeenCalled();
+
+    await vi.waitFor(() => expect(mocked.capture).toHaveBeenCalledTimes(2));
+    // Initialised before anything is sent, and in the order they happened.
+    expect(mocked.init.mock.invocationCallOrder[0]!).toBeLessThan(mocked.capture.mock.invocationCallOrder[0]!);
+    expect(mocked.capture.mock.calls.map((c) => c[0])).toEqual(["app_opened", "sample_data_used"]);
+  });
+
+  it("keeps the time a held event happened, and sends nothing but the event itself", async () => {
+    const { initAnalytics, capture } = await loadAnalytics("phc_test");
+    initAnalytics();
+    capture({ name: "granularity_changed", props: { granularity: "weekly" } });
+    await vi.waitFor(() => expect(mocked.capture).toHaveBeenCalledOnce());
+    const [name, props, options] = mocked.capture.mock.calls[0]!;
+    expect(name).toBe("granularity_changed");
+    expect(props).toEqual({ granularity: "weekly" });
+    expect(Object.keys(options as object)).toEqual(["timestamp"]);
+    expect((options as { timestamp: Date }).timestamp).toBeInstanceOf(Date);
+  });
+
+  it("sends later events straight away, with no extra options", async () => {
+    const { initAnalytics, capture } = await loadAnalytics("phc_test");
+    await started(initAnalytics);
+    capture({ name: "upload_attempted" });
+    expect(mocked.capture).toHaveBeenCalledWith("upload_attempted", undefined);
   });
 });

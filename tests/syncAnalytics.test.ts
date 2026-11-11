@@ -14,6 +14,12 @@ async function loadAnalytics(key: string) {
   return import("@/lib/posthog");
 }
 
+/** PostHog is a separate chunk fetched after the first paint, so `init` runs a moment after initAnalytics(). */
+async function started(init: () => void) {
+  init();
+  await vi.waitFor(() => expect(mocked.init).toHaveBeenCalledOnce());
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -25,7 +31,7 @@ afterEach(() => {
 describe("analytics — sync events", () => {
   it("sends the sync lifecycle events for both roles", async () => {
     const { initAnalytics, capture, bucketRowCount } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
 
     capture({ name: "sync_attempted", props: { role: "host" } });
     capture({ name: "sync_succeeded", props: { role: "host", rows: bucketRowCount(1209) } });
@@ -42,7 +48,7 @@ describe("analytics — sync events", () => {
 
   it("sends only role and a closed-vocabulary reason for sync_failed, never anything else", async () => {
     const { initAnalytics, capture } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
     capture({ name: "sync_failed", props: { role: "joiner", reason: "invalid_qr" } });
     const [, props] = mocked.capture.mock.calls[0]!;
     expect(props).toEqual({ role: "joiner", reason: "invalid_qr" });
@@ -51,7 +57,7 @@ describe("analytics — sync events", () => {
 
   it("reports rejected data with the fixed invalid_data reason and nothing about which dataset or why", async () => {
     const { initAnalytics, capture } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
     capture({ name: "sync_failed", props: { role: "joiner", reason: "invalid_data" } });
     const [, props] = mocked.capture.mock.calls[0]!;
     expect(props).toEqual({ role: "joiner", reason: "invalid_data" });
@@ -59,7 +65,7 @@ describe("analytics — sync events", () => {
 
   it("sends only role and a bucketed row count for sync_succeeded, never an exact count", async () => {
     const { initAnalytics, capture, bucketRowCount } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
     capture({ name: "sync_succeeded", props: { role: "host", rows: bucketRowCount(1209) } });
     const [, props] = mocked.capture.mock.calls[0]!;
     expect(props).toEqual({ role: "host", rows: "500_1500" });
@@ -68,7 +74,7 @@ describe("analytics — sync events", () => {
 
   it("never leaks a device name, session id, or SDP-shaped string through a sync event", async () => {
     const { initAnalytics, capture, bucketRowCount } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
 
     // A plausible fake "leak" the payload TYPES must make structurally
     // impossible to pass through capture(), not just avoid by convention.
@@ -87,7 +93,7 @@ describe("analytics — sync events", () => {
 
   it("leaks no workout text through a sync event payload", async () => {
     const { initAnalytics, capture, bucketRowCount } = await loadAnalytics("phc_test");
-    initAnalytics();
+    await started(initAnalytics);
 
     capture({ name: "sync_attempted", props: { role: "joiner" } });
     capture({ name: "sync_succeeded", props: { role: "joiner", rows: bucketRowCount(1209) } });

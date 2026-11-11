@@ -1,4 +1,4 @@
-import posthog from "posthog-js";
+import type { PostHog } from "posthog-js";
 import type { CsvErrorCategory } from "./csv/parseCsv";
 import type { SyncFailureReason } from "./sync/syncSession";
 
@@ -91,16 +91,50 @@ type SwiftEvent =
 const POSTHOG_HOST = "https://us.i.posthog.com";
 
 let enabled = false;
+let client: PostHog | null = null;
+/** Events captured before the PostHog chunk has loaded, with when they happened. Drained once it has. */
+let queue: { event: SwiftEvent; at: Date }[] = [];
+
+/**
+ * Run `fn` once the first screen has painted. PostHog is about a third of the app's JavaScript and nothing on screen
+ * depends on it, so it loads after the page, not before it. `requestIdleCallback` is missing in Safari, hence the timer.
+ */
+function afterFirstPaint(fn: () => void): void {
+  const run = () => {
+    if (typeof requestIdleCallback === "function") requestIdleCallback(fn, { timeout: 2000 });
+    else setTimeout(fn, 200);
+  };
+  if (document.readyState === "complete") run();
+  else window.addEventListener("load", run, { once: true });
+}
 
 /**
  * Initialise PostHog if a key is configured. With the placeholder empty key
  * (see .env.example) every capture below becomes a no-op, so the app runs
  * normally without analytics rather than erroring or blocking.
+ *
+ * The library itself is a separate chunk (`import("posthog-js")`) fetched after the first paint, from our own
+ * origin like every other chunk. Events captured meanwhile are held in memory, with their time, and sent once it
+ * is up; the privacy config below is unchanged by the delay. If the chunk cannot load, they are dropped: analytics is
+ * never a requirement.
  */
 export function initAnalytics(): void {
   const key = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
   if (!key) return;
+  enabled = true;
+  afterFirstPaint(() => {
+    void import("posthog-js")
+      .then(({ default: posthog }) => {
+        startPostHog(posthog, key);
+      })
+      .catch(() => {
+        enabled = false;
+        queue = [];
+      });
+  });
+}
 
+function startPostHog(posthog: PostHog, key: string): void {
   posthog.init(key, {
     // Pinned, not configurable: vercel.json's connect-src allows exactly this host.
     api_host: POSTHOG_HOST,
@@ -127,13 +161,20 @@ export function initAnalytics(): void {
     advanced_disable_flags: true,
     persistence: "localStorage",
   });
-  enabled = true;
+  client = posthog;
+  const held = queue;
+  queue = [];
+  for (const { event, at } of held) posthog.capture(event.name, event.props, { timestamp: at });
 }
 
 /** Capture one of the allowed events. No-op when analytics is not configured. */
 export function capture(event: SwiftEvent): void {
   if (!enabled) return;
-  posthog.capture(event.name, event.props);
+  if (!client) {
+    queue.push({ event, at: new Date() });
+    return;
+  }
+  client.capture(event.name, event.props);
 }
 
 /** Coarse timing bucket for the performance budget, not a precise measurement. */
