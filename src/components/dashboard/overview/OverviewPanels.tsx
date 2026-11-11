@@ -425,12 +425,7 @@ export function InsightsPanel({
                 <>
                   <span className="text-sm font-medium">
                     {displayName(r.subject)}
-                    {/* A move up to RX names itself in its pill, as on the Timeline, rather than a bare "Up". */}
-                    {r.group !== "down" && r.moveUp && !r.verdict ? (
-                      <VerdictPill kind="move-up" label="Moved up to RX" />
-                    ) : (
-                      <VerdictPill kind={r.group === "down" ? "down" : "up"} />
-                    )}
+                    <VerdictPill kind={r.group === "down" ? "down" : r.moveUp && !r.verdict ? "move-up" : "up"} />
                   </span>
                   <span className="text-xs text-muted-foreground">{movedText(r)}</span>
                 </>

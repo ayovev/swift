@@ -56,6 +56,8 @@ describe("the Insights front door", () => {
     const fran = within(group("Up")).getByText("Fran").closest("li") as HTMLElement;
     expect(within(fran).getByText("Moved up to RX in Dec 2025, after 3 Scaled sessions.")).toBeInTheDocument();
     expect(within(fran).queryByRole("button")).not.toBeInTheDocument();
+    // Its pill names it, as on Overview and the Timeline, rather than a bare Up.
+    expect(fran.querySelector("[data-verdict=move-up]")?.textContent).toBe("Moved up to RX");
   });
 
   it("opens a row to its chart", () => {

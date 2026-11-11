@@ -198,10 +198,9 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
                   {outside ? (
                     "Outside this range"
                   ) : (
-                    // The same pill as Progress and Overview, so a verdict looks the same wherever it is shown; a move up to RX names
-                    // itself in the pill rather than reading "Up · Moved up to RX".
+                    // The same pill as Progress and Overview, so a verdict looks the same wherever it is shown.
                     <span className="inline-flex items-center gap-1.5">
-                      <VerdictPill kind={kind} className="ml-0" {...(move ? { label: "Moved up to RX" } : {})} />
+                      <VerdictPill kind={kind} className="ml-0" />
                       {change ? <span className="tabular">{change}</span> : null}
                     </span>
                   )}

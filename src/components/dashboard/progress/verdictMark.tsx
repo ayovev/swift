@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
  * Shape and a glyph carry the verdict; colour only repeats it. Up used to be marked by the accent alone, so the colour of a verdict
  * was whatever the athlete picked for looks: with the red accent, Up and Down were both red, and with green, Up read as "good" while
  * other accents said nothing (WCAG 1.4.1, Use of Color). Now every verdict has its own glyph beside its word, so a greyscale copy still
- * reads; `tests/verdictMark.test.tsx` checks the glyphs are distinct. (A move up to RX shares Up's arrow: it is an Up vote, and its
- * own words say what kind.) The Timeline's lane marks (end shapes and dashes) went with its lane drawing.
+ * reads; `tests/verdictMark.test.tsx` checks the glyphs are distinct. (A move up to RX shares Up's arrow and green: it is an Up vote,
+ * and its pill says "Moved up to RX" everywhere, Progress, Overview and the Timeline, rather than a bare Up.) The Timeline's lane marks (end shapes and dashes) went with its lane drawing.
  *
  * Colour: Up and a move up to RX are a fixed green (--positive), Down the fixed destructive red, and the two neutral verdicts grey, so
  * a verdict looks the same whatever accent the athlete picks. Up used to take the accent, which with the red accent sat beside Down.
@@ -31,7 +31,7 @@ export const VERDICT_STYLE: Record<VerdictKind, VerdictStyle> = {
     pill: "bg-positive-subtle text-positive",
   },
   "move-up": {
-    label: "Up",
+    label: "Moved up to RX",
     Glyph: ArrowUp,
     pill: "bg-positive-subtle text-positive",
   },
@@ -53,7 +53,7 @@ export const VERDICT_STYLE: Record<VerdictKind, VerdictStyle> = {
 };
 
 /** The verdict pill: glyph and word, so it reads without its colour. */
-export function VerdictPill({ kind, className, label }: { kind: VerdictKind; className?: string; label?: string }) {
+export function VerdictPill({ kind, className }: { kind: VerdictKind; className?: string }) {
   const style = VERDICT_STYLE[kind];
   const { Glyph } = style;
   return (
@@ -62,7 +62,7 @@ export function VerdictPill({ kind, className, label }: { kind: VerdictKind; cla
       className={cn("ml-2 inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 align-middle text-[11px] font-semibold", style.pill, className)}
     >
       <Glyph className="size-3 shrink-0" strokeWidth={2.5} aria-hidden data-glyph={kind === "move-up" ? "up" : kind} />
-      {label ?? style.label}
+      {style.label}
     </span>
   );
 }
