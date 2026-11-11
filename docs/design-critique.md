@@ -623,9 +623,10 @@ than the engine behind them.
   each light day read as a drop). And the highlighted scheme is named in each chart's header ("● 1RM, latest 215 lb") rather than at
   the line's end, where on the sample it landed on other dots. "Also logged" is a plain line, not links: Workouts has no way to be
   opened filtered to one lift. Charts on the sample drop from 18 to 14. Its time ticks were made flat, then put back to the shared angle (see section 5).
-- **#9:** as recommended, except the verdict text stays right-aligned in each row (one column of changes is easier to compare
-  than text that moves with each lane), and a one-line key says what the marks are. A lift logged rarely has windows that span
-  years, so its recent band is long: length now means how long a window lasted, which the key says, but it still draws the eye.
+- **#9:** the joining line is gone, but no drawing replaced it. The recommended bands, with the best of each window as a dot, were
+  built and then removed: the dot fell anywhere in its band, so rows read as irregular. A version without the dots was mocked up.
+  Each row is now words only (name, verdict and change, then the months of the two windows compared) until a drawing that reads
+  true is found.
 - **#20:** as recommended: the first 10 rows show, then pages of 50, and a row opens to its description with the matched text
   in a `<mark>` (the keyword on a domain page, the matched phrases on Movements; the modality pages open without marks, since a
   share is not text). Descriptions come from the same parse by day and title, so the domain lists keep the shape the parity test

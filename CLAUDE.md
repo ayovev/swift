@@ -314,8 +314,7 @@ Read each file's header comment before changing it; the cases are `tests/progres
   over the sample.
 
 - **A verdict never rests on colour.** `progress/verdictMark.tsx` is the one place a verdict's look is defined (Progress pills, Overview's
-  What moved, Timeline lanes): each verdict has its own glyph (↑, ↓, –, a dashed circle) and its own lane end (dot, ring, diamond, small
-  dot) and line dash, and colour only repeats it. Up had been the accent alone, so with the red accent Up and Down were both red.
+  What moved, Timeline rows): each verdict has its own glyph (↑, ↓, –, a dashed circle) beside its word, and colour only repeats it. Up had been the accent alone, so with the red accent Up and Down were both red.
   `tests/verdictMark.test.tsx` checks the marks stay distinct, and that no component uses a fixed Tailwind palette colour (the old
   "Not tested since" amber).
 
@@ -370,8 +369,10 @@ a received list (`validateEntryList`, shape only so another device's clock canno
   none. With fewer than 3 counted subjects it shows a shortfall sentence and facts lines, never a weaker claim. Body weight appears once over the
   entry's span (`entryDisplay.ts`), with no sentence relating it to the verdict.
 - **The view** (`TimelineTab.tsx`, tab id `timeline`, over `components/dashboard/timeline/`): entries as bars stacked in lanes above one lane per
-  verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide, each verdict lane drawn as the two windows it compared (previous grey, recent in the verdict's
-  mark, the best of each as a dot, nothing joining them, since a joining line's length read as the size of the change), one
+  verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide. A
+  verdict row is words only for now: name, verdict and change, then "Compared Jan to Jun 2024 with Jul 2024 to Oct 2026" (the months of
+  the two windows). Two drawings were tried and dropped: a line between the two bests (its length read as the size of the change), and
+  the two windows as bands with the best of each as a dot (the dot fell anywhere in its band, so rows looked irregular). One
   Selected panel, the entry form in a dialog, delete behind a confirmation. A row on Progress opens its lane through "See on timeline" under its
   opened chart (not for a subject without a lane, nor a move up to RX).
 - **Storage and names.** Key `"timeline-entries"` (`storage/timelineStorage.ts`), persisted only when `source === "upload"`, wiped by Start over,
