@@ -129,14 +129,14 @@ export function SectionLinks({ value, onValueChange }: { value: string; onValueC
 
 /** Whether the row has more tabs past its left or right edge. */
 function useOverflowEdges(ref: RefObject<HTMLElement | null>, deps: readonly unknown[]) {
-  const [edges, setEdges] = useState({ left: false, right: false });
+  const [edges, setEdges] = useState({ left: false, right: false, overflow: false });
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const update = () => {
       const max = el.scrollWidth - el.clientWidth;
       // A pixel of slack: sub-pixel layout leaves scrollLeft a hair short of max at the far end.
-      setEdges({ left: el.scrollLeft > 1, right: el.scrollLeft < max - 1 });
+      setEdges({ left: el.scrollLeft > 1, right: el.scrollLeft < max - 1, overflow: max > 1 });
     };
     update();
     el.addEventListener("scroll", update, { passive: true });
@@ -150,29 +150,44 @@ function useOverflowEdges(ref: RefObject<HTMLElement | null>, deps: readonly unk
   return edges;
 }
 
-/** The fade and, on a mouse or trackpad, the button at one edge of a row that scrolls. */
-function OverflowEdge({ side, onScroll }: { side: "left" | "right"; onScroll: () => void }) {
-  const Icon = side === "left" ? ChevronLeft : ChevronRight;
+/** The fade at one edge of a row that scrolls: the cue that more tabs lie past it. It takes no clicks. */
+function OverflowEdge({ side }: { side: "left" | "right" }) {
   return (
     <div
+      aria-hidden="true"
       className={cn(
-        "pointer-events-none absolute inset-y-0 z-10 flex w-12 items-center",
-        side === "left" ? "left-0 justify-start bg-gradient-to-r" : "right-0 justify-end bg-gradient-to-l",
+        "pointer-events-none absolute inset-y-0 z-10 w-12",
+        side === "left" ? "left-0 bg-gradient-to-r" : "right-0 bg-gradient-to-l",
         "from-background via-background/80 to-transparent"
       )}
+    />
+  );
+}
+
+/**
+ * The scroll button at one end of the row, on a mouse or trackpad only (on touch the row scrolls under a finger and the fade is the
+ * whole cue). It sits in its own slot beside the row, not over it: laid over the fade it covered the last visible tab, and on a
+ * touch laptop, which reports a fine pointer too, a tap meant for that tab scrolled the row instead. Disabled, not removed, at the
+ * end it can't scroll past, so the row doesn't change width as it scrolls. Hidden from assistive tech and the tab order, since every
+ * tab it scrolls to is already reachable by Tab.
+ */
+function ScrollButton({ side, enabled, onScroll }: { side: "left" | "right"; enabled: boolean; onScroll: () => void }) {
+  const Icon = side === "left" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-hidden="true"
+      data-scroll-button={side}
+      disabled={!enabled}
+      onClick={onScroll}
+      className={cn(
+        "hidden size-8 shrink-0 self-center items-center justify-center rounded-full text-muted-foreground ring-1 ring-border hover:text-foreground disabled:opacity-30 pointer-fine:flex",
+        side === "left" ? "mr-1" : "ml-1"
+      )}
     >
-      {/* Only where there's a pointer: on touch the row scrolls under a finger and the fade is the whole cue. Hidden from
-          assistive tech and the tab order, since every tab it scrolls to is already reachable by Tab. */}
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-hidden="true"
-        onClick={onScroll}
-        className="pointer-events-auto hidden size-8 items-center justify-center rounded-full bg-background text-muted-foreground shadow-sm ring-1 ring-border hover:text-foreground pointer-fine:flex"
-      >
-        <Icon className="size-4" />
-      </button>
-    </div>
+      <Icon className="size-4" />
+    </button>
   );
 }
 
@@ -180,7 +195,8 @@ function OverflowEdge({ side, onScroll }: { side: "left" | "right"; onScroll: ()
  * The views inside the current section. Renders nothing for a single-view section.
  *
  * Training's sixteen tabs can be wider than the row, even on a 1280px window, so the row scrolls sideways; the hidden part is
- * never silent. A fade (and on a pointer device a button) marks each edge with more tabs past it, and the selected tab is
+ * never silent. A fade marks each edge with more tabs past it (and on a pointer device a button sits beside each end), a group's
+ * label stays in view while any of its tabs do, and the selected tab is
  * scrolled into view whenever it changes, so arriving at Movements from a link doesn't leave Workouts as the only visible tab.
  * From `lg` up the gaps tighten, which is what fits the whole row at 1280px: measured, it was 1293px in a 1216px row before
  * and is 1216px after, with no room to spare, so a longer tab label would bring the fades back.
@@ -203,8 +219,10 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
     if (el) el.scrollBy({ left: dir * el.clientWidth * 0.6, behavior: "smooth" });
   };
   return (
-    <div className="relative" data-overflow-left={edges.left || undefined} data-overflow-right={edges.right || undefined}>
-      {edges.left ? <OverflowEdge side="left" onScroll={() => scrollBy(-1)} /> : null}
+    <div className="flex items-end">
+    {edges.overflow ? <ScrollButton side="left" enabled={edges.left} onScroll={() => scrollBy(-1)} /> : null}
+    <div className="relative min-w-0 flex-1" data-overflow-left={edges.left || undefined} data-overflow-right={edges.right || undefined}>
+      {edges.left ? <OverflowEdge side="left" /> : null}
       <nav
         ref={ref}
         aria-label={`${section.id} views`}
@@ -217,7 +235,10 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
           // inline with them it read as one more (dead) tab.
           <div key={g.label ?? i} role="group" aria-label={g.label} className="flex shrink-0 flex-col gap-0.5">
             {g.label ? (
-              <span aria-hidden="true" className="text-[11px] font-semibold tracking-[0.08em] text-foreground uppercase">
+              // Sticky inside the scrolling row, so a group's label stays in view while any of its tabs are: on a phone, scrolled to
+              // the modalities, "Modalities" used to scroll away and leave the Cardio modality looking like the Cardio domain. Above
+              // the fade (z-20), on the page colour.
+              <span aria-hidden="true" data-group-label className="sticky left-0 z-20 self-start bg-background pr-2 text-[11px] font-semibold tracking-[0.08em] text-foreground uppercase">
                 {g.label}
               </span>
             ) : null}
@@ -245,7 +266,9 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
           </div>
         ))}
       </nav>
-      {edges.right ? <OverflowEdge side="right" onScroll={() => scrollBy(1)} /> : null}
+      {edges.right ? <OverflowEdge side="right" /> : null}
+    </div>
+    {edges.overflow ? <ScrollButton side="right" enabled={edges.right} onScroll={() => scrollBy(1)} /> : null}
     </div>
   );
 }

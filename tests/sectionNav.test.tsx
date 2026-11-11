@@ -186,6 +186,33 @@ describe("SubNav overflow", () => {
     }
   });
 
+  it("puts its scroll buttons beside the row, never over a tab, disabled at the end they can't scroll past", () => {
+    const restore = stubRow(1350, 350);
+    try {
+      render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+      const nav = screen.getByRole("navigation", { name: "Training views" });
+      const row = nav.parentElement as HTMLElement;
+      const left = document.querySelector("[data-scroll-button=left]") as HTMLButtonElement;
+      const right = document.querySelector("[data-scroll-button=right]") as HTMLButtonElement;
+      // Siblings of the row, not inside it, so neither can sit on top of a tab.
+      expect(row.contains(left) || row.contains(right)).toBe(false);
+      expect(left.parentElement).toBe(row.parentElement);
+      expect(left).toBeDisabled();
+      expect(right).toBeEnabled();
+      // The fades take no clicks.
+      for (const fade of row.querySelectorAll("div[aria-hidden=true]")) expect(fade.className).toMatch(/pointer-events-none/);
+    } finally {
+      restore();
+    }
+  });
+
+  it("keeps a group's label in view while its tabs scroll", () => {
+    render(<SubNav value={WORKOUTS_TAB} onValueChange={() => {}} />);
+    const labels = [...document.querySelectorAll("[data-group-label]")];
+    expect(labels.map((l) => l.textContent)).toEqual(["Domains", "Modalities"]);
+    for (const l of labels) expect(l.className.split(" ")).toEqual(expect.arrayContaining(["sticky", "left-0", "bg-background"]));
+  });
+
   it("shows no edge when every tab fits", () => {
     const restore = stubRow(1216, 1216);
     try {
