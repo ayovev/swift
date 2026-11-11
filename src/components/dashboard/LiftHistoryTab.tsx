@@ -29,12 +29,14 @@ function HighlightControl({ value, onChange }: { value: RepMaxHighlight; onChang
       </div>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <svg width="22" height="8" aria-hidden="true">
-            <line x1="1" y1="4" x2="21" y2="4" stroke="var(--foreground)" strokeWidth="1.5" />
-            <circle cx="4" cy="4" r="3" fill="var(--foreground)" />
-            <circle cx="18" cy="4" r="3" fill="var(--foreground)" />
+          <span className="size-2 shrink-0 rounded-full bg-foreground" aria-hidden="true" />
+          highlighted scheme
+        </span>
+        <span className="flex items-center gap-1.5">
+          <svg width="22" height="10" aria-hidden="true">
+            <path d="M1 8 H9 V2 H21" fill="none" stroke="var(--foreground)" strokeWidth="1.5" strokeOpacity="0.7" />
           </svg>
-          highlighted scheme, joined in order
+          its best so far
         </span>
         <span className="flex items-center gap-1.5">
           <span className="size-2 shrink-0 rounded-full bg-muted-foreground opacity-40" aria-hidden="true" />
@@ -82,7 +84,7 @@ export function LiftHistoryTab({
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-sm text-muted-foreground">
-            Each point is one logged effort. Each lift's most-logged rep scheme is highlighted and joined in order; a diamond
+            Each point is one logged effort. Each lift's most-logged rep scheme is highlighted, with a line for its best so far; a diamond
             marks a personal record. Lifts with fewer than {MIN_CHART_EFFORTS} efforts are listed under the charts. These are the
             loads as logged; Progress compares estimated one-rep maxes, so its numbers run higher for sets of more than one rep.
           </p>

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { LiftGrid, MIN_CHART_EFFORTS, mostLoggedScheme } from "@/components/dashboard/charts/LiftChart";
+import { LiftGrid, MIN_CHART_EFFORTS, mostLoggedScheme, runningBestSteps } from "@/components/dashboard/charts/LiftChart";
 import { LiftHistoryTab } from "@/components/dashboard/LiftHistoryTab";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import type { LiftEntry } from "@/types/dashboard";
@@ -41,5 +41,25 @@ describe("the lift grid", () => {
     const before = screen.getAllByRole("heading", { level: 3 }).length;
     fireEvent.click(screen.getByRole("button", { name: "3RM" }));
     expect(screen.getAllByRole("heading", { level: 3 }).length).toBe(before);
+  });
+});
+
+describe("runningBestSteps", () => {
+  it("steps up only at a new best, holds through lighter efforts, and runs on to the last one", () => {
+    const pts = [{ t: 1, value: 165 }, { t: 2, value: 185 }, { t: 3, value: 150 }, { t: 4, value: 185 }, { t: 5, value: 230 }, { t: 6, value: 205 }];
+    expect(runningBestSteps(pts)).toEqual([
+      { t: 1, value: 165 },
+      { t: 2, value: 165 },
+      { t: 2, value: 185 },
+      { t: 5, value: 185 },
+      { t: 5, value: 230 },
+      { t: 6, value: 230 },
+    ]);
+  });
+
+  it("never falls, and is empty with nothing logged", () => {
+    const steps = runningBestSteps([{ t: 1, value: 200 }, { t: 2, value: 120 }, { t: 3, value: 90 }]);
+    expect(steps).toEqual([{ t: 1, value: 200 }, { t: 3, value: 200 }]);
+    expect(runningBestSteps([])).toEqual([]);
   });
 });

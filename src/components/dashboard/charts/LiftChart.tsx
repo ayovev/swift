@@ -54,6 +54,26 @@ const SHORT_SCHEME: Record<RepMaxCategory, string> = { "1RM": "1RM", "2RM": "2RM
 /** The highlighted scheme's colour; "other" (no rep count read from the text) is the ink, since its fixed colour is the grey of the rest. */
 const highlightColor = (c: RepMaxCategory) => (c === "other" ? "var(--foreground)" : FIXED_REPMAX_COLORS[c]);
 
+/**
+ * The highlighted scheme's running best as the corners of a step line: flat until a heavier load is logged, then straight up, and on
+ * to the scheme's last effort. Joining every effort in date order drew each light day, deload and technique session as a drop, so most
+ * charts read as a zigzag of noise; a logged load is not a max attempt. The running best answers the card's question, what got heavier
+ * and when, and lines up with the PR diamonds. It never falls, so it cannot show a decline: that is Progress's verdict, not this record's.
+ */
+export function runningBestSteps(points: readonly { t: number; value: number }[]): { t: number; value: number }[] {
+  const out: { t: number; value: number }[] = [];
+  let best = -Infinity;
+  for (const p of points) {
+    if (p.value <= best) continue;
+    if (out.length) out.push({ t: p.t, value: best });
+    out.push({ t: p.t, value: p.value });
+    best = p.value;
+  }
+  const last = points[points.length - 1];
+  if (last && out.length && last.t > out[out.length - 1]!.t) out.push({ t: last.t, value: best });
+  return out;
+}
+
 interface LiftPoint extends LiftEntry {
   t: number;
   scheme: string;
@@ -148,6 +168,7 @@ export function LiftChart({
   }, [entries, emphCategory]);
   const emph = data.filter((d) => d.emph);
   const latest = emph[emph.length - 1];
+  const steps = runningBestSteps(emph);
   const rest = data.filter((d) => !d.emph);
 
   if (data.length < 2) return null;
@@ -253,14 +274,12 @@ export function LiftChart({
             }}
           />
           {/* Grey first, so the highlighted scheme and its line draw on top. */}
+          {/* The running best under the dots: a step line with invisible corners and no tooltip of its own. */}
+          {steps.length > 1 ? (
+            <Scatter data={steps} line={{ stroke: color, strokeWidth: 1.5, strokeOpacity: 0.7 }} lineJointType="linear" shape={() => <g />} tooltipType="none" isAnimationActive={false} />
+          ) : null}
           <Scatter data={rest} shape={<LiftDot color={color} picked={picked} />} isAnimationActive={false} />
-          <Scatter
-            data={emph}
-            line={{ stroke: color, strokeWidth: 1.5 }}
-            lineJointType="linear"
-            shape={<LiftDot color={color} picked={picked} />}
-            isAnimationActive={false}
-          />
+          <Scatter data={emph} shape={<LiftDot color={color} picked={picked} />} isAnimationActive={false} />
         </ScatterChart>
       </ChartContainer>
       </div>
