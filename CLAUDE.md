@@ -131,6 +131,41 @@ allowed by hash; `tests/securityHeaders.test.ts` fails if the script changes wit
 third-party host or inline script needs the CSP updated in the same change. `posthog.ts` pins the PostHog host to the US endpoints the CSP allows, and pins PostHog's
 remote-config features (exception capture, dead clicks, heatmaps, surveys) off in code.
 
+## Architecture: the bundle split
+
+The production build used to be one 1.73 MB chunk (535 kB gzipped) that every visit paid for in full. It is now split along who actually
+needs what, and `tests/lazySplit.test.ts` fails if a static import undoes any of it. Before changing an import that touches these, read this.
+
+- **The upload screen does not load the dashboard.** `App.tsx` reaches `Dashboard` only through `lazyComponent()`, so Recharts and every view
+  stay out of the first load of a new visitor. The fetch starts early for whoever will need it: a returning athlete as soon as storage says
+  there is a log, a first-time visitor in idle time on the landing page, an upload or the sample the moment it begins (so the parse and the
+  download overlap).
+- **Overview is in the Dashboard chunk; the other views are their own chunks** (`dashboard/lazyViews.ts`: Workouts, Lifts, the domain and modality
+  pages, Movements, Body Comp, Progress, Timeline). `preloadViews()` fetches them in idle time once the dashboard has mounted, so by the time one is
+  opened it is already here. Add a new view to `lazyViews.ts` and render it inside `<LazyView>`, never as a static import in `Dashboard.tsx`.
+- **`lazyComponent()` (`components/ui/lazyComponent.tsx`) is used instead of bare `React.lazy` on purpose.** `React.lazy` always suspends on its
+  first render, even for a chunk the browser already has, and React then holds the real content back for ~300ms after committing the fallback.
+  Measured with plain `React.lazy`: every view opened 300 to 500 ms slower than before the split, preloaded or not. `lazyComponent` renders a
+  chunk that has arrived synchronously, as a static import would, and only a mount that really has to wait suspends. Which one a mount uses is
+  fixed at mount, so a mount that waited keeps its state. Do not swap it for `React.lazy`.
+- **The sync wizard is fetched on first use.** `SyncEntryPoint` mounts `SyncDialog` (the only importer of `jsqr`, `qrcode` and real WebRTC, ~175 kB)
+  after the press has waited on the chunk (`whenLoaded()`, with the button `aria-busy`, not behind a Suspense fallback), and starts the fetch on hover and
+  focus. Backup is not split: it is ~30 kB of source, shares its validators with sync's planner, and the landing page needs it.
+- **PostHog loads after the first paint** (`posthog.ts`: `import("posthog-js")` in idle time; about a third of the old bundle). `capture()` keeps its
+  signature; events fired before the library is up are held in memory with their time and sent in order once it is. The privacy config is untouched and
+  `tests/analytics.test.ts` still pins it. If the chunk can't load, held events are dropped: analytics is never a requirement. The chunk is served from our
+  own origin, so the CSP's `script-src 'self'` covers it and every lazy chunk; no host was added (`tests/securityHeaders.test.ts` pins that).
+- **Loading and failure states** (`components/ui/LazyView.tsx`): a lazily loaded view shows one plain line, invisible for the first 300ms (`.loading-note`,
+  `index.css`) so a fast connection never flashes it, in a box that reserves a view's height so the footer doesn't jump. A chunk that fails to load
+  (usually a tab left open across a deploy) gets a plain notice and a Reload button rather than a blank page.
+- **`vite.config.ts` names a `react` chunk and nothing else.** Left to itself Rolldown lays chunks out by who imports what, and with a PostHog key set about
+  70 kB of dialog and Radix code landed in the entry chunk. A named group for Recharts was tried and dropped: it pulled Recharts into the entry chunk's
+  static imports, which is exactly what the split avoids. Check the result with a build that has `VITE_PUBLIC_POSTHOG_KEY` set (as Vercel does); without a
+  key PostHog is dead-code-eliminated and the numbers flatter the build.
+- **Not split, left for later:** the classify/analytics pipeline (`buildInsights`, the movement lexicon, keyword lists and aggregators, roughly 80 kB) is called from `App.tsx` and so
+  stays in the first load; moving it behind the upload would mean making `run()`'s parse step async-import it. `react-day-picker` and `date-fns` ride in the
+  Dashboard chunk with the Settings sheet and date picker.
+
 ## Architecture: classify → analytics → components
 
 `src/lib/classify` → `src/lib/analytics` → `src/components/dashboard`.

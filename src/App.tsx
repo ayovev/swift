@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
-import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Landing } from "@/components/landing/Landing";
+import { LazyView } from "@/components/ui/LazyView";
+import { lazyComponent } from "@/components/ui/lazyComponent";
 import { buildInsights } from "@/lib/analytics/buildInsights";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
 import type { Granularity } from "@/lib/analytics/granularity";
@@ -50,6 +51,16 @@ type AppState =
   // UploadReveal) instead of cutting straight from spinner to dashboard.
   | { status: "reveal"; rows: SugarWodRow[]; source: DataSource; summary: RevealSummary }
   | { status: "ready"; rows: SugarWodRow[]; source: DataSource };
+
+/**
+ * The dashboard (every chart, Recharts included) is a separate chunk, so the upload screen loads without it. Whoever is about to
+ * need it starts the fetch early instead of waiting for the screen to mount: a returning athlete as soon as storage says there is
+ * a log, a first-time visitor when the browser is idle on the upload screen, and an upload or the sample the moment it begins,
+ * so the parse overlaps the download.
+ */
+const dashboard = lazyComponent(() => import("@/components/dashboard/Dashboard").then((m) => ({ default: m.Dashboard })));
+const Dashboard = dashboard.Component;
+const preloadDashboard = dashboard.preload;
 
 const SAMPLE_CSV_URL = "/sample/sugarwod-sample-export.csv";
 
@@ -111,10 +122,13 @@ export default function App() {
       ]);
       if (cancelled) return;
       if (rows && rows.length > 0) {
+        preloadDashboard();
         setState({ status: "ready", rows, source: "upload" });
         if (storedMeta) setWorkoutMeta(storedMeta);
       } else {
         setState({ status: "idle" });
+        if (typeof requestIdleCallback === "function") requestIdleCallback(preloadDashboard, { timeout: 3000 });
+        else setTimeout(preloadDashboard, 500);
       }
       if (bodyRows && bodyRows.length > 0) setBodyComp({ status: "ready", rows: bodyRows });
       if (storedTimeline) setTimeline(storedTimeline);
@@ -242,6 +256,7 @@ export default function App() {
       extend?: (rows: SugarWodRow[]) => SugarWodRow[]
     ) => {
       setState({ status: "loading" });
+      preloadDashboard();
       capture(source === "sample" ? { name: "sample_data_used" } : { name: "upload_attempted" });
 
       const startedAt = performance.now();
@@ -437,33 +452,35 @@ export default function App() {
 
   if (state.status === "ready" && insights) {
     return (
-      <Dashboard
-        insights={insights}
-        source={state.source}
-        range={range}
-        rangePreset={rangePreset}
-        onRangeSelect={persistRangeSelection}
-        granularity={granularity}
-        onGranularityChange={persistGranularity}
-        onReset={reset}
-        workoutRows={state.rows}
-        workoutMeta={workoutMeta}
-        onSnoozeStaleNudge={snoozeStaleNudge}
-        onWorkoutFile={handleFile}
-        bodyComp={bodyComp}
-        onBodyCompFile={handleBodyCompFile}
-        onSyncedWorkoutData={handleSyncedWorkoutData}
-        onSyncedBodyCompData={handleSyncedBodyCompData}
-        onSyncedTimeline={handleSyncedTimeline}
-        onSyncedWeighIns={handleSyncedWeighIns}
-        weighIns={weighIns}
-        onSaveWeighIn={saveWeighIn}
-        onDeleteWeighIn={deleteWeighIn}
-        timeline={timeline}
-        onAddEntry={addEntry}
-        onUpdateEntry={updateEntry}
-        onDeleteEntry={deleteEntry}
-      />
+      <LazyView label="Loading your dashboard" variant="page">
+        <Dashboard
+          insights={insights}
+          source={state.source}
+          range={range}
+          rangePreset={rangePreset}
+          onRangeSelect={persistRangeSelection}
+          granularity={granularity}
+          onGranularityChange={persistGranularity}
+          onReset={reset}
+          workoutRows={state.rows}
+          workoutMeta={workoutMeta}
+          onSnoozeStaleNudge={snoozeStaleNudge}
+          onWorkoutFile={handleFile}
+          bodyComp={bodyComp}
+          onBodyCompFile={handleBodyCompFile}
+          onSyncedWorkoutData={handleSyncedWorkoutData}
+          onSyncedBodyCompData={handleSyncedBodyCompData}
+          onSyncedTimeline={handleSyncedTimeline}
+          onSyncedWeighIns={handleSyncedWeighIns}
+          weighIns={weighIns}
+          onSaveWeighIn={saveWeighIn}
+          onDeleteWeighIn={deleteWeighIn}
+          timeline={timeline}
+          onAddEntry={addEntry}
+          onUpdateEntry={updateEntry}
+          onDeleteEntry={deleteEntry}
+        />
+      </LazyView>
     );
   }
 
