@@ -108,8 +108,8 @@ describe("the M/W/G draw order", () => {
 
     it(`pins the one pair below target: green and blue under tritanopia (${mode})`, () => {
       // Measured about 5.3 (light) and 4.5 (dark). Tritanopia is rare (well under 1 in 1,000), and the 2px gap between segments is
-      // the secondary encoding that carries it. Fixing it means changing a fixed colour, which is the owner's call
-      // (docs/design-critique.md, "Constraints worth revisiting"). If this starts failing upward, the colours changed: move it.
+      // the secondary encoding that carries it. Fixing it means changing a fixed colour, which the owner has kept for now
+      // (CLAUDE.md, "Open items"). If this starts failing upward, the colours changed: move it.
       const w = tokens(tokenOf("W"))[mode];
       const g = tokens(tokenOf("G"))[mode];
       const d = deltaE(w, g, SIMULATIONS.tritan!);

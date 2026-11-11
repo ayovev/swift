@@ -349,7 +349,18 @@ body fat have no band, because nothing compares them.
 - **Weigh-in delete has no confirmation; it has Undo** for ten seconds (`WeighInsPanel.tsx`, `weigh_in_delete_undone`). An entry delete
   has a confirmation.
 - **Entries reach a before and after rarely on sparse logs** (3 of 8 demo entries on the sample), so the facts lines carry weight.
-- **Chart drag-to-select and period bands are gone** with Compare; nothing replaces them on the date-range charts.
+- **Chart drag-to-select and period bands are gone** with Compare; nothing replaces them on the date-range charts. Planned: drag
+  across a Training chart to set the date range (on a phone, a strip under the chart, so the page still scrolls), through the same
+  `persistRangeSelection` path as the picker.
+- **Design decisions kept for now, by the owner** (from the 2026 design critique, since deleted; its reasons now live next to the code):
+  the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
+  orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps
+  its 16 tabs (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); the red accent
+  swatch is undecided (it sits on top of `--destructive`; moving its hue far enough to separate them turns it pink, next to magenta).
+- **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
+  is a separate, unbuilt idea.
+- **Not yet checked**: a real screen reader pass, forced-colors mode, and an export from a second athlete. The usability study plan
+  (five tasks on the core questions) is issue #67.
 - **Sync.** Verified by unit tests and by hand on two devices, not by an automated two-device test.
 - **Backup encryption.** The iteration count (600,000) and the strength bands are first drafts: measure derive time on a mid-range phone before
   raising the former. The strength hint is length-only by design, with one guard for fewer than 5 distinct characters; long predictable
