@@ -402,7 +402,9 @@ body fat have no band, because nothing compares them.
   picker, should keep the button and link colours at least 8 from `--destructive` in both modes, as a test.
 - **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
   is a separate, unbuilt idea.
-- **Not yet checked**: a real screen reader pass, forced-colors mode, and an export from a second athlete. The usability study plan
+- **Not yet checked**: a real screen reader pass (axe-core is clean on every view, the landing page, the Settings sheet and the entry dialog, in both
+  modes, and the keyboard order, skip link and dialog focus were walked in Chromium, but that is not a screen reader), and an export from a second athlete.
+  Forced colors was checked by emulation only (Chromium's `forcedColors: "active"`), not on Windows High Contrast itself. The usability study plan
   (five tasks on the core questions) is issue #67.
 - **Backup encryption is settled as it is.** The iteration count (600,000, OWASP's floor) and the strength bands stay; derive time has not been
   measured on a mid-range phone, so measure it before ever raising the count. The strength hint is length-only by design, with one guard for
@@ -763,7 +765,7 @@ This doesn't relax hard constraint #1 above — the cache is still local-only an
 Black-and-white base in both modes, plus **one** user-selected accent — the only chromatic
 element the athlete controls. Every token in `src/index.css` is achromatic (chroma exactly 0),
 with two fixed exceptions that never derive from the accent: `--destructive`, the error/delete-action
-red, the `--repmax-1/2/3/5` tokens (red/orange/green/blue), and `--positive`/`--positive-subtle`, the fixed green of a verdict that
+red, the `--repmax-1/2/3/5` tokens (red/orange/green/blue), `--negative`/`--negative-subtle` (the Down pill: `--destructive` on its own tint is 4.0:1, under 4.5, and `tests/positiveColor.test.ts` checks this pair), and `--positive`/`--positive-subtle`, the fixed green of a verdict that
 went the athlete's way (Up, a move up to RX, the "Improving" headline on Progress and Overview). Verdicts used to take the accent for Up,
 so with the red accent Up sat beside Down; now a verdict looks the same whatever the accent, and `tests/positiveColor.test.ts` checks the
 green's contrast in both modes. The `--repmax-*` tokens colour the
@@ -803,6 +805,22 @@ and Recharts series pick it up with no per-component wiring.
 - The pre-hydration script in `index.html` duplicates the mode logic and the `swift.theme`
   localStorage key from `useTheme.ts` to avoid a flash of the wrong mode. **Change both together.**
   Theme reads/writes are wrapped in try/catch — private browsing must never break the app.
+
+## Accessibility conventions
+
+Measured with axe-core (WCAG 2.2 AA and best-practice rules) in Chromium over every view, the landing and role-split screens, the Settings sheet and
+the entry dialog, in light and dark; all clean. Keep it that way:
+
+- **Heading levels step by one.** A page's view title is the `h1`; a chart card's title is an `h2` (they were `h3`, which skipped a level on 30 views).
+- **A file input is not a control.** The button or dropzone is; the `<input type="file">` it clicks is `aria-hidden`, and sits beside the dropzone, not inside
+  its `role="button"` (axe: `label`, `nested-interactive`).
+- **The role-split screen is a page**: `<main>` and one `sr-only` `h1`.
+- **Forced colors** drops fills, box-shadows and the page's colours, which is how "selected", "pressed" and "focused" were drawn. `index.css` ends with a
+  `forced-colors: active` block (a pressed toggle is Highlight on HighlightText with `forced-color-adjust: none`, because left to the browser the text gets a
+  white backplate and vanishes; keyboard focus is a Highlight outline), and per-component `forced-colors:` classes cover the tab underlines (a transparent
+  border is forced visible, so an unselected sub-tab sets its own to Canvas), Timeline's entry bars (a border) and the accent swatches (`forced-color-adjust-none`).
+  `tests/forcedColors.test.ts` pins them; jsdom cannot render the mode, so a change here is checked in Chromium with `forcedColors: "active"`.
+- Still decorative in forced colors, and safe because the value is also text: the M/W/G bars on Workouts rows and the verdict pills' tint.
 
 ## Voice & personality
 

@@ -45,6 +45,9 @@ export function FilePickerButton({
         accept={accept}
         className="sr-only"
         tabIndex={-1}
+        // The button above is the control; this input is only what it clicks, so it is kept out of the accessibility tree
+        // rather than given a second, duplicate label.
+        aria-hidden="true"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) onFile(file);

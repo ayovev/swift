@@ -72,11 +72,11 @@ export function Splash({ onChoose }: SplashProps) {
   }
 
   return (
-    <div
-      role="group"
+    <main
       aria-label="Choose how you'll use Swift"
       className="flex min-h-svh flex-col overflow-hidden md:flex-row"
     >
+      <h1 className="sr-only">Swift. Training insights, no strings attached.</h1>
       {SIDES.map((side) => {
         const dismissed = chosen !== null && chosen !== side.audience;
         return (
@@ -111,6 +111,6 @@ export function Splash({ onChoose }: SplashProps) {
           </button>
         );
       })}
-    </div>
+    </main>
   );
 }

@@ -162,7 +162,7 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
             <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
               <div>
                 <div className="mb-1 flex items-baseline justify-between gap-2">
-                  <h3 className="text-sm font-medium">Days trained</h3>
+                  <h2 className="text-sm font-medium">Days trained</h2>
                   {/* Only the buckets with a scan are charted, so this is not the all-time count on Overview; it says which it is. */}
                   <span className="text-xs text-muted-foreground tabular">
                     {totalTrainingDays.toLocaleString()} in {GRANULARITY_NOUN[granularity]}s with a scan

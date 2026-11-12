@@ -76,7 +76,7 @@ export function ThemeControls() {
                     "flex size-6 shrink-0 items-center justify-center rounded-full transition-transform",
                     "hover:scale-110",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                    active && "ring-2 ring-foreground ring-offset-2 ring-offset-popover"
+                    "forced-colors:forced-color-adjust-none", active && "ring-2 ring-foreground ring-offset-2 forced-colors:outline-2 forced-colors:outline-offset-2 forced-colors:outline-[Highlight] ring-offset-popover"
                   )}
                   style={{ backgroundColor: formatOklch(primary) }}
                 >

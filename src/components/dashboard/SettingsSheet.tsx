@@ -347,7 +347,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
                       }}
                       className={cn(
                         "flex size-6 shrink-0 items-center justify-center rounded-full transition-transform hover:scale-110",
-                        active && "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                        "forced-colors:forced-color-adjust-none", active && "ring-2 ring-foreground ring-offset-2 forced-colors:outline-2 forced-colors:outline-offset-2 forced-colors:outline-[Highlight] ring-offset-background"
                       )}
                       style={{ backgroundColor: formatOklch(primary) }}
                     >

@@ -36,9 +36,9 @@ export function DomainStrip({ data, current, onOpen }: { data: DashboardData; cu
   return (
     <section aria-labelledby="domain-strip-title" className="flex flex-col gap-2 border-t border-border pt-4">
       <div className="flex flex-col gap-0.5">
-        <h3 id="domain-strip-title" className="text-sm font-medium">
+        <h2 id="domain-strip-title" className="text-sm font-medium">
           All ten domains
-        </h3>
+        </h2>
         <p className="text-xs leading-relaxed text-muted-foreground">
           Share of workouts touching each domain. A workout counts in every domain it touches, so these add up to more than 100%.
           {anyChange ? " The change is from the first half of these workouts to the second." : ""}
@@ -81,9 +81,9 @@ export function ModalityStrip({ data, current, onOpen }: { data: ModalityData; c
   return (
     <section aria-labelledby="modality-strip-title" className="flex flex-col gap-2 border-t border-border pt-4">
       <div className="flex flex-col gap-0.5">
-        <h3 id="modality-strip-title" className="text-sm font-medium">
+        <h2 id="modality-strip-title" className="text-sm font-medium">
           All three modalities
-        </h3>
+        </h2>
         <p className="text-xs leading-relaxed text-muted-foreground">
           The average split of a classified workout. Adds to 100%.
           {anyChange ? " The change is from the first half of these workouts to the second." : ""}

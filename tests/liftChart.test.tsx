@@ -32,7 +32,7 @@ describe("the lift grid", () => {
     const { container } = render(<LiftGrid lifts={dashboard.lifts} highlight="most" />);
     const charted = Object.entries(dashboard.lifts).filter(([, v]) => efforts(v) >= MIN_CHART_EFFORTS);
     const listed = Object.entries(dashboard.lifts).filter(([, v]) => efforts(v) > 0 && efforts(v) < MIN_CHART_EFFORTS);
-    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(charted.length);
+    expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(charted.length);
     expect(listed.length).toBeGreaterThan(0);
     const line = container.querySelector("[data-also-logged]") as HTMLElement;
     for (const [name, v] of listed) expect(line.textContent).toContain(`${name} (${efforts(v)})`);
@@ -40,9 +40,9 @@ describe("the lift grid", () => {
 
   it("keeps every chart when a scheme is highlighted, rather than filtering", () => {
     render(<LiftHistoryTab dashboard={dashboard} />);
-    const before = screen.getAllByRole("heading", { level: 3 }).length;
+    const before = screen.getAllByRole("heading", { level: 2 }).length;
     fireEvent.click(screen.getByRole("button", { name: "3RM" }));
-    expect(screen.getAllByRole("heading", { level: 3 }).length).toBe(before);
+    expect(screen.getAllByRole("heading", { level: 2 }).length).toBe(before);
   });
 });
 

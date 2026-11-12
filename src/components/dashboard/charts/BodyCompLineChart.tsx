@@ -54,7 +54,7 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-medium">{seriesLabel}</h3>
+        <h2 className="text-sm font-medium">{seriesLabel}</h2>
         <span className="text-xs text-muted-foreground tabular">{headline}</span>
       </div>
       <ChartContainer

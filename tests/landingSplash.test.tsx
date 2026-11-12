@@ -33,6 +33,20 @@ describe("Landing splash", () => {
     expect(screen.queryByRole("button", { name: /upload your sugarwod csv export/i })).toBeNull();
   });
 
+  it("is a page of its own to a screen reader: one main landmark and one level-one heading (axe: landmark-one-main, page-has-heading-one)", () => {
+    renderLanding();
+    expect(screen.getAllByRole("main")).toHaveLength(1);
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+
+  it("keeps the dropzone's file input out of the accessibility tree and outside the button that opens it", () => {
+    renderLanding();
+    fireEvent.click(screen.getByRole("button", { name: /continue as an athlete/i }));
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    expect(input).toHaveAttribute("aria-hidden", "true");
+    expect(input.closest('[role="button"]')).toBeNull();
+  });
+
   it("remembers an athlete choice and shows the upload page", () => {
     renderLanding();
     fireEvent.click(screen.getByRole("button", { name: /continue as an athlete/i }));

@@ -189,7 +189,7 @@ export function LiftChart({
   return (
     <div>
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <h3 className="text-sm font-medium">{liftName}</h3>
+        <h2 className="text-sm font-medium">{liftName}</h2>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular" data-direct-label>
           {latest ? (
             <>

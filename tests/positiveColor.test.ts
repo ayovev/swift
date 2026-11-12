@@ -18,6 +18,21 @@ function tokens(name: string): { light: Oklch; dark: Oklch } {
 const PAGE = { light: { l: 1, c: 0, h: 0 }, dark: { l: 0.145, c: 0, h: 0 } };
 const CARD = { light: { l: 1, c: 0, h: 0 }, dark: { l: 0.205, c: 0, h: 0 } };
 
+describe("the negative red (the Down pill)", () => {
+  const text = tokens("negative");
+  const subtle = tokens("negative-subtle");
+
+  for (const mode of ["light", "dark"] as const) {
+    it(`reads as text on its pill, the page and a card in ${mode} mode`, () => {
+      expect(isOutOfGamut(text[mode])).toBe(false);
+      expect(isOutOfGamut(subtle[mode])).toBe(false);
+      expect(contrastRatio(text[mode], subtle[mode])).toBeGreaterThanOrEqual(CONTRAST_TEXT);
+      expect(contrastRatio(text[mode], PAGE[mode])).toBeGreaterThanOrEqual(CONTRAST_TEXT);
+      expect(contrastRatio(text[mode], CARD[mode])).toBeGreaterThanOrEqual(CONTRAST_TEXT);
+    });
+  }
+});
+
 describe("the positive green", () => {
   const text = tokens("positive");
   const subtle = tokens("positive-subtle");
@@ -36,7 +51,7 @@ describe("the positive green", () => {
     expect(VERDICT_STYLE.up.pill).toBe("bg-positive-subtle text-positive");
     expect(VERDICT_STYLE["move-up"].pill).toBe("bg-positive-subtle text-positive");
     for (const k of Object.keys(VERDICT_STYLE) as (keyof typeof VERDICT_STYLE)[]) expect(VERDICT_STYLE[k].pill).not.toMatch(/accent/);
-    expect(VERDICT_STYLE.down.pill).toMatch(/destructive/);
+    expect(VERDICT_STYLE.down.pill).toBe("bg-negative-subtle text-negative");
   });
 
   it("colours the Progress headline the same way", () => {

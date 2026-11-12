@@ -38,7 +38,7 @@ export const VERDICT_STYLE: Record<VerdictKind, VerdictStyle> = {
   down: {
     label: "Down",
     Glyph: ArrowDown,
-    pill: "bg-destructive/10 text-destructive",
+    pill: "bg-negative-subtle text-negative",
   },
   "not-tested-since": {
     label: "Not tested since",
