@@ -332,7 +332,7 @@ reference, so the parity test strips it before comparing lift series.
 Read each file's header comment before changing it; the cases are `tests/progressVerdict.test.ts`, `tests/progressDisplay.test.ts` and
 `tests/LiftsTab.test.tsx`, and every threshold is a `PV_*` constant in `insightConfig.ts`.
 
-- **`sessions.ts`**: a *subject* is one lift or named benchmark with RX and Scaled kept separate; a *session* is one subject on one day (the best
+- **`sessions.ts`**: a *subject* is one lift or named benchmark with RX and Scaled kept separate (decided, not open: a Scaled lift is a different load or movement, and merging would blur a verdict); a *session* is one subject on one day (the best
   of the day). A lift's value is its estimated 1RM (average of Epley and Brzycki) from any 1 to 8 rep scheme; SugarWOD's PR flag is deliberately
   not read (Overview's "most recent PR" stat is the one reader of the flag, as a logged fact, and feeds nothing here). It builds on `liftSubjects.ts` (name normalisation, RX/Scaled split, the 1RM estimate; a test pins the parity) and also keeps
   per-entry max-effort facts and the reason each Load row went unused.
@@ -378,7 +378,6 @@ body fat have no band, because nothing compares them.
 
 - **One athlete.** The `PV_*` thresholds were validated on the bundled sample and one real export, which is the same athlete (the real export
   contains the sample's rows plus newer ones). Check them on another athlete's export before trusting them.
-- **RX and Scaled for lifts** are judged separately; whether to merge them needs an athlete who logs Scaled lifts.
 - **Noise band.** `weightNoiseBand.ts`'s band comes from `paired-scans`, `residual` or `default`; anyone scanning monthly or less lands on `residual` or
   `default` (3 lb for weight), which is why manual weigh-ins exist.
 - **Weigh-in delete has no confirmation; it has Undo** for ten seconds (`WeighInsPanel.tsx`, `weigh_in_delete_undone`). An entry delete
@@ -399,7 +398,6 @@ body fat have no band, because nothing compares them.
   is a separate, unbuilt idea.
 - **Not yet checked**: a real screen reader pass, forced-colors mode, and an export from a second athlete. The usability study plan
   (five tasks on the core questions) is issue #67.
-- **Sync.** Verified by unit tests and by hand on two devices, not by an automated two-device test.
 - **Backup encryption.** The iteration count (600,000) and the strength bands are first drafts: measure derive time on a mid-range phone before
   raising the former. The strength hint is length-only by design, with one guard for fewer than 5 distinct characters; long predictable
   passphrases rate "Strong" (pinned in `tests/passphrase.test.ts`). Argon2id would be a new `encoding` via `kdf.name`. There is no passphrase
