@@ -398,10 +398,10 @@ body fat have no band, because nothing compares them.
   is a separate, unbuilt idea.
 - **Not yet checked**: a real screen reader pass, forced-colors mode, and an export from a second athlete. The usability study plan
   (five tasks on the core questions) is issue #67.
-- **Backup encryption.** The iteration count (600,000) and the strength bands are first drafts: measure derive time on a mid-range phone before
-  raising the former. The strength hint is length-only by design, with one guard for fewer than 5 distinct characters; long predictable
-  passphrases rate "Strong" (pinned in `tests/passphrase.test.ts`). Argon2id would be a new `encoding` via `kdf.name`. There is no passphrase
-  recovery, by design.
+- **Backup encryption is settled as it is.** The iteration count (600,000, OWASP's floor) and the strength bands stay; derive time has not been
+  measured on a mid-range phone, so measure it before ever raising the count. The strength hint is length-only by design, with one guard for
+  fewer than 5 distinct characters; long predictable passphrases rate "Strong" (pinned in `tests/passphrase.test.ts`). Argon2id would be a new
+  `encoding` via `kdf.name`. There is no passphrase recovery, by design.
 
 ## Architecture: the Timeline
 
