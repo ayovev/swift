@@ -59,4 +59,37 @@ describe("the bundle split", () => {
     expect(importers).toEqual([]);
     expect(sources.find((s) => s.file === "lib/posthog.ts")!.text).toMatch(/import\("posthog-js"\)/);
   });
+
+  it("keeps the classify/analytics pipeline out of the first load", () => {
+    // Walk what the entry point reaches through static value imports (dynamic import() and `import type` are not edges).
+    // One innocent import from a module the upload screen uses (this chain once ran weighIns -> bodyContext -> display -> sessions
+    // -> liftSubjects -> buildDashboardData -> the lexicon) puts ~40 kB back into every visit's first load.
+    const byFile = new Map(sources.map((s) => [s.file, s.text]));
+    const resolve = (from: string, spec: string): string | null => {
+      const base = spec.startsWith("@/") ? spec.slice(2) : spec.startsWith(".") ? join(from, "..", spec).replace(/\\/g, "/") : null;
+      if (base === null) return null;
+      return [`${base}.ts`, `${base}.tsx`, `${base}/index.ts`, `${base}/index.tsx`].find((c) => byFile.has(c)) ?? null;
+    };
+    const edge = /^\s*(?:import|export)\s+(?!type\b)[^;]*?from\s+["']([^"']+)["']/gm;
+    const sideEffect = /^\s*import\s+["']([^"']+)["']/gm;
+    const seen = new Set<string>();
+    const stack = ["main.tsx"];
+    while (stack.length) {
+      const f = stack.pop()!;
+      if (seen.has(f)) continue;
+      seen.add(f);
+      const text = byFile.get(f)!;
+      for (const re of [edge, sideEffect]) {
+        for (const m of text.matchAll(re)) {
+          const next = resolve(f, m[1]!);
+          if (next) stack.push(next);
+        }
+      }
+    }
+    const leaked = [...seen].filter((f) => f.startsWith("lib/classify/") || /analytics\/(buildInsights|buildDashboardData|buildModalityData|buildMovementData|liftSubjects)\.ts$/.test(f));
+    expect(leaked).toEqual([]);
+    // And the one seam that does reach it is a dynamic import.
+    expect(sources.find((s) => s.file === "lib/analytics/pipeline.ts")!.text).toMatch(/import\("@\/lib\/analytics\/buildInsights"\)/);
+    expect(staticImporters("buildInsights")).toEqual([]);
+  });
 });

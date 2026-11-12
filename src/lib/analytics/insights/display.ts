@@ -11,7 +11,7 @@
 import { PV_LONG_GAP_DAYS, PV_MIN_SESSIONS_PER_SIDE } from "../insightConfig";
 import type { MoveUp, ProgressHeadline } from "./headline";
 import type { ProgressSession, ProgressSubject } from "./sessions";
-import { REPS_PER_ROUND, parseRoundsReps } from "./sessions";
+import { REPS_PER_ROUND, parseRoundsReps } from "./roundsReps";
 import { roundHalfAway, type ProgressVerdict } from "./verdict";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;

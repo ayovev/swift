@@ -162,9 +162,15 @@ needs what, and `tests/lazySplit.test.ts` fails if a static import undoes any of
   70 kB of dialog and Radix code landed in the entry chunk. A named group for Recharts was tried and dropped: it pulled Recharts into the entry chunk's
   static imports, which is exactly what the split avoids. Check the result with a build that has `VITE_PUBLIC_POSTHOG_KEY` set (as Vercel does); without a
   key PostHog is dead-code-eliminated and the numbers flatter the build.
-- **Not split, left for later:** the classify/analytics pipeline (`buildInsights`, the movement lexicon, keyword lists and aggregators, roughly 80 kB) is called from `App.tsx` and so
-  stays in the first load; moving it behind the upload would mean making `run()`'s parse step async-import it. `react-day-picker` and `date-fns` ride in the
-  Dashboard chunk with the Settings sheet and date picker.
+- **The classify/analytics pipeline is its own chunk** (`buildInsights`, the movement lexicon, keyword lists and aggregators, ~40 kB; the entry chunk went
+  from 228 to 189 kB). `lib/analytics/pipeline.ts` is the one seam: `loadPipeline()` is a dynamic import that `App.tsx` starts as an upload or the sample
+  begins (it overlaps the parse), and a returning athlete stays on the loading screen until it has arrived, as does a reveal from sync or backup restore.
+  A chunk that fails to load shows `ChunkFailedNotice` (Reload), never the upload screen, because that screen's error dismisses through `reset()`, which
+  wipes storage. `tests/lazySplit.test.ts` walks the entry point's static imports and fails if `lib/classify/*`, `buildInsights` or the aggregators are
+  reachable. That chain was real once: `weighIns` -> `bodyContext` -> `display` -> `sessions` -> `liftSubjects` -> `buildDashboardData` -> the lexicon,
+  broken by moving `REPS_PER_ROUND` and `parseRoundsReps` into `insights/roundsReps.ts`. Keep that file, and anything the upload screen imports, free of
+  imports from the pipeline.
+- **Not split, left for later:** `react-day-picker` and `date-fns` ride in the Dashboard chunk with the Settings sheet and date picker.
 
 ## Architecture: classify → analytics → components
 

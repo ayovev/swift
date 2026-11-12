@@ -16,6 +16,7 @@
 import { buildBenchmarkSubjects, estimateOneRepMax } from "../liftSubjects";
 import { PV_MAX_REPS } from "../insightConfig";
 import { parseRepMax } from "../repMax";
+import { REPS_PER_ROUND, parseRoundsReps } from "./roundsReps";
 import { parseNumericField, parseWorkoutDate } from "../scanParsing";
 import type { SugarWodRow } from "@/types/sugarwod";
 
@@ -66,14 +67,7 @@ export interface UnusedLoadRows {
   neitherStatus: number;
 }
 
-/** Reps in one round, for the Rounds + Reps benchmarks whose round is fixed (Cindy: 5 + 10 + 15). Without it a difference in reps is not stated. */
-export const REPS_PER_ROUND: Record<string, number> = { cindy: 30 };
-
-/** "17+20" is 17 rounds and 20 reps; "16" is 16 rounds. */
-export function parseRoundsReps(display: string): { rounds: number; reps: number } | null {
-  const m = /^\s*(\d+)(?:\s*\+\s*(\d+))?\s*$/.exec(display);
-  return m ? { rounds: Number(m[1]), reps: Number(m[2] ?? 0) } : null;
-}
+export { REPS_PER_ROUND, parseRoundsReps };
 
 function roundsRepsTotal(display: string, repsPerRound: number): number | null {
   const rr = parseRoundsReps(display);
