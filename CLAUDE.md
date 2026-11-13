@@ -122,6 +122,16 @@ fixes this export and nothing else. `movementLexicon.ts` deliberately has **no**
 entry for this reason. Whatever the engine grows, measure it against the sample export first:
 a broadening rule must land only on genuine inflections, and it will move the parity diff.
 
+**A percentage base is a reference, not a movement** (movement classifier only). `findAllMatches(..., { skipPercentBases: true })` in `matcher.ts`,
+which `findMovements` passes, rejects an occurrence directly after "% of" (with "your", "my", "the", "1RM", "5-rep max" allowed between), and
+`findPercentBases` claims the whole base phrase so a shorter phrase inside it cannot match in its place (`% of clean and jerk` is not a jerk). It needs
+the word "of": `75% back squat` is as likely to be the lift performed, so it is left alone. The same lift named anywhere else still counts. Measured on the
+sample: 70 rows name a lift as a base, 51 rows' movements change (a front squat session "at 80% of your clean" is no longer also a clean; a clean pull
+or a snatch grip deadlift is no longer also a clean or a snatch), 1 modality split moves (`Power Cean 4x3 @ 67% of clean`, a typo'd title with no other
+movement, is now unclassified), and no domain tag moves. **The GPP domain keywords deliberately do not use it**: they have no claiming, so rejecting
+"clean and jerk" would let the keyword "jerk" match inside it (measured: new Power and Strength tags on 4 rows), and the parity fixture pins them. So a
+domain tag can still come from a base (pinned in `tests/domainClassifier.test.ts`); fixing that needs claiming in the domain classifier first.
+
 ## Deployment headers
 
 `vercel.json` sends a CSP (`connect-src` limited to our origin and PostHog, so the "data never leaves the
@@ -281,8 +291,7 @@ still searched for other movements, but a family's *generic* bare word (`Movemen
 "clean", "snatch", ...) is dropped when the typed lift is a more specific member of that family, so a front squat
 session is not also a vague squat. Rows with no recognised typed lift behave exactly as before. Measured on the
 sample: 279 of 1,209 rows have the field, 25 rows' identities changed and no modality split moved (all typed lifts
-are W). Known and left alone: a `% of snatch` reference in a description still reads as a snatch (about 70 rows
-in the export name a lift only as a percentage base); fixing that is a lexicon `exclude` decision of its own.
+are W). A lift named only as the base of a percentage ("75% of snatch") is not read as that movement: see the next paragraph.
 **Variants are their own ids, and their family keeps them.** CrossFit's movement list separates strict, kipping and
 butterfly pull-ups, the GHD movements, legless and L-sit rope climbs, walking and front-rack lunges and so on, so each
 is a lexicon id (`strict-pull-ups`) and a member of its family (`pull-up`); picking the family still finds every variant,
@@ -301,8 +310,7 @@ each is one entry whose longer phrase claims the range. A complex written with `
 lines are several movements and stay several. Left as two on purpose and pinned in `tests/modalityClassifier.test.ts`:
 burpee deadlifts, squat clean thrusters and wall ball sit-ups. Measured on the sample: 30 rows' movements changed and
 17 splits moved (farmers carry 13 rows no longer also a loaded carry; burpee pull-ups; a lateral burpee bar step-over
-moves from W to G; a hyphenated `bent-over rows` stops reading as a rower, M to W). Not done: a lift named only as a percentage base ("75% of snatch", about 70 rows, see above) still reads as
-that lift.
+moves from W to G; a hyphenated `bent-over rows` stops reading as a rower, M to W).
 Movement and family labels are in sentence case (pinned in `tests/modalityClassifier.test.ts`); a name keeps its capitals
 (`GHD`, `AbMat`, `L-sit`, `Turkish`). Inside a sentence use `labelInSentence()` (`buildMovementData.ts`), which lowers only the
 first letter and only when it starts an ordinary word, never `toLowerCase()`, which turned `Hanging L-sit` into `hanging l-sit`.

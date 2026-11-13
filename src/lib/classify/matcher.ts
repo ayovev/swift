@@ -40,6 +40,20 @@
  * on its "...i" stem. Measured against the 1,209-row sample, the stems land
  * only on genuine inflections (carries, carriesas, heavier, heaviest) and
  * nothing spurious.
+ *
+ * ---------------------------------------------------------------------------
+ * PERCENTAGE BASES (the movement classifier only)
+ * ---------------------------------------------------------------------------
+ * "Back squat 5x5 at 75% of your clean" names the clean only as the number the load is a
+ * percentage of; nobody cleans in that workout. So with `skipPercentBases`, an occurrence
+ * directly after "% of" (and the few words that can sit between, "your", "1RM", "5-rep max")
+ * is a reference, not a performed movement. It is not blanket: the same lift named anywhere
+ * else in the text still matches, and "75% back squat" with no "of" is left alone, because
+ * there the lift is as likely to be the one being performed. A reference is claimed as a
+ * whole phrase (`findPercentBases`), so "% of clean and jerk" cannot be re-read as "jerk".
+ * The GPP domain keywords do NOT use this: they have no claiming, so rejecting "clean and
+ * jerk" would let the keyword "jerk" match inside it, and the parity fixture pins them.
+ * That leaves the domain tags as they were, pinned in tests/domainClassifier.test.ts.
  * ---------------------------------------------------------------------------
  */
 
@@ -94,6 +108,18 @@ export function searchForms(phrase: string): string[] {
   return [phrase];
 }
 
+/**
+ * What may sit between "% of" and the thing it is a percentage of: your, my, the, today's, a rep max.
+ * Anchored to the end of the text before a candidate, so only what is directly in front of it counts.
+ */
+const PERCENT_BASE_LEAD =
+  /(?:%|percent)\s*of\s+(?:(?:your|my|the|todays?|today's|max|\d+\s*-?\s*rm|\d+\s*-?\s*rep\s*-?\s*max)\s+)*$/;
+
+/** True when the occurrence at `at` is only the base of a percentage ("75% of snatch"). */
+function followsPercentOf(text: string, at: number): boolean {
+  return PERCENT_BASE_LEAD.test(text.slice(Math.max(0, at - 48), at));
+}
+
 /** Every range in `text` covered by any of the exclusion strings. */
 function excludedRanges(text: string, exclude: readonly string[]): MatchRange[] {
   const ranges: MatchRange[] = [];
@@ -131,12 +157,30 @@ function tokenBoundariesOk(text: string, start: number, end: number): boolean {
  * All non-overlapping occurrences of `rule` in `text`, left to right.
  * `text` must already be lowercased.
  */
-export function findAllMatches(text: string, rule: MatchRule): MatchRange[] {
-  if (rule.phrase === "") return [];
+export function findAllMatches(
+  text: string,
+  rule: MatchRule,
+  options: { skipPercentBases?: boolean } = {}
+): MatchRange[] {
+  return scan(text, rule, options.skipPercentBases ?? false).found;
+}
+
+/**
+ * The occurrences of `rule` that were rejected only because they are the base of a percentage
+ * ("75% of snatch"). The movement classifier claims these ranges so a shorter phrase inside one
+ * ("jerk" in "% of clean and jerk") cannot match in its place. Non-overlapping, left to right.
+ */
+export function findPercentBases(text: string, rule: MatchRule): MatchRange[] {
+  return scan(text, rule, true).bases;
+}
+
+function scan(text: string, rule: MatchRule, skipPercentBases: boolean): { found: MatchRange[]; bases: MatchRange[] } {
+  if (rule.phrase === "") return { found: [], bases: [] };
 
   const mode = rule.mode ?? "substring";
   const exclusions = rule.exclude ? excludedRanges(text, rule.exclude) : [];
   const found: MatchRange[] = [];
+  const bases: MatchRange[] = [];
 
   for (const form of searchForms(rule.phrase)) {
     let from = 0;
@@ -149,7 +193,10 @@ export function findAllMatches(text: string, rule: MatchRule): MatchRange[] {
         !isExcluded(at, end, exclusions) &&
         (mode === "substring" || tokenBoundariesOk(text, at, end));
 
-      if (ok) {
+      if (ok && skipPercentBases && followsPercentOf(text, at)) {
+        bases.push([at, end]);
+        from = end;
+      } else if (ok) {
         found.push([at, end]);
         from = end; // non-overlapping within this form
       } else {
@@ -160,9 +207,13 @@ export function findAllMatches(text: string, rule: MatchRule): MatchRange[] {
 
   // A phrase and its stem can both land on the same text ("carry"/"carri"
   // inside "carrying"), so drop overlaps and report left to right.
-  found.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
+  return { found: dedupe(found), bases: dedupe(bases) };
+}
+
+function dedupe(ranges: MatchRange[]): MatchRange[] {
+  ranges.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
   const merged: MatchRange[] = [];
-  for (const range of found) {
+  for (const range of ranges) {
     const last = merged[merged.length - 1];
     if (last && range[0] < last[1]) continue;
     merged.push(range);
