@@ -237,6 +237,16 @@ names its own point (`data-pick`, a 24px hit circle), because a scatter hides it
 were measured in Chromium with touch; Recharts' own `onClick` reports no point for a tap. Analytics: `chart_point_selected` and
 `chart_point_opened`, value-free.
 
+**Drag across a share chart to set the date range** (`charts/RangeDrag.tsx`, on `ShareAreaChart` via `onRangeSelect`, so the domain, modality and
+Movements charts). It sets the same custom range the date picker sets, through `Dashboard.tsx`'s `selectRange` (no change of view), so the scope line
+says what is showing and the picker undoes it. A mouse or pen drags on the chart (after 6px, so a click that does not move still picks a point, and the
+release of a drag is never also a pick); a finger drags on a strip under the chart that only a coarse pointer shows (`pointer-coarse:`), because a drag
+on the chart itself is how a phone scrolls. Positions map to buckets from the plot area measured off the chart's grid lines when a drag starts (points
+sit evenly from the plot's left to right), the range runs from the first bucket's first day to the last bucket's last day, held inside the days the
+chart covers, and Escape abandons a drag. A drag is never the only way (WCAG 2.5.7): the picker sets the same range by keyboard. Measured in Chromium
+with a mouse and with touch; jsdom has no layout, so `tests/rangeDrag.test.tsx` pins the arithmetic and what the chart offers. Analytics:
+`chart_range_dragged`, value-free.
+
 **Share-over-time charts draw each bucket for what it is** (`charts/ShareAreaChart.tsx`, `shareRows`): a bucket with fewer than
 `THIN_BUCKET_WORKOUTS` (5) workouts is a hollow dot off the line, a first or last bucket the range or the log only partly covers
 (`coverage`, from `Dashboard.tsx`; `bucketBounds` in `granularity.ts`) stays shaded but its line is dashed, with a "from" or "to" day in its tooltip, the line
@@ -397,9 +407,8 @@ body fat have no band, because nothing compares them.
 - **Weigh-in delete has no confirmation; it has Undo** for ten seconds (`WeighInsPanel.tsx`, `weigh_in_delete_undone`). An entry delete
   has a confirmation.
 - **Entries reach a before and after rarely on sparse logs** (3 of 8 demo entries on the sample), so the facts lines carry weight.
-- **Chart drag-to-select and period bands are gone** with Compare; nothing replaces them on the date-range charts. Planned: drag
-  across a Training chart to set the date range (on a phone, a strip under the chart, so the page still scrolls), through the same
-  `persistRangeSelection` path as the picker.
+- **Drag-to-select is built for the share charts only** (domain, modality and Movements). The Lifts scatter and the Body Comp charts do not have
+  it yet; period bands (Compare) are still gone.
 - **Design decisions kept for now, by the owner** (from the 2026 design critique, since deleted; its reasons now live next to the code):
   the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
   orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps
