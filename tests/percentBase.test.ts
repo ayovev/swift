@@ -34,6 +34,23 @@ describe("the engine", () => {
     expect(findPercentBases(text, snatch)).toHaveLength(1);
   });
 
+  it("reads a base after several qualifiers, and not after a word that only ends like one", () => {
+    expect(findPercentBases("75% of your 3 rep max snatch", snatch)).toHaveLength(1);
+    expect(findPercentBases("75% of my 1rm snatch", snatch)).toHaveLength(1);
+    expect(findPercentBases("75% of mythe snatch", snatch)).toHaveLength(0);
+    expect(findPercentBases("75% of your snatch", snatch)).toHaveLength(1);
+  });
+
+  it("stays fast on text built to make a backtracking pattern blow up (CodeQL js/redos)", () => {
+    for (const unit of [" max 9rep", " repmax 9", " 9rep max", " 9 - rm", "   ", " the your my"]) {
+      const text = `%of 9${unit.repeat(2000)}snatch`;
+      const t0 = performance.now();
+      findAllMatches(text, snatch, on);
+      findPercentBases(text, snatch);
+      expect(performance.now() - t0).toBeLessThan(500);
+    }
+  });
+
   it("keeps the same lift when it is also named somewhere else", () => {
     expect(findAllMatches("snatch 5x2 at 75% of snatch", snatch, on)).toEqual([[0, 6]]);
   });

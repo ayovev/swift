@@ -108,16 +108,36 @@ export function searchForms(phrase: string): string[] {
   return [phrase];
 }
 
+/** "of" directly after a percent sign or the word, at the end of the text. Bounded: no unbounded quantifier to backtrack on. */
+const PERCENT_OF_AT_END = /(?:%|percent) {0,3}of$/;
+
 /**
- * What may sit between "% of" and the thing it is a percentage of: your, my, the, today's, a rep max.
- * Anchored to the end of the text before a candidate, so only what is directly in front of it counts.
+ * What may sit between "% of" and the thing it is a percentage of: your, my, the, today's, a rep max ("1rm", "5-rep max").
+ * Matched at the END of the text before a candidate, one qualifier at a time. Every quantifier is bounded and there is no
+ * repetition around the alternation, so it cannot backtrack exponentially (an earlier single regex with nested repetition could,
+ * on text like "%of 9rep max 9rep max ...": CodeQL js/redos).
  */
-const PERCENT_BASE_LEAD =
-  /(?:%|percent)\s*of\s+(?:(?:your|my|the|todays?|today's|max|\d+\s*-?\s*rm|\d+\s*-?\s*rep\s*-?\s*max)\s+)*$/;
+const QUALIFIER_AT_END = /(?:your|my|the|todays?|today's|max|\d{1,3} ?-? ?rm|\d{1,3} ?-? ?rep ?-? ?max)$/;
+
+/** The most qualifiers read between "of" and a candidate; real text has none to two. */
+const MAX_QUALIFIERS = 6;
+
+/** The characters before a candidate that are looked at. */
+const LEAD_WINDOW = 48;
 
 /** True when the occurrence at `at` is only the base of a percentage ("75% of snatch"). */
 function followsPercentOf(text: string, at: number): boolean {
-  return PERCENT_BASE_LEAD.test(text.slice(Math.max(0, at - 48), at));
+  let lead = text.slice(Math.max(0, at - LEAD_WINDOW), at);
+  for (let i = 0; i <= MAX_QUALIFIERS; i++) {
+    // Each word (and "of") must be set apart from the candidate by whitespace, as in "75% of your snatch".
+    if (!/\s$/.test(lead)) return false;
+    lead = lead.trimEnd();
+    if (PERCENT_OF_AT_END.test(lead)) return true;
+    const q = QUALIFIER_AT_END.exec(lead);
+    if (!q) return false;
+    lead = lead.slice(0, q.index);
+  }
+  return false;
 }
 
 /** Every range in `text` covered by any of the exclusion strings. */
