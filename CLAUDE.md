@@ -238,13 +238,15 @@ were measured in Chromium with touch; Recharts' own `onClick` reports no point f
 `chart_point_opened`, value-free.
 
 **Drag across a chart to set the date range** (`charts/RangeDrag.tsx`, on `ShareAreaChart` via `onRangeSelect`, so the domain, modality and
-Movements charts, and on `LiftChart`/`LiftGrid`, so the Lifts view). It sets the same custom range the date picker sets, through `Dashboard.tsx`'s `selectRange` (no change of view), so the scope line
+Movements charts, on `LiftChart`/`LiftGrid`, so the Lifts view, and on Body Comp's `ConsistencyChart`, `BodyCompLineChart` and one strip in `BodyCompTab`). It sets the same custom range the date picker sets, through `Dashboard.tsx`'s `selectRange` (no change of view), so the scope line
 says what is showing and the picker undoes it. A mouse or pen drags on the chart (after 6px, so a click that does not move still picks a point, and the
 release of a drag is never also a pick); a finger drags on a strip under the chart that only a coarse pointer shows (`pointer-coarse:`), because a drag
 on the chart itself is how a phone scrolls. The lift charts are small multiples on one shared date domain and plot width, so a touch screen gets one strip
 above the whole grid (not 14), measured from the grid and drawing its band in itself. One gesture core (`useRangeGesture`) serves both mappings: a share
 chart's points are buckets spaced evenly (`useRangeDrag`, whole buckets), a lift chart's x axis is a continuous date scale (`useTimeRangeDrag`, any two
-days). Positions map from the plot area measured off the chart's grid lines when a drag starts. On a share chart the range runs from the
+days). A bucket mapping has a layout: share and line charts draw buckets as points spaced evenly (a line chart's x axis padding insets them, 12px
+on Body Comp), a bar chart as equal slices of the plot (`BucketLayout`, `indexAt`, `bucketBand`). Body Comp's line charts draw only the buckets a scan
+measured, so each maps a drag over its own rows; its strip stands for the bar chart (every bucket with a scan). Positions map from the plot area measured off the chart's grid lines when a drag starts. On a share chart the range runs from the
 first bucket's first day to the last bucket's last day, held inside the days the chart covers; on a lift chart it is the two days under the pointer
 (logged dates are UTC midnight, so UTC is the day). Escape abandons a drag. A drag is never the only way (WCAG 2.5.7): the picker sets the same range by keyboard. Measured in Chromium
 with a mouse and with touch; jsdom has no layout, so `tests/rangeDrag.test.tsx` pins the arithmetic and what the chart offers. Analytics:
@@ -410,7 +412,7 @@ body fat have no band, because nothing compares them.
 - **Weigh-in delete has no confirmation; it has Undo** for ten seconds (`WeighInsPanel.tsx`, `weigh_in_delete_undone`). An entry delete
   has a confirmation.
 - **Entries reach a before and after rarely on sparse logs** (3 of 8 demo entries on the sample), so the facts lines carry weight.
-- **Period bands (Compare) are still gone.** Drag-to-select is built for the share charts and the lift charts; the Body Comp charts do not have it.
+- **Period bands (Compare) are still gone.** Drag-to-select is built for every chart the date range scopes (share, lift and Body Comp); Overview and Progress use the full history.
 - **Design decisions kept for now, by the owner** (from the 2026 design critique, since deleted; its reasons now live next to the code):
   the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
   orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps

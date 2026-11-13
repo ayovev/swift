@@ -56,11 +56,39 @@ export function measurePlot(container: HTMLElement, origin: HTMLElement = contai
   return { clientLeft: left, span: { left: left - o.left, width: right - left, top: top - o.top, height: bottom - top } };
 }
 
-/** The bucket index under `clientX`, 0 to count - 1: points sit evenly from the plot's left edge to its right. */
-export function indexAt(clientX: number, plotClientLeft: number, plotWidth: number, count: number): number {
+/**
+ * How a chart spreads its buckets across the plot: `points` evenly from the left edge to the right, optionally inset (a line chart's
+ * x axis padding), as a share or line chart draws them; `bands` as equal slices of the whole plot, as a bar chart does.
+ */
+export type BucketLayout = { kind: "points"; inset?: number } | { kind: "bands" };
+
+/** The bucket index under `clientX`, 0 to count - 1. */
+export function indexAt(clientX: number, plotClientLeft: number, plotWidth: number, count: number, layout: BucketLayout = { kind: "points" }): number {
   if (count <= 1 || plotWidth <= 0) return 0;
-  const i = Math.round(((clientX - plotClientLeft) / plotWidth) * (count - 1));
+  if (layout.kind === "bands") {
+    return Math.min(count - 1, Math.max(0, Math.floor(((clientX - plotClientLeft) / plotWidth) * count)));
+  }
+  const inset = layout.inset ?? 0;
+  const usable = plotWidth - 2 * inset;
+  if (usable <= 0) return 0;
+  const i = Math.round(((clientX - plotClientLeft - inset) / usable) * (count - 1));
   return Math.min(count - 1, Math.max(0, i));
+}
+
+/** The band a drag between two bucket indices covers, in pixels from the plot's left (`span.left`), held inside the plot. */
+export function bucketBand(a: number, b: number, count: number, layout: BucketLayout, span: PlotSpan): { left: number; right: number } {
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  if (layout.kind === "bands") {
+    const w = span.width / count;
+    return { left: span.left + lo * w, right: span.left + (hi + 1) * w };
+  }
+  const inset = layout.inset ?? 0;
+  const step = (span.width - 2 * inset) / (count - 1);
+  return {
+    left: Math.max(span.left, span.left + inset + lo * step - step / 2),
+    right: Math.min(span.left + span.width, span.left + inset + hi * step + step / 2),
+  };
 }
 
 /**
@@ -221,13 +249,18 @@ function useRangeGesture<P>({
 /** Drag across a share chart: points are buckets, evenly spaced. */
 export function useRangeDrag({
   containerRef,
+  hostRef,
   buckets,
   granularity,
   coverage,
+  layout = { kind: "points" },
   onSelect,
 }: {
   /** The element the chart is in and the band is drawn in (it must be positioned). */
   containerRef: RefObject<HTMLElement | null>;
+  /** The element the band is drawn in, when it is not the chart: a strip standing for charts elsewhere on the page. */
+  hostRef?: RefObject<HTMLElement | null> | undefined;
+  layout?: BucketLayout;
   /** The chart's bucket keys, oldest first. */
   buckets: readonly string[];
   granularity: Granularity;
@@ -238,17 +271,12 @@ export function useRangeDrag({
   const n = buckets.length;
   const gesture = useRangeGesture<number>({
     measureRef: containerRef,
+    hostRef,
     enabled: onSelect !== undefined && n >= 3,
     mapping: {
-      locate: (x, m) => indexAt(x, m.clientLeft, m.span.width, n),
+      locate: (x, m) => indexAt(x, m.clientLeft, m.span.width, n, layout),
       apart: (a, b) => a !== b,
-      band: (a, b, span) => {
-        const step = span.width / (n - 1);
-        return {
-          left: Math.max(span.left, span.left + Math.min(a, b) * step - step / 2),
-          right: Math.min(span.left + span.width, span.left + Math.max(a, b) * step + step / 2),
-        };
-      },
+      band: (a, b, span) => bucketBand(a, b, n, layout, span),
       label: (a, b) => `${formatBucketLabel(buckets[Math.min(a, b)]!, granularity)} to ${formatBucketLabel(buckets[Math.max(a, b)]!, granularity)}`,
       commit: (a, b) => {
         const range = rangeOfBuckets(buckets, a, b, granularity, coverage);

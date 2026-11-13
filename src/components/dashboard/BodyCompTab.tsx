@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import inbodyLogo from "@/assets/inbody-logo.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InBodyUploadPrompt } from "./InBodyUploadPrompt";
 import { BodyCompLineChart } from "./charts/BodyCompLineChart";
 import { ConsistencyChart } from "./charts/ConsistencyChart";
+import { RangeStrip, useRangeDrag } from "./charts/RangeDrag";
 import { FilePickerButton } from "./FilePickerButton";
 import { ChartViewToggle, DataTable, useChartView } from "./charts/ChartTable";
 import { withUnit } from "./charts/BodyCompLineChart";
@@ -29,6 +30,10 @@ interface BodyCompTabProps {
   granularity: Granularity;
   /** The dashboard's selected date range; scans outside it are left out. `null` is all time. */
   range: DateRange | null;
+  /** The days the charts cover, YYYY-MM-DD (the range, or the whole log), so a drag is held inside them. */
+  coverage?: { start: string; end: string } | undefined;
+  /** Sets the date range from a drag across a chart (see RangeDrag.tsx). */
+  onSelectRange?: ((start: string, end: string) => void) | undefined;
   onFile: (file: File) => void;
   /**
    * The SugarWOD dashboard data, used only to look up how many days were
@@ -76,7 +81,9 @@ function InBodySourceMark() {
  * it reads `dashboard.days_buckets` for the same bucket keys the scan data
  * already uses, never a specific InBody row against a specific workout row.
  */
-export function BodyCompTab({ state, granularity, range, onFile, dashboard, weighIns, onSaveWeighIn, onDeleteWeighIn }: BodyCompTabProps) {
+export function BodyCompTab({ state, granularity, range, coverage, onSelectRange, onFile, dashboard, weighIns, onSaveWeighIn, onDeleteWeighIn }: BodyCompTabProps) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
   const scanReadings = useMemo(() => (state.status === "ready" ? readingsFromInBody(state.rows) : []), [state]);
   const [view] = useChartView();
   const weighInsPanel =
@@ -88,6 +95,18 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
         : null,
     [state, granularity, range]
   );
+
+  // One strip for the trend charts on a touch screen. Its buckets are every bucket with a scan, which is what the bar chart draws in
+  // equal bands; the line charts skip a bucket a scan did not measure, so they take mouse drags of their own.
+  const strip = useRangeDrag({
+    containerRef: gridRef,
+    hostRef: stripRef,
+    buckets: data?.points.map((p) => p.bucket) ?? [],
+    granularity,
+    coverage,
+    layout: { kind: "bands" },
+    onSelect: onSelectRange,
+  });
 
   if (!data) {
     return (
@@ -159,7 +178,14 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
               ])}
             />
           ) : hasEnoughHistory ? (
-            <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+            <>
+            {strip.enabled ? (
+              <div className="mb-4">
+                <RangeStrip handlers={strip.strip} stripRef={stripRef} drag={strip.drag} />
+                <p className="hidden text-xs text-muted-foreground pointer-fine:block">Drag across a chart to set the date range.</p>
+              </div>
+            ) : null}
+            <div ref={gridRef} className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
               <div>
                 <div className="mb-1 flex items-baseline justify-between gap-2">
                   <h2 className="text-sm font-medium">Days trained</h2>
@@ -173,6 +199,8 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
                   granularity={granularity}
                   seriesLabel="Days trained"
                   className="h-[200px] w-full min-w-0"
+                  coverage={coverage}
+                  onRangeSelect={onSelectRange}
                 />
               </div>
               {METRICS.map((m) => (
@@ -181,10 +209,13 @@ export function BodyCompTab({ state, granularity, range, onFile, dashboard, weig
                   seriesLabel={m.label}
                   unit={m.unit}
                   granularity={granularity}
+                  coverage={coverage}
+                  onRangeSelect={onSelectRange}
                   data={data.points.map((p) => ({ bucket: p.bucket, value: p[m.key] }))}
                 />
               ))}
             </div>
+            </>
           ) : (
             <p className="text-sm text-muted-foreground">
               {range

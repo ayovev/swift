@@ -1,6 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { indexAt, rangeOfBuckets, rangeOfTimes, timeAt } from "@/components/dashboard/charts/RangeDrag";
+import { bucketBand, indexAt, rangeOfBuckets, rangeOfTimes, timeAt } from "@/components/dashboard/charts/RangeDrag";
+import { ConsistencyChart } from "@/components/dashboard/charts/ConsistencyChart";
 import { LiftGrid } from "@/components/dashboard/charts/LiftChart";
 import { ShareAreaChart, type SharePoint } from "@/components/dashboard/charts/ShareAreaChart";
 
@@ -103,5 +104,43 @@ describe("the lift charts' continuous date axis", () => {
     expect(container.querySelector("[data-range-strip]")).toBeNull();
     rerender(<LiftGrid lifts={{ "Back Squat": lift, Deadlift: lift }} highlight="most" onRangeSelect={() => {}} />);
     expect(container.querySelectorAll("[data-range-strip]")).toHaveLength(1);
+  });
+});
+
+describe("the Body Comp charts' two layouts", () => {
+  const span = { left: 48, width: 400, top: 8, height: 160 };
+
+  it("a bar chart is equal slices of the whole plot: a bucket owns its band, so a pointer anywhere in it is that bucket", () => {
+    const bands = { kind: "bands" } as const;
+    expect(indexAt(48, 48, 400, 4, bands)).toBe(0);
+    expect(indexAt(147, 48, 400, 4, bands)).toBe(0);
+    expect(indexAt(149, 48, 400, 4, bands)).toBe(1);
+    expect(indexAt(447, 48, 400, 4, bands)).toBe(3);
+    expect(indexAt(9999, 48, 400, 4, bands)).toBe(3);
+    expect(bucketBand(1, 2, 4, bands, span)).toEqual({ left: 148, right: 348 });
+  });
+
+  it("a line chart's points sit inset from the plot's edges by its x axis padding, so the first and last are not at the edge", () => {
+    const pts = { kind: "points", inset: 12 } as const;
+    // Four points across 400px with 12px each side: at 12, 137.3, 262.7, 388 from the left edge.
+    expect(indexAt(48 + 12, 48, 400, 4, pts)).toBe(0);
+    expect(indexAt(48 + 138, 48, 400, 4, pts)).toBe(1);
+    expect(indexAt(48 + 388, 48, 400, 4, pts)).toBe(3);
+    expect(indexAt(48 + 80, 48, 400, 4, pts)).toBe(1); // nearer the second point than the first
+    const b = bucketBand(1, 2, 4, pts, span);
+    expect(b.left).toBeCloseTo(48 + 12 + 125.33 - 62.67, 1);
+    expect(b.right).toBeCloseTo(48 + 12 + 2 * 125.33 + 62.67, 1);
+  });
+
+  it("holds a band inside the plot", () => {
+    expect(bucketBand(0, 3, 4, { kind: "points", inset: 12 }, span)).toEqual({ left: 48, right: 448 });
+  });
+
+  it("leaves the Overview's bar chart as it was when it is given nowhere to send a range", () => {
+    const buckets = ["2024-01", "2024-02", "2024-03"].map((bucket, i) => ({ bucket, count: i + 1 }));
+    const { container, rerender } = render(<ConsistencyChart buckets={buckets} granularity="monthly" />);
+    expect(container.querySelector(".relative")).toBeNull();
+    rerender(<ConsistencyChart buckets={buckets} granularity="monthly" onRangeSelect={() => {}} />);
+    expect(container.firstElementChild?.className).toContain("relative");
   });
 });

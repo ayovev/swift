@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
@@ -16,6 +16,8 @@ import {
   type Granularity,
 } from "@/lib/analytics/granularity";
 import type { BucketCount } from "@/types/dashboard";
+import { RangeBand, useRangeDrag } from "./RangeDrag";
+import { cn } from "@/lib/utils";
 
 interface ConsistencyChartProps {
   buckets: BucketCount[];
@@ -38,6 +40,10 @@ interface ConsistencyChartProps {
   secondaryBuckets?: BucketCount[];
   secondaryLabel?: string;
   className?: string;
+  /** The days the chart covers, YYYY-MM-DD, so a drag is held inside them. */
+  coverage?: { start: string; end: string } | undefined;
+  /** Sets the date range from a drag across the chart (a mouse or pen; see RangeDrag.tsx). Omit for a chart without dragging. */
+  onRangeSelect?: ((start: string, end: string) => void) | undefined;
 }
 
 /** Bar-chart frequency over time — how many `count` (and optionally a second series) per bucket. */
@@ -48,7 +54,12 @@ export function ConsistencyChart({
   secondaryBuckets,
   secondaryLabel = "Days trained",
   className = "h-[260px] w-full min-w-0",
+  coverage,
+  onRangeSelect,
 }: ConsistencyChartProps) {
+  const plotRef = useRef<HTMLDivElement>(null);
+  // Bars are equal slices of the plot, not points on it.
+  const range = useRangeDrag({ containerRef: plotRef, buckets: buckets.map((b) => b.bucket), granularity, coverage, layout: { kind: "bands" }, onSelect: onRangeSelect });
   const noun = GRANULARITY_NOUN[granularity];
   const dual = secondaryBuckets !== undefined;
   // Series hovered in the legend; the other series dims while it's set.
@@ -78,8 +89,7 @@ export function ConsistencyChart({
     ? `Grouped bar chart of ${seriesLabel.toLowerCase()} and ${secondaryLabel.toLowerCase()} per ${noun} across ${buckets.length} ${noun}s`
     : `Bar chart of ${seriesLabel.toLowerCase()} per ${noun} across ${buckets.length} ${noun}s`;
 
-  return (
-    <>
+  const chart = (
     <ChartContainer config={config} className={className} role="img" aria-label={ariaLabel}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--border)" />
@@ -118,6 +128,19 @@ export function ConsistencyChart({
         {dual ? <ChartLegend content={<ChartLegendContent onActiveKeyChange={setActiveKey} />} /> : null}
       </BarChart>
     </ChartContainer>
-    </>
+  );
+  if (!onRangeSelect) return chart;
+  return (
+    <div
+      ref={plotRef}
+      onPointerDown={range.chart.onPointerDown}
+      onPointerMove={range.chart.onPointerMove}
+      onPointerCancel={range.chart.onPointerCancel}
+      onPointerUp={(e) => void range.chart.end(e)}
+      className={cn("relative", range.drag && "select-none")}
+    >
+      {chart}
+      <RangeBand drag={range.drag} />
+    </div>
   );
 }

@@ -1,6 +1,9 @@
+import { useRef } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { AXIS_PROPS, NUM_AXIS_WIDTH, niceAxisTicks, TIME_AXIS_PROPS } from "./chartUtils";
+import { RangeBand, useRangeDrag } from "./RangeDrag";
+import { cn } from "@/lib/utils";
 import {
   bucketTickInterval,
   formatBucketLabel,
@@ -14,7 +17,14 @@ interface BodyCompLineChartProps {
   /** e.g. "lb" or "%" — appended to axis ticks and the tooltip value. */
   unit: string;
   granularity: Granularity;
+  /** The days the chart covers, YYYY-MM-DD, so a drag is held inside them. */
+  coverage?: { start: string; end: string } | undefined;
+  /** Sets the date range from a drag across the chart (a mouse or pen; see RangeDrag.tsx). Omit for a chart without dragging. */
+  onRangeSelect?: ((start: string, end: string) => void) | undefined;
 }
+
+/** The x axis's padding on each side: points start this far in from the plot's edges (RangeDrag.tsx maps a drag with it). */
+const X_PADDING = 12;
 
 /** "181.0 lb", "15.1%", "26.0": a space before a word unit, none before a percent sign. */
 export function withUnit(value: string, unit: string): string {
@@ -33,10 +43,14 @@ export function withUnit(value: string, unit: string): string {
  * already excludes it from the average); `connectNulls={false}` draws a gap
  * there instead of a false zero dip.
  */
-export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: BodyCompLineChartProps) {
+export function BodyCompLineChart({ data, seriesLabel, unit, granularity, coverage, onRangeSelect }: BodyCompLineChartProps) {
+  const plotRef = useRef<HTMLDivElement>(null);
   const rows = data
     .filter((d): d is { bucket: string; value: number } => d.value !== null)
     .map((d) => ({ ...d, label: formatBucketLabel(d.bucket, granularity) }));
+
+  // Only the buckets a scan measured are drawn, so a drag maps over these rows, not every bucket.
+  const range = useRangeDrag({ containerRef: plotRef, buckets: rows.map((r) => r.bucket), granularity, coverage, layout: { kind: "points", inset: X_PADDING }, onSelect: onRangeSelect });
 
   if (rows.length < 2) return null;
 
@@ -57,6 +71,14 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
         <h2 className="text-sm font-medium">{seriesLabel}</h2>
         <span className="text-xs text-muted-foreground tabular">{headline}</span>
       </div>
+      <div
+        ref={plotRef}
+        onPointerDown={range.chart.onPointerDown}
+        onPointerMove={range.chart.onPointerMove}
+        onPointerCancel={range.chart.onPointerCancel}
+        onPointerUp={(e) => void range.chart.end(e)}
+        className={cn("relative", range.drag && "select-none")}
+      >
       <ChartContainer
         config={config}
         className="h-[200px] w-full min-w-0"
@@ -68,7 +90,7 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
           <XAxis
             dataKey="label"
             interval={bucketTickInterval(rows.length)}
-            padding={{ left: 12, right: 12 }}
+            padding={{ left: X_PADDING, right: X_PADDING }}
             {...TIME_AXIS_PROPS}
             {...AXIS_PROPS}
           />
@@ -100,6 +122,8 @@ export function BodyCompLineChart({ data, seriesLabel, unit, granularity }: Body
           />
         </LineChart>
       </ChartContainer>
+      <RangeBand drag={range.drag} />
+      </div>
       </div>
   );
 }

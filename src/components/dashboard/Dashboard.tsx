@@ -414,6 +414,8 @@ export function Dashboard({
                 state={bodyComp}
                 granularity={granularity}
                 range={range}
+                coverage={coverage}
+                onSelectRange={selectRange}
                 onFile={onBodyCompFile}
                 dashboard={insights.dashboard}
                 weighIns={weighIns}
