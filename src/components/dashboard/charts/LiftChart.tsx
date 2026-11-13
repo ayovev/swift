@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { CartesianGrid, Scatter, ScatterChart, XAxis, YAxis, ZAxis } from "recharts";
 import type { TooltipContentProps } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -23,6 +23,8 @@ import {
 import type { LiftEntry } from "@/types/dashboard";
 import { ChartPickNote, PickHint, capturePick, usePointPick } from "./ChartPick";
 import { DataTable, seriesSummary, useChartView } from "./ChartTable";
+import { RangeBand, RangeStrip, useTimeRangeDrag } from "./RangeDrag";
+import { cn } from "@/lib/utils";
 
 const CONFIG = {
   value: { label: "Load", color: "var(--primary)" },
@@ -134,6 +136,7 @@ export function LiftChart({
   xTicks,
   xTickUnit,
   onOpenDay,
+  onRangeSelect,
 }: {
   liftName: string;
   entries: LiftEntry[];
@@ -150,7 +153,11 @@ export function LiftChart({
   xTickUnit: TimeUnit;
   /** Opens Workouts for a picked dot's day (YYYY-MM-DD). Omit for a chart without picking. */
   onOpenDay?: ((date: string) => void) | undefined;
+  /** Sets the date range from a drag across the chart (a mouse or pen; see RangeDrag.tsx). Omit for a chart without dragging. */
+  onRangeSelect?: ((start: string, end: string) => void) | undefined;
 }) {
+  const plotRef = useRef<HTMLDivElement>(null);
+  const range = useTimeRangeDrag({ measureRef: plotRef, domain: xDomain, onSelect: onRangeSelect });
   // One logged effort picked (ChartPick.tsx): the dot gets a ring, and the note under the chart offers its workout.
   const [picked, setPicked] = useState<string | null>(null);
   const pick = onOpenDay
@@ -189,7 +196,7 @@ export function LiftChart({
   return (
     <div>
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-        <h3 className="text-sm font-medium">{liftName}</h3>
+        <h2 className="text-sm font-medium">{liftName}</h2>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular" data-direct-label>
           {latest ? (
             <>
@@ -214,7 +221,18 @@ export function LiftChart({
         />
       ) : (
       <>
-      <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={onOpenDay ? "[&_.recharts-symbols]:cursor-pointer" : undefined}>
+      <div
+        ref={plotRef}
+        onPointerDown={range.chart.onPointerDown}
+        onPointerMove={range.chart.onPointerMove}
+        onPointerCancel={range.chart.onPointerCancel}
+        onPointerUp={(e) => {
+          // A release that ends a drag sets the range; it is not also a click that picks a dot.
+          if (!range.chart.end(e)) onPointerUp(e);
+        }}
+        onKeyDown={onKeyDown}
+        className={cn("relative", onOpenDay && "[&_.recharts-symbols]:cursor-pointer", range.drag && "select-none")}
+      >
       <ChartContainer
         config={CONFIG}
         className="h-[180px] w-full min-w-0"
@@ -285,6 +303,7 @@ export function LiftChart({
           <Scatter data={emph} shape={<LiftDot color={color} picked={picked} />} isAnimationActive={false} />
         </ScatterChart>
       </ChartContainer>
+      <RangeBand drag={range.drag} />
       </div>
       </>
       )}
@@ -306,20 +325,21 @@ export function LiftGrid({
   lifts,
   highlight,
   onOpenDay,
+  onRangeSelect,
 }: {
   lifts: Record<string, LiftEntry[]>;
   highlight: RepMaxHighlight;
   /** Opens Workouts for a picked dot's day; passed to every chart. */
   onOpenDay?: ((date: string) => void) | undefined;
+  /** Sets the date range from a drag across a chart, or along the strip above them on a touch screen (see RangeDrag.tsx). */
+  onRangeSelect?: ((start: string, end: string) => void) | undefined;
 }) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
   const logged = (v: readonly LiftEntry[]) => v.filter((e) => e.value > 0).length;
   const all = useMemo(() => Object.entries(lifts).filter(([, v]) => logged(v) > 0).sort((a, b) => logged(b[1]) - logged(a[1])), [lifts]);
   const charted = all.filter(([, v]) => logged(v) >= MIN_CHART_EFFORTS);
   const listed = all.filter(([, v]) => logged(v) < MIN_CHART_EFFORTS);
-
-  if (charted.length === 0 && listed.length === 0) {
-    return <p className="text-sm text-muted-foreground">No barbell lifts in this export had a load logged.</p>;
-  }
 
   // One shared time domain and tick set for every chart below — see the
   // xDomain/xTicks comment on LiftChart for why per-chart auto-scaling
@@ -328,10 +348,23 @@ export function LiftGrid({
   const xDomain: [number, number] = times.length ? [Math.min(...times), Math.max(...times)] : [0, 0];
   const { ticks: xTicks, unit: xTickUnit } = niceTimeTicks(xDomain[0], xDomain[1]);
 
+  // One strip for the whole grid on a touch screen: every chart shares this domain and plot width, so one strip stands for all of them.
+  const strip = useTimeRangeDrag({ measureRef: gridRef, hostRef: stripRef, domain: xDomain, onSelect: onRangeSelect });
+
+  if (charted.length === 0 && listed.length === 0) {
+    return <p className="text-sm text-muted-foreground">No barbell lifts in this export had a load logged.</p>;
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      {charted.length && strip.enabled ? (
+        <div>
+          <RangeStrip handlers={strip.strip} stripRef={stripRef} drag={strip.drag} />
+          <p className="hidden text-xs text-muted-foreground pointer-fine:block">Drag across a chart to set the date range.</p>
+        </div>
+      ) : null}
       {charted.length ? (
-        <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+        <div ref={gridRef} className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
           {charted.map(([name, series]) => (
             <LiftChart
               key={name}
@@ -342,6 +375,7 @@ export function LiftGrid({
               xTicks={xTicks}
               xTickUnit={xTickUnit}
               onOpenDay={onOpenDay}
+              onRangeSelect={onRangeSelect}
             />
           ))}
         </div>

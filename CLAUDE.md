@@ -122,6 +122,16 @@ fixes this export and nothing else. `movementLexicon.ts` deliberately has **no**
 entry for this reason. Whatever the engine grows, measure it against the sample export first:
 a broadening rule must land only on genuine inflections, and it will move the parity diff.
 
+**A percentage base is a reference, not a movement** (movement classifier only). `findAllMatches(..., { skipPercentBases: true })` in `matcher.ts`,
+which `findMovements` passes, rejects an occurrence directly after "% of" (with "your", "my", "the", "1RM", "5-rep max" allowed between), and
+`findPercentBases` claims the whole base phrase so a shorter phrase inside it cannot match in its place (`% of clean and jerk` is not a jerk). It needs
+the word "of": `75% back squat` is as likely to be the lift performed, so it is left alone. The same lift named anywhere else still counts. Measured on the
+sample: 70 rows name a lift as a base, 51 rows' movements change (a front squat session "at 80% of your clean" is no longer also a clean; a clean pull
+or a snatch grip deadlift is no longer also a clean or a snatch), 1 modality split moves (`Power Cean 4x3 @ 67% of clean`, a typo'd title with no other
+movement, is now unclassified), and no domain tag moves. **The GPP domain keywords deliberately do not use it**: they have no claiming, so rejecting
+"clean and jerk" would let the keyword "jerk" match inside it (measured: new Power and Strength tags on 4 rows), and the parity fixture pins them. So a
+domain tag can still come from a base (pinned in `tests/domainClassifier.test.ts`); fixing that needs claiming in the domain classifier first.
+
 ## Deployment headers
 
 `vercel.json` sends a CSP (`connect-src` limited to our origin and PostHog, so the "data never leaves the
@@ -162,9 +172,15 @@ needs what, and `tests/lazySplit.test.ts` fails if a static import undoes any of
   70 kB of dialog and Radix code landed in the entry chunk. A named group for Recharts was tried and dropped: it pulled Recharts into the entry chunk's
   static imports, which is exactly what the split avoids. Check the result with a build that has `VITE_PUBLIC_POSTHOG_KEY` set (as Vercel does); without a
   key PostHog is dead-code-eliminated and the numbers flatter the build.
-- **Not split, left for later:** the classify/analytics pipeline (`buildInsights`, the movement lexicon, keyword lists and aggregators, roughly 80 kB) is called from `App.tsx` and so
-  stays in the first load; moving it behind the upload would mean making `run()`'s parse step async-import it. `react-day-picker` and `date-fns` ride in the
-  Dashboard chunk with the Settings sheet and date picker.
+- **The classify/analytics pipeline is its own chunk** (`buildInsights`, the movement lexicon, keyword lists and aggregators, ~40 kB; the entry chunk went
+  from 228 to 189 kB). `lib/analytics/pipeline.ts` is the one seam: `loadPipeline()` is a dynamic import that `App.tsx` starts as an upload or the sample
+  begins (it overlaps the parse), and a returning athlete stays on the loading screen until it has arrived, as does a reveal from sync or backup restore.
+  A chunk that fails to load shows `ChunkFailedNotice` (Reload), never the upload screen, because that screen's error dismisses through `reset()`, which
+  wipes storage. `tests/lazySplit.test.ts` walks the entry point's static imports and fails if `lib/classify/*`, `buildInsights` or the aggregators are
+  reachable. That chain was real once: `weighIns` -> `bodyContext` -> `display` -> `sessions` -> `liftSubjects` -> `buildDashboardData` -> the lexicon,
+  broken by moving `REPS_PER_ROUND` and `parseRoundsReps` into `insights/roundsReps.ts`. Keep that file, and anything the upload screen imports, free of
+  imports from the pipeline.
+- **Not split, left for later:** `react-day-picker` and `date-fns` ride in the Dashboard chunk with the Settings sheet and date picker.
 
 ## Architecture: classify → analytics → components
 
@@ -221,6 +237,21 @@ names its own point (`data-pick`, a 24px hit circle), because a scatter hides it
 were measured in Chromium with touch; Recharts' own `onClick` reports no point for a tap. Analytics: `chart_point_selected` and
 `chart_point_opened`, value-free.
 
+**Drag across a chart to set the date range** (`charts/RangeDrag.tsx`, on `ShareAreaChart` via `onRangeSelect`, so the domain, modality and
+Movements charts, on `LiftChart`/`LiftGrid`, so the Lifts view, and on Body Comp's `ConsistencyChart`, `BodyCompLineChart` and one strip in `BodyCompTab`). It sets the same custom range the date picker sets, through `Dashboard.tsx`'s `selectRange` (no change of view), so the scope line
+says what is showing and the picker undoes it. A mouse or pen drags on the chart (after 6px, so a click that does not move still picks a point, and the
+release of a drag is never also a pick); a finger drags on a strip under the chart that only a coarse pointer shows (`pointer-coarse:`), because a drag
+on the chart itself is how a phone scrolls. The lift charts are small multiples on one shared date domain and plot width, so a touch screen gets one strip
+above the whole grid (not 14), measured from the grid and drawing its band in itself. One gesture core (`useRangeGesture`) serves both mappings: a share
+chart's points are buckets spaced evenly (`useRangeDrag`, whole buckets), a lift chart's x axis is a continuous date scale (`useTimeRangeDrag`, any two
+days). A bucket mapping has a layout: share and line charts draw buckets as points spaced evenly (a line chart's x axis padding insets them, 12px
+on Body Comp), a bar chart as equal slices of the plot (`BucketLayout`, `indexAt`, `bucketBand`). Body Comp's line charts draw only the buckets a scan
+measured, so each maps a drag over its own rows; its strip stands for the bar chart (every bucket with a scan). Positions map from the plot area measured off the chart's grid lines when a drag starts. On a share chart the range runs from the
+first bucket's first day to the last bucket's last day, held inside the days the chart covers; on a lift chart it is the two days under the pointer
+(logged dates are UTC midnight, so UTC is the day). Escape abandons a drag. A drag is never the only way (WCAG 2.5.7): the picker sets the same range by keyboard. Measured in Chromium
+with a mouse and with touch; jsdom has no layout, so `tests/rangeDrag.test.tsx` pins the arithmetic and what the chart offers. Analytics:
+`chart_range_dragged`, value-free.
+
 **Share-over-time charts draw each bucket for what it is** (`charts/ShareAreaChart.tsx`, `shareRows`): a bucket with fewer than
 `THIN_BUCKET_WORKOUTS` (5) workouts is a hollow dot off the line, a first or last bucket the range or the log only partly covers
 (`coverage`, from `Dashboard.tsx`; `bucketBounds` in `granularity.ts`) stays shaded but its line is dashed, with a "from" or "to" day in its tooltip, the line
@@ -275,8 +306,7 @@ still searched for other movements, but a family's *generic* bare word (`Movemen
 "clean", "snatch", ...) is dropped when the typed lift is a more specific member of that family, so a front squat
 session is not also a vague squat. Rows with no recognised typed lift behave exactly as before. Measured on the
 sample: 279 of 1,209 rows have the field, 25 rows' identities changed and no modality split moved (all typed lifts
-are W). Known and left alone: a `% of snatch` reference in a description still reads as a snatch (about 70 rows
-in the export name a lift only as a percentage base); fixing that is a lexicon `exclude` decision of its own.
+are W). A lift named only as the base of a percentage ("75% of snatch") is not read as that movement: see the next paragraph.
 **Variants are their own ids, and their family keeps them.** CrossFit's movement list separates strict, kipping and
 butterfly pull-ups, the GHD movements, legless and L-sit rope climbs, walking and front-rack lunges and so on, so each
 is a lexicon id (`strict-pull-ups`) and a member of its family (`pull-up`); picking the family still finds every variant,
@@ -295,8 +325,7 @@ each is one entry whose longer phrase claims the range. A complex written with `
 lines are several movements and stay several. Left as two on purpose and pinned in `tests/modalityClassifier.test.ts`:
 burpee deadlifts, squat clean thrusters and wall ball sit-ups. Measured on the sample: 30 rows' movements changed and
 17 splits moved (farmers carry 13 rows no longer also a loaded carry; burpee pull-ups; a lateral burpee bar step-over
-moves from W to G; a hyphenated `bent-over rows` stops reading as a rower, M to W). Not done: a lift named only as a percentage base ("75% of snatch", about 70 rows, see above) still reads as
-that lift.
+moves from W to G; a hyphenated `bent-over rows` stops reading as a rower, M to W).
 Movement and family labels are in sentence case (pinned in `tests/modalityClassifier.test.ts`); a name keeps its capitals
 (`GHD`, `AbMat`, `L-sit`, `Turkish`). Inside a sentence use `labelInSentence()` (`buildMovementData.ts`), which lowers only the
 first letter and only when it starts an ordinary word, never `toLowerCase()`, which turned `Hanging L-sit` into `hanging l-sit`.
@@ -332,7 +361,7 @@ reference, so the parity test strips it before comparing lift series.
 Read each file's header comment before changing it; the cases are `tests/progressVerdict.test.ts`, `tests/progressDisplay.test.ts` and
 `tests/LiftsTab.test.tsx`, and every threshold is a `PV_*` constant in `insightConfig.ts`.
 
-- **`sessions.ts`**: a *subject* is one lift or named benchmark with RX and Scaled kept separate; a *session* is one subject on one day (the best
+- **`sessions.ts`**: a *subject* is one lift or named benchmark with RX and Scaled kept separate (decided, not open: a Scaled lift is a different load or movement, and merging would blur a verdict); a *session* is one subject on one day (the best
   of the day). A lift's value is its estimated 1RM (average of Epley and Brzycki) from any 1 to 8 rep scheme; SugarWOD's PR flag is deliberately
   not read (Overview's "most recent PR" stat is the one reader of the flag, as a logged fact, and feeds nothing here). It builds on `liftSubjects.ts` (name normalisation, RX/Scaled split, the 1RM estimate; a test pins the parity) and also keeps
   per-entry max-effort facts and the reason each Load row went unused.
@@ -378,15 +407,12 @@ body fat have no band, because nothing compares them.
 
 - **One athlete.** The `PV_*` thresholds were validated on the bundled sample and one real export, which is the same athlete (the real export
   contains the sample's rows plus newer ones). Check them on another athlete's export before trusting them.
-- **RX and Scaled for lifts** are judged separately; whether to merge them needs an athlete who logs Scaled lifts.
 - **Noise band.** `weightNoiseBand.ts`'s band comes from `paired-scans`, `residual` or `default`; anyone scanning monthly or less lands on `residual` or
   `default` (3 lb for weight), which is why manual weigh-ins exist.
 - **Weigh-in delete has no confirmation; it has Undo** for ten seconds (`WeighInsPanel.tsx`, `weigh_in_delete_undone`). An entry delete
   has a confirmation.
 - **Entries reach a before and after rarely on sparse logs** (3 of 8 demo entries on the sample), so the facts lines carry weight.
-- **Chart drag-to-select and period bands are gone** with Compare; nothing replaces them on the date-range charts. Planned: drag
-  across a Training chart to set the date range (on a phone, a strip under the chart, so the page still scrolls), through the same
-  `persistRangeSelection` path as the picker.
+- **Period bands (Compare) are still gone.** Drag-to-select is built for every chart the date range scopes (share, lift and Body Comp); Overview and Progress use the full history.
 - **Design decisions kept for now, by the owner** (from the 2026 design critique, since deleted; its reasons now live next to the code):
   the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
   orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps
@@ -397,13 +423,14 @@ body fat have no band, because nothing compares them.
   picker, should keep the button and link colours at least 8 from `--destructive` in both modes, as a test.
 - **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
   is a separate, unbuilt idea.
-- **Not yet checked**: a real screen reader pass, forced-colors mode, and an export from a second athlete. The usability study plan
+- **Not yet checked**: a real screen reader pass (axe-core is clean on every view, the landing page, the Settings sheet and the entry dialog, in both
+  modes, and the keyboard order, skip link and dialog focus were walked in Chromium, but that is not a screen reader), and an export from a second athlete.
+  Forced colors was checked by emulation only (Chromium's `forcedColors: "active"`), not on Windows High Contrast itself. The usability study plan
   (five tasks on the core questions) is issue #67.
-- **Sync.** Verified by unit tests and by hand on two devices, not by an automated two-device test.
-- **Backup encryption.** The iteration count (600,000) and the strength bands are first drafts: measure derive time on a mid-range phone before
-  raising the former. The strength hint is length-only by design, with one guard for fewer than 5 distinct characters; long predictable
-  passphrases rate "Strong" (pinned in `tests/passphrase.test.ts`). Argon2id would be a new `encoding` via `kdf.name`. There is no passphrase
-  recovery, by design.
+- **Backup encryption is settled as it is.** The iteration count (600,000, OWASP's floor) and the strength bands stay; derive time has not been
+  measured on a mid-range phone, so measure it before ever raising the count. The strength hint is length-only by design, with one guard for
+  fewer than 5 distinct characters; long predictable passphrases rate "Strong" (pinned in `tests/passphrase.test.ts`). Argon2id would be a new
+  `encoding` via `kdf.name`. There is no passphrase recovery, by design.
 
 ## Architecture: the Timeline
 
@@ -759,7 +786,7 @@ This doesn't relax hard constraint #1 above — the cache is still local-only an
 Black-and-white base in both modes, plus **one** user-selected accent — the only chromatic
 element the athlete controls. Every token in `src/index.css` is achromatic (chroma exactly 0),
 with two fixed exceptions that never derive from the accent: `--destructive`, the error/delete-action
-red, the `--repmax-1/2/3/5` tokens (red/orange/green/blue), and `--positive`/`--positive-subtle`, the fixed green of a verdict that
+red, the `--repmax-1/2/3/5` tokens (red/orange/green/blue), `--negative`/`--negative-subtle` (the Down pill: `--destructive` on its own tint is 4.0:1, under 4.5, and `tests/positiveColor.test.ts` checks this pair), and `--positive`/`--positive-subtle`, the fixed green of a verdict that
 went the athlete's way (Up, a move up to RX, the "Improving" headline on Progress and Overview). Verdicts used to take the accent for Up,
 so with the red accent Up sat beside Down; now a verdict looks the same whatever the accent, and `tests/positiveColor.test.ts` checks the
 green's contrast in both modes. The `--repmax-*` tokens colour the
@@ -799,6 +826,22 @@ and Recharts series pick it up with no per-component wiring.
 - The pre-hydration script in `index.html` duplicates the mode logic and the `swift.theme`
   localStorage key from `useTheme.ts` to avoid a flash of the wrong mode. **Change both together.**
   Theme reads/writes are wrapped in try/catch — private browsing must never break the app.
+
+## Accessibility conventions
+
+Measured with axe-core (WCAG 2.2 AA and best-practice rules) in Chromium over every view, the landing and role-split screens, the Settings sheet and
+the entry dialog, in light and dark; all clean. Keep it that way:
+
+- **Heading levels step by one.** A page's view title is the `h1`; a chart card's title is an `h2` (they were `h3`, which skipped a level on 30 views).
+- **A file input is not a control.** The button or dropzone is; the `<input type="file">` it clicks is `aria-hidden`, and sits beside the dropzone, not inside
+  its `role="button"` (axe: `label`, `nested-interactive`).
+- **The role-split screen is a page**: `<main>` and one `sr-only` `h1`.
+- **Forced colors** drops fills, box-shadows and the page's colours, which is how "selected", "pressed" and "focused" were drawn. `index.css` ends with a
+  `forced-colors: active` block (a pressed toggle is Highlight on HighlightText with `forced-color-adjust: none`, because left to the browser the text gets a
+  white backplate and vanishes; keyboard focus is a Highlight outline), and per-component `forced-colors:` classes cover the tab underlines (a transparent
+  border is forced visible, so an unselected sub-tab sets its own to Canvas), Timeline's entry bars (a border) and the accent swatches (`forced-color-adjust-none`).
+  `tests/forcedColors.test.ts` pins them; jsdom cannot render the mode, so a change here is checked in Chromium with `forcedColors: "active"`.
+- Still decorative in forced colors, and safe because the value is also text: the M/W/G bars on Workouts rows and the verdict pills' tint.
 
 ## Voice & personality
 

@@ -50,6 +50,9 @@
    */
   --positive: oklch(0.48 0.13 150);
   --positive-subtle: oklch(0.95 0.05 150);
+  /* The Down verdict's pill. --destructive itself is 4.0:1 on a pale red tint, under 4.5; this is its text-on-tint twin (tests/positiveColor.test.ts). */
+  --negative: oklch(0.5 0.17 27);
+  --negative-subtle: oklch(0.95 0.02 25);
 
   /* Accent fallbacks, replaced at runtime by the derived ramp. */
   --primary: oklch(0.556 0 0);
@@ -97,6 +100,8 @@
 
   --positive: oklch(0.8 0.15 150);
   --positive-subtle: oklch(0.3 0.06 150);
+  --negative: oklch(0.78 0.12 22);
+  --negative-subtle: oklch(0.3 0.07 25);
 
   --primary: oklch(0.72 0 0);
   --primary-foreground: oklch(0.145 0 0);
@@ -134,6 +139,8 @@
   --color-repmax-5: var(--repmax-5);
   --color-positive: var(--positive);
   --color-positive-subtle: var(--positive-subtle);
+  --color-negative: var(--negative);
+  --color-negative-subtle: var(--negative-subtle);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -256,5 +263,25 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Forced colors (Windows High Contrast and similar). The browser replaces the page's colours with the user's own and drops fills and
+ * box-shadows, which is how this app marks "pressed" (a fill), "selected" (a ring) and "focused" (a ring). Without this a toggle
+ * reads the same on and off and a keyboard user has no focus mark where a component sets its own ring. System colours only, so the
+ * user's palette still decides how it looks. Per-component rules (the tab underlines, Timeline's bars, the swatches) sit beside
+ * their components as `forced-colors:` classes.
+ */
+@media (forced-colors: active) {
+  [aria-pressed="true"] {
+    /* Left to the browser, white text on a Highlight fill gets a white backplate behind it and vanishes. */
+    forced-color-adjust: none;
+    background-color: Highlight;
+    color: HighlightText;
+  }
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
   }
 }

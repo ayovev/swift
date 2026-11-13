@@ -35,12 +35,15 @@ export function MovementsTab({
   data,
   granularity,
   coverage,
+  onSelectRange,
   describe,
 }: {
   data: MovementData;
   granularity: Granularity;
   /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
   coverage?: { start: string; end: string } | undefined;
+  /** Sets the date range from a drag across the share chart (see RangeDrag.tsx). */
+  onSelectRange?: ((start: string, end: string) => void) | undefined;
   /** A workout's description by its date and title, so a listed workout opens to it. */
   describe?: ((date: string, title: string) => string | undefined) | undefined;
 }) {
@@ -172,6 +175,7 @@ export function MovementsTab({
           <ShareAreaChart
             data={trend.map((p) => ({ ...p, basis: `${p.count} of ${p.total} ${p.total === 1 ? "workout" : "workouts"}` }))}
             coverage={coverage}
+            onRangeSelect={onSelectRange}
             color="var(--primary)"
             seriesLabel={name}
             label={`${granularityLabel(granularity)} share of workouts that included ${name}`}

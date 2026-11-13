@@ -1,7 +1,10 @@
+import { useRef } from "react";
+import { cn } from "@/lib/utils";
 import { Area, AreaChart, CartesianGrid, Line, ReferenceLine, XAxis, YAxis, type TooltipContentProps } from "recharts";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { AXIS_PROPS, PCT_AXIS_WIDTH, THIN_BUCKET_WORKOUTS, formatDate, niceAxisTicks, TIME_AXIS_PROPS } from "./chartUtils";
 import { PickHint, usePointPick } from "./ChartPick";
+import { RangeBand, RangeStrip, useRangeDrag } from "./RangeDrag";
 import { DataTable, seriesSummary, useChartView } from "./ChartTable";
 import { GRANULARITY_NOUN, bucketBounds, bucketTickInterval, formatBucketLabel, type Granularity } from "@/lib/analytics/granularity";
 
@@ -32,6 +35,11 @@ interface ShareAreaChartProps {
   selected?: string | null;
   /** Called with a bucket's key when it is clicked, tapped or picked with Enter, and with null to clear. Omit for a chart without picking. */
   onSelect?: (bucket: string | null) => void;
+  /**
+   * Called with the first and last day (YYYY-MM-DD) when a drag across the chart (a mouse or pen) or along the strip under it (a finger)
+   * picks a stretch of buckets: the date range to set (see RangeDrag.tsx). Omit for a chart without dragging.
+   */
+  onRangeSelect?: ((start: string, end: string) => void) | undefined;
 }
 
 /**
@@ -86,8 +94,10 @@ const MIN_BUCKETS = 3;
  * - with fewer than MIN_BUCKETS buckets there is no chart, only a sentence saying so.
  * A key under the chart names the hollow and dashed marks whenever either is drawn.
  */
-export function ShareAreaChart({ data, color, label, seriesLabel, granularity, coverage, selected = null, onSelect }: ShareAreaChartProps) {
+export function ShareAreaChart({ data, color, label, seriesLabel, granularity, coverage, selected = null, onSelect, onRangeSelect }: ShareAreaChartProps) {
   const { track, onPointerUp, onKeyDown } = usePointPick(onSelect, selected);
+  const plotRef = useRef<HTMLDivElement>(null);
+  const range = useRangeDrag({ containerRef: plotRef, buckets: data.map((d) => d.bucket), granularity, coverage, onSelect: onRangeSelect });
   const [view] = useChartView();
   const noun = GRANULARITY_NOUN[granularity];
 
@@ -137,7 +147,18 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity, c
 
   return (
     <div>
-      <div onPointerUp={onPointerUp} onKeyDown={onKeyDown} className={onSelect ? "[&_.recharts-surface]:cursor-pointer" : undefined}>
+      <div
+        ref={plotRef}
+        onPointerDown={range.chart.onPointerDown}
+        onPointerMove={range.chart.onPointerMove}
+        onPointerCancel={range.chart.onPointerCancel}
+        onPointerUp={(e) => {
+          // A release that ends a drag sets the range; it is not also a click that picks a point.
+          if (!range.chart.end(e)) onPointerUp(e);
+        }}
+        onKeyDown={onKeyDown}
+        className={cn("relative", onSelect && "[&_.recharts-surface]:cursor-pointer", range.drag && "select-none")}
+      >
         <ChartContainer config={config} className="h-[260px] w-full min-w-0" role="img" aria-label={summary}>
           <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} title={summary}>
             <defs>
@@ -181,7 +202,12 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity, c
             {pickedLabel ? <ReferenceLine x={pickedLabel} stroke="var(--foreground)" strokeWidth={1.5} ifOverflow="extendDomain" /> : null}
           </AreaChart>
         </ChartContainer>
+        <RangeBand drag={range.drag} />
       </div>
+      {range.enabled ? <RangeStrip handlers={range.strip} /> : null}
+      {range.enabled ? (
+        <p className="mt-1 hidden text-xs text-muted-foreground pointer-fine:block">Drag across the chart to set the date range.</p>
+      ) : null}
       {anyThin || anyPartial ? (
         <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" data-share-key>
           {anyThin ? (

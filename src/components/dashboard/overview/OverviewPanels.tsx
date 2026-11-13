@@ -336,7 +336,7 @@ export function TrainingPanel({
           )}
         </div>
         <section aria-label="What it was made of" className="flex flex-col gap-2 border-t border-border pt-4">
-          <h3 className="text-sm font-medium">Weightlifting, gymnastics, cardio</h3>
+          <h2 className="text-sm font-medium">Weightlifting, gymnastics, cardio</h2>
           {anyMix ? (
             <>
               <MonthlyMixChart mix={mix} picked={picked} pick={pick} />

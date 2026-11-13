@@ -1,5 +1,5 @@
 import { findImplementWords, implementBefore } from "./implement";
-import { classifiableText, findAllMatches, type MatchRange } from "./matcher";
+import { classifiableText, findAllMatches, findPercentBases, type MatchRange } from "./matcher";
 import { MOVEMENT_FAMILIES } from "./movementFamilies";
 import { LEXICON_BY_SPECIFICITY, type MovementEntry } from "./movementLexicon";
 import { MODALITY_LIST } from "@/types/modality";
@@ -41,7 +41,11 @@ export function findMovements(text: string): MovementHit[] {
   const byId = new Map<string, { hit: MovementHit; at: number; entry: MovementEntry }>();
 
   for (const entry of LEXICON_BY_SPECIFICITY) {
-    for (const [start, end] of findAllMatches(text, entry)) {
+    // "75% of clean and jerk" is a base, not a movement, and claims its whole phrase so "jerk" cannot match inside it.
+    for (const [start, end] of findPercentBases(text, entry)) {
+      if (!overlaps(start, end, claimed)) claimed.push([start, end]);
+    }
+    for (const [start, end] of findAllMatches(text, entry, { skipPercentBases: true })) {
       if (overlaps(start, end, claimed)) continue;
       claimed.push([start, end]);
 

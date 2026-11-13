@@ -37,6 +37,18 @@ export function ViewLoading({ label, variant = "inline" }: { label: string; vari
   );
 }
 
+/** The plain notice for a chunk that could not be fetched, with the one thing that helps. Also used by `App` for the pipeline chunk. */
+export function ChunkFailedNotice({ variant }: { variant: Variant }) {
+  return (
+    <div role="alert" className={cn("flex flex-col items-start gap-3 text-sm", variant === "inline" && "min-h-[28rem] pt-2", variant === "page" && "min-h-svh justify-center items-center bg-background")}>
+      <p>This part of the page didn't load. Reload to try again.</p>
+      <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+        Reload
+      </Button>
+    </div>
+  );
+}
+
 /**
  * Catches a chunk that failed to load. The usual cause is a deploy: a tab left open on the old build asks for a file the
  * new one no longer has. Without this the failed import unmounts the whole app to a blank page. A reload fetches the new build and,
@@ -56,14 +68,7 @@ class ChunkBoundary extends Component<{ children: ReactNode; variant: Variant },
 
   override render(): ReactNode {
     if (!this.state.failed) return this.props.children;
-    return (
-      <div role="alert" className={cn("flex flex-col items-start gap-3 text-sm", this.props.variant === "inline" && "min-h-[28rem] pt-2", this.props.variant === "page" && "min-h-svh justify-center items-center bg-background")}>
-        <p>This part of the page didn't load. Reload to try again.</p>
-        <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-          Reload
-        </Button>
-      </div>
-    );
+    return <ChunkFailedNotice variant={this.props.variant} />;
   }
 }
 

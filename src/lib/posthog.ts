@@ -55,6 +55,8 @@ export type InteractionName =
   // point, bucket, date, lift or count: only that it happened.
   | "chart_point_selected"
   | "chart_point_opened"
+  // A stretch of a Training chart dragged to set the date range. Never the dates, the buckets or how many.
+  | "chart_range_dragged"
   // Charts shown as tables, or back: only that the switch was used, not which way.
   | "chart_view_toggled";
 

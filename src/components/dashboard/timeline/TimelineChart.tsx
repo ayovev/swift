@@ -134,7 +134,7 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
                 onClick={() => onSelect({ kind: "entry", id: entry.id })}
                 className={cn(
                   "absolute flex h-6 items-center overflow-visible rounded text-xs leading-none outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  changed ? "bg-accent-link text-background" : "border border-dashed border-foreground bg-background text-foreground",
+                  changed ? "bg-accent-link text-background forced-colors:border forced-colors:border-[CanvasText]" : "border border-dashed border-foreground bg-background text-foreground",
                   isSelected && "ring-2 ring-foreground"
                 )}
                 style={{ top: 4 + lane * 28, left: `${left}%`, width: `max(${barWidth}%, 10px)` }}

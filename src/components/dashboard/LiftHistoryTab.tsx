@@ -68,10 +68,13 @@ function HighlightControl({ value, onChange }: { value: RepMaxHighlight; onChang
 export function LiftHistoryTab({
   dashboard,
   onOpenWorkouts,
+  onSelectRange,
 }: {
   dashboard: DashboardData;
   /** Opens Workouts for a range of days (YYYY-MM-DD, inclusive); a picked lift dot opens its one day. */
   onOpenWorkouts?: ((start: string, end: string) => void) | undefined;
+  /** Sets the date range from a drag across a lift chart (see RangeDrag.tsx). */
+  onSelectRange?: ((start: string, end: string) => void) | undefined;
 }) {
   const [highlight, setHighlight] = useState<RepMaxHighlight>("most");
 
@@ -90,7 +93,7 @@ export function LiftHistoryTab({
           </p>
           <RepMaxPrTable lifts={dashboard.lifts} />
           <HighlightControl value={highlight} onChange={setHighlight} />
-          <LiftGrid lifts={dashboard.lifts} highlight={highlight} onOpenDay={onOpenWorkouts ? (date) => onOpenWorkouts(date, date) : undefined} />
+          <LiftGrid lifts={dashboard.lifts} highlight={highlight} onOpenDay={onOpenWorkouts ? (date) => onOpenWorkouts(date, date) : undefined} onRangeSelect={onSelectRange} />
         </CardContent>
       </Card>
 

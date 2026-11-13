@@ -25,6 +25,7 @@ export function ModalityTab({
   data,
   granularity,
   coverage,
+  onSelectRange,
   onOpen = () => {},
   describe,
 }: {
@@ -33,6 +34,8 @@ export function ModalityTab({
   granularity: Granularity;
   /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
   coverage?: { start: string; end: string } | undefined;
+  /** Sets the date range from a drag across the share chart (see RangeDrag.tsx). */
+  onSelectRange?: ((start: string, end: string) => void) | undefined;
   /** Opens another view by its tab id: the comparison strip's bars. Omit to draw the strip without links. */
   onOpen?: ((tab: string) => void) | undefined;
   /** A workout's description by its date and title, so a listed workout opens to it. */
@@ -92,6 +95,7 @@ export function ModalityTab({
           <ShareAreaChart
             data={trend.map((p) => ({ bucket: p.bucket, value: p.avg_share, total: p.total, basis: `Average of ${p.total} classified ${p.total === 1 ? "workout" : "workouts"}` }))}
             coverage={coverage}
+            onRangeSelect={onSelectRange}
             color={modalityColor(modality)}
             seriesLabel={name}
             label={`${granularityLabel(granularity)} average share of training spent on ${name}`}

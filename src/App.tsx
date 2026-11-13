@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import type { BodyCompState } from "@/components/dashboard/BodyCompTab";
 import { Landing } from "@/components/landing/Landing";
-import { LazyView } from "@/components/ui/LazyView";
+import { ChunkFailedNotice, LazyView } from "@/components/ui/LazyView";
 import { lazyComponent } from "@/components/ui/lazyComponent";
-import { buildInsights } from "@/lib/analytics/buildInsights";
+import { getPipeline, loadPipeline } from "@/lib/analytics/pipeline";
 import { computePresetRange, type DateRange, type DateRangePreset } from "@/lib/analytics/dateRange";
 import type { Granularity } from "@/lib/analytics/granularity";
 import { CsvValidationError, parseSugarWodCsv } from "@/lib/csv/parseCsv";
@@ -95,6 +95,10 @@ async function waitOutMinimum(startedAt: number) {
 
 export default function App() {
   const [state, setState] = useState<AppState>({ status: "loading" });
+  // The classify/analytics pipeline is its own chunk (lib/analytics/pipeline.ts); null until it has arrived.
+  const [pipeline, setPipeline] = useState(getPipeline);
+  // True when that chunk could not be fetched (usually a tab left open across a deploy). Reload is the fix, as for any chunk.
+  const [pipelineFailed, setPipelineFailed] = useState(false);
   const [range, setRange] = useState<DateRange | null>(null);
   const [rangePreset, setRangePreset] = useState<DateRangePreset>("all_time");
   const [granularity, setGranularity] = useState<Granularity>("monthly");
@@ -123,6 +127,11 @@ export default function App() {
       if (cancelled) return;
       if (rows && rows.length > 0) {
         preloadDashboard();
+        // Held on the loading screen until the pipeline has arrived, so "ready" never has nothing to compute from.
+        const loaded = await loadPipeline().catch(() => null);
+        if (cancelled) return;
+        if (loaded) setPipeline(loaded);
+        else setPipelineFailed(true);
         setState({ status: "ready", rows, source: "upload" });
         if (storedMeta) setWorkoutMeta(storedMeta);
       } else {
@@ -187,8 +196,8 @@ export default function App() {
   }, [state]);
 
   const insights = useMemo(
-    () => (state.status === "ready" ? buildInsights(state.rows, range, granularity) : null),
-    [state, range, granularity]
+    () => (state.status === "ready" && pipeline ? pipeline.buildInsights(state.rows, range, granularity) : null),
+    [state, pipeline, range, granularity]
   );
 
   // Hold on "reveal" just long enough for UploadReveal's numbers to chalk
@@ -196,11 +205,20 @@ export default function App() {
   useEffect(() => {
     if (state.status !== "reveal") return;
     const { rows, source } = state;
+    let cancelled = false;
+    // Sync and backup restore reach here without run(), so the pipeline may still be on its way: wait for it as well as the beat.
+    const pipelineReady = loadPipeline().then(setPipeline, () => setPipelineFailed(true));
     const timer = window.setTimeout(
-      () => setState({ status: "ready", rows, source }),
+      () =>
+        void pipelineReady.then(() => {
+          if (!cancelled) setState({ status: "ready", rows, source });
+        }),
       prefersReducedMotion() ? REVEAL_HOLD_MS_REDUCED : REVEAL_HOLD_MS
     );
-    return () => window.clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [state]);
 
   // The shared tail of a successful load, regardless of where the rows came
@@ -257,6 +275,8 @@ export default function App() {
     ) => {
       setState({ status: "loading" });
       preloadDashboard();
+      // Fetched alongside the parse (and the download, for the sample), so a first-time visitor pays for it only once a log is on its way.
+      void loadPipeline().then(setPipeline, () => setPipelineFailed(true));
       capture(source === "sample" ? { name: "sample_data_used" } : { name: "upload_attempted" });
 
       const startedAt = performance.now();
@@ -484,9 +504,11 @@ export default function App() {
     );
   }
 
+  if (pipelineFailed && state.status !== "idle") return <ChunkFailedNotice variant="page" />;
+
   return (
     <Landing
-      loading={state.status === "loading"}
+      loading={state.status === "loading" || state.status === "ready"}
       reveal={state.status === "reveal" ? state.summary : null}
       error={state.status === "error" ? state.message : null}
       onFile={handleFile}

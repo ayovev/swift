@@ -19,6 +19,7 @@ export function DomainTab({
   data,
   granularity,
   coverage,
+  onSelectRange,
   onOpen = () => {},
   describe,
 }: {
@@ -27,6 +28,8 @@ export function DomainTab({
   granularity: Granularity;
   /** The days the data covers (YYYY-MM-DD), so the chart can mark a bucket the range only partly covers. */
   coverage?: { start: string; end: string } | undefined;
+  /** Sets the date range from a drag across the share chart (see RangeDrag.tsx). */
+  onSelectRange?: ((start: string, end: string) => void) | undefined;
   /** Opens another view by its tab id: the comparison strip's bars. Omit to draw the strip without links. */
   onOpen?: ((tab: string) => void) | undefined;
   /** A workout's description by its date and title, so a listed workout opens to it. */
@@ -74,6 +77,7 @@ export function DomainTab({
           <ShareAreaChart
             data={trend.map((p) => ({ bucket: p.bucket, value: p.pct, total: p.total, basis: `${p.count} of ${p.total} ${p.total === 1 ? "workout" : "workouts"}` }))}
             coverage={coverage}
+            onRangeSelect={onSelectRange}
             color={domainColor(domain)}
             seriesLabel={domain}
             label={`${granularityLabel(granularity)} share of workouts touching ${domain}`}

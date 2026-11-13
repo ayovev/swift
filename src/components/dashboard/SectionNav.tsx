@@ -115,7 +115,7 @@ export function SectionLinks({ value, onValueChange }: { value: string; onValueC
             className={cn(
               "-mb-px flex items-center border-b-2 text-sm transition-colors",
               isActive
-                ? "border-primary font-medium text-foreground"
+                ? "border-primary font-medium text-foreground forced-colors:border-[Highlight] forced-colors:border-b-4"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
@@ -254,8 +254,8 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
                     className={cn(
                       "-mb-px shrink-0 border-b-2 py-3 text-sm whitespace-nowrap transition-colors",
                       isActive
-                        ? "border-primary font-medium text-foreground"
-                        : "border-transparent text-muted-foreground hover:text-foreground"
+                        ? "border-primary font-medium text-foreground forced-colors:border-[Highlight] forced-colors:border-b-4"
+                        : "border-transparent text-muted-foreground hover:text-foreground forced-colors:border-[Canvas]"
                     )}
                   >
                     <StableLabel>{labelOf(v)}</StableLabel>

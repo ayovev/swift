@@ -208,6 +208,15 @@ export function Dashboard({
     [onRangeSelect, onTabChange]
   );
 
+  // A stretch of a Training chart dragged to set the range (RangeDrag.tsx): the same custom range the date picker sets, and no change of view.
+  const selectRange = useCallback(
+    (start: string, end: string) => {
+      onRangeSelect({ start: dayjs(start).startOf("day"), end: dayjs(end).endOf("day") }, "custom");
+      capture({ name: "interaction_used", props: { interaction: "chart_range_dragged" } });
+    },
+    [onRangeSelect]
+  );
+
   return (
     <div className="min-h-svh bg-background">
       {/* The first stop for a keyboard: past the strip, the four sections and Settings, straight to the page (WCAG 2.4.1). */}
@@ -373,14 +382,14 @@ export function Dashboard({
 
           <TabsContent value={LIFT_HISTORY_TAB}>
             <LazyView>
-              <LiftHistoryTab dashboard={insights.dashboard} onOpenWorkouts={openWorkouts} />
+              <LiftHistoryTab dashboard={insights.dashboard} onOpenWorkouts={openWorkouts} onSelectRange={selectRange} />
             </LazyView>
           </TabsContent>
 
           {DOMAIN_LIST.map((domain: Domain) => (
             <TabsContent key={domain} value={`domain:${domain}`}>
               <LazyView>
-                <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
+                <DomainTab domain={domain} data={insights.dashboard} granularity={granularity} coverage={coverage} onSelectRange={selectRange} onOpen={onTabChange} describe={describe} />
               </LazyView>
             </TabsContent>
           ))}
@@ -388,14 +397,14 @@ export function Dashboard({
           {MODALITY_LIST.map((modality: Modality) => (
             <TabsContent key={modality} value={`modality:${modality}`}>
               <LazyView>
-                <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} onOpen={onTabChange} describe={describe} />
+                <ModalityTab modality={modality} data={insights.modality} granularity={granularity} coverage={coverage} onSelectRange={selectRange} onOpen={onTabChange} describe={describe} />
               </LazyView>
             </TabsContent>
           ))}
 
           <TabsContent value={MOVEMENTS_TAB}>
             <LazyView>
-              <MovementsTab data={insights.movements} granularity={granularity} coverage={coverage} describe={describe} />
+              <MovementsTab data={insights.movements} granularity={granularity} coverage={coverage} onSelectRange={selectRange} describe={describe} />
             </LazyView>
           </TabsContent>
 
@@ -405,6 +414,8 @@ export function Dashboard({
                 state={bodyComp}
                 granularity={granularity}
                 range={range}
+                coverage={coverage}
+                onSelectRange={selectRange}
                 onFile={onBodyCompFile}
                 dashboard={insights.dashboard}
                 weighIns={weighIns}

@@ -195,6 +195,11 @@ describe("GPP classifier — stem-changing inflections (consonant + y)", () => {
 });
 
 describe("GPP classifier — known limitations, pinned deliberately", () => {
+  it("still reads a lift named only as a percentage base (the movement classifier no longer does)", () => {
+    // The domain keywords have no claiming, so rejecting "% of clean and jerk" would let "jerk" match inside it; see matcher.ts, PERCENTAGE BASES.
+    expect(classifyDomains("back squat 5x5 @ 80% of your clean")).toContain("Power");
+  });
+
   // These are inherited from the Python reference's keyword lists. They are
   // NOT bugs introduced by the port, and fixing them would mean widening the
   // keyword lists — a much larger behavioral change than the false-positive
