@@ -1,6 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { indexAt, rangeOfBuckets } from "@/components/dashboard/charts/RangeDrag";
+import { indexAt, rangeOfBuckets, rangeOfTimes, timeAt } from "@/components/dashboard/charts/RangeDrag";
+import { LiftGrid } from "@/components/dashboard/charts/LiftChart";
 import { ShareAreaChart, type SharePoint } from "@/components/dashboard/charts/ShareAreaChart";
 
 /**
@@ -66,5 +67,41 @@ describe("ShareAreaChart", () => {
   it("offers nothing on a chart too short to select from", () => {
     const { container } = render(<ShareAreaChart {...props} data={data.slice(0, 2)} onRangeSelect={() => {}} />);
     expect(container.querySelector("[data-range-strip]")).toBeNull();
+  });
+});
+
+describe("the lift charts' continuous date axis", () => {
+  const day = (iso: string) => new Date(iso).getTime();
+  const domain = [day("2023-01-01"), day("2024-01-01")] as const;
+
+  it("maps a pointer linearly from the plot's left edge (the domain's start) to its right (its end)", () => {
+    expect(timeAt(100, 100, 400, domain)).toBe(domain[0]);
+    expect(timeAt(500, 100, 400, domain)).toBe(domain[1]);
+    expect(timeAt(300, 100, 400, domain)).toBe(domain[0] + (domain[1] - domain[0]) / 2);
+    expect(timeAt(-20, 100, 400, domain)).toBe(domain[0]);
+    expect(timeAt(9999, 100, 400, domain)).toBe(domain[1]);
+  });
+
+  it("makes a range of the two days, whichever way it was dragged", () => {
+    expect(rangeOfTimes(day("2023-03-05"), day("2023-09-20"), domain)).toEqual({ start: "2023-03-05", end: "2023-09-20" });
+    expect(rangeOfTimes(day("2023-09-20"), day("2023-03-05"), domain)).toEqual({ start: "2023-03-05", end: "2023-09-20" });
+  });
+
+  it("is nothing inside one day, or when it would not narrow the chart", () => {
+    expect(rangeOfTimes(day("2023-03-05"), day("2023-03-05") + 3_600_000, domain)).toBeNull();
+    expect(rangeOfTimes(domain[0], domain[1], domain)).toBeNull();
+    expect(rangeOfTimes(domain[0] - 86_400_000, domain[1] + 86_400_000, domain)).toBeNull();
+  });
+
+  it("reads a logged date as its own day: dates parse as UTC midnight, so UTC is the day", () => {
+    expect(rangeOfTimes(day("2023-03-01"), day("2023-03-31"), domain)).toEqual({ start: "2023-03-01", end: "2023-03-31" });
+  });
+
+  const lift = Array.from({ length: 8 }, (_, i) => ({ date: `2024-0${i + 1}-10`, value: 200 + i, repMax: 5, pr: false }) as never);
+  it("offers one strip for the whole grid, and only when it is given somewhere to send a range", () => {
+    const { container, rerender } = render(<LiftGrid lifts={{ "Back Squat": lift, Deadlift: lift }} highlight="most" />);
+    expect(container.querySelector("[data-range-strip]")).toBeNull();
+    rerender(<LiftGrid lifts={{ "Back Squat": lift, Deadlift: lift }} highlight="most" onRangeSelect={() => {}} />);
+    expect(container.querySelectorAll("[data-range-strip]")).toHaveLength(1);
   });
 });

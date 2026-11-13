@@ -382,7 +382,7 @@ export function Dashboard({
 
           <TabsContent value={LIFT_HISTORY_TAB}>
             <LazyView>
-              <LiftHistoryTab dashboard={insights.dashboard} onOpenWorkouts={openWorkouts} />
+              <LiftHistoryTab dashboard={insights.dashboard} onOpenWorkouts={openWorkouts} onSelectRange={selectRange} />
             </LazyView>
           </TabsContent>
 

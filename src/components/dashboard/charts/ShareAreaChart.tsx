@@ -202,7 +202,7 @@ export function ShareAreaChart({ data, color, label, seriesLabel, granularity, c
             {pickedLabel ? <ReferenceLine x={pickedLabel} stroke="var(--foreground)" strokeWidth={1.5} ifOverflow="extendDomain" /> : null}
           </AreaChart>
         </ChartContainer>
-        <RangeBand drag={range.drag} count={range.count} label={range.label} />
+        <RangeBand drag={range.drag} />
       </div>
       {range.enabled ? <RangeStrip handlers={range.strip} /> : null}
       {range.enabled ? (
