@@ -1,4 +1,6 @@
 import type { ParsedRow } from "./buildDashboardData";
+import { hasVersions, rxVersionText } from "./rxVersion";
+import { findRowMovements } from "@/lib/classify/classifyModality";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
 import type { Modality } from "@/types/modality";
 import type { SkillLevel, SkillRef } from "@/types/skills";
@@ -9,7 +11,9 @@ import type { SkillLevel, SkillRef } from "@/types/skills";
  * A skill is *done as prescribed* on a date when the athlete has logged, on or before it, a workout flagged RX whose recognized movements
  * include one of the skill's ids. The RX flag belongs to the whole workout (a scaled movement inside an RX workout is invisible), and
  * movements are read from the workout's text by the same classifier every view uses, so a check is the log's claim, not a measurement.
- * A SCALED workout, or one with no flag, never counts. Movements come from `ParsedRow.movements` (barbell_lift first); nothing is re-read.
+ * A SCALED workout, or one with no flag, never counts. Movements come from `ParsedRow.movements` (barbell_lift first). The one exception: an RX
+ * workout whose description spells out several versions (RX, Intermediate, Beginner) is read for its RX version only (`rxVersion.ts`), because
+ * a movement named only in an easier version was not prescribed or done. That re-reads the RX text once with the same classifier, cached per row.
  *
  * The list lives on the lexicon's own entries (`MovementEntry.skill`, the `SKILLS` table in `movementLexicon.ts`), and its levels are a
  * judgment, not computed: a level derived from how often a gym's athletes scale a movement would describe that gym's programming.
@@ -94,6 +98,19 @@ export interface SkillsData {
   lastLogged: string | null;
 }
 
+const rxMovements = new WeakMap<ParsedRow, readonly { id: string }[]>();
+
+/** The movements an RX row's athlete was prescribed: the RX version's, when the description has versions, else the row's own. */
+function prescribedMovements(r: ParsedRow): readonly { id: string }[] {
+  if (!hasVersions(r.raw.description)) return r.movements;
+  let found = rxMovements.get(r);
+  if (!found) {
+    found = findRowMovements({ title: r.raw.title, description: rxVersionText(r.raw.description), barbell_lift: r.raw.barbell_lift });
+    rxMovements.set(r, found);
+  }
+  return found;
+}
+
 /**
  * The checklist for a period. `allRows` is `Insights.allRows` (oldest first). A skill's first RX workout on or before `end` decides it:
  * done before the start when that is earlier than the start, new when it falls inside the period. All time (`start` null) has no
@@ -110,7 +127,7 @@ export function buildSkills(allRows: readonly ParsedRow[], start: string | null,
     if (date > end) continue;
     if (lastLogged === null || date > lastLogged) lastLogged = date;
     if (r.raw.rx_or_scaled !== "RX") continue;
-    for (const m of r.movements) {
+    for (const m of prescribedMovements(r)) {
       for (const s of bySkill.get(m.id) ?? []) {
         if (!first.has(s.key)) first.set(s.key, { date, title: r.raw.title });
       }

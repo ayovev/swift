@@ -82,7 +82,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 
 **What a check means.** A skill is *done as prescribed* on a date when the athlete has logged, on or before that date, at least one workout whose recognized movements include the skill and whose SugarWOD flag is RX. That is all the data says. Three limits, stated once on the page rather than hedged everywhere:
 
-- **RX is the workout's flag, not the movement's.** A workout logged RX covers every movement in it, and the app cannot see a scaled movement inside it. "As prescribed" is the athlete's own logged claim.
+- **RX is the workout's flag, not the movement's.** A workout logged RX covers every movement in it, and the app cannot see a scaled movement inside it. "As prescribed" is the athlete's own logged claim. A description often spells out every version of a workout (RX, Intermediate, Beginner), so for an RX workout only the RX version is read (`src/lib/analytics/rxVersion.ts`): a movement named only in an easier version was not prescribed.
 - **Movements are read from the workout's text**, by the same classifier every other view uses. A movement named in a workout (an option, a warm-up) can be counted that was not done, and one written in an unusual way can be missed. The report shows the first workout behind each check, so a coach can verify it.
 - **No check is not "cannot do it".** It means no workout with the movement was logged RX. A SCALED workout, or one with no flag, never counts.
 
@@ -92,7 +92,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 
 - **R-19** A fourth tab in the Reports section, "Skills report". It needs only the SugarWOD log, and uses the shared period control, coach note and print button.
 - **R-20** The report groups skills under M, W and G, named as everywhere else ("M · Cardio", "W · Weightlifting", "G · Gymnastics"), in level order within each group. Each row shows the skill, its level, its marks, and the first time it was done as prescribed (the date and the workout's title as logged).
-- **R-21** *Done as prescribed* is as defined above, on or before the period's end. Movements come from `ParsedRow.movements` (`barbell_lift` first), never from a second reading of the text.
+- **R-21** *Done as prescribed* is as defined above, on or before the period's end. Movements come from `ParsedRow.movements` (`barbell_lift` first). The one exception is an RX workout whose description spells out several versions: its RX version is read once more by the same classifier (cached per row), so a movement named only in the Intermediate or Beginner version is not credited. In the sample that is 288 of 958 RX workouts; no skill loses its check, and three first-done dates move later.
 - **R-22** With a period that has a start, each row has two marks, "Before the start" (done before the start day) and "Through the end", and a skill first done inside the period is labeled "New in this period". With All time there is one mark, "Done as prescribed". A period's start and end are the shared control's, so a closed block can be reported after the fact.
 - **R-23** A mark is binary and never rests on color: a checked box and the words "Done", or an empty box and the words "Not yet" for a screen reader. "New in this period" is words.
 - **R-24** Each group and the report open with counts only: "9 of 14 done as prescribed through Jun 30, 2025. 3 new in this period." There is no score, rank, percentage grade, badge or streak.
@@ -105,7 +105,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 
 **Risks.** A false check from a movement named but not done, mitigated by showing the first workout behind it. The levels are opinion and a gym may disagree, mitigated by being plain about it and keeping the list a single reviewed file. A log with no RX flags (the flag is not guaranteed on every export) shows few checks, which the note explains.
 
-**Decisions.** The levels (the `SKILLS` table in `src/lib/classify/movementLexicon.ts`) were reviewed with the owner: the four most contested were decided (Pull-ups and Double-unders Intermediate, Clean Advanced, Rope climbs Intermediate, with Legless rope climbs the Advanced step above it), and the rest stand as drafted. Still to confirm: that only RX counts and a scaled workout never earns a check, and that a bare "muscle-up" counts as a ring muscle-up (the sport's default meaning). M has no Advanced skill, since the lexicon's monostructural movements have none.
+**Decisions.** The levels (the `SKILLS` table in `src/lib/classify/movementLexicon.ts`) were reviewed with the owner: the four most contested were decided (Pull-ups and Double-unders Intermediate, Clean Advanced, Rope climbs Intermediate, with Legless rope climbs the Advanced step above it), and the rest stand as drafted. Decided: only RX counts, a scaled or unflagged workout never earns a check (every sample row carries a flag, so there is no unflagged case to design for), only the RX version of a workout is read, and a bare "muscle-up" counts as a ring muscle-up (the sport's default meaning). M has no Advanced skill, since the lexicon's monostructural movements have none.
 
 ## Requirements
 

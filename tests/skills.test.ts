@@ -1,5 +1,7 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildInsights, type Insights } from "@/lib/analytics/buildInsights";
+import { hasVersions, rxVersionText } from "@/lib/analytics/rxVersion";
+import { findRowMovements } from "@/lib/classify/classifyModality";
 import { SKILL_LEVELS, SKILL_LIST, SKILL_MODALITY_ORDER, buildSkills } from "@/lib/analytics/skills";
 import { MOVEMENT_FAMILIES } from "@/lib/classify/movementFamilies";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
@@ -112,6 +114,43 @@ describe("buildSkills", () => {
     expect(result("chest-to-bar")).toMatchObject({ before: false, through: false, isNew: false, first: null });
     expect(d.newCount).toBe(1);
     expect(d.lastLogged).toBe("2025-03-10");
+  });
+
+  it("reads only the RX version of a workout that spells out several, so an easier version's movement is not credited", () => {
+    const rows = log([
+      row("04/20/2025", "10 Rounds", "- RX -10 rounds for time:1 legless rope climb200-m row- INTERMEDIATE -10 rounds for time:1 rope climb200-m row- BEGINNER -10 rounds for time:3 pull-to-stands150-m row", "RX"),
+      row("05/02/2025", "Cindy", "- RX -AMRAP 20:5 pull-ups10 push-ups15 air squats- INTERMEDIATE - Same as Rxd- BEGINNER -Every 2:00 x 10 rounds:5 ring rows10 knee push-ups15 air squats", "RX"),
+    ]);
+    const d = buildSkills(rows, null, "2025-12-31");
+    const result = (key: string) => d.groups.flatMap((g) => g.results).find((r) => r.skill.key === key)!;
+    expect(result("legless-rope-climbs").through).toBe(true);
+    expect(result("rope-climbs").through).toBe(false);
+    expect(result("pull-ups").through).toBe(true);
+    expect(result("ring-rows").through).toBe(false);
+  });
+
+  it("still reads a workout with no versions from its own movements, and a SCALED one not at all", () => {
+    const rows = log([
+      row("01/10/2025", "Plain", "10 Pull-ups", "RX"),
+      row("01/12/2025", "Scaled versions", "- RX -5 muscle-ups- BEGINNER -5 ring rows", "SCALED"),
+    ]);
+    const d = buildSkills(rows, null, "2025-12-31");
+    const result = (key: string) => d.groups.flatMap((g) => g.results).find((r) => r.skill.key === key)!;
+    expect(result("pull-ups").through).toBe(true);
+    expect(result("ring-muscle-ups").through).toBe(false);
+    expect(result("ring-rows").through).toBe(false);
+  });
+
+  it("never names, as the workout behind a check, one whose RX version lacks the skill", () => {
+    const d = buildSkills(all.allRows, null, "2026-09-11");
+    const bySkill = new Map(SKILL_LIST.map((s) => [s.key, new Set(s.ids)]));
+    for (const r of d.groups.flatMap((g) => g.results)) {
+      if (!r.first) continue;
+      const row = all.allRows.find((x) => x.dateParsed.format("YYYY-MM-DD") === r.first!.date && x.raw.title === r.first!.title && x.raw.rx_or_scaled === "RX")!;
+      const text = hasVersions(row.raw.description) ? rxVersionText(row.raw.description) : row.raw.description;
+      const ids = findRowMovements({ title: row.raw.title, description: text, barbell_lift: row.raw.barbell_lift }).map((m) => m.id);
+      expect(ids.some((id) => bySkill.get(r.skill.key)!.has(id)), `${r.skill.key} via ${r.first.title}`).toBe(true);
+    }
   });
 
   it("treats the start day as inside the period, and has no 'before' or 'new' for all time", () => {
