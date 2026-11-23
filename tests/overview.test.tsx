@@ -265,11 +265,16 @@ describe("monthlyModalityMix", () => {
     expect(mix.at(-1)).toMatchObject({ month: "2026-11", partial: true, split: null });
   });
 
-  it("says beside the chart how many workouts it left out", () => {
+  it("leaves workouts with no recognised movement out of the split without printing a note about it", () => {
     const rows = [logRow(daysAgo(3), "RUN", "5k run"), logRow(daysAgo(4), "REST DAY", "mobility notes only"), logRow(daysAgo(5), "NOTES", "felt good")];
-    render(<OverviewTab insights={buildInsights(rows)} workouts={rows} asOf={TODAY} />);
+    const insights = buildInsights(rows);
+    render(<OverviewTab insights={insights} workouts={rows} asOf={TODAY} />);
     const mix = screen.getByRole("region", { name: "What it was made of" });
-    expect(within(mix).getByText("2 workouts with no recognised movement are left out.")).toBeInTheDocument();
+    // The two unclassified workouts are still counted as left out in the data, and still excluded from the split...
+    expect(monthlyModalityMix(insights.allRows, TODAY).reduce((n, m) => n + m.unclassified, 0)).toBe(2);
+    // ...but the Overview chart does not say so.
+    expect(within(mix).queryByText(/no recognised movement/)).toBeNull();
+    expect(screen.queryByText(/no recognised movement/)).toBeNull();
   });
 
   it("reads the same 12 months whatever the athlete's grouping", () => {

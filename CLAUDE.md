@@ -262,8 +262,8 @@ always beats the generic one inside it. Array order in `MOVEMENT_LEXICON` is irr
 adding an entry never requires reordering anything else. A movement counts once however many
 times it is named. Workouts where nothing is recognised are marked `classified: false` and
 **excluded from every average**, not counted as zeroes (otherwise a logged non-workout drags
-every modality's share down); the count is surfaced as `unclassified_count` so the UI can
-caveat it honestly.
+every modality's share down); the count is kept as `unclassified_count` (the page footer says
+how many; no chart prints a note about it).
 
 Movements have **stable ids**, not just labels (the full account of variants, families, the double-count audit, the `barbell_lift` column, implement labels and the measured effect of each rule on the
 sample is in `docs/movement-lexicon.md`; read it before changing `movementLexicon.ts`, `movementFamilies.ts` or `implement.ts`). The rules that apply everywhere:
@@ -355,6 +355,7 @@ body fat have no band, because nothing compares them.
   stays as it is, a known overlap with `--destructive` (the red swatch's button colour is under 8 OKLab x100 from it in dark mode, where every other swatch is clear; moving its hue
   away cleared the distance but read as pink or rust, not red). A later redesign of the swatches, or a free colour picker, should keep the button and link colours at least 8 from
   `--destructive` in both modes, as a test (`brand.test.ts` does this for a brand colour and pins the red swatch as the one exception).
+- **Overview's days-trained bars follow the accent**, chosen by the owner over a neutral ink that avoided matching the M/W/G colours under it (the default blue, green and dark-mode red come within 8 OKLab x100 of one of them; teal, slate, violet, magenta and amber are clear). If it reads as one series in practice, the alternatives are the neutral ink again, or neutral only for the colliding accents. No chart prints a note about workouts with no recognised movement (neither Overview's M/W/G chart nor the modality pages); `unclassified` and `unclassified_count` stay in the data, the page footer still says how many entries sit outside the split, and the grey "Not classified" key on Workouts rows stays because it names a mark that is drawn.
 - **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
   is a separate, unbuilt idea.
 - **Assistive technology is unverified.** No real screen reader pass has been done, and forced colors was checked only by Chromium's emulation, not on Windows High Contrast
@@ -520,7 +521,7 @@ through `useBrand()`.
   canvas, so `normaliseLogo` is checked in Chromium; the pure parts are tested.
 - **The brand colour goes through the accent pipeline** (`lib/brand/color.ts` -> `useTheme()`). `accent` is an `AccentChoice` (a stock id or `"brand"`) and `swatch` is the
   resolved swatch. `brandSwatch()` reduces the colour to hue and capped chroma, then holds it to every rule `themeContrast.test.ts` holds the stock swatches to, plus an
-  OKLab distance of 8 from `--destructive`, by nudging chroma and hue; a threshold is never lowered. It reports `adjusted` so the form says so. The known red-swatch
+  OKLab distance of 8 from `--destructive`, by nudging chroma and hue; a threshold is never lowered. It reports `adjusted` so the form says so. **The colour keeps its own lightness** (`AccentSwatch.lightness`, set only for a brand colour; the stock swatches keep their fixed shade steps): `minimalShiftRoles()` in `palette.ts` starts each role (fill and ring 3:1, link 4.5:1) at that lightness and moves it away from the page only as far as the rule needs, so a colour that already works in a mode is shown as it is. A bright teal is its exact hex in dark mode and only as dark as 3:1 and 4.5:1 require in light mode, where the fixed steps made it darker than either needs. Chroma is still capped at the stock ceiling (0.16) and the chart series and subtle surfaces stay on the hue ramp. The known red-swatch
   overlap is pinned in `tests/brand.test.ts`. "brand" with no brand colour falls back to the default accent.
 - **A logo's colours are suggested, never applied.** `dominantColors()` (`lib/brand/color.ts`, a pure function over the same RGBA bytes `measureTone` reads) groups visible, chromatic pixels by hue,
   scores them by chroma times area, and returns at most three hex colours, stored as `Brand.palette` (`[]` means the logo has none; absent means it was never looked for) and removed with the logo.
@@ -638,8 +639,7 @@ Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). O
 value under the bar (`ModalityHeaderKey`, `SplitLine` in `ModalityBar.tsx`), since the page key scrolls away. Those bars are drawn in
 `MODALITY_DRAW_ORDER` (W, G, M), never `MODALITY_LIST`'s M, W, G: the canonical order stacks red onto green, which
 deuteranopia can barely tell apart, and `tests/modalityColors.test.ts` measures every adjacent pair from the real tokens.
-Overview's days-trained bars sit in the same card, so they use neutral ink rather than the accent, which matched one of the
-three modality colours for half the swatches. They are fixed on
+Overview's days-trained bars use the accent (`--primary`, at full strength, so the accent's own 3:1 rule is what keeps them visible). The M/W/G chart below them uses the fixed colours, and the default blue (G), green (W) and red in dark mode (M) sit within 8 OKLab x100 of one of them, so an accent bar can read as the same series; the owner chose that knowingly, over the neutral ink that was there before (see "Open items"). The fixed colours are fixed on
 purpose: an accent-derived alternative was tried side by side and dropped, so there is no colour-mode
 toggle and no `accentRepMaxColors()`; don't reintroduce one. The accent itself arrives as CSS custom
 properties written to `:root` by `src/lib/theme/useTheme.ts`, so shadcn primitives, focus rings

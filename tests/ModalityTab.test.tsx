@@ -5,12 +5,13 @@ import { buildInsights } from "@/lib/analytics/buildInsights";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
 describe("ModalityTab", () => {
-  it("states how many workouts its shares leave out, beside the share", async () => {
+  it("leaves unclassified workouts out of its shares without printing a note about them", async () => {
     const { modality } = buildInsights(await loadSampleRows(), null, "monthly");
+    // The sample has workouts with no recognised movement: they are still counted as left out in the data (and said so in the page footer)...
     expect(modality.unclassified_count).toBeGreaterThan(0);
     render(<ModalityTab modality="M" data={modality} granularity="monthly" />);
-    expect(
-      screen.getByText(`${modality.unclassified_count.toLocaleString()} workouts with no recognised movement are left out.`)
-    ).toBeInTheDocument();
+    // ...but the modality page does not repeat it beside the share.
+    expect(screen.queryByText(/no recognised movement/)).toBeNull();
+    expect(screen.queryByText(/left out/)).toBeNull();
   });
 });

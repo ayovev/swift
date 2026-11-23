@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
-import { AXIS_PROPS, TIME_AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, modalityKeyLabel, unclassifiedNote, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
+import { AXIS_PROPS, TIME_AXIS_PROPS, AXIS_TICK_COUNT, FIXED_MODALITY_COLORS, MODALITY_DRAW_ORDER, MODALITY_FIXED_CHART_CONFIG, modalityKeyLabel, NUM_AXIS_WIDTH, niceAxisTicks } from "../charts/chartUtils";
 import type { BodyReading } from "@/lib/analytics/insights/bodyContext";
 import { displayName, moveUpText, verdictText } from "@/lib/analytics/insights/display";
 import type { ProgressRow } from "@/lib/analytics/insights/headline";
@@ -65,13 +65,14 @@ function PanelHeader({ title, caption, toggle = false }: { title: string; captio
 const MAX_BAR_PX = 72;
 
 /**
- * The ink for the days-trained bars: the achromatic foreground, not the accent. The M/W/G chart sits in the same card in fixed
- * red, green and blue, and an accent fill there matched one of them for half the swatches (blue is G, green is W, red and magenta
- * read as M), which told the reader two different series were one (Gestalt similarity). A neutral bar can match none of them.
+ * The ink for the days-trained bars: the accent. This was neutral for a time, because the M/W/G chart sits in the same card in fixed red, green
+ * and blue, and an accent fill matched one of them for some accents (the default blue is G, green is W, red is M in dark mode), which can tell the
+ * reader two different series are one. The owner chose the accent anyway, so that collision is known and accepted; the bars are told apart from
+ * the M/W/G chart by the chart, its key and its axis, not by colour alone.
  */
-const DAYS_INK = "var(--foreground)";
-/** How strongly a full month's bar is filled: dark enough to read as a solid bar (well over 3:1 on the card in both modes), light enough not to shout. */
-const DAYS_FILL_OPACITY = 0.7;
+const DAYS_INK = "var(--primary)";
+/** How strongly a full month's bar is filled. Full strength: the accent is held to 3:1 against the page in both modes (themeContrast.test.ts), and fading it would take it under. */
+const DAYS_FILL_OPACITY = 1;
 
 /**
  * The fill that marks a month still under way: a single-direction 45° hatch in the
@@ -297,7 +298,6 @@ export function TrainingPanel({
   const pickedDays = picked ? months.find((m) => m.month === picked) : undefined;
   const pickedMix = picked ? mix.find((m) => m.month === picked) : undefined;
   const anyMix = mix.some((m) => m.split);
-  const leftOut = unclassifiedNote(mix.reduce((n, m) => n + m.unclassified, 0));
   const [view] = useChartView();
   const mixByMonth = new Map(mix.map((m) => [m.month, m]));
   return (
@@ -319,7 +319,6 @@ export function TrainingPanel({
                 ];
               })}
             />
-            {leftOut ? <span className="text-xs text-muted-foreground">{leftOut}</span> : null}
           </div>
         ) : (
         <>
@@ -347,7 +346,6 @@ export function TrainingPanel({
                     {modalityKeyLabel(m)}
                   </span>
                 ))}
-                {leftOut ? <span className="text-xs text-muted-foreground">{leftOut}</span> : null}
               </div>
             </>
           ) : (
