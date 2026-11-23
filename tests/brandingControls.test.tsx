@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsSheet } from "@/components/dashboard/SettingsSheet";
 import { BrandMark } from "@/components/BrandMark";
@@ -113,6 +113,18 @@ describe("Branding in Settings", () => {
     await waitFor(() => expect(document.documentElement.getAttribute("data-accent")).toBe("blue"));
     expect(captured.calls).toContainEqual({ name: "interaction_used", props: { interaction: "brand_removed" } });
     expect(JSON.stringify(captured.calls)).not.toMatch(/7c3aed|Iron/);
+  });
+});
+
+describe("Branding buttons say what they act on", () => {
+  it("gives the logo and colour buttons their own names, distinct from Remove branding", async () => {
+    localStorage.setItem("swift.audience", "coach");
+    updateBrand({ logo: PNG, color: "#7c3aed" });
+    renderSheet();
+    const region = await screen.findByRole("region", { name: "Branding" });
+    for (const name of ["Remove logo", "Clear brand colour", "Replace logo", "Remove branding"]) {
+      expect(within(region).getByRole("button", { name })).toBeInTheDocument();
+    }
   });
 });
 

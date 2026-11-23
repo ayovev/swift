@@ -76,6 +76,7 @@ export function BrandingControls() {
               variant="ghost"
               size="sm"
               className="h-8"
+              aria-label="Remove logo"
               onClick={() => {
                 updateBrand({ logo: undefined });
                 saved();
@@ -138,6 +139,7 @@ export function BrandingControls() {
               variant="ghost"
               size="sm"
               className="h-8"
+              aria-label="Clear brand colour"
               onClick={() => {
                 updateBrand({ color: undefined });
                 saved();
