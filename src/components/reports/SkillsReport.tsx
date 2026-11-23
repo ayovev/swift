@@ -58,13 +58,13 @@ function Group({ group, data, showOpen }: { group: SkillGroup; data: SkillsData;
                 {/* On a phone the level and the first workout sit under the name instead of in columns that would not fit. */}
                 <span className="block text-xs font-normal text-muted-foreground break-words sm:hidden">
                   {SKILL_LEVEL_LABEL[r.skill.level]}
-                  {r.first ? ` · ${day(r.first.date)} · ${r.first.title}` : ""}
+                  {r.first ? ` · ${day(r.first.date)}` : ""}
                 </span>
               </th>
               <td className="hidden py-1.5 pr-2 text-muted-foreground sm:table-cell">{SKILL_LEVEL_LABEL[r.skill.level]}</td>
               {hasStart ? <td className="py-1.5 pr-2 text-center"><Mark done={r.before} /></td> : null}
               <td className="py-1.5 pr-2 text-center"><Mark done={r.through} /></td>
-              <td className="hidden py-1.5 text-muted-foreground break-words sm:table-cell">{r.first ? `${day(r.first.date)} · ${r.first.title}` : ""}</td>
+              <td className="hidden py-1.5 text-muted-foreground break-words sm:table-cell">{r.first ? day(r.first.date) : ""}</td>
             </tr>
           ))}
         </tbody>

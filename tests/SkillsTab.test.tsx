@@ -55,11 +55,12 @@ describe("the Skills report", () => {
     expect([...levels].sort()).toEqual(["Advanced", "Beginner", "Intermediate"]);
   });
 
-  it("checks a skill for an RX workout only, with the first workout behind it, and not a scaled one", () => {
+  it("checks a skill for an RX workout only, with the date of the first workout behind it (not its title), and not a scaled one", () => {
     renderReport();
     const pull = rowOf("Pull-ups");
     expect(within(pull).getByText("Done")).toBeInTheDocument();
-    expect(pull).toHaveTextContent("Jan 10, 2025 · Old pull");
+    expect(pull).toHaveTextContent("Jan 10, 2025");
+    expect(pull).not.toHaveTextContent("Old pull");
     const rope = rowOf("Rope climbs");
     expect(within(rope).getByText("Not yet")).toBeInTheDocument();
     expect(rope).not.toHaveTextContent("Scaled rope");
