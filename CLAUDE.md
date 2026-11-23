@@ -358,10 +358,8 @@ body fat have no band, because nothing compares them.
   picker, should keep the button and link colours at least 8 from `--destructive` in both modes, as a test.
 - **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
   is a separate, unbuilt idea.
-- **Not yet checked**: a real screen reader pass (axe-core is clean on every view, the landing page, the Settings sheet and the entry dialog, in both
-  modes, and the keyboard order, skip link and dialog focus were walked in Chromium, but that is not a screen reader), and an export from a second athlete.
-  Forced colors was checked by emulation only (Chromium's `forcedColors: "active"`), not on Windows High Contrast itself. The usability study plan
-  (five tasks on the core questions) is issue #67.
+- **Assistive technology is unverified.** No real screen reader pass has been done, and forced colors was checked only by Chromium's emulation, not on Windows High Contrast
+  (what axe covers is in "Accessibility conventions"). The usability study plan (five tasks on the core questions) is issue #67.
 - **Backup encryption is settled as it is.** The iteration count (600,000, OWASP's floor) and the strength bands stay; derive time has not been
   measured on a mid-range phone, so measure it before ever raising the count. The strength hint is length-only by design, with one guard for
   fewer than 5 distinct characters; long predictable passphrases rate "Strong" (pinned in `tests/passphrase.test.ts`). Argon2id would be a new
