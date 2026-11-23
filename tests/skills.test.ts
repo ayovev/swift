@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildInsights, type Insights } from "@/lib/analytics/buildInsights";
 import { hasVersions, rxVersionText } from "@/lib/analytics/rxVersion";
 import { findRowMovements } from "@/lib/classify/classifyModality";
-import { SKILL_LEVELS, SKILL_LIST, SKILL_MODALITY_ORDER, buildSkills } from "@/lib/analytics/skills";
+import { SKILL_LEVELS, SKILL_LIST, SKILL_MODALITY_ORDER, buildSkills, highestNewSkills } from "@/lib/analytics/skills";
 import { MOVEMENT_FAMILIES } from "@/lib/classify/movementFamilies";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
 import { workoutRow } from "./fixtures/rows";
@@ -114,6 +114,26 @@ describe("buildSkills", () => {
     expect(result("chest-to-bar")).toMatchObject({ before: false, through: false, isNew: false, first: null });
     expect(d.newCount).toBe(1);
     expect(d.lastLogged).toBe("2025-03-10");
+  });
+
+  it("names the new skills at the highest level any new skill has, capped, and nothing when none is new", () => {
+    const rows = log([
+      row("03/01/2025", "Pull", "10 Pull-ups", "RX"),
+      row("03/02/2025", "T2B", "5 Toes-to-bar", "RX"),
+      row("03/03/2025", "Back squat", "5 Back squat", "RX"),
+      row("03/04/2025", "Muscle", "3 Ring muscle-ups", "RX"),
+      row("03/05/2025", "Snatch", "3 Snatch", "RX"),
+      row("03/06/2025", "Clean", "3 Clean", "RX"),
+      row("03/07/2025", "Pistol", "3 Pistols", "RX"),
+    ]);
+    const top = highestNewSkills(buildSkills(rows, "2025-02-01", "2025-06-30"), 3)!;
+    expect(top.level).toBe("advanced");
+    expect(top.labels).toHaveLength(3);
+    expect(top.more).toBe(1);
+    // The same log with the period starting after it: nothing is new.
+    expect(highestNewSkills(buildSkills(rows, "2025-04-01", "2025-06-30"))).toBeNull();
+    // All time has no start, so nothing is new either.
+    expect(highestNewSkills(buildSkills(rows, null, "2025-06-30"))).toBeNull();
   });
 
   it("reads only the RX version of a workout that spells out several, so an easier version's movement is not credited", () => {

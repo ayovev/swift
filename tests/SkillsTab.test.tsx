@@ -43,7 +43,11 @@ describe("the Skills report", () => {
   it("groups the list under M, W and G with a count each, and opens with the totals", () => {
     renderReport();
     const page = within(sheet());
-    expect(page.getByTestId("skills-summary")).toHaveTextContent(`of ${SKILL_LIST.length} skills done as prescribed through Sep 11, 2026.`);
+    expect(page.getByTestId("skills-summary")).toHaveTextContent(`of ${SKILL_LIST.length} skills done as prescribed`);
+    expect(page.getByTestId("skills-summary")).toHaveTextContent("Through Sep 11, 2026.");
+    // All time has no before and after: the number is the total done, in the accent, and nothing is called new.
+    expect(page.getByTestId("skills-headline-number").className).toMatch(/text-accent-link/);
+    expect(page.queryByTestId("skills-newest")).toBeNull();
     for (const m of ["M", "W", "G"]) expect(page.getByTestId(`skills-${m}`)).toBeInTheDocument();
     expect(within(page.getByTestId("skills-G")).getByRole("heading", { name: "G · Gymnastics" })).toBeInTheDocument();
     expect(page.getByTestId("skills-G")).toHaveTextContent(/\d+ of \d+ done as prescribed\./);
@@ -96,7 +100,16 @@ describe("the Skills report", () => {
 
     // Done after the end, so not counted.
     expect(within(rowOf("Chest-to-bar")).getAllByText("Not yet")).toHaveLength(2);
-    expect(page.getByTestId("skills-summary")).toHaveTextContent(/2 of \d+ skills done as prescribed through Jun 30, 2025\. 1 new since Feb 1, 2025\./);
+    const summary = page.getByTestId("skills-summary");
+    // The change leads, as a large accent number; the total follows in words, then the bar's key, a row per modality and the highest new level.
+    expect(page.getByTestId("skills-headline-number")).toHaveTextContent("1");
+    expect(page.getByTestId("skills-headline-number").className).toMatch(/text-accent-link/);
+    expect(summary).toHaveTextContent("new skill since Feb 1, 2025");
+    expect(summary).toHaveTextContent(/2 of \d+ skills done as prescribed through Jun 30, 2025\./);
+    expect(page.getByTestId("skills-bar-key")).toHaveTextContent(/1 new/);
+    expect(page.getByTestId("skills-bar-key")).toHaveTextContent(/1 done before/);
+    expect(page.getByTestId("skills-by-modality")).toHaveTextContent(/1 new/);
+    expect(page.getByTestId("skills-newest")).toHaveTextContent("Newest at Intermediate: Toes-to-bar");
     expect(page.getByText(/Report covers through Jun 30, 2025\./)).toBeInTheDocument();
   });
 

@@ -98,6 +98,20 @@ export interface SkillsData {
   lastLogged: string | null;
 }
 
+/**
+ * The headline's "newest at" line: the new skills at the highest level any new skill has, in display order, capped at `cap` names with
+ * the rest counted in `more`. A fact lifted from the table, not a rating: 12 new Beginner skills and 2 new Advanced ones are different stories.
+ * Null when nothing is new.
+ */
+export function highestNewSkills(data: SkillsData, cap = 3): { level: SkillLevel; labels: string[]; more: number } | null {
+  const fresh = data.groups.flatMap((g) => g.results).filter((r) => r.isNew);
+  if (fresh.length === 0) return null;
+  const rank = (l: SkillLevel) => SKILL_LEVELS.indexOf(l);
+  const level = fresh.reduce((best, r) => (rank(r.skill.level) > rank(best) ? r.skill.level : best), fresh[0]!.skill.level);
+  const labels = fresh.filter((r) => r.skill.level === level).map((r) => r.skill.label);
+  return { level, labels: labels.slice(0, cap), more: Math.max(0, labels.length - cap) };
+}
+
 const rxMovements = new WeakMap<ParsedRow, readonly { id: string }[]>();
 
 /** The movements an RX row's athlete was prescribed: the RX version's, when the description has versions, else the row's own. */
