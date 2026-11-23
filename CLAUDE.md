@@ -546,6 +546,8 @@ computes (`src/components/reports/`), reached from the Reports section (one view
   was rejected because an export carries no athlete id, so it could attach to the wrong athlete (see "Decided" in `docs/reports.md`).
 - **Progress as of a date is the verdict engine with a past reference date** (`insights/sinceDate.ts`). `classifySubjects` finds move-ups over the sessions up to that date only; before, a later move up to RX
   voted Up at an earlier date. `tests/asOfDate.test.ts` sweeps the sample export and fails if the future leaks into the past: keep it passing, and do not read anything dated after the reference date.
+- **Changes you made and PRs reuse existing engines** (`insights/progressReport.ts`): `entryVerdict` for the Timeline's before and after, `entryBodyWeightLine` for body weight (off by default in a report), and SugarWOD's PR flag as logged,
+  listed only after a chosen date. An entry's note is not printed. A report never computes a verdict of its own.
 - **A report reads the brand through `useBrand()`** and shows it only for the coach audience; the Swift mark is always there. The logo's plate is computed for the light page.
 - **Analytics** are `report_generated` with a fixed kind and the audience, nothing else (`tests/analytics.test.ts`, `tests/ReportsTab.test.tsx`).
 

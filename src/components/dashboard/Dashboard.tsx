@@ -441,7 +441,7 @@ export function Dashboard({
 
           <TabsContent value={REPORTS_TAB}>
             <LazyView>
-              <ReportsTab workouts={workoutRows} />
+              <ReportsTab workouts={workoutRows} timeline={timeline} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} />
             </LazyView>
           </TabsContent>
 

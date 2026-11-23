@@ -8,7 +8,10 @@ import { buildProgressReportData, sinceFromPreset, type SincePreset } from "@/li
 import { capture } from "@/lib/posthog";
 import { accentCssVars } from "@/lib/theme/palette";
 import { useTheme } from "@/lib/theme/useTheme";
+import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
+import type { TimelineEntry } from "@/types/timeline";
+import type { WeighIn } from "@/types/weighIn";
 import { ProgressReport, type ProgressSections } from "./ProgressReport";
 import { ReportSheet } from "./ReportSheet";
 import { COACH_NOTE_MAX } from "./reportNote";
@@ -24,6 +27,11 @@ const SINCE_OPTIONS = [
 
 interface ReportsTabProps {
   workouts: readonly SugarWodRow[];
+  /** The athlete's Timeline entries, for "Changes you made". */
+  timeline?: readonly TimelineEntry[];
+  /** InBody scans and manual weigh-ins, for body weight over an entry's span (off unless the section is turned on). */
+  scans?: readonly InBodyRow[];
+  weighIns?: readonly WeighIn[];
   /** YYYY-MM-DD; today unless a test says otherwise. */
   asOf?: string;
 }
@@ -34,7 +42,12 @@ interface ReportsTabProps {
  *
  * The controls and the page around the sheet are `print:hidden` (Dashboard.tsx hides its own chrome on this view), so what prints is the sheet.
  */
-export function ReportsTab({ workouts, asOf }: ReportsTabProps) {
+// Stable empties, so an omitted prop does not rebuild the report on every render.
+const NO_ENTRIES: readonly TimelineEntry[] = [];
+const NO_SCANS: readonly InBodyRow[] = [];
+const NO_WEIGH_INS: readonly WeighIn[] = [];
+
+export function ReportsTab({ workouts, timeline = NO_ENTRIES, scans = NO_SCANS, weighIns = NO_WEIGH_INS, asOf }: ReportsTabProps) {
   const today = useMemo(() => asOf ?? dayjs().format("YYYY-MM-DD"), [asOf]);
   const audience = useMemo(() => readAudience() ?? "athlete", []);
   const { swatch } = useTheme();
@@ -43,13 +56,13 @@ export function ReportsTab({ workouts, asOf }: ReportsTabProps) {
 
   const [mode, setMode] = useState<SinceMode>("full");
   const [custom, setCustom] = useState("");
-  const [sections, setSections] = useState<ProgressSections>({ since: true, verdicts: true, notJudged: false });
+  const [sections, setSections] = useState<ProgressSections>({ since: true, prs: true, verdicts: true, changes: true, body: false, notJudged: false });
   const [note, setNote] = useState("");
   const ids = { date: useId(), note: useId(), noteCount: useId() };
 
   const customValid = custom !== "" && dayjs(custom).isValid() && custom < today;
   const since = mode === "full" ? null : mode === "custom" ? (customValid ? custom : null) : sinceFromPreset(mode, today);
-  const data = useMemo(() => buildProgressReportData(workouts, today, since), [workouts, today, since]);
+  const data = useMemo(() => buildProgressReportData(workouts, today, since, { timeline, scans, weighIns }), [workouts, today, since, timeline, scans, weighIns]);
 
   const subtitle = `Verdicts use your full history, as of ${dayjs(today).format("MMM D, YYYY")}.`;
   const basis = data.lastLogged ? `Workout log through ${dayjs(data.lastLogged).format("MMM D, YYYY")}.` : "Workout log is empty.";
@@ -98,6 +111,18 @@ export function ReportsTab({ workouts, asOf }: ReportsTabProps) {
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={sections.since} onChange={() => toggle("since")} disabled={since === null} />
             Since the chosen date{since === null ? " (choose a date first)" : ""}
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={sections.prs} onChange={() => toggle("prs")} disabled={since === null} />
+            PRs since the chosen date{since === null ? " (choose a date first)" : ""}
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={sections.changes} onChange={() => toggle("changes")} disabled={timeline.length === 0} />
+            Changes you made (Timeline entries){timeline.length === 0 ? " (none on your Timeline)" : ""}
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={sections.body} onChange={() => toggle("body")} disabled={timeline.length === 0 || !data.hasBodyReadings} />
+            Body weight over each entry{!data.hasBodyReadings ? " (needs InBody scans or weigh-ins)" : ""}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={sections.notJudged} onChange={() => toggle("notJudged")} />

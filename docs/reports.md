@@ -141,9 +141,11 @@ Built (Phase 1, first part):
 - **Progress report.** Headline, "Since a chosen date" from `src/lib/analytics/insights/sinceDate.ts` (listing only subjects that carry a verdict or a vote on either date) with "Compared from" printed, every verdict with its change and windows, and a "Not judged" list (R-2, R-3, R-14, R-15, R-16, R-17).
 - **Analytics.** `report_generated` with the kind and the audience only (`tests/analytics.test.ts`).
 
+- **PRs and Changes you made.** "PRs since" lists SugarWOD's PR flag as logged, after the chosen date only (a report states no recent window of its own), newest first and capped with "N more not shown". "Changes you made" (R-18) lists the Timeline entries that touch the period: an entry the athlete changed gets the Timeline's own before and after (`insights/entryVerdict.ts`), something that happened gets a context line, and body weight over an entry's span is off by default and offered only with readings. An entry's note is not printed. Both are built from `src/lib/analytics/insights/progressReport.ts` (`tests/progressReport.test.ts`).
+
 Not built yet:
 
-- **Changes you made** (R-18), PRs in the period, and the verdict rows' "logged set" for a record.
+- **The verdict rows' "logged set"** for a record ("from 225 × 5").
 - **Chart table twins and text alternatives** (R-6): the Progress report has no chart yet.
 - **Axe in Chromium** over the Reports view and the print preview (R-13), and a check in Safari and Firefox.
 - **The Training mix and Body and training reports**, and the athlete-audience path through a real role split.
