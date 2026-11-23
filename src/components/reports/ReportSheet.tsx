@@ -42,8 +42,9 @@ export function ReportSheet({ title, subtitle, audience, today, basis, note, sty
         <tbody>
           <tr>
             <td className="align-top">
-              <header className="flex items-start justify-between gap-4 border-b-2 border-primary pb-3">
-                <div className="min-w-0">
+              <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b-2 border-primary pb-3">
+                {/* On a phone the title takes the whole row and the marks wrap under it, so a long title does not wrap one word to a line. */}
+                <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
                   <h2 className="text-2xl font-semibold break-words">{title}</h2>
                   <p className="text-sm text-muted-foreground">{subtitle}</p>
                 </div>

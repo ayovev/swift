@@ -119,7 +119,8 @@ export function PrintRow({ kind, audience }: { kind: ReportKind; audience: Audie
   };
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Button type="button" onClick={print}>
+      {/* A filled button is only a fill, which forced colors drops: the border keeps it a button there. */}
+      <Button type="button" onClick={print} className="forced-colors:border-2 forced-colors:border-[ButtonText]">
         <Printer className="size-4" aria-hidden="true" />
         Print or save as PDF
       </Button>

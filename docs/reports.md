@@ -146,11 +146,13 @@ Built (Phase 1, first part):
 - **Body and training report.** `src/components/reports/BodyTrainingTab.tsx` over `src/lib/analytics/bodyTraining.ts`. Body weight from the pooled scans and weigh-ins on a real date axis (a gap in readings is a gap on the chart, every reading is a dot, nothing is smoothed), with its noise band in words and the first-to-last change by the same rule every other view uses; Timeline entries that touch the period shaded and numbered on the chart, with a numbered list under it; lean and fat mass as two charts on their own scales (scans only); days trained per month (the same block as the Training mix report); and the Progress headline as of the end of the period. It runs on weigh-ins alone, and with neither scans nor weigh-ins the tab says it needs an InBody file or weigh-ins and draws nothing (R-1). The footer names the basis of each source and where the period stops (R-8). The report says in a line that it does not relate body data to Progress, and body readings never change the headline (`tests/bodyTraining.test.ts`).
 - **PRs and Changes you made.** "PRs" lists SugarWOD's PR flag as logged, within the period only, so not for All time (a report states no recent window of its own), newest first and capped with "N more not shown". "Changes you made" (R-18) lists the Timeline entries that touch the period: an entry the athlete changed gets the Timeline's own before and after (`insights/entryVerdict.ts`), something that happened gets a context line, and body weight over an entry's span is off by default and offered only with readings. An entry's note is not printed. Both are built from `src/lib/analytics/insights/progressReport.ts` (`tests/progressReport.test.ts`).
 
+Checked in Chromium (R-13): axe over all three reports, in light, dark, charts and tables, with a coach brand and a coach note set, finds nothing. At 375px wide the reports and their controls do not scroll sideways, and the sheet header wraps (the title takes the row and the marks sit under it) rather than breaking a long title one word to a line. In emulated forced colors the controls read, the sheet stays its own light page (it is a paper preview), and the Print button carries a border because a filled button is only a fill there. Windows High Contrast and a screen reader have not been tried, as everywhere else in the app.
+
 Not built yet:
 
 - **The verdict rows' "logged set"** for a record ("from 225 × 5").
 - **A chart in the Progress report** (it has none, so R-6 has nothing to apply to there yet).
-- **Axe in Chromium** over the Reports view and the print preview (R-13), and a check in Safari and Firefox.
+- **Print in Safari and Firefox**, checked by hand. Chromium is the one browser measured.
 - **The athlete-audience path through a real role split.**
 
 ## As-of-date findings
