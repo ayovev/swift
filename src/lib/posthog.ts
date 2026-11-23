@@ -58,7 +58,10 @@ export type InteractionName =
   // A stretch of a Training chart dragged to set the date range. Never the dates, the buckets or how many.
   | "chart_range_dragged"
   // Charts shown as tables, or back: only that the switch was used, not which way.
-  | "chart_view_toggled";
+  | "chart_view_toggled"
+  // Branding set or cleared. Never the logo, name, colour or whether each was set.
+  | "brand_saved"
+  | "brand_removed";
 
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }

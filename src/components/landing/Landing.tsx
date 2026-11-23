@@ -15,6 +15,7 @@ import { UploadDropzone } from "./UploadDropzone";
 import { UploadReveal } from "./UploadReveal";
 import { WhiteboardTexture } from "./WhiteboardTexture";
 import { SwiftMark } from "@/components/SwiftMark";
+import { BrandMark } from "@/components/BrandMark";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { TimelineEntry } from "@/types/timeline";
@@ -103,7 +104,10 @@ export function Landing({
       <WhiteboardTexture />
 
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5">
-        <SwiftMark />
+        <div className="flex items-center gap-3">
+          <SwiftMark />
+          <BrandMark />
+        </div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"

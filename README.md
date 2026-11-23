@@ -32,8 +32,10 @@ There is no account to make and no server to send your file to.
   that happened (an injury, a trip) and see them on one axis beside your
   verdicts, with a before and after for each thing you changed.
 
-It is for one athlete looking at their own training. There are no coach views
-and no multi-athlete comparisons. Try it without a file using the sample data
+It loads one athlete's file at a time. "Coach" is a framing, not a separate
+product: a coach reads an athlete's export the same way, can add their gym's
+logo, name and colour to the app ([Branding](docs/branding.md)), and there are
+no multi-athlete views or comparisons. Try it without a file using the sample data
 on the landing page.
 
 <table>
@@ -147,6 +149,7 @@ how the Timeline works.
 - [Using Swift](docs/guide.md): data in, backups, sync, the timeline
 - [Privacy: the details](docs/privacy.md)
 - [The Overview page](docs/overview.md)
+- [Branding](docs/branding.md): a coach's logo, name and colour
 - [Architecture](docs/architecture.md): how the code is organised
 - [How classification works](docs/classification.md): the GPP and M/W/G logic
 - [Testing](docs/testing.md)

@@ -688,6 +688,27 @@ confirmation since nothing from the sample is stored. The totals on Overview are
 rather than a card (they're the page's headline, not one panel among several), and a view's
 first card doesn't repeat the page title above it.
 
+## Architecture: branding
+
+`docs/branding.md` is the requirements document; this is how it is built and what not to undo. A coach (Settings, shown only while the audience is
+`coach`) can set a gym logo, a name and a brand colour, each optional. Reports and image cards are a separate, unbuilt feature that will read the brand
+through `useBrand()`.
+
+- **A preference, not a dataset.** `lib/brand/brandStore.ts`, `localStorage` key `swift.brand` (try/catch, in memory when storage throws, read through
+  `useSyncExternalStore`). It is **not** in IndexedDB, so "Start over" (`idbClearAll()`) leaves it, on purpose: a coach moves from athlete to athlete. It is **not** a
+  `SyncDataset`, so it never syncs or backs up (`tests/brand.test.ts` pins that the wire rejects a `brand` dataset). Components read it only through `useBrand()`.
+- **The logo is re-drawn, never stored as chosen** (`lib/brand/image.ts`). Raster only (PNG, JPEG, WebP, found by magic bytes, not name or type); **SVG is refused**. The
+  file is decoded, drawn on a canvas at most 512px on the long edge and written back out as WebP (PNG where the browser can't), which drops EXIF/GPS and keeps the
+  stored data URL under `MAX_STORED_CHARS`. `parseBrand()` re-validates whatever is in storage and drops anything that isn't a base64 PNG/JPEG/WebP data URL. jsdom has no
+  canvas, so `normaliseLogo` is checked in Chromium; the pure parts are tested.
+- **The brand colour goes through the accent pipeline** (`lib/brand/color.ts` -> `useTheme()`). `accent` is an `AccentChoice` (a stock id or `"brand"`) and `swatch` is the
+  resolved swatch. `brandSwatch()` reduces the colour to hue and capped chroma, then holds it to every rule `themeContrast.test.ts` holds the stock swatches to, plus an
+  OKLab distance of 8 from `--destructive`, by nudging chroma and hue; a threshold is never lowered. It reports `adjusted` so the form says so. The known red-swatch
+  overlap is pinned in `tests/brand.test.ts`. "brand" with no brand colour falls back to the default accent.
+- **The Swift mark is never removable.** `BrandMark.tsx` only adds a logo beside `SwiftMark` (Dashboard and Landing headers); alt text is the gym name, else "Gym logo". A see-through
+  logo the page would swallow sits on a fixed light or dark plate (`plateFor`, from a tone measured at upload).
+- **Analytics:** `brand_saved` and `brand_removed` are bare `interaction_used` names; no logo, name or colour, and not which field.
+
 ## Architecture: the stale-log nudge
 
 When the stored workout log is old, Overview and the Insights views show one quiet line (`StaleLogNudge.tsx`) with "Replace file" (the same

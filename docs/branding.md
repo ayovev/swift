@@ -1,6 +1,6 @@
 # PRD: Custom branding (co-branding) for coaches
 
-Status: draft v0.2. All open questions resolved (section 12). Doc updates to land with the build are listed in section 11.
+Status: v0.2, Phase 1 built (FR-1 to FR-11). All open questions resolved (section 12). Doc updates to land with the build are listed in section 11.
 
 ## 1. Context
 
