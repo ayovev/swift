@@ -18,6 +18,7 @@ const movements = lazyComponent(() => import("./MovementsTab").then((m) => ({ de
 const bodyComp = lazyComponent(() => import("./BodyCompTab").then((m) => ({ default: m.BodyCompTab })));
 const progress = lazyComponent(() => import("./LiftsTab").then((m) => ({ default: m.LiftsTab })));
 const reports = lazyComponent(() => import("@/components/reports/ReportsTab").then((m) => ({ default: m.ReportsTab })));
+const trainingMixReport = lazyComponent(() => import("@/components/reports/TrainingMixTab").then((m) => ({ default: m.TrainingMixTab })));
 const timeline = lazyComponent(() => import("./TimelineTab").then((m) => ({ default: m.TimelineTab })));
 
 export const WorkoutsTab = workouts.Component;
@@ -29,8 +30,9 @@ export const BodyCompTab = bodyComp.Component;
 export const LiftsTab = progress.Component;
 export const TimelineTab = timeline.Component;
 export const ReportsTab = reports.Component;
+export const TrainingMixTab = trainingMixReport.Component;
 
-const ALL = [workouts, liftHistory, domain, modality, movements, bodyComp, progress, timeline, reports];
+const ALL = [workouts, liftHistory, domain, modality, movements, bodyComp, progress, timeline, reports, trainingMixReport];
 
 let preloading = false;
 

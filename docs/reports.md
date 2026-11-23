@@ -1,6 +1,6 @@
 # PRD: Reports
 
-Status: v0.2. The report shell and the Progress report are built (see "Build status"); the Training mix and Body and training reports are not. Requirements below are the target, and "Build status" says which are met.
+Status: v0.3. The report shell, the Progress report and the Training mix report are built (see "Build status"); the Body and training report is not. Requirements below are the target, and "Build status" says which are met.
 
 ## Summary
 
@@ -142,14 +142,15 @@ Built (Phase 1, first part):
 - **Progress report.** Headline, the period's comparison from `src/lib/analytics/insights/sinceDate.ts` (listing only subjects that carry a verdict or a vote on either date) with "Compared since" or "Compared from … to …" printed, every verdict with its change and windows, and a "Not judged" list (R-2, R-3, R-14, R-15, R-16, R-17).
 - **Analytics.** `report_generated` with the kind and the audience only (`tests/analytics.test.ts`).
 
+- **Training mix report.** `src/components/reports/TrainingMixTab.tsx` over `src/lib/analytics/trainingMix.ts`: workouts and training days for the period, days trained per month, the M/W/G split per month, the ten domains on one shared axis, the most-used movements, and one line for the entries outside the M/W/G split. It reads `Insights.allRows` (the one parse), filters it to the period once, and runs the Training views' own builders over the result, so a number matches the matching Training view for that range (`tests/trainingMix.test.ts`). The domains stay separate bars that add to more than 100% and the modalities stay one split that adds to 100. Months run from the period's first workout to its end, with a cut first or last month marked "(part)". Charts follow the app's chart-or-table preference, so a table twin is one switch away and prints when chosen, and each chart is followed by its summary sentence (R-6, met here). The controls every report shares (period, coach note, print button) are in `src/components/reports/reportShared.tsx`.
 - **PRs and Changes you made.** "PRs" lists SugarWOD's PR flag as logged, within the period only, so not for All time (a report states no recent window of its own), newest first and capped with "N more not shown". "Changes you made" (R-18) lists the Timeline entries that touch the period: an entry the athlete changed gets the Timeline's own before and after (`insights/entryVerdict.ts`), something that happened gets a context line, and body weight over an entry's span is off by default and offered only with readings. An entry's note is not printed. Both are built from `src/lib/analytics/insights/progressReport.ts` (`tests/progressReport.test.ts`).
 
 Not built yet:
 
 - **The verdict rows' "logged set"** for a record ("from 225 × 5").
-- **Chart table twins and text alternatives** (R-6): the Progress report has no chart yet.
+- **A chart in the Progress report** (it has none, so R-6 has nothing to apply to there yet).
 - **Axe in Chromium** over the Reports view and the print preview (R-13), and a check in Safari and Firefox.
-- **The Training mix and Body and training reports**, and the athlete-audience path through a real role split.
+- **The Body and training report**, and the athlete-audience path through a real role split.
 
 ## As-of-date findings
 

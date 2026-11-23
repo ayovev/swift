@@ -550,6 +550,8 @@ computes (`src/components/reports/`), reached from the Reports section (one view
   voted Up at an earlier date. `tests/asOfDate.test.ts` sweeps the sample export and fails if the future leaks into the past: keep it passing, and do not read anything dated after the reference date.
 - **Changes you made and PRs reuse existing engines** (`insights/progressReport.ts`): `entryVerdict` for the Timeline's before and after, `entryBodyWeightLine` for body weight (off by default in a report), and SugarWOD's PR flag as logged,
   listed only after a chosen date. An entry's note is not printed. A report never computes a verdict of its own.
+- **The Training mix report reads `Insights.allRows`, never a second parse** (`lib/analytics/trainingMix.ts`): it filters the rows to the period once and runs the Training views' own builders over them, so it cannot disagree with them
+  (`tests/trainingMix.test.ts`). Its charts follow the app's chart-or-table preference (`useChartView`), and the controls every report shares are in `components/reports/reportShared.tsx`.
 - **A report reads the brand through `useBrand()`** and shows it only for the coach audience; the Swift mark is always there. The logo's plate is computed for the light page.
 - **Analytics** are `report_generated` with a fixed kind and the audience, nothing else (`tests/analytics.test.ts`, `tests/ReportsTab.test.tsx`).
 

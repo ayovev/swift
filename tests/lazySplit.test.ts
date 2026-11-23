@@ -31,7 +31,7 @@ describe("the bundle split", () => {
     expect(sources.find((s) => s.file === "App.tsx")!.text).toMatch(/import\("@\/components\/dashboard\/Dashboard"\)/);
   });
 
-  it.each(["WorkoutsTab", "LiftHistoryTab", "DomainTab", "ModalityTab", "MovementsTab", "BodyCompTab", "LiftsTab", "TimelineTab", "ReportsTab"])(
+  it.each(["WorkoutsTab", "LiftHistoryTab", "DomainTab", "ModalityTab", "MovementsTab", "BodyCompTab", "LiftsTab", "TimelineTab", "ReportsTab", "TrainingMixTab"])(
     "loads %s only through lazyViews.ts",
     (view) => {
       expect(staticImporters(view)).toEqual([]);

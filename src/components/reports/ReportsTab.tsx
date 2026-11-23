@@ -1,22 +1,12 @@
-import { useId, useMemo, useState, type CSSProperties } from "react";
-import dayjs from "dayjs";
-import { Printer } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@/components/dashboard/SegmentedControl";
-import { readAudience } from "@/lib/audience";
-import { PERIOD_OPTIONS, type PeriodPreset } from "@/lib/analytics/insights/period";
+import { useMemo, useState } from "react";
 import { buildProgressReportData } from "@/lib/analytics/insights/progressReport";
-import { reportPeriod } from "@/lib/analytics/insights/reportPeriod";
-import { capture } from "@/lib/posthog";
-import { accentCssVars } from "@/lib/theme/palette";
-import { useTheme } from "@/lib/theme/useTheme";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { TimelineEntry } from "@/types/timeline";
 import type { WeighIn } from "@/types/weighIn";
 import { ProgressReport, type ProgressSections } from "./ProgressReport";
 import { ReportSheet } from "./ReportSheet";
-import { COACH_NOTE_MAX } from "./reportNote";
+import { CoachNoteField, PeriodControl, PrintRow, basisText, fmtDate, useReportContext, useReportPeriod } from "./reportShared";
 
 interface ReportsTabProps {
   workouts: readonly SugarWodRow[];
@@ -41,81 +31,24 @@ const NO_SCANS: readonly InBodyRow[] = [];
 const NO_WEIGH_INS: readonly WeighIn[] = [];
 
 export function ReportsTab({ workouts, timeline = NO_ENTRIES, scans = NO_SCANS, weighIns = NO_WEIGH_INS, asOf }: ReportsTabProps) {
-  // The report date, which is also the end of every preset's period. A custom period may end earlier.
-  const today = useMemo(() => asOf ?? dayjs().format("YYYY-MM-DD"), [asOf]);
-  const audience = useMemo(() => readAudience() ?? "athlete", []);
-  const { swatch } = useTheme();
-  // The sheet is always the light page: the app's accent, with its light-mode roles.
-  const sheetAccent = useMemo(() => accentCssVars(swatch, "light") as CSSProperties, [swatch]);
-
-  // The period uses the app's one set of presets (tests/presets.test.ts). It is not the Training range and is not stored (R-15).
-  const [preset, setPreset] = useState<PeriodPreset>("all_time");
-  const [custom, setCustom] = useState({ start: "", end: "" });
+  const { today, audience, sheetAccent } = useReportContext(asOf);
+  const period = useReportPeriod(today);
+  const { start: since, end, endsToday } = period;
   const [sections, setSections] = useState<ProgressSections>({ since: true, prs: true, verdicts: true, changes: true, body: false, notJudged: false });
   const [note, setNote] = useState("");
-  const ids = { from: useId(), to: useId(), note: useId(), noteCount: useId() };
 
-  const chosen = reportPeriod(preset, today, custom);
-  const invalid = chosen === "invalid";
-  // An invalid custom period is reported as all time until it is fixed, with the reason shown beside the control.
-  const period = chosen === "invalid" ? { start: null, end: today } : chosen;
-  const since = period.start;
-  const end = period.end;
-  const endsToday = end === today;
   const data = useMemo(() => buildProgressReportData(workouts, end, since, { timeline, scans, weighIns }), [workouts, end, since, timeline, scans, weighIns]);
-
-  const fmt = (iso: string): string => dayjs(iso).format("MMM D, YYYY");
-  const subtitle = `Verdicts use your full history, as of ${fmt(end)}.`;
-  const basis = `${data.lastLogged ? `Workout log through ${fmt(data.lastLogged)}.` : "Workout log is empty."}${endsToday ? "" : ` Report covers through ${fmt(end)}.`}`;
-
+  const subtitle = `Verdicts use your full history, as of ${fmtDate(end)}.`;
   const toggle = (key: keyof ProgressSections) => setSections((s) => ({ ...s, [key]: !s[key] }));
-  const print = () => {
-    // A closed vocabulary: which report, for which audience. Never the period, the sections, the note or anything from the log.
-    capture({ name: "report_generated", props: { report_kind: "progress", audience } });
-    window.print();
-  };
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-5 rounded-lg border border-border p-4 print:hidden">
-        <div className="flex flex-col gap-2">
-          <span id="report-period-label" className="text-xs font-medium text-muted-foreground">Period</span>
-          <div className="flex flex-wrap items-center gap-3">
-            <SegmentedControl value={preset} onChange={setPreset} options={PERIOD_OPTIONS} ariaLabel="Period" wrap />
-            {preset === "custom" ? (
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                <label className="flex items-center gap-1.5" htmlFor={ids.from}>
-                  From
-                  <input
-                    id={ids.from}
-                    type="date"
-                    max={today}
-                    value={custom.start}
-                    onChange={(e) => setCustom({ ...custom, start: e.target.value })}
-                    aria-invalid={invalid}
-                    className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-                  />
-                </label>
-                <label className="flex items-center gap-1.5" htmlFor={ids.to}>
-                  To
-                  <input
-                    id={ids.to}
-                    type="date"
-                    max={today}
-                    value={custom.end}
-                    onChange={(e) => setCustom({ ...custom, end: e.target.value })}
-                    aria-invalid={invalid}
-                    className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-                  />
-                </label>
-              </div>
-            ) : null}
-          </div>
-          {invalid ? <p role="alert" className="text-sm text-destructive">The start must be before the end, and the end cannot be after today.</p> : null}
-          <p className="text-xs text-muted-foreground">
-            All time prints Progress as of today. A period prints Progress as of its end and what changed since its start. Verdicts always use your full history up to the end.
-          </p>
-        </div>
+        <PeriodControl
+          state={period}
+          today={today}
+          hint="All time prints Progress as of today. A period prints Progress as of its end and what changed since its start. Verdicts always use your full history up to the end."
+        />
 
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 text-xs font-medium text-muted-foreground">Sections</legend>
@@ -145,32 +78,12 @@ export function ReportsTab({ workouts, timeline = NO_ENTRIES, scans = NO_SCANS, 
           </label>
         </fieldset>
 
-        {audience === "coach" ? (
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor={ids.note} className="text-xs font-medium text-muted-foreground">Coach note (printed at the end of the report)</label>
-            <textarea
-              id={ids.note}
-              value={note}
-              maxLength={COACH_NOTE_MAX}
-              onChange={(e) => setNote(e.target.value)}
-              aria-describedby={ids.noteCount}
-              rows={3}
-              className="w-full max-w-xl rounded-md border border-border bg-background px-2 py-1.5 text-sm"
-            />
-            <span id={ids.noteCount} className="text-xs text-muted-foreground">{note.length} of {COACH_NOTE_MAX} characters. Not saved: it is gone when you leave this page.</span>
-          </div>
-        ) : null}
+        {audience === "coach" ? <CoachNoteField value={note} onChange={setNote} /> : null}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" onClick={print}>
-            <Printer className="size-4" aria-hidden="true" />
-            Print or save as PDF
-          </Button>
-          <span className="text-xs text-muted-foreground">The report is built in this browser and goes nowhere until you save it.</span>
-        </div>
+        <PrintRow kind="progress" audience={audience} />
       </div>
 
-      <ReportSheet title="Progress report" subtitle={subtitle} audience={audience} today={today} basis={basis} note={audience === "coach" ? note : ""} style={sheetAccent}>
+      <ReportSheet title="Progress report" subtitle={subtitle} audience={audience} today={today} basis={basisText(data.lastLogged, end, endsToday)} note={audience === "coach" ? note : ""} style={sheetAccent}>
         <ProgressReport data={data} since={since} endsToday={endsToday} sections={sections} />
       </ReportSheet>
     </div>
