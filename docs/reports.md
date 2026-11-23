@@ -105,7 +105,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 
 **Risks.** A false check from a movement named but not done, mitigated by showing the first workout behind it. The levels are opinion and a gym may disagree, mitigated by being plain about it and keeping the list a single reviewed file. A log with no RX flags (the flag is not guaranteed on every export) shows few checks, which the note explains.
 
-**Decisions to confirm.** The skill list and its levels (the first draft is the `SKILLS` table in `src/lib/classify/movementLexicon.ts`); that only RX counts and a scaled workout never earns a check; that a bare "muscle-up" counts as a ring muscle-up (the sport's default meaning); and that M has no Advanced skill, since the lexicon's monostructural movements have none.
+**Decisions.** The levels (the `SKILLS` table in `src/lib/classify/movementLexicon.ts`) were reviewed with the owner: the four most contested were decided (Pull-ups and Double-unders Intermediate, Clean Advanced, Rope climbs Intermediate, with Legless rope climbs the Advanced step above it), and the rest stand as drafted. Still to confirm: that only RX counts and a scaled workout never earns a check, and that a bare "muscle-up" counts as a ring muscle-up (the sport's default meaning). M has no Advanced skill, since the lexicon's monostructural movements have none.
 
 ## Requirements
 
