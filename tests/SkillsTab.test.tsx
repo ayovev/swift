@@ -70,7 +70,7 @@ describe("the Skills report", () => {
     // One table per group, so one such header each for M, W and G.
     expect(within(sheet()).getAllByRole("columnheader", { name: "Done as prescribed" })).toHaveLength(3);
     expect(within(sheet()).queryByRole("columnheader", { name: /^Before / })).toBeNull();
-    expect(within(sheet()).queryByText("New in this period")).toBeNull();
+    expect(within(sheet()).queryByTestId("skill-new")).toBeNull();
   });
 
   it("shows what was done before a period's start and what is new in it, through its end", () => {
@@ -82,11 +82,16 @@ describe("the Skills report", () => {
 
     const pull = rowOf("Pull-ups");
     expect(within(pull).getAllByText("Done")).toHaveLength(2);
-    expect(within(pull).queryByText("New in this period")).toBeNull();
+    expect(within(pull).queryByTestId("skill-new")).toBeNull();
 
     const t2b = rowOf("Toes-to-bar");
     expect(within(t2b).getAllByText(/^(Done|Not yet)$/).map((e) => e.textContent)).toEqual(["Not yet", "Done"]);
-    expect(within(t2b).getByText("New in this period")).toBeInTheDocument();
+    const chip = within(t2b).getByTestId("skill-new");
+    // A terse chip: "New" is what shows, the rest is for a screen reader, and it takes the sheet's accent.
+    expect(chip).toHaveTextContent("New in this period");
+    expect(chip.querySelector(".sr-only")).toHaveTextContent("in this period");
+    expect(chip.className).toMatch(/bg-accent-subtle/);
+    expect(chip.className).toMatch(/text-accent-link/);
 
     // Done after the end, so not counted.
     expect(within(rowOf("Chest-to-bar")).getAllByText("Not yet")).toHaveLength(2);

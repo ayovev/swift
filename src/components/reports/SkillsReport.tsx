@@ -5,10 +5,10 @@ import { SKILL_LEVEL_LABEL, type SkillGroup, type SkillResult, type SkillsData }
 
 const day = (iso: string): string => dayjs(iso).format("MMM D, YYYY");
 
-/** A binary mark that never rests on color: a checked box or an empty one, and the words for a screen reader. */
+/** A binary mark that never rests on color: a checked box (in the accent) or an empty one, and the words for a screen reader. */
 function Mark({ done }: { done: boolean }) {
   return done ? (
-    <span className="inline-flex items-center text-foreground">
+    <span className="inline-flex items-center text-accent-link">
       <SquareCheckBig className="size-4" aria-hidden="true" />
       <span className="sr-only">Done</span>
     </span>
@@ -46,7 +46,15 @@ function Group({ group, data, showOpen }: { group: SkillGroup; data: SkillsData;
             <tr key={r.skill.key} className="report-row border-b border-border align-top">
               <th scope="row" className="py-1.5 pr-2 font-medium">
                 {r.skill.label}
-                {r.isNew ? <span className="ml-2 text-xs font-semibold text-foreground">New in this period</span> : null}
+                {r.isNew ? (
+                  // A small chip in the sheet's accent (the brand color for a coach who set one). "New" is all that shows; the rest is for a screen reader.
+                  <span
+                    data-testid="skill-new"
+                    className="ml-2 inline-flex items-center rounded-full border border-accent-border bg-accent-subtle px-1.5 align-middle text-[10px] leading-4 font-semibold text-accent-link"
+                  >
+                    New<span className="sr-only"> in this period</span>
+                  </span>
+                ) : null}
                 {/* On a phone the level and the first workout sit under the name instead of in columns that would not fit. */}
                 <span className="block text-xs font-normal text-muted-foreground break-words sm:hidden">
                   {SKILL_LEVEL_LABEL[r.skill.level]}
