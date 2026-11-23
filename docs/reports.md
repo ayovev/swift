@@ -86,7 +86,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 - **Movements are read from the workout's text**, by the same classifier every other view uses. A movement named in a workout (an option, a warm-up) can be counted that was not done, and one written in an unusual way can be missed. The report shows the first workout behind each check, so a coach can verify it.
 - **No check is not "cannot do it".** It means no workout with the movement was logged RX. A SCALED workout, or one with no flag, never counts.
 
-**The list.** A fixed, curated list of skills in `src/lib/analytics/skills.ts`, each with a plain level: **Foundation** (movements most athletes do early), **Intermediate** (usually take months of practice and are a common point to scale) and **Advanced** (high skill, commonly scaled). Levels are a judgment, not computed: a level derived from how often a gym's athletes scale a movement would describe that gym's programming, not the movement. A skill names one or more movement ids (a "Pull-up" check counts strict, kipping and butterfly) and the modality they fall under, M, W or G, as the app already defines it (M is monostructural only). A coach-editable list is deferred.
+**The list.** A fixed, curated list of skills, defined once in the `SKILLS` table of the movement lexicon and carried on the lexicon's own entries (`MovementEntry.skill`; see `docs/movement-lexicon.md`, "Skills"), so adding a movement and deciding whether it is a skill are one edit. `src/lib/analytics/skills.ts` derives the report's list from them. Each skill has a plain level: **Foundation** (movements most athletes do early), **Intermediate** (usually take months of practice and are a common point to scale) and **Advanced** (high skill, commonly scaled). Levels are a judgment, not computed: a level derived from how often a gym's athletes scale a movement would describe that gym's programming, not the movement. A skill names one or more movement ids (a "Pull-up" check counts strict, kipping and butterfly) and the modality they fall under, M, W or G, as the app already defines it (M is monostructural only). A coach-editable list is deferred.
 
 **Requirements**
 
@@ -99,13 +99,13 @@ The order is by value to the person receiving it. Progress is the one report onl
 - **R-25** A switch, "Show skills not yet done" (on by default), lets a coach print only what has been done. With it off, a group with nothing done is left out.
 - **R-26** One note on the page says what a check means and what no check means, in the app's voice.
 - **R-27** The footer, coach note, brand and light sheet are the other reports'. Analytics are `report_generated` with kind `skills` and the audience, nothing else.
-- **R-28** The list is code, pinned by tests: every movement id exists in the lexicon, every id in a skill has the skill's modality, no id sits in two skills, keys are unique, and levels are the three named. Changing the list is a change to this section.
+- **R-28** The list is the lexicon's, pinned by tests: every alias of one movement carries the same skill, every movement of a skill has the skill's modality, a movement belongs to one skill, labels are unique, levels are the three named, and a movement in a family that has a skill must decide (a skill, or `null`) so a new variant is never missed silently. Changing the list is a change to this section.
 
 **Non-goals.** Grading ability, crediting a scaled workout, progress against a load (Progress owns that), per-athlete custom lists, and any comparison between athletes.
 
 **Risks.** A false check from a movement named but not done, mitigated by showing the first workout behind it. The levels are opinion and a gym may disagree, mitigated by being plain about it and keeping the list a single reviewed file. A log with no RX flags (the flag is not guaranteed on every export) shows few checks, which the note explains.
 
-**Decisions to confirm.** The skill list and its levels (the first draft is in `src/lib/analytics/skills.ts`); that only RX counts and a scaled workout never earns a check; that a bare "muscle-up" counts as a ring muscle-up (the sport's default meaning); and that M has no Advanced skill, since the lexicon's monostructural movements have none.
+**Decisions to confirm.** The skill list and its levels (the first draft is the `SKILLS` table in `src/lib/classify/movementLexicon.ts`); that only RX counts and a scaled workout never earns a check; that a bare "muscle-up" counts as a ring muscle-up (the sport's default meaning); and that M has no Advanced skill, since the lexicon's monostructural movements have none.
 
 ## Requirements
 

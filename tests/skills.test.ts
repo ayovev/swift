@@ -1,31 +1,50 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildInsights, type Insights } from "@/lib/analytics/buildInsights";
 import { SKILL_LEVELS, SKILL_LIST, SKILL_MODALITY_ORDER, buildSkills } from "@/lib/analytics/skills";
+import { MOVEMENT_FAMILIES } from "@/lib/classify/movementFamilies";
 import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
 import { workoutRow } from "./fixtures/rows";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
-const modalityOf = new Map(MOVEMENT_LEXICON.map((e) => [e.id, e.modality]));
+const entriesById = new Map<string, typeof MOVEMENT_LEXICON[number][]>();
+for (const e of MOVEMENT_LEXICON) entriesById.set(e.id, [...(entriesById.get(e.id) ?? []), e]);
 
-describe("the skill list", () => {
-  it("names only movement ids that exist in the lexicon", () => {
-    for (const s of SKILL_LIST) for (const id of s.ids) expect(modalityOf.has(id), `${s.key}: ${id}`).toBe(true);
-  });
-
-  it("gives every id the skill's own modality, so a skill sits in the group its movements belong to", () => {
-    for (const s of SKILL_LIST) for (const id of s.ids) expect(modalityOf.get(id), `${s.key}: ${id}`).toBe(s.modality);
-  });
-
-  it("counts a movement toward one skill only, with unique keys and labels", () => {
-    const owner = new Map<string, string>();
+describe("the skills on the lexicon", () => {
+  it("is derived from the lexicon, so there is one list: every skill id is a lexicon id carrying that skill", () => {
     for (const s of SKILL_LIST) {
-      for (const id of s.ids) {
-        expect(owner.get(id), `${id} is in ${owner.get(id)} and ${s.key}`).toBeUndefined();
-        owner.set(id, s.key);
-      }
+      expect(s.ids.length, s.key).toBeGreaterThan(0);
+      for (const id of s.ids) for (const e of entriesById.get(id)!) expect(e.skill?.key, `${id} (${e.phrase})`).toBe(s.key);
     }
-    expect(new Set(SKILL_LIST.map((s) => s.key)).size).toBe(SKILL_LIST.length);
+  });
+
+  it("gives every alias of one movement the same skill decision, so a line cannot disagree with its siblings", () => {
+    for (const [id, entries] of entriesById) {
+      const first = entries[0]!.skill;
+      for (const e of entries) expect(e.skill, `${id} (${e.phrase})`).toBe(first);
+    }
+  });
+
+  it("gives every movement of one skill the skill's modality, and one label and level per skill key", () => {
+    for (const s of SKILL_LIST) for (const id of s.ids) for (const e of entriesById.get(id)!) expect(e.modality, `${s.key}: ${id}`).toBe(s.modality);
+    const refs = new Map<string, unknown>();
+    for (const e of MOVEMENT_LEXICON) {
+      if (!e.skill) continue;
+      const seen = refs.get(e.skill.key);
+      if (seen) expect(e.skill, e.skill.key).toBe(seen);
+      refs.set(e.skill.key, e.skill);
+    }
     expect(new Set(SKILL_LIST.map((s) => s.label)).size).toBe(SKILL_LIST.length);
+  });
+
+  it("makes a variant of a listed skill decide: a movement in a family with a skill says skill or null, never nothing", () => {
+    // Without this, a new movement added to a family (a new muscle-up variant) would silently not count toward the skill it belongs to.
+    const skillIds = new Set(SKILL_LIST.flatMap((s) => s.ids));
+    const undecided: string[] = [];
+    for (const family of MOVEMENT_FAMILIES) {
+      if (!family.members.some((m) => skillIds.has(m))) continue;
+      for (const id of family.members) if (entriesById.get(id)?.[0]?.skill === undefined) undecided.push(`${id} (in the ${family.id} family)`);
+    }
+    expect(undecided, `decide with skill: SKILLS.x or skill: null on each entry of: ${undecided.join(", ")}`).toEqual([]);
   });
 
   it("uses only the three named levels, and offers each of W and G at every level", () => {
@@ -35,6 +54,15 @@ describe("the skill list", () => {
     }
     // M has no Advanced skill, by decision (docs/reports.md): the lexicon's monostructural movements have none.
     expect(SKILL_LIST.some((s) => s.modality === "M" && s.level === "advanced")).toBe(false);
+  });
+
+  it("lists skills by modality, then level, then label", () => {
+    const rank = (s: (typeof SKILL_LIST)[number]) => [SKILL_MODALITY_ORDER.indexOf(s.modality), SKILL_LEVELS.indexOf(s.level)];
+    for (let i = 1; i < SKILL_LIST.length; i++) {
+      const [pm, pl] = rank(SKILL_LIST[i - 1]!);
+      const [cm, cl] = rank(SKILL_LIST[i]!);
+      expect(pm! < cm! || (pm === cm && (pl! < cl! || (pl === cl && SKILL_LIST[i - 1]!.label.localeCompare(SKILL_LIST[i]!.label) <= 0)))).toBe(true);
+    }
   });
 });
 

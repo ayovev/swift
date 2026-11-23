@@ -1,5 +1,7 @@
 import type { ParsedRow } from "./buildDashboardData";
+import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
 import type { Modality } from "@/types/modality";
+import type { SkillLevel, SkillRef } from "@/types/skills";
 
 /**
  * The Skills report's list and its checklist (docs/reports.md, "Skills report"): which movements an athlete has done as prescribed.
@@ -9,10 +11,11 @@ import type { Modality } from "@/types/modality";
  * movements are read from the workout's text by the same classifier every view uses, so a check is the log's claim, not a measurement.
  * A SCALED workout, or one with no flag, never counts. Movements come from `ParsedRow.movements` (barbell_lift first); nothing is re-read.
  *
- * The list is curated, and its levels are a judgment, not computed: a level derived from how often a gym's athletes scale a movement
- * would describe that gym's programming. `tests/skills.test.ts` pins the list's integrity against the lexicon.
+ * The list lives on the lexicon's own entries (`MovementEntry.skill`, the `SKILLS` table in `movementLexicon.ts`), and its levels are a
+ * judgment, not computed: a level derived from how often a gym's athletes scale a movement would describe that gym's programming.
+ * `tests/skills.test.ts` pins that every alias of an id agrees, and that a variant of a listed skill must decide.
  */
-export type SkillLevel = "foundation" | "intermediate" | "advanced";
+export type { SkillLevel };
 export const SKILL_LEVELS: readonly SkillLevel[] = ["foundation", "intermediate", "advanced"];
 export const SKILL_LEVEL_LABEL: Record<SkillLevel, string> = { foundation: "Foundation", intermediate: "Intermediate", advanced: "Advanced" };
 
@@ -27,68 +30,32 @@ export interface Skill {
   ids: readonly string[];
 }
 
-const skill = (modality: Modality, level: SkillLevel, key: string, label: string, ids: readonly string[]): Skill => ({ key, label, level, modality, ids });
+export const SKILL_MODALITY_ORDER: readonly Modality[] = ["M", "W", "G"];
+const LEVEL_RANK = new Map<SkillLevel, number>(SKILL_LEVELS.map((l, i) => [l, i]));
 
 /**
- * In display order: by modality (M, W, G as the report groups them), then level, then this order. Skills that name several ids count any
- * way the movement is done ("Pull-up" counts strict, kipping and butterfly). A bare "muscle-up" counts as a ring muscle-up, the sport's
- * default meaning. M has no Advanced skill because the lexicon's monostructural movements have none.
+ * The skills, derived from the lexicon: every entry that carries `skill: SKILLS.x` counts toward that skill, so there is no second list to
+ * keep in sync (`MovementEntry.skill`). In display order: modality (M, W, G), then level, then label.
  */
-export const SKILL_LIST: readonly Skill[] = [
-  // M: monostructural.
-  skill("M", "foundation", "run", "Run", ["run", "shuttle-run"]),
-  skill("M", "foundation", "row", "Row", ["row"]),
-  skill("M", "foundation", "bike", "Bike", ["bike"]),
-  skill("M", "foundation", "ski-erg", "Ski erg", ["ski-erg"]),
-  skill("M", "foundation", "single-unders", "Single-unders", ["single-unders"]),
-  skill("M", "intermediate", "double-unders", "Double-unders", ["double-unders"]),
+function deriveSkills(): Skill[] {
+  const byKey = new Map<string, { ref: SkillRef; modality: Modality; ids: Set<string> }>();
+  for (const e of MOVEMENT_LEXICON) {
+    if (!e.skill) continue;
+    const found = byKey.get(e.skill.key);
+    if (found) found.ids.add(e.id);
+    else byKey.set(e.skill.key, { ref: e.skill, modality: e.modality, ids: new Set([e.id]) });
+  }
+  return [...byKey.values()]
+    .map(({ ref, modality, ids }): Skill => ({ key: ref.key, label: ref.label, level: ref.level, modality, ids: [...ids] }))
+    .sort(
+      (a, b) =>
+        SKILL_MODALITY_ORDER.indexOf(a.modality) - SKILL_MODALITY_ORDER.indexOf(b.modality) ||
+        LEVEL_RANK.get(a.level)! - LEVEL_RANK.get(b.level)! ||
+        a.label.localeCompare(b.label)
+    );
+}
 
-  // W: weightlifting.
-  skill("W", "foundation", "deadlift", "Deadlift", ["deadlift", "sumo-deadlift"]),
-  skill("W", "foundation", "back-squat", "Back squat", ["back-squat"]),
-  skill("W", "foundation", "front-squat", "Front squat", ["front-squat"]),
-  skill("W", "foundation", "shoulder-press", "Shoulder press", ["shoulder-press"]),
-  skill("W", "foundation", "push-press", "Push press", ["push-press"]),
-  skill("W", "foundation", "bench-press", "Bench press", ["bench-press"]),
-  skill("W", "foundation", "kettlebell-swing", "Kettlebell swing", ["kettlebell-swing"]),
-  skill("W", "foundation", "lunge", "Lunge", ["lunge", "walking-lunges"]),
-  skill("W", "foundation", "wall-balls", "Wall balls", ["wall-balls"]),
-  skill("W", "intermediate", "thruster", "Thruster", ["thruster"]),
-  skill("W", "intermediate", "overhead-squat", "Overhead squat", ["overhead-squat"]),
-  skill("W", "intermediate", "power-clean", "Power clean", ["power-clean", "hang-power-clean"]),
-  skill("W", "intermediate", "power-snatch", "Power snatch", ["power-snatch", "hang-power-snatch"]),
-  skill("W", "intermediate", "push-jerk", "Push jerk", ["push-jerk", "jerk"]),
-  skill("W", "intermediate", "split-jerk", "Split jerk", ["split-jerk"]),
-  skill("W", "intermediate", "sumo-deadlift-high-pull", "Sumo deadlift high pull", ["sumo-deadlift-high-pull"]),
-  skill("W", "intermediate", "turkish-get-up", "Turkish get-up", ["turkish-get-up"]),
-  skill("W", "advanced", "clean", "Clean", ["clean", "hang-clean", "squat-clean"]),
-  skill("W", "advanced", "snatch", "Snatch", ["snatch", "hang-snatch", "squat-snatch", "split-snatch"]),
-  skill("W", "advanced", "clean-and-jerk", "Clean & jerk", ["clean-and-jerk", "squat-clean-and-jerk"]),
-
-  // G: gymnastics.
-  skill("G", "foundation", "air-squats", "Air squats", ["air-squats"]),
-  skill("G", "foundation", "push-ups", "Push-ups", ["push-ups"]),
-  skill("G", "foundation", "sit-ups", "Sit-ups", ["sit-ups", "abmat-sit-ups"]),
-  skill("G", "foundation", "burpees", "Burpees", ["burpees"]),
-  skill("G", "foundation", "box-jumps", "Box jumps", ["box-jumps"]),
-  skill("G", "foundation", "ring-rows", "Ring rows", ["ring-rows"]),
-  skill("G", "intermediate", "pull-ups", "Pull-ups", ["pull-ups", "strict-pull-ups", "kipping-pull-ups", "butterfly-pull-ups"]),
-  skill("G", "intermediate", "toes-to-bar", "Toes-to-bar", ["toes-to-bar", "strict-toes-to-bar", "kipping-toes-to-bar"]),
-  skill("G", "intermediate", "knees-to-elbows", "Knees-to-elbows", ["knees-to-elbows", "strict-knees-to-elbows"]),
-  skill("G", "intermediate", "chest-to-bar", "Chest-to-bar pull-ups", ["chest-to-bar", "strict-chest-to-bar", "kipping-chest-to-bar"]),
-  skill("G", "intermediate", "handstand-push-ups", "Handstand push-ups", ["handstand-push-ups", "kipping-handstand-push-ups"]),
-  skill("G", "intermediate", "dips", "Dips", ["dips", "ring-dips"]),
-  skill("G", "intermediate", "rope-climbs", "Rope climbs", ["rope-climbs"]),
-  skill("G", "intermediate", "wall-walks", "Wall walks", ["wall-walks"]),
-  skill("G", "intermediate", "l-sit", "L-sit", ["l-sit", "hanging-l-sit"]),
-  skill("G", "intermediate", "handstand-hold", "Handstand hold", ["handstand-hold"]),
-  skill("G", "advanced", "pistols", "Pistols", ["pistols"]),
-  skill("G", "advanced", "bar-muscle-ups", "Bar muscle-ups", ["bar-muscle-ups", "strict-bar-muscle-ups", "kipping-bar-muscle-ups"]),
-  skill("G", "advanced", "ring-muscle-ups", "Ring muscle-ups", ["ring-muscle-ups", "muscle-ups", "strict-muscle-ups", "kipping-muscle-ups"]),
-  skill("G", "advanced", "handstand-walk", "Handstand walk", ["handstand-walk"]),
-  skill("G", "advanced", "strict-handstand-push-ups", "Strict handstand push-ups", ["strict-handstand-push-ups", "freestanding-handstand-push-ups"]),
-  skill("G", "advanced", "legless-rope-climbs", "Legless rope climbs", ["legless-rope-climbs"]),
-];
+export const SKILL_LIST: readonly Skill[] = deriveSkills();
 
 /** The first workout behind a check: the earliest RX workout on or before the end that includes the skill. */
 export interface FirstDone {
@@ -126,10 +93,6 @@ export interface SkillsData {
   /** The newest workout on or before the end, from the whole log, for the footer's basis. */
   lastLogged: string | null;
 }
-
-export const SKILL_MODALITY_ORDER: readonly Modality[] = ["M", "W", "G"];
-
-const LEVEL_RANK = new Map<SkillLevel, number>(SKILL_LEVELS.map((l, i) => [l, i]));
 
 /**
  * The checklist for a period. `allRows` is `Insights.allRows` (oldest first). A skill's first RX workout on or before `end` decides it:

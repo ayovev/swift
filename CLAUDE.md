@@ -280,6 +280,7 @@ sample is in `docs/movement-lexicon.md`; read it before changing `movementLexico
 - **Implement is a label on a movement, not a movement** (`MovementHit.implement`, read from the words directly before the first mention). It never adds a movement or moves a split.
 - **A double count is found by auditing the sample**, then asking whether the sport names the touching pair as one movement; a `+` complex and glued lines stay several. Measure every change against the
   sample export and record the effect, as the parity workflow requires.
+- **A movement may carry a skill** (`MovementEntry.skill`, `SKILLS`; "Skills" in `docs/movement-lexicon.md`): `skill: SKILLS.pullUps`, or `null` for "decided, not a skill". It changes nothing about matching, so it never moves the parity fixture. A new variant in a family that has a skill fails `tests/skills.test.ts` until it decides.
 - Movement and family labels are sentence case (pinned in `tests/modalityClassifier.test.ts`); inside a sentence use `labelInSentence()` (`buildMovementData.ts`), never `toLowerCase()`.
 
 Order *is* significant in `DOMAIN_KEYWORDS` (`domainKeywords.ts`): the keyword reported as
@@ -554,8 +555,8 @@ computes (`src/components/reports/`), reached from the Reports section (one view
   (`tests/trainingMix.test.ts`). Its charts follow the app's chart-or-table preference (`useChartView`), and the controls every report shares are in `components/reports/reportShared.tsx`.
 - **The Body and training report shows body data beside training and never relates them** (`lib/analytics/bodyTraining.ts`): weight comes from the pooled series with its noise band, lean and fat mass from scans only
   (off by default), and the Progress headline is Progress as of the period's end, unchanged by any body reading (`tests/bodyTraining.test.ts`). It needs an InBody file or weigh-ins and says so when there are none.
-- **The Skills report counts only an RX workout** (`lib/analytics/skills.ts`): a skill is done when the earliest workout flagged RX that includes one of its movement ids falls on or before the period's end; a SCALED or unflagged workout never counts,
-  and the check names the workout behind it. The skill list and its levels are curated, not computed; `tests/skills.test.ts` pins every id against the lexicon and each skill's modality. It shows counts only, never a score, grade or badge.
+- **The Skills report counts only an RX workout** (`lib/analytics/skills.ts`, with the skills defined in `SKILLS` in `movementLexicon.ts` and carried on the entries as `MovementEntry.skill`, so there is no second list): a skill is done when the earliest workout flagged RX that includes one of its movement ids falls on or before the period's end; a SCALED or unflagged workout never counts,
+  and the check names the workout behind it. The levels are a judgment, not computed; `tests/skills.test.ts` pins that every alias of an id agrees, that a skill's movements share a modality, and that a movement in a family with a skill must decide (a skill, or `null`) so a new variant is never missed silently. It shows counts only, never a score, grade or badge.
 - **A report reads the brand through `useBrand()`** and shows it only for the coach audience; the Swift mark is always there. The logo's plate is computed for the light page.
 - **Analytics** are `report_generated` with a fixed kind and the audience, nothing else (`tests/analytics.test.ts`, `tests/ReportsTab.test.tsx`).
 
