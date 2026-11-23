@@ -232,7 +232,7 @@ is straight, every tooltip names its denominator ("9 of 15 workouts"), a key nam
 buckets the chart is a sentence. The grouping menu says weekly is noisy over a range longer than a year.
 
 **Every time axis is angled the same way** (`TIME_AXIS_PROPS` in `chartUtils.ts`, -35 degrees): angled so labels don't collide as the
-grouping gets finer, and one angle on every chart. Flat labels were tried on Lifts and Overview and dropped; `tests/timeAxis.test.ts`
+grouping gets finer, and one angle on every chart (flat labels were tried and dropped); `tests/timeAxis.test.ts`
 fails if an `<XAxis>` sets its own angle or leaves the shared setting out.
 
 **Every chart has a table twin and a text alternative** (`charts/ChartTable.tsx`). One "Table" switch, shown in each chart card's
@@ -352,10 +352,9 @@ body fat have no band, because nothing compares them.
   the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
   orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps
   its long tab row (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); and the red accent
-  stays as it is, a known overlap with `--destructive`. Measured as OKLab distance x100 from `--destructive`, the red swatch's button
-  colour is 8.8 (light) and 5.2 (dark), where every other swatch is above 10. Moving its hue to 0 cleared 8 but read as pink beside
-  magenta; hue 45 at chroma 0.14 cleared it (12.1, 9.1) but read as rust, not red. A later redesign of the swatches, or a free colour
-  picker, should keep the button and link colours at least 8 from `--destructive` in both modes, as a test.
+  stays as it is, a known overlap with `--destructive` (the red swatch's button colour is under 8 OKLab x100 from it in dark mode, where every other swatch is clear; moving its hue
+  away cleared the distance but read as pink or rust, not red). A later redesign of the swatches, or a free colour picker, should keep the button and link colours at least 8 from
+  `--destructive` in both modes, as a test (`brand.test.ts` does this for a brand colour and pins the red swatch as the one exception).
 - **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
   is a separate, unbuilt idea.
 - **Assistive technology is unverified.** No real screen reader pass has been done, and forced colors was checked only by Chromium's emulation, not on Windows High Contrast
@@ -382,8 +381,7 @@ a received list (`validateEntryList`, shape only so another device's clock canno
 - **The view** (`TimelineTab.tsx`, tab id `timeline`, over `components/dashboard/timeline/`): entries as bars stacked in lanes above one lane per
   verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide. A
   verdict row is words only for now: name, the verdict pill (as on Progress) and change, then "Compared Jan to Jun 2024 with Jul 2024 to Oct 2026" (the months of
-  the two windows). Two drawings were tried and dropped: a line between the two bests (its length read as the size of the change), and
-  the two windows as bands with the best of each as a dot (the dot fell anywhere in its band, so rows looked irregular). One
+  the two windows). Two drawings were tried and dropped (a line between the two bests read as the size of the change; windows as bands with a dot looked irregular). One
   Selected panel, the entry form in a dialog, delete behind a confirmation. A row on Progress opens its lane through "See on timeline" under its
   opened chart (not for a subject without a lane, nor a move up to RX).
 - **Storage and names.** Key `"timeline-entries"` (`storage/timelineStorage.ts`), persisted only when `source === "upload"`, wiped by Start over,
