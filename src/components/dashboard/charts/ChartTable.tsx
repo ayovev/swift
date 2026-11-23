@@ -93,7 +93,13 @@ export interface TableColumn {
  */
 export function DataTable({ caption, columns, rows }: { caption: string; columns: TableColumn[]; rows: ReactNode[][] }) {
   return (
-    <div className="max-h-80 overflow-auto rounded-lg border border-border">
+    // A box that scrolls has to be reachable by keyboard (axe: scrollable-region-focusable), so it is a focusable region named by the caption.
+    <div
+      role="region"
+      aria-label={caption}
+      tabIndex={0}
+      className="max-h-80 overflow-auto rounded-lg border border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
       <table className="w-full text-sm" data-chart-table>
         <caption className="sr-only">{caption}</caption>
         <thead className="sticky top-0 bg-muted text-xs text-muted-foreground">

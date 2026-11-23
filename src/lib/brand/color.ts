@@ -69,6 +69,7 @@ export function swatchProblems(swatch: AccentSwatch): string[] {
     const roles = accentRoles(swatch, mode);
     const surface = SURFACE[mode];
     if (contrastRatio(roles.primary, roles.primaryForeground) < CONTRAST_TEXT) problems.push(`${mode}: button text`);
+    if (contrastRatio(roles.primaryHover, roles.primaryForeground) < CONTRAST_TEXT) problems.push(`${mode}: hovered button text`);
     if (contrastRatio(roles.link, surface) < CONTRAST_TEXT) problems.push(`${mode}: link`);
     if (contrastRatio(roles.ring, surface) < CONTRAST_UI) problems.push(`${mode}: focus ring`);
     if (contrastRatio(roles.primary, surface) < CONTRAST_UI) problems.push(`${mode}: primary surface`);

@@ -94,6 +94,20 @@ describe("accent contrast — every swatch, both modes", () => {
     }
   });
 
+  it("keeps button text readable while the button is hovered", () => {
+    // The default button's hover fill is --primary-hover, drawn under the same label colour as --primary. It used to be primary at 90%
+    // opacity, which lightened the fill and took white-on-blue to 4.0:1 in light mode (axe, color-contrast).
+    for (const mode of MODES) {
+      for (const swatch of ACCENT_SWATCHES) {
+        const { primaryHover, primaryForeground } = accentRoles(swatch, mode);
+        expect(
+          contrastRatio(primaryHover, primaryForeground),
+          `${swatch.id} / ${mode}: button label on hovered primary`
+        ).toBeGreaterThanOrEqual(CONTRAST_TEXT);
+      }
+    }
+  });
+
   it("keeps link text readable against the page background", () => {
     for (const mode of MODES) {
       for (const swatch of ACCENT_SWATCHES) {

@@ -310,7 +310,7 @@ export function Dashboard({
                 </span>
               ) : null}
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-[40px] sm:leading-[1.1]">
+            <h1 className="text-3xl font-semibold tracking-tight break-words sm:text-[40px] sm:leading-[1.1]">
               {pageTitleOf(tab)}
             </h1>
             {pageSubtitleOf(tab) ? (
