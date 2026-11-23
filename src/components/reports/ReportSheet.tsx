@@ -72,7 +72,6 @@ export function ReportSheet({ title, period, subtitle, audience, today, basis, n
                   <p className="text-muted-foreground" data-testid="report-prepared">Prepared {dayjs(today).format("MMM D, YYYY")}</p>
                 </div>
                 {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
-                <div aria-hidden="true" className="mt-3 h-0.5 w-12 bg-primary" />
               </header>
               <div className="mt-5 flex flex-col gap-6">{children}</div>
               {trimmed ? (
