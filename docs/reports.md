@@ -120,6 +120,19 @@ The order is by value to the person receiving it. Progress is the one report onl
 - **TypeScript only, npm only, no new runtime dependency in v1.** If image cards are added later, canvas export is the preferred route over a library; the CSP (`img-src 'self' data: blob:`) already allows it.
 - **Docs are checked against code** (`tests/docs.test.ts`): a document may only name paths and events that exist, so the new event is written in words here and named once it is built.
 
+## Print prototype findings
+
+A dev-only prototype (`src/components/reports/ProgressReportPrototype.tsx`, opened with `?report-prototype` in `npm run dev`, never in a build) prints a Progress-style page to Letter PDF in Chromium, in light and dark mode. What it showed:
+
+- **Recharts in print works.** A `ResponsiveContainer` chart sizes to the page width and prints sharp, with animation off.
+- **Page numbers work in Chromium** through `@page` margin boxes ("Page 1 of 2"). Other browsers will ignore them, so nothing depends on them.
+- **A repeating footer needs a table footer group.** A `position: fixed` footer overlapped content on page 2. A `<tfoot>` repeats on every page, takes up room, and can hold the Swift mark.
+- **Rows and cards stay whole** with `break-inside: avoid`, and a heading stays with what follows with `break-after: avoid`.
+- **A dark app printed a black page margin** because `color-scheme: dark` is set inline on `html`. The print stylesheet resets it to light.
+- **Open: the Swift wordmark is invisible on the light sheet in dark mode.** `SwiftMark` swaps images with `dark:` variants, which follow the app's mode, not the sheet. The report needs a mark that follows the sheet.
+- **Open: `dark:` classes inside the sheet** also follow the app's mode. The sheet keeps its tokens light by redefining them (`.report-sheet` shares the `:root` token block in `src/index.css`), but any component that uses a `dark:` variant needs the same care, or the report should force the `dark` class off while it is open.
+- **Not yet checked:** Safari and Firefox, multi-page flow with the Timeline and body sections, and a brand logo in the header.
+
 ## Success, phasing, risks and decisions
 
 **Success.** Analytics can only count uses, so the measures are narrow: the share of sessions with data loaded that generate a report (by kind), whether reports are used by coaches and athletes in similar proportion, and repeat generation within 30 days. Quality is judged qualitatively in the planned usability study (issue #67): can a coach produce a Progress report and an athlete understand it without help?

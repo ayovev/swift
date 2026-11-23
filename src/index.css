@@ -13,7 +13,8 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
+:root,
+.report-sheet {
   --radius: 0.625rem;
 
   /* Achromatic base — light mode. */
