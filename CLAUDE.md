@@ -716,7 +716,8 @@ states, not only each view's default, because the defaults missed real findings.
 - **Forced colors** drops fills, box-shadows and the page's colors, which is how "selected", "pressed" and "focused" were drawn. `index.css` ends with a
   `forced-colors: active` block (a pressed toggle is Highlight on HighlightText with `forced-color-adjust: none`, because left to the browser the text gets a
   white backplate and vanishes; keyboard focus is a Highlight outline), and per-component `forced-colors:` classes cover the tab underlines (a transparent
-  border is forced visible, so an unselected sub-tab sets its own to Canvas), Timeline's entry bars (a border) and the accent swatches (`forced-color-adjust-none`).
+  border is forced visible, so an unselected sub-tab sets its own to Canvas), Timeline's entry bars (a border), the accent swatches (`forced-color-adjust-none`) and the filled `Button` variants (default, secondary and
+  destructive carry a `ButtonText` border, because a fill alone is just text there; ghost and link stay text on purpose).
   `tests/forcedColors.test.ts` pins them; jsdom cannot render the mode, so a change here is checked in Chromium with `forcedColors: "active"`.
 - Still decorative in forced colors, and safe because the value is also text: the M/W/G bars on Workouts rows and the verdict pills' tint.
 
