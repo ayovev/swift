@@ -67,6 +67,7 @@ What to do when you add a movement:
 
 - **A new alias of an existing movement:** copy the other aliases' `skill`. Every alias of one id carries the same value (`tests/skills.test.ts`).
 - **A new variant in a family that has a skill** (a new muscle-up, a new pull-up): `tests/skills.test.ts` fails until you give it `skill: SKILLS.x` (it counts toward that skill) or `skill: null` (it does not). The test is the reminder; nothing else needs updating.
+- **Deciding for a variant:** the rule considered was "a variant counts when it is the same movement at equal or greater difficulty, and an easier, assistive or different movement does not". It was applied to the 38 family-mates of a skill, and the owner chose to count none of them for now (the candidates were `split-clean`, `l-pull-ups`, `toes-to-rings`, the grip deadlifts, the lunge variants, `ring-push-ups` and a few more), so each carries `skill: null` and a variant counts only when it is listed under the skill. A combined movement (`power-clean-and-jerk`, `burpee-pull-ups`) is several movements and stays `skill: null`. Flip a `null` to a skill only as a deliberate change here.
 - **A movement that is a skill of its own:** add it to `SKILLS` with its level, and reference it. A skill's movements must share one modality.
 - **Anything else:** leave `skill` off.
 

@@ -224,6 +224,7 @@ Not built yet:
 - Body and training shows one Progress headline as of today beside days trained per month, not a headline per month. A per-month headline would need Progress computed at many past dates.
 - v1 is a beta tested with gym members. Checking the Progress thresholds on a second athlete's export is deferred until a wider release.
 - A coach-typed athlete label that remembers a date per athlete is deferred, not built.
+- On the Skills report, a variant counts toward a skill only when it is listed under it. The 38 movements that share a family with a skill, harder variants included (`split-clean`, `l-pull-ups`, `toes-to-rings`, the grip deadlifts, the lunge variants and so on), were reviewed and all kept as not a skill; combined movements are several movements and stay not a skill. Counting a harder variant toward the easier skill is a deliberate later change.
 - On Body and training, choosing the report is the opt-in to print body weight, so weight is on by default; lean and fat mass, which are more sensitive, are a separate section and off by default. This reads R-3 as "a body section a coach has not asked for is off", and can be tightened to weight off by default if you prefer.
 
 **Open questions**
