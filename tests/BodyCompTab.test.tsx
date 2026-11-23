@@ -15,7 +15,7 @@ describe("BodyCompTab — empty state", () => {
 
     render(<BodyCompTab state={{ status: "idle" }} granularity="monthly" range={null} onFile={onFile} dashboard={dashboard} />);
 
-    expect(screen.getByRole("button", { name: "Upload your InBody CSV export" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Upload your InBody CSV export/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /replace file/i })).not.toBeInTheDocument();
   });
 });

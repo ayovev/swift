@@ -41,11 +41,11 @@ describe("the chart or table preference", () => {
       </>
     );
     expect(screen.getByTestId("a")).toHaveTextContent("chart");
-    fireEvent.click(screen.getByRole("button", { name: "Show charts as tables" }));
+    fireEvent.click(screen.getByRole("button", { name: "Table, show charts as tables" }));
     expect(screen.getByTestId("a")).toHaveTextContent("table");
     expect(screen.getByTestId("b")).toHaveTextContent("table");
     expect(window.localStorage.getItem("swift.chartView")).toBe("table");
-    const back = screen.getByRole("button", { name: "Show charts" });
+    const back = screen.getByRole("button", { name: "Chart, show charts" });
     expect(back).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(back);
     expect(screen.getByTestId("b")).toHaveTextContent("chart");
@@ -64,16 +64,16 @@ describe("the chart or table preference", () => {
         <View id="a" />
       </>
     );
-    fireEvent.click(screen.getByRole("button", { name: "Show charts as tables" }));
+    fireEvent.click(screen.getByRole("button", { name: "Table, show charts as tables" }));
     expect(screen.getByTestId("a")).toHaveTextContent("table");
     act(() => {
-      fireEvent.click(screen.getByRole("button", { name: "Show charts" }));
+      fireEvent.click(screen.getByRole("button", { name: "Chart, show charts" }));
     });
   });
 
   it("tells analytics only that it was used", () => {
     render(<ChartViewToggle />);
-    fireEvent.click(screen.getByRole("button", { name: "Show charts as tables" }));
+    fireEvent.click(screen.getByRole("button", { name: "Table, show charts as tables" }));
     expect(posthog.capture.mock.calls).toEqual([[{ name: "interaction_used", props: { interaction: "chart_view_toggled" } }]]);
   });
 });

@@ -64,7 +64,8 @@ export function ChartViewToggle({ className }: { className?: string }) {
     <button
       type="button"
       aria-pressed={table}
-      aria-label={table ? "Show charts" : "Show charts as tables"}
+      // The name starts with the visible word, so it holds for someone who speaks the button's text (WCAG 2.5.3).
+      aria-label={table ? "Chart, show charts" : "Table, show charts as tables"}
       onClick={() => {
         setView(table ? "chart" : "table");
         capture({ name: "interaction_used", props: { interaction: "chart_view_toggled" } });
