@@ -49,6 +49,12 @@ describe("the Skills report", () => {
     expect(page.getByTestId("skills-G")).toHaveTextContent(/\d+ of \d+ done as prescribed\./);
   });
 
+  it("names the three levels Beginner, Intermediate and Advanced", () => {
+    renderReport();
+    const levels = new Set(within(sheet()).getAllByRole("cell").map((c) => c.textContent).filter((t) => /^(Beginner|Intermediate|Advanced|Foundation)$/.test(t ?? "")));
+    expect([...levels].sort()).toEqual(["Advanced", "Beginner", "Intermediate"]);
+  });
+
   it("checks a skill for an RX workout only, with the first workout behind it, and not a scaled one", () => {
     renderReport();
     const pull = rowOf("Pull-ups");

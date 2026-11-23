@@ -20,8 +20,8 @@ import type { SkillLevel, SkillRef } from "@/types/skills";
  * `tests/skills.test.ts` pins that every alias of an id agrees, and that a variant of a listed skill must decide.
  */
 export type { SkillLevel };
-export const SKILL_LEVELS: readonly SkillLevel[] = ["foundation", "intermediate", "advanced"];
-export const SKILL_LEVEL_LABEL: Record<SkillLevel, string> = { foundation: "Foundation", intermediate: "Intermediate", advanced: "Advanced" };
+export const SKILL_LEVELS: readonly SkillLevel[] = ["beginner", "intermediate", "advanced"];
+export const SKILL_LEVEL_LABEL: Record<SkillLevel, string> = { beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced" };
 
 export interface Skill {
   /** Stable, kebab-case. */
