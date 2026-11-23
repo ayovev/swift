@@ -194,7 +194,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
               title="Workout log"
               detail={`SugarWOD · ${props.workoutRows.length.toLocaleString()} workouts`}
               action={
-                <FilePickerButton onFile={props.onWorkoutFile} ariaLabel="Replace workout log" className="h-8">
+                <FilePickerButton onFile={props.onWorkoutFile} ariaLabel="Replace file, workout log" className="h-8">
                   Replace file
                 </FilePickerButton>
               }
@@ -209,7 +209,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
               action={
                 <FilePickerButton
                   onFile={props.onBodyCompFile}
-                  ariaLabel={props.bodyComp.status === "ready" ? "Replace InBody file" : "Add InBody file"}
+                  ariaLabel={props.bodyComp.status === "ready" ? "Replace file, InBody" : "Add file, InBody"}
                   className="h-8"
                 >
                   {props.bodyComp.status === "ready" ? "Replace file" : "Add file"}

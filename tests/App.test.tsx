@@ -268,7 +268,7 @@ describe("App — local persistence", () => {
 
       renderApp();
       await openSettings();
-      const replace = screen.getByRole("button", { name: "Replace workout log" });
+      const replace = screen.getByRole("button", { name: "Replace file, workout log" });
       // FilePickerButton renders its hidden input as the button's next sibling.
       const input = replace.nextElementSibling;
       if (!(input instanceof HTMLInputElement)) throw new Error("expected the replace control to render a file input");
