@@ -1,6 +1,6 @@
 # PRD: Custom branding (co-branding) for coaches
 
-Status: v0.2, Phase 1 built (FR-1 to FR-11). All open questions resolved (section 12). Doc updates to land with the build are listed in section 11.
+Status: v0.3, Phase 1 built (FR-1 to FR-12). All open questions resolved (section 12). Doc updates to land with the build are listed in section 11.
 
 ## 1. Context
 
@@ -63,6 +63,7 @@ Brand profile = `{ logo (raster, normalised), name (<= 60 chars), color (hex) }`
 - **FR-9 Sample mode** may be branded (it is a preference, not athlete data), so coaches can preview before loading a real file.
 - **FR-10 Co-branding rule.** The Swift mark is always present beside the gym logo, and is not removable.
 - **FR-11 Single accessor.** One typed read path (a `useBrand()` hook over `src/lib/brand/`) returns the normalised logo as a data URL, the name and the colour. It is the only way components read the brand, so a future report feature needs no new storage or validation. The report feature owns its own layout, content and print behaviour.
+- **FR-12 Colour suggestions.** When a logo is added, Swift finds the colours it is made of and offers up to three as buttons under the colour field ("Colours in your logo", each with its hex written out, so colour is not the only cue). It is a suggestion, never applied by itself: the dominant colour is a guess at the brand colour, and the accent recolours the whole interface. Picking one is the same as choosing it in the colour field, so FR-4's contrast adjustment and its note apply. It never overwrites a colour the coach already chose. Grey, near-white, near-black, see-through and edge pixels are ignored, so a black and white logo yields nothing and the form says so. The suggestions are kept with the logo (a validated list of at most three hex colours in `swift.brand`) and go when it goes. Everything runs in the browser, on the same pixels the logo's brightness is measured from. A vivid mark counts for more than a larger, paler area, and a colour with a negligible share is left out.
 
 ## 6. Accessibility and voice
 
@@ -84,7 +85,7 @@ Brand profile = `{ logo (raster, normalised), name (<= 60 chars), color (hex) }`
 
 ## 9. Phasing
 
-One phase: the brand profile and web app (FR-1 to FR-11). It adds no dependency. Reports and image cards follow as their own feature and PRD, built on FR-11.
+One phase: the brand profile and web app (FR-1 to FR-12). It adds no dependency. Reports and image cards follow as their own feature and PRD, built on FR-11.
 
 ## 10. Implementation notes (for the build phase)
 

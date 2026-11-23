@@ -13,12 +13,14 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ACTIVE_SEGMENT_CLASSES } from "./SegmentedControl";
 import { FilePickerButton } from "./FilePickerButton";
 import { clearBrand, MAX_NAME_LENGTH, updateBrand, useBrand } from "@/lib/brand/brandStore";
 import { BRAND_ACCENT_ID, brandSwatch } from "@/lib/brand/color";
 import { LogoError, normaliseLogo } from "@/lib/brand/image";
 import { capture } from "@/lib/posthog";
 import { useTheme } from "@/lib/theme/useTheme";
+import { cn } from "@/lib/utils";
 
 const LOGO_ACCEPT = "image/png,image/jpeg,image/webp";
 /** Shown in the colour input before one is chosen. Not stored. */
@@ -42,8 +44,8 @@ export function BrandingControls() {
     setError(null);
     setBusy(true);
     try {
-      const { dataUrl, tone } = await normaliseLogo(file);
-      updateBrand({ logo: dataUrl, tone });
+      const { dataUrl, tone, palette } = await normaliseLogo(file);
+      updateBrand({ logo: dataUrl, tone, palette });
       saved();
     } catch (e) {
       setError(e instanceof LogoError ? e.message : "That image couldn't be read. Try exporting it again.");
@@ -150,6 +152,42 @@ export function BrandingControls() {
           ) : null}
         </div>
       </div>
+      {brand.logo && brand.palette ? (
+        <div className="flex flex-col gap-1.5">
+          {brand.palette.length > 0 ? (
+            <>
+              <span id="brand-palette-label" className="text-[13px] text-muted-foreground">
+                Colours in your logo
+              </span>
+              <div role="group" aria-labelledby="brand-palette-label" className="flex flex-wrap gap-2">
+                {brand.palette.map((hex) => (
+                  <Button
+                    key={hex}
+                    variant="outline"
+                    size="sm"
+                    aria-pressed={brand.color === hex}
+                    className={cn("h-8 gap-2 font-mono text-xs", brand.color === hex && ACTIVE_SEGMENT_CLASSES)}
+                    onClick={() => {
+                      updateBrand({ color: hex });
+                      setAccent(BRAND_ACCENT_ID);
+                      saved();
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="size-3.5 shrink-0 rounded-full border border-border forced-colors:forced-color-adjust-none"
+                      style={{ backgroundColor: hex }}
+                    />
+                    {hex}
+                  </Button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-[13px] text-muted-foreground">This logo has no distinct colour to suggest. Pick one above.</p>
+          )}
+        </div>
+      ) : null}
       {swatch?.adjusted ? (
         <p className="text-[13px] text-muted-foreground">
           Adjusted slightly so text and buttons stay readable in both modes.
