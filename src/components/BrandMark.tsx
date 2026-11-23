@@ -25,7 +25,7 @@ export function BrandMark({ className }: { className?: string }) {
         src={logo}
         alt={name ?? "Gym logo"}
         style={plate ? { backgroundColor: plate === "light" ? "#ffffff" : "#1c1c1c" } : undefined}
-        className={cn("h-8 max-h-8 w-auto max-w-40 object-contain", plate && "rounded-sm p-1")}
+        className={cn("h-8 max-h-8 w-auto max-w-40 object-contain", plate && "p-1")}
       />
     </div>
   );
