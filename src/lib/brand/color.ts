@@ -2,12 +2,12 @@ import { clampToGamut, contrastRatio, oklchToRgb, WHITE, BLACK, CONTRAST_TEXT, C
 import { accentRoles, type AccentSwatch, type ThemeMode } from "@/lib/theme/palette";
 
 /**
- * A coach's brand colour, turned into an accent swatch.
+ * A coach's brand color, turned into an accent swatch.
  *
  * The accent system derives every shade from a hue and a peak chroma at fixed
- * lightness steps, so a free colour is reduced to those two numbers. Contrast
+ * lightness steps, so a free color is reduced to those two numbers. Contrast
  * then comes from the fixed lightness, but the rules in themeContrast.test.ts
- * are still checked here for the real colour, and a colour that fails is
+ * are still checked here for the real color, and a color that fails is
  * adjusted (chroma first, then hue away from the destructive red) rather than
  * any threshold being lowered. `adjusted` says so, so the form can.
  */
@@ -19,7 +19,7 @@ export const isHexColor = (value: unknown): value is string => typeof value === 
 
 /** The same chroma ceiling the stock swatches use. */
 const MAX_CHROMA = 0.16;
-/** Below this a colour is effectively grey and its hue is noise. */
+/** Below this a color is effectively gray and its hue is noise. */
 const MIN_CHROMA = 0.03;
 /** OKLab distance x100 a brand button must keep from --destructive (CLAUDE.md, open items). */
 export const MIN_DESTRUCTIVE_DISTANCE = 8;
@@ -56,13 +56,13 @@ export function hexToOklch(hex: string): Oklch | null {
   return rgbToOklch(parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16));
 }
 
-/** An OKLCH colour as "#rrggbb", pulled into the sRGB gamut first so it is the colour that would be drawn. */
+/** An OKLCH color as "#rrggbb", pulled into the sRGB gamut first so it is the color that would be drawn. */
 export function oklchToHex(color: Oklch): string {
   const { r, g, b } = oklchToRgb(clampToGamut(color));
   return "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
 }
 
-/** OKLab distance x100 between two OKLCH colours. */
+/** OKLab distance x100 between two OKLCH colors. */
 export function oklabDistance(x: Oklch, y: Oklch): number {
   const ax = x.c * Math.cos((x.h * Math.PI) / 180);
   const bx = x.c * Math.sin((x.h * Math.PI) / 180);
@@ -91,7 +91,7 @@ export function swatchProblems(swatch: AccentSwatch): string[] {
 
 export interface BrandSwatch {
   swatch: AccentSwatch;
-  /** True when the colour had to move to pass; the form says so. */
+  /** True when the color had to move to pass; the form says so. */
   adjusted: boolean;
 }
 
@@ -105,7 +105,7 @@ export function brandSwatch(hex: string): BrandSwatch | null {
     hue: base.h,
     chroma: Math.min(Math.max(base.c, MIN_CHROMA), MAX_CHROMA),
   };
-  // The colour's own lightness goes with it, so its roles keep that lightness and move only as far as each contrast rule needs (see `minimalShiftRoles`).
+  // The color's own lightness goes with it, so its roles keep that lightness and move only as far as each contrast rule needs (see `minimalShiftRoles`).
   const swatch: AccentSwatch = {
     ...start,
     chroma: Math.min(start.chroma, clampToGamut({ l: 0.637, c: start.chroma, h: start.hue }).c),
@@ -131,27 +131,27 @@ export function brandSwatch(hex: string): BrandSwatch | null {
   return { swatch: { ...swatch, chroma: MIN_CHROMA }, adjusted: true };
 }
 
-/** Hue buckets the logo's colours are grouped into (15 degrees each). */
+/** Hue buckets the logo's colors are grouped into (15 degrees each). */
 const HUE_BUCKETS = 24;
-/** A pixel needs at least this chroma to count as a colour: below it is text, an outline or a background. */
-const COLOUR_CHROMA = 0.04;
+/** A pixel needs at least this chroma to count as a color: below it is text, an outline or a background. */
+const COLOR_CHROMA = 0.04;
 /** Opacity (0 to 255) a pixel needs to count. Anti-aliased edges blend the logo with whatever was behind it, so they are skipped. */
 const OPAQUE = 230;
-/** A second or third candidate must carry at least this share of the logo's colour, or it is noise. */
+/** A second or third candidate must carry at least this share of the logo's color, or it is noise. */
 const MIN_CANDIDATE_SHARE = 0.08;
-/** Fewer coloured pixels than this share of the visible ones, and the logo is treated as having no colour. */
-const MIN_COLOUR_PIXEL_SHARE = 0.005;
+/** Fewer colored pixels than this share of the visible ones, and the logo is treated as having no color. */
+const MIN_COLOR_PIXEL_SHARE = 0.005;
 /** At most this many suggestions. */
 export const MAX_PALETTE = 3;
 
 /**
- * The colours a logo is made of, most prominent first, as "#rrggbb": up to three, for the coach to pick from. It is a suggestion, never applied by
- * itself: the dominant colour is a guess at the brand colour, and the accent recolours the whole interface.
+ * The colors a logo is made of, most prominent first, as "#rrggbb": up to three, for the coach to pick from. It is a suggestion, never applied by
+ * itself: the dominant color is a guess at the brand color, and the accent recolors the whole interface.
  *
- * From RGBA bytes (a canvas `getImageData().data`). Grey, near-white, near-black, see-through and edge pixels are skipped, so a black and white logo
- * returns nothing. The rest are grouped by hue and scored by chroma times area, so a small vivid mark outweighs a large pale tint. A colour is the
- * chroma-weighted average of its hue bucket and the two beside it (a colour near a bucket edge is not split in two), and once chosen, the hues within
- * 30 degrees of it are used up so the next candidate is a different colour. Deterministic: the same pixels give the same colours.
+ * From RGBA bytes (a canvas `getImageData().data`). Gray, near-white, near-black, see-through and edge pixels are skipped, so a black and white logo
+ * returns nothing. The rest are grouped by hue and scored by chroma times area, so a small vivid mark outweighs a large pale tint. A color is the
+ * chroma-weighted average of its hue bucket and the two beside it (a color near a bucket edge is not split in two), and once chosen, the hues within
+ * 30 degrees of it are used up so the next candidate is a different color. Deterministic: the same pixels give the same colors.
  */
 export function dominantColors(rgba: ArrayLike<number>, max: number = MAX_PALETTE): string[] {
   const weight = new Array<number>(HUE_BUCKETS).fill(0);
@@ -159,14 +159,14 @@ export function dominantColors(rgba: ArrayLike<number>, max: number = MAX_PALETT
   const sumA = new Array<number>(HUE_BUCKETS).fill(0);
   const sumB = new Array<number>(HUE_BUCKETS).fill(0);
   let visible = 0;
-  let coloured = 0;
+  let colored = 0;
   const pixels = Math.floor(rgba.length / 4);
   for (let i = 0; i < pixels; i++) {
     if (rgba[i * 4 + 3]! < OPAQUE) continue;
     visible++;
     const { l, c, h } = rgbToOklch(rgba[i * 4]!, rgba[i * 4 + 1]!, rgba[i * 4 + 2]!);
-    if (c < COLOUR_CHROMA) continue;
-    coloured++;
+    if (c < COLOR_CHROMA) continue;
+    colored++;
     const bucket = Math.min(HUE_BUCKETS - 1, Math.floor((h / 360) * HUE_BUCKETS));
     const rad = (h * Math.PI) / 180;
     // Each pixel is weighted by its chroma, so a vivid pixel counts for more than a pale one of the same hue.
@@ -175,7 +175,7 @@ export function dominantColors(rgba: ArrayLike<number>, max: number = MAX_PALETT
     sumA[bucket]! += c * Math.cos(rad) * c;
     sumB[bucket]! += c * Math.sin(rad) * c;
   }
-  if (visible === 0 || coloured < Math.max(1, visible * MIN_COLOUR_PIXEL_SHARE)) return [];
+  if (visible === 0 || colored < Math.max(1, visible * MIN_COLOR_PIXEL_SHARE)) return [];
 
   const total = weight.reduce((a, b) => a + b, 0);
   const free = new Array<boolean>(HUE_BUCKETS).fill(true);
@@ -200,8 +200,8 @@ export function dominantColors(rgba: ArrayLike<number>, max: number = MAX_PALETT
       b += sumB[k]!;
     }
     // `a` and `b` carry the chroma weight once more than `l` does, so each is divided by the weight sum to give the weighted average.
-    const colour: Oklch = { l: l / w, c: Math.hypot(a / w, b / w), h: ((Math.atan2(b / w, a / w) * 180) / Math.PI + 360) % 360 };
-    const hex = oklchToHex(colour);
+    const color: Oklch = { l: l / w, c: Math.hypot(a / w, b / w), h: ((Math.atan2(b / w, a / w) * 180) / Math.PI + 360) % 360 };
+    const hex = oklchToHex(color);
     if (!out.includes(hex)) out.push(hex);
     for (const d of [-2, -1, 0, 1, 2]) free[wrap(best + d)] = false;
   }

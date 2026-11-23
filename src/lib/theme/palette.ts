@@ -23,7 +23,7 @@ import {
  * That is what makes "renders correctly with sufficient contrast in both
  * modes" a property we can test rather than a claim (themeContrast.test.ts).
  *
- * v1 is a curated set of swatches, deliberately not a free colour picker.
+ * v1 is a curated set of swatches, deliberately not a free color picker.
  */
 
 export type AccentId =
@@ -45,8 +45,8 @@ export interface AccentSwatch {
   /** Peak chroma at mid-lightness. Tapered toward both ends of the ramp. */
   chroma: number;
   /**
-   * The colour's own OKLCH lightness. Set only for a coach's brand colour (the stock swatches leave it out and keep their fixed shades). When it is set,
-   * the interactive roles keep this lightness and move it only as far as each one's contrast rule needs (see `minimalShiftRoles`), so a colour that
+   * The color's own OKLCH lightness. Set only for a coach's brand color (the stock swatches leave it out and keep their fixed shades). When it is set,
+   * the interactive roles keep this lightness and move it only as far as each one's contrast rule needs (see `minimalShiftRoles`), so a color that
    * already works in a mode is shown as it is.
    */
   lightness?: number;
@@ -91,7 +91,7 @@ const SHADE_LIGHTNESS: Record<Shade, number> = {
 };
 
 /**
- * Chroma taper. Colour has to fall away at both ends or the pale shades look
+ * Chroma taper. Color has to fall away at both ends or the pale shades look
  * muddy and the dark ones leave the sRGB gamut.
  */
 const SHADE_CHROMA_SCALE: Record<Shade, number> = {
@@ -115,7 +115,7 @@ export function deriveRamp(swatch: AccentSwatch): AccentRamp {
   const ramp = {} as AccentRamp;
   for (const shade of SHADES) {
     // Clamped so a light, highly-chromatic hue (blue near white) cannot
-    // silently clip to a different colour than the one we reasoned about.
+    // silently clip to a different color than the one we reasoned about.
     ramp[shade] = clampToGamut({
       l: SHADE_LIGHTNESS[shade],
       c: swatch.chroma * SHADE_CHROMA_SCALE[shade],
@@ -150,7 +150,7 @@ export interface AccentRoles {
   border: Oklch;
 }
 
-/** Resolve a swatch to its role colours for one mode. */
+/** Resolve a swatch to its role colors for one mode. */
 export function accentRoles(swatch: AccentSwatch, mode: ThemeMode): AccentRoles {
   const ramp = deriveRamp(swatch);
   if (swatch.lightness !== undefined) return minimalShiftRoles(swatch, swatch.lightness, mode, ramp);
@@ -176,7 +176,7 @@ export function accentRoles(swatch: AccentSwatch, mode: ThemeMode): AccentRoles 
 
 /** The page the accent sits on, per mode: white, and the near-black the dark theme uses. */
 const SURFACE: Record<ThemeMode, Oklch> = { light: WHITE, dark: { l: 0.145, c: 0, h: 0 } };
-/** The roles keep to this lightness range, so a role is never black or white whatever the brand colour. */
+/** The roles keep to this lightness range, so a role is never black or white whatever the brand color. */
 const ROLE_L_MIN = 0.2;
 const ROLE_L_MAX = 0.92;
 const ROLE_L_STEP = 0.005;
@@ -184,10 +184,10 @@ const ROLE_L_STEP = 0.005;
 const HOVER_L_STEP = 0.07;
 
 /**
- * The roles for a swatch that carries its own lightness (a brand colour). Hue and chroma are the colour's own. Each role starts at the colour's own
+ * The roles for a swatch that carries its own lightness (a brand color). Hue and chroma are the color's own. Each role starts at the color's own
  * lightness and moves away from the page (darker on white, lighter on near-black) one small step at a time, stopping as soon as its contrast rule
- * holds, so a colour that already passes is unchanged and one that does not moves no further than it has to. Compare the fixed shade steps the
- * stock swatches use, which land the same colour darker (light mode) or paler (dark mode) than any rule needs.
+ * holds, so a color that already passes is unchanged and one that does not moves no further than it has to. Compare the fixed shade steps the
+ * stock swatches use, which land the same color darker (light mode) or paler (dark mode) than any rule needs.
  *
  * The rules are the stock ones (themeContrast.test.ts): the fill and the focus ring 3:1 against the page, a link 4.5:1, and the label on both the
  * fill and its hover 4.5:1. The subtle and border surfaces and the chart series stay on the hue-based ramp, which is what keeps them separable.
@@ -201,10 +201,10 @@ function minimalShiftRoles(swatch: AccentSwatch, ownLightness: number, mode: The
   const shifted = (need: number, surfaces: readonly Oklch[] = [SURFACE[mode]]): Oklch => {
     let l = clampL(ownLightness);
     for (;;) {
-      const colour = at(l);
-      if (surfaces.every((surface) => contrastRatio(colour, surface) >= need)) return colour;
+      const color = at(l);
+      if (surfaces.every((surface) => contrastRatio(color, surface) >= need)) return color;
       const next = l + away * ROLE_L_STEP;
-      if (next < ROLE_L_MIN || next > ROLE_L_MAX) return colour;
+      if (next < ROLE_L_MIN || next > ROLE_L_MAX) return color;
       l = next;
     }
   };
@@ -230,10 +230,10 @@ function minimalShiftRoles(swatch: AccentSwatch, ownLightness: number, mode: The
 }
 
 /**
- * Chart series colours, derived along the accent's own hue rather than a
+ * Chart series colors, derived along the accent's own hue rather than a
  * rainbow palette. A ten-domain stacked chart cannot be ten accents, but it
  * can be ten steps of one — which keeps the whole app reading as black, white,
- * and the athlete's one chosen colour.
+ * and the athlete's one chosen color.
  */
 export function chartSeries(swatch: AccentSwatch, mode: ThemeMode, count: number): Oklch[] {
   if (count <= 0) return [];

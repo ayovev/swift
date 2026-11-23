@@ -78,7 +78,7 @@ describe("restoring an encrypted backup", () => {
     });
   });
 
-  it("restores nothing when the prompt is cancelled", { timeout: 15000 }, async () => {
+  it("restores nothing when the prompt is canceled", { timeout: 15000 }, async () => {
     renderApp();
     await pickWhenReady(await encryptedFile({ workout: rowsA }));
     const dialog = await screen.findByRole("dialog", { name: /this backup is encrypted/i });

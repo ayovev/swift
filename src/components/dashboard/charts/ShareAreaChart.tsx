@@ -46,9 +46,9 @@ interface ShareAreaChartProps {
  * The rows a share chart draws, one per bucket: what kind of bucket it is (thin, partial at either end) and the value each drawn
  * series takes there. `shade` feeds the area's fill and is null only for a thin bucket, so a partial first or last bucket stays
  * shaded (a range of a few months is mostly its ends, and an area with its ends cut off read as missing data); `solid` is the solid
- * line, null for a thin or partial bucket, so the line breaks there; `edge` is a partial bucket and its whole neighbour, for the
+ * line, null for a thin or partial bucket, so the line breaks there; `edge` is a partial bucket and its whole neighbor, for the
  * dashed segment; `thinValue` is a thin bucket's hollow dot; `lone` is a whole bucket with no
- * whole neighbour, which an area can't draw, as a filled dot. Pure, so the rules are tested without a chart.
+ * whole neighbor, which an area can't draw, as a filled dot. Pure, so the rules are tested without a chart.
  */
 export function shareRows(data: readonly SharePoint[], granularity: Granularity, coverage?: { start: string; end: string }) {
   const base = data.map((d) => {
@@ -61,11 +61,11 @@ export function shareRows(data: readonly SharePoint[], granularity: Granularity,
   const solidAt = (i: number) => base[i] !== undefined && !base[i]!.thin && !base[i]!.partial;
   const rows = base.map((r, i) => {
     const solid = solidAt(i) ? r.value : null;
-    // A whole bucket with no whole neighbour draws no area of its own (an area needs two points), so it gets a filled dot.
+    // A whole bucket with no whole neighbor draws no area of its own (an area needs two points), so it gets a filled dot.
     const lone = solid !== null && !solidAt(i - 1) && !solidAt(i + 1) ? r.value : null;
     return { ...r, shade: r.thin ? null : r.value, solid, lone, thinValue: r.thin ? r.value : null, edge: null as number | null };
   });
-  // A partial bucket joins its whole neighbour with a dashed segment: the edge series holds just those two points.
+  // A partial bucket joins its whole neighbor with a dashed segment: the edge series holds just those two points.
   rows.forEach((r, i) => {
     if (!r.partial || r.thin) return;
     r.edge = r.value;

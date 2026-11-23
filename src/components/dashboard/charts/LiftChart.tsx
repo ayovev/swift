@@ -32,7 +32,7 @@ const CONFIG = {
 
 /**
  * Which rep scheme each chart highlights: "most" (each lift's own most-logged scheme, the default) or one tracked scheme for every
- * chart. It moves the emphasis and hides nothing: the other efforts stay on the chart in grey.
+ * chart. It moves the emphasis and hides nothing: the other efforts stay on the chart in gray.
  */
 export type RepMaxHighlight = "most" | TrackedRepMaxCategory;
 
@@ -58,7 +58,7 @@ export function mostLoggedScheme(entries: readonly LiftEntry[]): RepMaxCategory 
 
 const SHORT_SCHEME: Record<RepMaxCategory, string> = { "1RM": "1RM", "2RM": "2RM", "3RM": "3RM", "5RM": "5RM", other: "Other schemes" };
 
-/** The highlighted scheme's colour; "other" (no rep count read from the text) is the ink, since its fixed colour is the grey of the rest. */
+/** The highlighted scheme's color; "other" (no rep count read from the text) is the ink, since its fixed color is the gray of the rest. */
 const highlightColor = (c: RepMaxCategory) => (c === "other" ? "var(--foreground)" : FIXED_REPMAX_COLORS[c]);
 
 /**
@@ -98,7 +98,7 @@ function LiftDot({
   cx?: number;
   cy?: number;
   payload?: LiftPoint;
-  /** The highlighted scheme's colour; every other effort is grey. */
+  /** The highlighted scheme's color; every other effort is gray. */
   color: string;
   /** The picked dot's date (ChartPick.tsx); that dot gets a ring in the foreground ink. */
   picked?: string | null;
@@ -200,7 +200,7 @@ export function LiftChart({
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground tabular" data-direct-label>
           {latest ? (
             <>
-              {/* The highlighted scheme named next to its colour, in the header rather than at the line's end, where it landed on dots. */}
+              {/* The highlighted scheme named next to its color, in the header rather than at the line's end, where it landed on dots. */}
               <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
               <span>
                 <span className="text-foreground">{SHORT_SCHEME[emphCategory]}</span>, latest {latest.value.toLocaleString()} lb
@@ -294,7 +294,7 @@ export function LiftChart({
               );
             }}
           />
-          {/* Grey first, so the highlighted scheme and its line draw on top. */}
+          {/* Gray first, so the highlighted scheme and its line draw on top. */}
           {/* The running best under the dots: a step line with invisible corners and no tooltip of its own. */}
           {steps.length > 1 ? (
             <Scatter data={steps} line={{ stroke: color, strokeWidth: 1.5, strokeOpacity: 0.7 }} lineJointType="linear" shape={() => <g />} tooltipType="none" isAnimationActive={false} />

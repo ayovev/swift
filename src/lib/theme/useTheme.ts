@@ -18,7 +18,7 @@ import {
   type ThemeMode,
 } from "./palette";
 
-/** A stock swatch, or the coach's brand colour (only while one is set). */
+/** A stock swatch, or the coach's brand color (only while one is set). */
 export type AccentChoice = AccentId | typeof BRAND_ACCENT_ID;
 
 /** What the user picked. "system" follows the OS, and keeps following it. */
@@ -28,9 +28,9 @@ export interface ThemeState {
   mode: ModePreference;
   /** The mode actually being rendered, after resolving "system". */
   resolvedMode: ThemeMode;
-  /** What is in effect: "brand" only while a valid brand colour is set, otherwise the stock accent it falls back to. */
+  /** What is in effect: "brand" only while a valid brand color is set, otherwise the stock accent it falls back to. */
   accent: AccentChoice;
-  /** The swatch for `accent`, brand colour included. */
+  /** The swatch for `accent`, brand color included. */
   swatch: AccentSwatch;
   setMode: (mode: ModePreference) => void;
   setAccent: (accent: AccentChoice) => void;
@@ -81,7 +81,7 @@ const isModePreference = (value: unknown): value is ModePreference =>
 /**
  * Theme state for the whole app.
  *
- * Defaults to the system colour scheme and a sensible accent; both persist to
+ * Defaults to the system color scheme and a sensible accent; both persist to
  * localStorage so a return visit isn't reset. The accent's derived CSS
  * variables are written to the document element, so every component — shadcn
  * primitives, focus rings, Recharts series — picks them up without any
@@ -98,7 +98,7 @@ export function useThemeState(): ThemeState {
   });
   const brandColor = useBrand().color;
   const brand = useMemo(() => (brandColor ? brandSwatch(brandColor) : null), [brandColor]);
-  // "brand" with no brand colour (removed, or storage cleared) quietly falls back to the default.
+  // "brand" with no brand color (removed, or storage cleared) quietly falls back to the default.
   const accent: AccentChoice = chosen === BRAND_ACCENT_ID && !brand ? DEFAULT_ACCENT : chosen;
   const swatch: AccentSwatch = accent === BRAND_ACCENT_ID && brand ? brand.swatch : getSwatch(accent === BRAND_ACCENT_ID ? DEFAULT_ACCENT : accent);
   const [systemPreference, setSystemPreference] = useState<ThemeMode>(systemMode);

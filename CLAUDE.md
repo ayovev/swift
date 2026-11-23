@@ -8,7 +8,7 @@ TypeScript 7, Tailwind v4, shadcn/ui, Recharts, Vitest. Deployed as a static SPA
 This file covers *how* the code works and which parts must not be "improved". `README.md`
 covers what the product is and how to run it, and `docs/` holds the longer reference
 (guide, privacy, architecture, classification, testing). Between them they are now the whole written
-record: the original v1 requirements document has been retired, so where a behaviour is
+record: the original v1 requirements document has been retired, so where a behavior is
 deliberate, the reason lives in a comment or a test next to it rather than in a spec
 elsewhere. Keep it that way — if you change something load-bearing, move its reason with it.
 
@@ -190,7 +190,7 @@ undoes any of it. The rules that hold everywhere (the full account, with the mea
   axis, sorted, since they are tags that add up to about 300%, and the three modalities as one stacked bar that adds to 100. The
   two forms are the point, so don't unify them. Each bar opens its own view through the same tab change as the nav.
 
-The **Movements** view (`MovementsTab.tsx`, under Training) lists what the lexicon can recognise: families
+The **Movements** view (`MovementsTab.tsx`, under Training) lists what the lexicon can recognize: families
 (`movementFamilies.ts`, every variant counts) and single movements, picked by id. It reads
 `Insights.movements` (`buildMovementData.ts`), a thin reduction of the same `ParsedRow.movements`
 `buildModalityData` uses, so nothing is classified twice. The workout list shows the phrase that matched,
@@ -260,7 +260,7 @@ hard" — so Fran is 50 W / 50 G / 0 M. Collisions resolve *structurally*, not b
 ordering: `findMovements` claims character ranges longest-phrase-first, so a specific movement
 always beats the generic one inside it. Array order in `MOVEMENT_LEXICON` is irrelevant;
 adding an entry never requires reordering anything else. A movement counts once however many
-times it is named. Workouts where nothing is recognised are marked `classified: false` and
+times it is named. Workouts where nothing is recognized are marked `classified: false` and
 **excluded from every average**, not counted as zeroes (otherwise a logged non-workout drags
 every modality's share down); the count is kept as `unclassified_count` (the page footer says
 how many; no chart prints a note about it).
@@ -298,7 +298,7 @@ Read each file's header comment before changing it; the cases are `tests/progres
 
 - **`sessions.ts`**: a *subject* is one lift or named benchmark with RX and Scaled kept separate (decided, not open: a Scaled lift is a different load or movement, and merging would blur a verdict); a *session* is one subject on one day (the best
   of the day). A lift's value is its estimated 1RM (average of Epley and Brzycki) from any 1 to 8 rep scheme; SugarWOD's PR flag is deliberately
-  not read (Overview's "most recent PR" stat is the one reader of the flag, as a logged fact, and feeds nothing here). It builds on `liftSubjects.ts` (name normalisation, RX/Scaled split, the 1RM estimate; a test pins the parity) and also keeps
+  not read (Overview's "most recent PR" stat is the one reader of the flag, as a logged fact, and feeds nothing here). It builds on `liftSubjects.ts` (name normalization, RX/Scaled split, the 1RM estimate; a test pins the parity) and also keeps
   per-entry max-effort facts and the reason each Load row went unused.
 - **`verdict.ts`**: session-based. The best of the recent N sessions against the best of the N before them, N = min(4, floor(n / 2)), at least 6
   sessions. `up` (change of 5% or more, or a record: the recent best 2% above everything before the recent window), `down` (5% or more worse
@@ -306,17 +306,17 @@ Read each file's header comment before changing it; the cases are `tests/progres
 - **`headline.ts`**: six groups, move-ups to RX (an up vote for 12 months), the label (`Improving`, `Steady`, `Declining` from the counts) and the
   reference date, always passed in and never read from the clock.
 - **`display.ts`**, **`bodyContext.ts`**, **`period.ts`**, **`chart.ts`**: the words (RX unmarked, Scaled as a qualifier), the body-context lines,
-  the "last logged in" filter (labelled "Show lifts and benchmarks last logged in": it only hides rows) and the evidence chart's numbers. Body composition never feeds a verdict or a count.
+  the "last logged in" filter (labeled "Show lifts and benchmarks last logged in": it only hides rows) and the evidence chart's numbers. Body composition never feeds a verdict or a count.
 - **A lift's pounds are always called an estimate.** Every lift sentence carries "est. 1RM" (or "est." on a facts line), a record names the
   logged set it came from ("from 225 × 5", `ProgressSession.logged`), and the evidence chart is titled "Est. 1RM". Without it, "New best:
   258 lb" on Progress read as a lift one tab away from a logged best of 230 on Lifts. `tests/progressDisplay.test.ts` (DSP-12) checks it
   over the sample.
 
-- **A verdict never rests on colour.** `progress/verdictMark.tsx` is the one place a verdict's look is defined (Progress pills, Overview's
-  What moved, Timeline rows): each verdict has its own glyph (↑, ↓, –, a dashed circle) beside its word, and colour only repeats it: green (`--positive`) for Up
-  and a move up to RX, the destructive red for Down, grey for the neutral two. `headlineLabelClass` colours the Progress headline the same
+- **A verdict never rests on color.** `progress/verdictMark.tsx` is the one place a verdict's look is defined (Progress pills, Overview's
+  What moved, Timeline rows): each verdict has its own glyph (↑, ↓, –, a dashed circle) beside its word, and color only repeats it: green (`--positive`) for Up
+  and a move up to RX, the destructive red for Down, gray for the neutral two. `headlineLabelClass` colors the Progress headline the same
   way (Improving green, Declining red, Steady plain). Up had been the accent alone, so with the red accent Up and Down were both red.
-  `tests/verdictMark.test.tsx` checks the marks stay distinct, and that no component uses a fixed Tailwind palette colour (the old
+  `tests/verdictMark.test.tsx` checks the marks stay distinct, and that no component uses a fixed Tailwind palette color (the old
   "Not tested since" amber).
 
 The weight noise band (`weightNoiseBand.ts`) is the one older pipeline that remains: `weightBandLb` uses it to decide whether a body-weight change
@@ -326,7 +326,7 @@ is "within normal variation".
 
 `src/lib/analytics/weightNoiseBand.ts` answers "is this change in body weight between two readings bigger than reading-to-reading noise?" so no
 body-weight sentence rests on sign alone. `getWeightNoiseBand()` estimates one band on a ladder — readings within a week of each other
-(`paired-scans`), else spread around a rolling median (`residual`), else a labelled `default` (3 lb) — and returns `status: "insufficient"` only
+(`paired-scans`), else spread around a rolling median (`residual`), else a labeled `default` (3 lb) — and returns `status: "insufficient"` only
 when no reading reports a weight. Only weight is estimated: it is the one body measurement the Insights views state. Lean mass, fat mass and
 body fat have no band, because nothing compares them.
 
@@ -349,13 +349,13 @@ body fat have no band, because nothing compares them.
 - **Entries reach a before and after rarely on sparse logs** (3 of 8 demo entries on the sample), so the facts lines carry weight.
 - **Period bands (Compare) are still gone.** Drag-to-select is built for every chart the date range scopes (share, lift and Body Comp); Overview and Progress use the full history.
 - **Design decisions kept for now, by the owner** (from the 2026 design critique, since deleted; its reasons now live next to the code):
-  the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
+  the fixed M/W/G colors stay red, green and blue (red sits beside green on the Workouts bars; a color-blind-safe set such as blue,
   orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps
   its long tab row (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); and the red accent
-  stays as it is, a known overlap with `--destructive` (the red swatch's button colour is under 8 OKLab x100 from it in dark mode, where every other swatch is clear; moving its hue
-  away cleared the distance but read as pink or rust, not red). A later redesign of the swatches, or a free colour picker, should keep the button and link colours at least 8 from
-  `--destructive` in both modes, as a test (`brand.test.ts` does this for a brand colour and pins the red swatch as the one exception).
-- **Overview's days-trained bars follow the accent**, chosen by the owner over a neutral ink that avoided matching the M/W/G colours under it (the default blue, green and dark-mode red come within 8 OKLab x100 of one of them; teal, slate, violet, magenta and amber are clear). If it reads as one series in practice, the alternatives are the neutral ink again, or neutral only for the colliding accents. No chart prints a note about workouts with no recognised movement (neither Overview's M/W/G chart nor the modality pages); `unclassified` and `unclassified_count` stay in the data, the page footer still says how many entries sit outside the split, and the grey "Not classified" key on Workouts rows stays because it names a mark that is drawn.
+  stays as it is, a known overlap with `--destructive` (the red swatch's button color is under 8 OKLab x100 from it in dark mode, where every other swatch is clear; moving its hue
+  away cleared the distance but read as pink or rust, not red). A later redesign of the swatches, or a free color picker, should keep the button and link colors at least 8 from
+  `--destructive` in both modes, as a test (`brand.test.ts` does this for a brand color and pins the red swatch as the one exception).
+- **Overview's days-trained bars follow the accent**, chosen by the owner over a neutral ink that avoided matching the M/W/G colors under it (the default blue, green and dark-mode red come within 8 OKLab x100 of one of them; teal, slate, violet, magenta and amber are clear). If it reads as one series in practice, the alternatives are the neutral ink again, or neutral only for the colliding accents. No chart prints a note about workouts with no recognized movement (neither Overview's M/W/G chart nor the modality pages); `unclassified` and `unclassified_count` stay in the data, the page footer still says how many entries sit outside the split, and the gray "Not classified" key on Workouts rows stays because it names a mark that is drawn.
 - **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
   is a separate, unbuilt idea.
 - **Assistive technology is unverified.** No real screen reader pass has been done, and forced colors was checked only by Chromium's emulation, not on Windows High Contrast
@@ -409,7 +409,7 @@ smoothing. Analytics: `weigh_in_saved`, `weigh_in_deleted` and `weigh_in_delete_
 
 `src/lib/sync/` moves the athlete's data from one device to another (issue #15) without relaxing hard constraint 1: two browsers negotiate a WebRTC `RTCDataChannel` directly, with the
 SDP exchanged by displaying and scanning QR codes instead of a signaling server, so only connection metadata ever crosses a QR code or a public STUN server. No TURN server is configured, on
-purpose (a relay would see the bytes in transit). The full account (engine layout, wire protocol, dialog behaviour, wiring) is in `docs/sync.md`; read it before changing anything here. The rules
+purpose (a relay would see the bytes in transit). The full account (engine layout, wire protocol, dialog behavior, wiring) is in `docs/sync.md`; read it before changing anything here. The rules
 that apply everywhere:
 
 - **One WebRTC seam.** `webrtcTransport.ts` is the only file that touches real WebRTC, and `components/sync/QrDisplay.tsx` and `QrScanner.tsx` are the only files that import `qrcode`/`jsqr` or call
@@ -448,7 +448,7 @@ The dashboard's controls are sorted by how often an athlete touches them, and ea
 home. Read the header comments of the files named here before moving anything between tiers.
 
 - **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header, at its true
-  centre from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
+  center from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Overview (the front page, on its own), Training (Workouts and Lifts, then the ten GPP
   domains, three modalities and Movements — a classification of those same workouts, not separate
   data, which is what their group headers are there to say), Body (Body Comp) and Insights
@@ -456,11 +456,11 @@ home. Read the header comments of the files named here before moving anything be
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
-  header — in line with them it read as one more tab. Workouts and Lifts share an unlabelled
+  header — in line with them it read as one more tab. Workouts and Lifts share an unlabeled
   group (the record of what was done) and Movements is a group of one, so neither has a header;
   Workouts comes first, so selecting Training opens the log. Training is the long row: it fits at 1280px with
   the gaps tightened from `lg`, and below that scrolls sideways, with a fade (and on a pointer device a button) at each edge that
-  has more tabs past it and the selected tab scrolled into view. The Cardio domain and the M modality are both labelled "Cardio" on
+  has more tabs past it and the selected tab scrolled into view. The Cardio domain and the M modality are both labeled "Cardio" on
   purpose: the Domains and Modalities headers tell them apart (`MODALITY_NAMES`, pinned in `tests/sectionNav.test.tsx`). A third nav level for it would break "never a dropdown", so it hasn't
   been added. `tabs.ts` stays the flat identity list
   (`ALL_TABS`) that analytics and the tab content key off; `SECTIONS` only groups it, and
@@ -509,7 +509,7 @@ first card doesn't repeat the page title above it.
 ## Architecture: branding
 
 `docs/branding.md` is the requirements document; this is how it is built and what not to undo. A coach (Settings, shown only while the audience is
-`coach`) can set a gym logo, a name and a brand colour, each optional. Reports and image cards are a separate, unbuilt feature that will read the brand
+`coach`) can set a gym logo, a name and a brand color, each optional. Reports and image cards are a separate, unbuilt feature that will read the brand
 through `useBrand()`.
 
 - **A preference, not a dataset.** `lib/brand/brandStore.ts`, `localStorage` key `swift.brand` (try/catch, in memory when storage throws, read through
@@ -518,18 +518,18 @@ through `useBrand()`.
 - **The logo is re-drawn, never stored as chosen** (`lib/brand/image.ts`). Raster only (PNG, JPEG, WebP, found by magic bytes, not name or type); **SVG is refused**. The
   file is decoded, drawn on a canvas at most 512px on the long edge and written back out as WebP (PNG where the browser can't), which drops EXIF/GPS and keeps the
   stored data URL under `MAX_STORED_CHARS`. `parseBrand()` re-validates whatever is in storage and drops anything that isn't a base64 PNG/JPEG/WebP data URL. jsdom has no
-  canvas, so `normaliseLogo` is checked in Chromium; the pure parts are tested.
-- **The brand colour goes through the accent pipeline** (`lib/brand/color.ts` -> `useTheme()`). `accent` is an `AccentChoice` (a stock id or `"brand"`) and `swatch` is the
-  resolved swatch. `brandSwatch()` reduces the colour to hue and capped chroma, then holds it to every rule `themeContrast.test.ts` holds the stock swatches to, plus an
-  OKLab distance of 8 from `--destructive`, by nudging chroma and hue; a threshold is never lowered. It reports `adjusted` so the form says so. **The colour keeps its own lightness** (`AccentSwatch.lightness`, set only for a brand colour; the stock swatches keep their fixed shade steps): `minimalShiftRoles()` in `palette.ts` starts each role (fill and ring 3:1, link 4.5:1) at that lightness and moves it away from the page only as far as the rule needs, so a colour that already works in a mode is shown as it is. A bright teal is its exact hex in dark mode and only as dark as 3:1 and 4.5:1 require in light mode, where the fixed steps made it darker than either needs. Chroma is still capped at the stock ceiling (0.16) and the chart series and subtle surfaces stay on the hue ramp. The known red-swatch
-  overlap is pinned in `tests/brand.test.ts`. "brand" with no brand colour falls back to the default accent.
-- **A logo's colours are suggested, never applied.** `dominantColors()` (`lib/brand/color.ts`, a pure function over the same RGBA bytes `measureTone` reads) groups visible, chromatic pixels by hue,
-  scores them by chroma times area, and returns at most three hex colours, stored as `Brand.palette` (`[]` means the logo has none; absent means it was never looked for) and removed with the logo.
-  `BrandingControls` shows them as buttons; picking one is the same as choosing the colour, so `brandSwatch()`'s adjustment applies, and a colour the coach already chose is never overwritten.
-  Its tests are mutation-checked (the hue-edge merge, the chroma weighting and the neighbour suppression each have a test that fails without them): keep them that way.
+  canvas, so `normalizeLogo` is checked in Chromium; the pure parts are tested.
+- **The brand color goes through the accent pipeline** (`lib/brand/color.ts` -> `useTheme()`). `accent` is an `AccentChoice` (a stock id or `"brand"`) and `swatch` is the
+  resolved swatch. `brandSwatch()` reduces the color to hue and capped chroma, then holds it to every rule `themeContrast.test.ts` holds the stock swatches to, plus an
+  OKLab distance of 8 from `--destructive`, by nudging chroma and hue; a threshold is never lowered. It reports `adjusted` so the form says so. **The color keeps its own lightness** (`AccentSwatch.lightness`, set only for a brand color; the stock swatches keep their fixed shade steps): `minimalShiftRoles()` in `palette.ts` starts each role (fill and ring 3:1, link 4.5:1) at that lightness and moves it away from the page only as far as the rule needs, so a color that already works in a mode is shown as it is. A bright teal is its exact hex in dark mode and only as dark as 3:1 and 4.5:1 require in light mode, where the fixed steps made it darker than either needs. Chroma is still capped at the stock ceiling (0.16) and the chart series and subtle surfaces stay on the hue ramp. The known red-swatch
+  overlap is pinned in `tests/brand.test.ts`. "brand" with no brand color falls back to the default accent.
+- **A logo's colors are suggested, never applied.** `dominantColors()` (`lib/brand/color.ts`, a pure function over the same RGBA bytes `measureTone` reads) groups visible, chromatic pixels by hue,
+  scores them by chroma times area, and returns at most three hex colors, stored as `Brand.palette` (`[]` means the logo has none; absent means it was never looked for) and removed with the logo.
+  `BrandingControls` shows them as buttons; picking one is the same as choosing the color, so `brandSwatch()`'s adjustment applies, and a color the coach already chose is never overwritten.
+  Its tests are mutation-checked (the hue-edge merge, the chroma weighting and the neighbor suppression each have a test that fails without them): keep them that way.
 - **The Swift mark is never removable.** `BrandMark.tsx` only adds a logo beside `SwiftMark` (Dashboard and Landing headers); alt text is the gym name, else "Gym logo". A see-through
   logo the page would swallow sits on a fixed light or dark plate (`plateFor`, from a tone measured at upload).
-- **Analytics:** `brand_saved` and `brand_removed` are bare `interaction_used` names; no logo, name or colour, and not which field.
+- **Analytics:** `brand_saved` and `brand_removed` are bare `interaction_used` names; no logo, name or color, and not which field.
 
 ## Architecture: the stale-log nudge
 
@@ -632,15 +632,15 @@ with two fixed exceptions that never derive from the accent: `--destructive`, th
 red, the `--repmax-1/2/3/5` tokens (red/orange/green/blue), `--negative`/`--negative-subtle` (the Down pill: `--destructive` on its own tint is 4.0:1, under 4.5, and `tests/positiveColor.test.ts` checks this pair), and `--positive`/`--positive-subtle`, the fixed green of a verdict that
 went the athlete's way (Up, a move up to RX, the "Improving" headline on Progress and Overview). Verdicts used to take the accent for Up,
 so with the red accent Up sat beside Down; now a verdict looks the same whatever the accent, and `tests/positiveColor.test.ts` checks the
-green's contrast in both modes. The `--repmax-*` tokens colour the
+green's contrast in both modes. The `--repmax-*` tokens color the
 highlighted rep scheme on each lift chart (`FIXED_REPMAX_COLORS` in `chartUtils.ts`; one scheme per chart, with a step line of its best so far
-and named in the chart's header, every other effort grey, so no two rep-max colours ever need telling apart), and the
-Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). On Workouts each bar's colours are named beside it: a dot before each letter in the sticky column header and before each
+and named in the chart's header, every other effort gray, so no two rep-max colors ever need telling apart), and the
+Overview and per-row M/W/G bars reuse three of them (`FIXED_MODALITY_COLORS`). On Workouts each bar's colors are named beside it: a dot before each letter in the sticky column header and before each
 value under the bar (`ModalityHeaderKey`, `SplitLine` in `ModalityBar.tsx`), since the page key scrolls away. Those bars are drawn in
 `MODALITY_DRAW_ORDER` (W, G, M), never `MODALITY_LIST`'s M, W, G: the canonical order stacks red onto green, which
 deuteranopia can barely tell apart, and `tests/modalityColors.test.ts` measures every adjacent pair from the real tokens.
-Overview's days-trained bars use the accent (`--primary`, at full strength, so the accent's own 3:1 rule is what keeps them visible). The M/W/G chart below them uses the fixed colours, and the default blue (G), green (W) and red in dark mode (M) sit within 8 OKLab x100 of one of them, so an accent bar can read as the same series; the owner chose that knowingly, over the neutral ink that was there before (see "Open items"). The fixed colours are fixed on
-purpose: an accent-derived alternative was tried side by side and dropped, so there is no colour-mode
+Overview's days-trained bars use the accent (`--primary`, at full strength, so the accent's own 3:1 rule is what keeps them visible). The M/W/G chart below them uses the fixed colors, and the default blue (G), green (W) and red in dark mode (M) sit within 8 OKLab x100 of one of them, so an accent bar can read as the same series; the owner chose that knowingly, over the neutral ink that was there before (see "Open items"). The fixed colors are fixed on
+purpose: an accent-derived alternative was tried side by side and dropped, so there is no color-mode
 toggle and no `accentRepMaxColors()`; don't reintroduce one. The accent itself arrives as CSS custom
 properties written to `:root` by `src/lib/theme/useTheme.ts`, so shadcn primitives, focus rings
 and Recharts series pick it up with no per-component wiring.
@@ -654,7 +654,7 @@ and Recharts series pick it up with no per-component wiring.
   reason custom accents look broken in one mode.
 - `pickForeground()` chooses button text by **measured** contrast, so a light amber button
   gets black text where blue gets white. Never hardcode a foreground.
-- Out-of-gamut colours are clamped **programmatically** — `clampToGamut()` binary-searches
+- Out-of-gamut colors are clamped **programmatically** — `clampToGamut()` binary-searches
   chroma down while preserving lightness and hue. Don't hand-tune per-swatch constants to
   stop clipping; that breaks the moment a swatch is added.
 - **Contrast is enforced by tests, not by eye.** `tests/themeContrast.test.ts` asserts, for
@@ -663,8 +663,8 @@ and Recharts series pick it up with no per-component wiring.
   distinct, and separable. **Adding a swatch means that suite must still pass** — tune the
   swatch's hue/chroma until it does; do not lower a threshold.
 - `chartSeries()` derives N steps along the accent's own hue rather than a rainbow, which is
-  what keeps a ten-series stacked chart reading as black, white and the athlete's one colour.
-  (The rep-max dots and M/W/G bars above are the exception: they use fixed colours.)
+  what keeps a ten-series stacked chart reading as black, white and the athlete's one color.
+  (The rep-max dots and M/W/G bars above are the exception: they use fixed colors.)
 - The pre-hydration script in `index.html` duplicates the mode logic and the `swift.theme`
   localStorage key from `useTheme.ts` to avoid a flash of the wrong mode. **Change both together.**
   Theme reads/writes are wrapped in try/catch — private browsing must never break the app.
@@ -681,13 +681,13 @@ states, not only each view's default, because the defaults missed real findings.
   space in the markup because axe compares the two as strings.
 - **A scrolling box is a focusable, named region** (`DataTable` in `ChartTable.tsx`: `role="region"`, `tabIndex={0}`, named by the caption), or a keyboard user cannot scroll it.
 - **A filled button hovers to `--primary-hover`, never `bg-primary/90`**, which lightened the fill and took white on blue to 4.0:1. The hover shade moves the way that keeps
-  the label readable (`accentRoles`), and `themeContrast.test.ts` and the brand-colour check both hold it.
+  the label readable (`accentRoles`), and `themeContrast.test.ts` and the brand-color check both hold it.
 - **A long unbreakable title wraps** (`break-words` on the view `h1`) rather than widening the page at phone width.
 - **Heading levels step by one.** A page's view title is the `h1`; a chart card's title is an `h2` (they were `h3`, which skipped a level on 30 views).
 - **A file input is not a control.** The button or dropzone is; the `<input type="file">` it clicks is `aria-hidden`, and sits beside the dropzone, not inside
   its `role="button"` (axe: `label`, `nested-interactive`).
 - **The role-split screen is a page**: `<main>` and one `sr-only` `h1`.
-- **Forced colors** drops fills, box-shadows and the page's colours, which is how "selected", "pressed" and "focused" were drawn. `index.css` ends with a
+- **Forced colors** drops fills, box-shadows and the page's colors, which is how "selected", "pressed" and "focused" were drawn. `index.css` ends with a
   `forced-colors: active` block (a pressed toggle is Highlight on HighlightText with `forced-color-adjust: none`, because left to the browser the text gets a
   white backplate and vanishes; keyboard focus is a Highlight outline), and per-component `forced-colors:` classes cover the tab underlines (a transparent
   border is forced visible, so an unselected sub-tab sets its own to Canvas), Timeline's entry bars (a border) and the accent swatches (`forced-color-adjust-none`).

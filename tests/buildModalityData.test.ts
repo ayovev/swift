@@ -32,7 +32,7 @@ describe("buildModalityData — shape and invariants", () => {
     }
   });
 
-  it("excludes unrecognised workouts from averages rather than zeroing them", () => {
+  it("excludes unrecognized workouts from averages rather than zeroing them", () => {
     const withNoise = build([
       row("01/05/2025", "ROW", "2000m row"),
       row("01/06/2025", "DAILY LAZY MACROS POINTS", "week 1 points"),

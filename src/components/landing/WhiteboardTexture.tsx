@@ -4,7 +4,7 @@
  *
  * Uses `currentColor` at low opacity only — no accent, no new hues. Stays
  * inside the achromatic-base rule in CLAUDE.md; the single accent the
- * athlete picks stays the only colour on the page.
+ * athlete picks stays the only color on the page.
  *
  * Deliberately has no `viewBox`: with one, the pattern's cells live in the
  * viewBox's coordinate space and get rescaled along with it whenever the

@@ -17,20 +17,20 @@ import { ACTIVE_SEGMENT_CLASSES } from "./SegmentedControl";
 import { FilePickerButton } from "./FilePickerButton";
 import { clearBrand, MAX_NAME_LENGTH, updateBrand, useBrand } from "@/lib/brand/brandStore";
 import { BRAND_ACCENT_ID, brandSwatch } from "@/lib/brand/color";
-import { LogoError, normaliseLogo } from "@/lib/brand/image";
+import { LogoError, normalizeLogo } from "@/lib/brand/image";
 import { capture } from "@/lib/posthog";
 import { useTheme } from "@/lib/theme/useTheme";
 import { cn } from "@/lib/utils";
 
 const LOGO_ACCEPT = "image/png,image/jpeg,image/webp";
-/** Shown in the colour input before one is chosen. Not stored. */
+/** Shown in the color input before one is chosen. Not stored. */
 const PLACEHOLDER_COLOR = "#2563eb";
 
 const saved = (): void => capture({ name: "interaction_used", props: { interaction: "brand_saved" } });
 
 /**
  * The Branding section of Settings (coaches only; the caller decides). Logo,
- * gym name and brand colour, each optional, all kept on this device.
+ * gym name and brand color, each optional, all kept on this device.
  */
 export function BrandingControls() {
   const brand = useBrand();
@@ -44,7 +44,7 @@ export function BrandingControls() {
     setError(null);
     setBusy(true);
     try {
-      const { dataUrl, tone, palette } = await normaliseLogo(file);
+      const { dataUrl, tone, palette } = await normalizeLogo(file);
       updateBrand({ logo: dataUrl, tone, palette });
       saved();
     } catch (e) {
@@ -119,7 +119,7 @@ export function BrandingControls() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Label htmlFor="brand-color" className="text-sm font-normal">
-          Brand colour
+          Brand color
         </Label>
         <div className="flex items-center gap-2">
           {brand.color ? <span className="font-mono text-xs text-muted-foreground">{brand.color}</span> : null}
@@ -141,7 +141,7 @@ export function BrandingControls() {
               variant="ghost"
               size="sm"
               className="h-8"
-              aria-label="Clear brand colour"
+              aria-label="Clear brand color"
               onClick={() => {
                 updateBrand({ color: undefined });
                 saved();
@@ -157,7 +157,7 @@ export function BrandingControls() {
           {brand.palette.length > 0 ? (
             <>
               <span id="brand-palette-label" className="text-[13px] text-muted-foreground">
-                Colours in your logo
+                Colors in your logo
               </span>
               <div role="group" aria-labelledby="brand-palette-label" className="flex flex-wrap gap-2">
                 {brand.palette.map((hex) => (
@@ -184,7 +184,7 @@ export function BrandingControls() {
               </div>
             </>
           ) : (
-            <p className="text-[13px] text-muted-foreground">This logo has no distinct colour to suggest. Pick one above.</p>
+            <p className="text-[13px] text-muted-foreground">This logo has no distinct color to suggest. Pick one above.</p>
           )}
         </div>
       ) : null}
@@ -196,7 +196,7 @@ export function BrandingControls() {
       {brand.color && accent !== BRAND_ACCENT_ID ? (
         <div>
           <Button variant="outline" size="sm" className="h-8" onClick={() => setAccent(BRAND_ACCENT_ID)}>
-            Use brand colour
+            Use brand color
           </Button>
         </div>
       ) : null}
@@ -217,7 +217,7 @@ export function BrandingControls() {
             <AlertDialogHeader>
               <AlertDialogTitle>Remove branding?</AlertDialogTitle>
               <AlertDialogDescription>
-                This deletes your logo, gym name and brand colour from this device. Your data and the dashboard stay as
+                This deletes your logo, gym name and brand color from this device. Your data and the dashboard stay as
                 they are.
               </AlertDialogDescription>
             </AlertDialogHeader>

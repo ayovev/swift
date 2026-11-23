@@ -27,7 +27,7 @@ const SURFACE = {
   dark: { l: 0.145, c: 0, h: 0 },
 } as const;
 
-describe("colour maths", () => {
+describe("color math", () => {
   it("converts known OKLCH values to the expected sRGB", () => {
     expect(oklchToRgb(WHITE)).toEqual({ r: 255, g: 255, b: 255 });
     expect(oklchToRgb(BLACK)).toEqual({ r: 0, g: 0, b: 0 });
@@ -95,7 +95,7 @@ describe("accent contrast — every swatch, both modes", () => {
   });
 
   it("keeps button text readable while the button is hovered", () => {
-    // The default button's hover fill is --primary-hover, drawn under the same label colour as --primary. It used to be primary at 90%
+    // The default button's hover fill is --primary-hover, drawn under the same label color as --primary. It used to be primary at 90%
     // opacity, which lightened the fill and took white-on-blue to 4.0:1 in light mode (axe, color-contrast).
     for (const mode of MODES) {
       for (const swatch of ACCENT_SWATCHES) {
@@ -158,8 +158,8 @@ describe("accent contrast — every swatch, both modes", () => {
   });
 });
 
-describe("chart series colours", () => {
-  it("produces the requested number of distinct colours", () => {
+describe("chart series colors", () => {
+  it("produces the requested number of distinct colors", () => {
     for (const mode of MODES) {
       for (const swatch of ACCENT_SWATCHES) {
         const series = chartSeries(swatch, mode, 10);

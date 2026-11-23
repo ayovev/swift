@@ -51,7 +51,7 @@ function Stat({
   openLabel,
   valueClassName,
 }: {
-  /** The Progress label takes its verdict colour (headlineLabelClass). */
+  /** The Progress label takes its verdict color (headlineLabelClass). */
   valueClassName?: string;
   value: string;
   label: string;

@@ -59,9 +59,9 @@ const METRICS: { key: Exclude<keyof BodyCompPoint, "bucket">; label: string; uni
 ];
 
 /**
- * The data source's own mark, not Swift's — kept in its native colour on a
+ * The data source's own mark, not Swift's — kept in its native color on a
  * fixed white chip in both themes, the usual treatment for a partner's
- * trademark (it isn't ours to recolour into the accent system).
+ * trademark (it isn't ours to recolor into the accent system).
  */
 function InBodySourceMark() {
   return (

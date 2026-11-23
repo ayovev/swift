@@ -54,7 +54,7 @@ function prefersReducedMotion(): boolean {
  * choice do not change which side is which. Each half is one button, so the
  * whole panel is the target.
  *
- * The motion is all `flex-grow` and colour: a side widens when pointed at or
+ * The motion is all `flex-grow` and color: a side widens when pointed at or
  * focused, and the one picked fills the screen before the upload page replaces
  * it. With reduced motion the choice applies immediately and nothing moves.
  */

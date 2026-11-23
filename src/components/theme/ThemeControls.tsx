@@ -16,14 +16,14 @@ const MODE_OPTIONS: { value: ModePreference; label: string; Icon: typeof Sun }[]
 ];
 
 /**
- * Accent colour and light/dark/system mode, folded into one bordered pill.
+ * Accent color and light/dark/system mode, folded into one bordered pill.
  * They're always shown side by side (Landing's header), so
  * one shared container reads as "theme controls," not two adjacent widgets.
  * The four buttons (accent swatch, then the three mode options) sit in a
  * single segmented control with one consistent gap between every pair —
  * no divider marking the accent button off from the rest.
  *
- * The accent swatch is deliberately not a free colour picker (see
+ * The accent swatch is deliberately not a free color picker (see
  * palette.ts): every swatch is contrast-tested against both modes
  * (tests/themeContrast.test.ts), which an arbitrary hex value would not be.
  */
@@ -39,7 +39,7 @@ export function ThemeControls() {
           <Button
             variant="ghost"
             size="sm"
-            aria-label={`Accent colour: ${activeSwatch.name}`}
+            aria-label={`Accent color: ${activeSwatch.name}`}
             className="h-7 w-8 px-0"
           >
             <span
@@ -54,7 +54,7 @@ export function ThemeControls() {
           sideOffset={8}
           className="w-auto rounded-full border border-border bg-popover p-1 shadow-md"
         >
-          <div role="radiogroup" aria-label="Accent colour" className="flex items-center gap-1">
+          <div role="radiogroup" aria-label="Accent color" className="flex items-center gap-1">
             {ACCENT_SWATCHES.map((swatch) => {
               const active = swatch.id === accent;
               // Preview each swatch as it will actually render in this mode.
@@ -94,7 +94,7 @@ export function ThemeControls() {
         </PopoverContent>
       </Popover>
 
-      <div role="radiogroup" aria-label="Colour mode" className="flex items-center gap-0.5">
+      <div role="radiogroup" aria-label="Color mode" className="flex items-center gap-0.5">
         {MODE_OPTIONS.map(({ value, label, Icon }) => {
           const active = mode === value;
           return (

@@ -61,7 +61,7 @@ export function filterInBodyRowsByRange(
  * Multiple scans landing in one bucket are averaged, not summed or picked;
  * a metric a given scan didn't measure ("-") is excluded from that bucket's
  * average rather than counted as zero, the same non-distorting treatment
- * buildModalityData gives an unrecognised workout.
+ * buildModalityData gives an unrecognized workout.
  */
 export function buildBodyCompData(
   rows: InBodyRow[],

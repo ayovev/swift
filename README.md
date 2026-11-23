@@ -34,7 +34,7 @@ There is no account to make and no server to send your file to.
 
 It loads one athlete's file at a time. "Coach" is a framing, not a separate
 product: a coach reads an athlete's export the same way, can add their gym's
-logo, name and colour to the app ([Branding](docs/branding.md)), and there are
+logo, name and color to the app ([Branding](docs/branding.md)), and there are
 no multi-athlete views or comparisons. Try it without a file using the sample data
 on the landing page.
 
@@ -149,8 +149,8 @@ how the Timeline works.
 - [Using Swift](docs/guide.md): data in, backups, sync, the timeline
 - [Privacy: the details](docs/privacy.md)
 - [The Overview page](docs/overview.md)
-- [Branding](docs/branding.md): a coach's logo, name and colour
-- [Architecture](docs/architecture.md): how the code is organised
+- [Branding](docs/branding.md): a coach's logo, name and color
+- [Architecture](docs/architecture.md): how the code is organized
 - [How classification works](docs/classification.md): the GPP and M/W/G logic
 - [Testing](docs/testing.md)
 - [The movement lexicon](docs/movement-lexicon.md), [cross-device sync](docs/sync.md), [backup](docs/backup.md) and [the bundle split](docs/bundle-split.md): developer references for those areas

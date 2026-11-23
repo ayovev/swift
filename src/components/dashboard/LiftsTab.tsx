@@ -18,7 +18,7 @@ interface LiftsTabProps {
 }
 
 /**
- * The Insights front door (tab id `lifts`, labelled Progress): is each lift and benchmark moving, and what is the headline across them?
+ * The Insights front door (tab id `lifts`, labeled Progress): is each lift and benchmark moving, and what is the headline across them?
  * Needs only the SugarWOD log. The rules are in `src/lib/analytics/insights`; this is the view over them.
  */
 export function LiftsTab({ workouts, scans, weighIns, asOf, onSeeOnTimeline, focusSubjectKey = null }: LiftsTabProps) {

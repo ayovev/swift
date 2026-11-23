@@ -3,7 +3,7 @@ import { isHexColor, MAX_PALETTE } from "./color";
 import { MAX_STORED_CHARS, type LogoTone } from "./image";
 
 /**
- * The coach's brand: a logo, a gym name and a colour, each optional.
+ * The coach's brand: a logo, a gym name and a color, each optional.
  *
  * A per-device preference like the theme and the audience, so it lives in
  * `localStorage` (try/catch, in memory when storage throws) and never in the
@@ -13,10 +13,10 @@ import { MAX_STORED_CHARS, type LogoTone } from "./image";
  * Nothing here is sent anywhere, and nothing here may reach analytics.
  */
 export interface Brand {
-  /** A normalised PNG/JPEG/WebP data URL (see image.ts). */
+  /** A normalized PNG/JPEG/WebP data URL (see image.ts). */
   logo?: string;
   tone?: LogoTone;
-  /** Up to three colours found in the logo (see `dominantColors`), offered as suggestions. `[]` means the logo has none; absent means not looked for. */
+  /** Up to three colors found in the logo (see `dominantColors`), offered as suggestions. `[]` means the logo has none; absent means not looked for. */
   palette?: string[];
   /** Plain text; also the logo's alt text. */
   name?: string;

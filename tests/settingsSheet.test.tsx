@@ -46,7 +46,7 @@ describe("SettingsSheet", () => {
     expect(section).toHaveTextContent("Athlete");
   });
 
-  it("leaves the role alone when the change is cancelled", async () => {
+  it("leaves the role alone when the change is canceled", async () => {
     localStorage.setItem("swift.audience", "athlete");
     renderSheet("upload");
     fireEvent.click(await screen.findByRole("button", { name: "Change" }));

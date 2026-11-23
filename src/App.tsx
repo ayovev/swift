@@ -114,7 +114,7 @@ export default function App() {
   // CLAUDE.md) and lasts until "Start over" clears it. Sample data is never
   // written to storage, so a restore always resumes as an "upload".
   useEffect(() => {
-    let cancelled = false;
+    let canceled = false;
     void (async () => {
       const [rows, storedMeta, bodyRows, viewPrefs, storedTimeline, storedWeighIns] = await Promise.all([
         loadWorkoutRows(),
@@ -124,12 +124,12 @@ export default function App() {
         loadTimeline(),
         loadWeighIns(),
       ]);
-      if (cancelled) return;
+      if (canceled) return;
       if (rows && rows.length > 0) {
         preloadDashboard();
         // Held on the loading screen until the pipeline has arrived, so "ready" never has nothing to compute from.
         const loaded = await loadPipeline().catch(() => null);
-        if (cancelled) return;
+        if (canceled) return;
         if (loaded) setPipeline(loaded);
         else setPipelineFailed(true);
         setState({ status: "ready", rows, source: "upload" });
@@ -156,7 +156,7 @@ export default function App() {
       }
     })();
     return () => {
-      cancelled = true;
+      canceled = true;
     };
   }, []);
 
@@ -205,18 +205,18 @@ export default function App() {
   useEffect(() => {
     if (state.status !== "reveal") return;
     const { rows, source } = state;
-    let cancelled = false;
+    let canceled = false;
     // Sync and backup restore reach here without run(), so the pipeline may still be on its way: wait for it as well as the beat.
     const pipelineReady = loadPipeline().then(setPipeline, () => setPipelineFailed(true));
     const timer = window.setTimeout(
       () =>
         void pipelineReady.then(() => {
-          if (!cancelled) setState({ status: "ready", rows, source });
+          if (!canceled) setState({ status: "ready", rows, source });
         }),
       prefersReducedMotion() ? REVEAL_HOLD_MS_REDUCED : REVEAL_HOLD_MS
     );
     return () => {
-      cancelled = true;
+      canceled = true;
       window.clearTimeout(timer);
     };
   }, [state]);

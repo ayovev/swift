@@ -107,7 +107,7 @@ describe("SectionLinks", () => {
 });
 
 describe("SubNav", () => {
-  it("shows Workouts and Lifts first in Training, then every domain and modality at once as two labelled groups, then Movements", () => {
+  it("shows Workouts and Lifts first in Training, then every domain and modality at once as two labeled groups, then Movements", () => {
     const onValueChange = vi.fn();
     render(<SubNav value={strengthTab.value} onValueChange={onValueChange} />);
 

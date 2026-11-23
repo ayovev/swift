@@ -30,7 +30,7 @@ afterEach(() => {
 });
 
 describe("analytics — disabled without a key (the shipped default)", () => {
-  it("never initialises PostHog when the key is empty", async () => {
+  it("never initializes PostHog when the key is empty", async () => {
     const { initAnalytics } = await loadAnalytics("");
     initAnalytics();
     expect(mocked.init).not.toHaveBeenCalled();
@@ -177,12 +177,12 @@ describe("analytics — PostHog loads after the first paint", () => {
     initAnalytics();
     capture({ name: "app_opened" });
     capture({ name: "sample_data_used" });
-    // Nothing has been sent and nothing initialised yet: the library is still a pending chunk.
+    // Nothing has been sent and nothing initialized yet: the library is still a pending chunk.
     expect(mocked.init).not.toHaveBeenCalled();
     expect(mocked.capture).not.toHaveBeenCalled();
 
     await vi.waitFor(() => expect(mocked.capture).toHaveBeenCalledTimes(2));
-    // Initialised before anything is sent, and in the order they happened.
+    // Initialized before anything is sent, and in the order they happened.
     expect(mocked.init.mock.invocationCallOrder[0]!).toBeLessThan(mocked.capture.mock.invocationCallOrder[0]!);
     expect(mocked.capture.mock.calls.map((c) => c[0])).toEqual(["app_opened", "sample_data_used"]);
   });

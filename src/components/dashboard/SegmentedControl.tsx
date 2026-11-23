@@ -24,7 +24,7 @@ export const ACTIVE_SEGMENT_CLASSES =
 
 /**
  * A bordered row of ghost buttons, active option in the accent — extracted
- * so every segmented control in the app (rep-max filter, colour mode) reads
+ * so every segmented control in the app (rep-max filter, color mode) reads
  * as one control family instead of each picking its own look.
  */
 export function SegmentedControl<T extends string>({

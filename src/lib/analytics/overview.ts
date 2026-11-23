@@ -315,7 +315,7 @@ export interface MonthMix {
   split: ModalitySplit | null;
   /** Classified workouts that month; unclassified ones are excluded, never counted as zeroes. */
   workouts: number;
-  /** Workouts that month with no recognised movement, left out of the split. Kept in the data; no chart prints it (the page footer says how many entries sit outside the split). */
+  /** Workouts that month with no recognized movement, left out of the split. Kept in the data; no chart prints it (the page footer says how many entries sit outside the split). */
   unclassified: number;
   partial: boolean;
 }
@@ -324,7 +324,7 @@ export interface MonthMix {
  * The M/W/G split for each month on the Training panel's timeline: the same
  * 12 calendar months as `monthlyDaysTrained`, so the two charts line up column
  * for column. Built the way the modality stack is (each classified workout's
- * split summed, then normalised to 100); a month with no classified workout has
+ * split summed, then normalized to 100); a month with no classified workout has
  * no split rather than a 0/0/0 one.
  */
 export function monthlyModalityMix(rows: readonly ParsedRow[], today: string): MonthMix[] {

@@ -157,7 +157,7 @@ export function TimelineChart({ entries, rows, start, end, asOf, selected, onSel
 
       <div aria-hidden className="relative h-5 border-t border-border">
         {axis.map((t) => (
-          // Centred on its date, except near either end, where it is held inside the axis rather than cut off.
+          // Centerd on its date, except near either end, where it is held inside the axis rather than cut off.
           <span
             key={t.date}
             className={cn(

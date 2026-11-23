@@ -123,7 +123,7 @@ describe("modality classifier — the substring traps", () => {
     expect(split.M).toBe(0);
   });
 
-  it("still recognises a real ski erg piece", () => {
+  it("still recognizes a real ski erg piece", () => {
     expect(classify("SKI", "1000m ski erg").split).toEqual({ M: 100, W: 0, G: 0 });
   });
 
@@ -148,7 +148,7 @@ describe("modality classifier — the substring traps", () => {
     expect(found).toEqual(["Double-unders"]);
   });
 
-  it("does recognise the DU abbreviation when it stands alone", () => {
+  it("does recognize the DU abbreviation when it stands alone", () => {
     expect(labels("DU TEST", "2 minutes max dus")).toEqual(["Double-unders"]);
   });
 
@@ -357,7 +357,7 @@ describe("barbell_lift takes priority over the text", () => {
     expect(ids(row("Back Pause Squat", "Back Pause Squat 4x1", "Back Pause Squat"))).toEqual(["back-squat"]);
   });
 
-  it("falls back to the text when the field is empty or not recognised", () => {
+  it("falls back to the text when the field is empty or not recognized", () => {
     const text = (t: string, d: string) => findMovements(classifiableText({ title: t, description: d }));
     expect(row("FRAN", "21-15-9 thrusters pull-ups", "")).toEqual(text("FRAN", "21-15-9 thrusters pull-ups"));
     expect(ids(row("FRAN", "thrusters", "Some Unknown Lift"))).toEqual(["thruster"]);
@@ -413,7 +413,7 @@ describe("movements named on CrossFit's movement list", () => {
     ["shoot-through", "shoot-through"],
     ["strict toes-to-rings", "toes-to-rings"],
     ["windshield wipers", "windshield-wipers"],
-  ])("recognises %s", (text, id) => {
+  ])("recognizes %s", (text, id) => {
     expect(ids(text)).toContain(id);
   });
 });

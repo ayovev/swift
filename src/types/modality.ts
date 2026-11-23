@@ -44,7 +44,7 @@ export const MODALITY_BLURBS: Record<Modality, string> = {
 };
 
 /** A workout's proportional composition. Shares are percentages summing to
- *  100, or all zero when nothing in the text was recognised. */
+ *  100, or all zero when nothing in the text was recognized. */
 export interface ModalitySplit {
   M: number;
   W: number;
@@ -65,7 +65,7 @@ export const IMPLEMENT_LABEL: Record<Implement, string> = {
   kettlebell: "Kettlebell",
 };
 
-/** One recognised movement and the modality it contributed to. */
+/** One recognized movement and the modality it contributed to. */
 export interface MovementHit {
   /** Stable movement id (see MovementEntry.id), e.g. "power-clean". */
   id: string;
@@ -88,7 +88,7 @@ export interface ModalityClassification {
   split: ModalitySplit;
   /** Distinct movements found, in the order they appear in the text. */
   movements: MovementHit[];
-  /** false when no movement was recognised — excluded from all averages
+  /** false when no movement was recognized — excluded from all averages
    *  rather than counted as an empty split, which would drag them down. */
   classified: boolean;
 }
@@ -152,9 +152,9 @@ export interface AllWorkoutsEntry {
   pr: boolean;
   /** All zero when `classified` is false. */
   split: ModalitySplit;
-  /** Movement labels recognised anywhere in the workout, in text order. */
+  /** Movement labels recognized anywhere in the workout, in text order. */
   movements: string[];
-  /** false when no movement was recognised — the split above is meaningless
+  /** false when no movement was recognized — the split above is meaningless
    *  zeroes rather than a real 0/0/0 split, so the UI must say so rather than
    *  drawing an empty bar as if it were data. */
   classified: boolean;
@@ -182,7 +182,7 @@ export interface ModalityData {
   /** Every logged workout, most recent first — the Workouts tab's source list. */
   all_workouts: AllWorkoutsEntry[];
   modality_stacked: ModalityStacked;
-  /** Workouts where no movement was recognised. Surfaced as a UI caveat so
+  /** Workouts where no movement was recognized. Surfaced as a UI caveat so
    *  the percentages are read with the right amount of trust. */
   unclassified_count: number;
   /** Denominator behind every average above. */

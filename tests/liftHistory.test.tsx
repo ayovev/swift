@@ -87,11 +87,11 @@ describe("Workouts summary line", () => {
     expect(screen.queryByText(/^M \d+ \/ W \d+ \/ G \d+$/)).not.toBeInTheDocument();
   });
 
-  it("names each bar colour right where the bars are: dots in a sticky header and before each value", () => {
+  it("names each bar color right where the bars are: dots in a sticky header and before each value", () => {
     const { container } = render(<WorkoutsTab data={insights.modality} summary={insights.dashboard.summary} />);
     const header = screen.getByRole("columnheader", { name: "W / G / M" });
     const dots = (el: Element) => [...el.querySelectorAll("span[aria-hidden=true]")].map((d) => (d as HTMLElement).style.backgroundColor).filter(Boolean);
-    // The bar's own colours, in its own left-to-right order.
+    // The bar's own colors, in its own left-to-right order.
     expect(dots(header)).toEqual(["var(--repmax-3)", "var(--repmax-5)", "var(--repmax-1)"]);
     expect(header.textContent).toBe("WGM");
     const thead = container.querySelector("thead") as HTMLElement;

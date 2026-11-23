@@ -3,7 +3,7 @@
 /*
  * Swift's base UI is black-and-white in both modes.
  * Every token below is achromatic — chroma is exactly 0. The single accent the
- * athlete picks is the ONLY colour in the interface, and it arrives as CSS
+ * athlete picks is the ONLY color in the interface, and it arrives as CSS
  * custom properties written to :root by src/lib/theme/useTheme.ts.
  *
  * The accent tokens (--primary, --ring, --chart-*, --accent-*) are declared
@@ -267,9 +267,9 @@
 }
 
 /*
- * Forced colors (Windows High Contrast and similar). The browser replaces the page's colours with the user's own and drops fills and
+ * Forced colors (Windows High Contrast and similar). The browser replaces the page's colors with the user's own and drops fills and
  * box-shadows, which is how this app marks "pressed" (a fill), "selected" (a ring) and "focused" (a ring). Without this a toggle
- * reads the same on and off and a keyboard user has no focus mark where a component sets its own ring. System colours only, so the
+ * reads the same on and off and a keyboard user has no focus mark where a component sets its own ring. System colors only, so the
  * user's palette still decides how it looks. Per-component rules (the tab underlines, Timeline's bars, the swatches) sit beside
  * their components as `forced-colors:` classes.
  */

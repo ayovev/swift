@@ -259,7 +259,7 @@ export function Dashboard({
           with the content below; see ScopeLine. */}
       <header className="border-b border-border">
         {/* From lg up, a three-column grid with equal outer tracks, so the
-            sections sit at the true centre of the page whatever the wordmark
+            sections sit at the true center of the page whatever the wordmark
             and Settings widths are. Narrower than that there isn't room for
             all three on one line, so the sections wrap onto their own row. */}
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-10 px-5 sm:px-8 lg:grid lg:grid-cols-[1fr_auto_1fr]">
@@ -460,7 +460,7 @@ export function Dashboard({
               <>
                 {" "}
                 {insights.modality.unclassified_count.toLocaleString()} of{" "}
-                {summary.total_logged.toLocaleString()} entries had no recognisable movement in them
+                {summary.total_logged.toLocaleString()} entries had no recognizable movement in them
                 and sit outside the M/W/G split.
               </>
             ) : null}

@@ -59,7 +59,7 @@ export type InteractionName =
   | "chart_range_dragged"
   // Charts shown as tables, or back: only that the switch was used, not which way.
   | "chart_view_toggled"
-  // Branding set or cleared. Never the logo, name, colour or whether each was set.
+  // Branding set or cleared. Never the logo, name, color or whether each was set.
   | "brand_saved"
   | "brand_removed";
 
@@ -114,7 +114,7 @@ function afterFirstPaint(fn: () => void): void {
 }
 
 /**
- * Initialise PostHog if a key is configured. With the placeholder empty key
+ * Initialize PostHog if a key is configured. With the placeholder empty key
  * (see .env.example) every capture below becomes a no-op, so the app runs
  * normally without analytics rather than erroring or blocking.
  *

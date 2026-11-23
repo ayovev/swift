@@ -13,7 +13,7 @@ interface PeriodFilterProps {
 
 /**
  * Chooses which subjects are listed, by when each was last logged. It changes no verdict, label, count or chart, and is not saved.
- * Labelled by what it does: a bare "Logged in" sat right under "the date range doesn't apply here" and read as a date range.
+ * Labeled by what it does: a bare "Logged in" sat right under "the date range doesn't apply here" and read as a date range.
  */
 export const PERIOD_FILTER_LABEL = "Show lifts and benchmarks last logged in";
 export function PeriodFilter({ preset, onPreset, custom, onCustom, invalid, showing }: PeriodFilterProps) {

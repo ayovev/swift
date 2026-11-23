@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Forced colors (Windows High Contrast) drops fills, box-shadows and the page's colours, so anything that says "selected", "pressed"
+ * Forced colors (Windows High Contrast) drops fills, box-shadows and the page's colors, so anything that says "selected", "pressed"
  * or "focused" with one of those disappears. jsdom has no forced-colors mode, so this pins the rules that were measured in Chromium
  * with `forcedColors: "active"` (tab underlines, toggles, Timeline's bars, swatches, focus). If one of these is removed, check the
  * view again in forced colors rather than just updating the string.
@@ -14,7 +14,7 @@ describe("forced colors", () => {
   const css = read("src/index.css");
   const block = css.slice(css.indexOf("@media (forced-colors: active)"));
 
-  it("shows a pressed toggle and a keyboard focus with system colours", () => {
+  it("shows a pressed toggle and a keyboard focus with system colors", () => {
     expect(block).toMatch(/\[aria-pressed="true"\]\s*\{[^}]*forced-color-adjust:\s*none[^}]*background-color:\s*Highlight[^}]*color:\s*HighlightText/s);
     expect(block).toMatch(/:focus-visible\s*\{[^}]*outline:\s*2px solid Highlight/s);
   });

@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
  *  - every quoted CLAUDE.md heading cited from a source or test comment (written as the file name, a comma, then the heading in quotes) names a
  *    heading that exists;
  *  - every analytics or sync event name written in backticks on a line about events exists in the code.
- * It checks that things exist, not that prose is true: it cannot catch a described behaviour that changed. Keep documents free of figures that
+ * It checks that things exist, not that prose is true: it cannot catch a described behavior that changed. Keep documents free of figures that
  * drift (counts, measurements) for that reason, and say the rule rather than the number.
  */
 

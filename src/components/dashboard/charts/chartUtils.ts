@@ -47,7 +47,7 @@ export function mergeBucketCounts(
 }
 
 /**
- * The ten domain series, coloured along the accent's own hue rather than a
+ * The ten domain series, colored along the accent's own hue rather than a
  * rainbow — see chartSeries() in lib/theme/palette.ts.
  */
 export const DOMAIN_CHART_CONFIG: ChartConfig = Object.fromEntries(
@@ -68,7 +68,7 @@ export function modalityColor(modality: Modality): string {
 /**
  * Below this many workouts, a bucket's share is drawn as a lone hollow dot rather than part of a share chart's line. With four
  * workouts, one more or fewer moves the share by 20 to 25 points: drawn into the line, weekly grouping over a long range read as a
- * 0 to 100% sawtooth of mostly two- and three-workout weeks. Five is a judgement, not a measured cut-off: the point where a single
+ * 0 to 100% sawtooth of mostly two- and three-workout weeks. Five is a judgment, not a measured cut-off: the point where a single
  * workout moves the share by no more than 20 points.
  */
 export const THIN_BUCKET_WORKOUTS = 5;
@@ -207,7 +207,7 @@ interface TimeStep {
 
 /**
  * Candidate calendar steps for niceTimeTicks, roughly log-spaced the same
- * way candidateSteps() is for numbers — a day/week/fortnight run for short
+ * way candidateSteps() is for numbers — a day/week/two-week run for short
  * histories, then month/quarter/half-year/year runs for the multi-year
  * spans a lift's full history usually covers.
  */

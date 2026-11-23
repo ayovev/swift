@@ -19,8 +19,8 @@ describe("ThemeControls", () => {
   it("previews the current accent on the trigger, with the swatch row collapsed until opened", () => {
     renderControls();
 
-    screen.getByRole("button", { name: /accent colour: blue/i });
-    expect(screen.queryByRole("radiogroup", { name: /accent colour/i })).not.toBeInTheDocument();
+    screen.getByRole("button", { name: /accent color: blue/i });
+    expect(screen.queryByRole("radiogroup", { name: /accent color/i })).not.toBeInTheDocument();
     // The mode buttons live in the same container, no separate widget to open.
     screen.getByRole("radio", { name: "Light" });
   });
@@ -28,17 +28,17 @@ describe("ThemeControls", () => {
   it("opens a row of swatches, and picking one applies it and collapses the row again", () => {
     renderControls();
 
-    fireEvent.click(screen.getByRole("button", { name: /accent colour: blue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /accent color: blue/i }));
     const teal = screen.getByRole("radio", { name: "Teal" });
     expect(teal).toBeInTheDocument();
 
     fireEvent.click(teal);
 
-    screen.getByRole("button", { name: /accent colour: teal/i });
+    screen.getByRole("button", { name: /accent color: teal/i });
     expect(screen.queryByRole("radio", { name: "Teal" })).not.toBeInTheDocument();
   });
 
-  it("switches colour mode from the same pill", () => {
+  it("switches color mode from the same pill", () => {
     renderControls();
 
     const dark = screen.getByRole("radio", { name: "Dark" });

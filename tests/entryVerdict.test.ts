@@ -35,7 +35,7 @@ describe("the before and after of an entry the athlete changed (A1-TLN-32 to 40)
     expect(entryVerdict(ENTRY, [two], ASOF).compared).toHaveLength(0);
   });
 
-  it("TLN-34 summarises with the headline's own label and sentence once three subjects count", () => {
+  it("TLN-34 summarizes with the headline's own label and sentence once three subjects count", () => {
     const subjects = [
       lifter("Back Squat", [100, 100, 100, 100], [110, 110, 110, 110]),
       lifter("Deadlift", [200, 200, 200, 200], [220, 220, 220, 220]),

@@ -26,12 +26,12 @@ import type { InBodyRow } from "@/types/inbody";
  *   1. `paired-scans`: scans taken within `NOISE_PAIR_MAX_GAP_DAYS` of each
  *      other are the same body measured twice; the spread of their
  *      differences is the noise in a two-scan difference directly.
- *   2. `residual`: each scan against the median of its neighbours (itself
+ *   2. `residual`: each scan against the median of its neighbors (itself
  *      excluded, symmetric window, so a steady trend cancels). A residual is
  *      the noise in ONE scan, so it is scaled by √2 to be comparable to a
  *      two-scan difference. Real curvature in the history inflates it, which
  *      errs toward calling less "meaningful" — the safe direction.
- *   3. `default`: a conservative constant (`NOISE_DEFAULT_WEIGHT_BAND_LB`), labelled as such.
+ *   3. `default`: a conservative constant (`NOISE_DEFAULT_WEIGHT_BAND_LB`), labeled as such.
  *
  * Spread is a robust one (median absolute deviation), not a standard
  * deviation: one scan taken after a big meal would otherwise widen the band
@@ -106,16 +106,16 @@ function pairedDifferences(readings: Reading[], maxGapDays: number): number[] {
   return diffs;
 }
 
-/** Each interior reading minus the median of its symmetric neighbours, for windows short enough in calendar time. */
+/** Each interior reading minus the median of its symmetric neighbors, for windows short enough in calendar time. */
 function residuals(readings: Reading[], halfWindow: number, maxSpanDays: number): number[] {
   const out: number[] = [];
   for (let i = halfWindow; i < readings.length - halfWindow; i++) {
     const first = readings[i - halfWindow]!;
     const last = readings[i + halfWindow]!;
     if (last.date.startOf("day").diff(first.date.startOf("day"), "day") > maxSpanDays) continue;
-    const neighbours: number[] = [];
-    for (let k = i - halfWindow; k <= i + halfWindow; k++) if (k !== i) neighbours.push(readings[k]!.value);
-    out.push(readings[i]!.value - median(neighbours));
+    const neighbors: number[] = [];
+    for (let k = i - halfWindow; k <= i + halfWindow; k++) if (k !== i) neighbors.push(readings[k]!.value);
+    out.push(readings[i]!.value - median(neighbors));
   }
   return out;
 }

@@ -31,7 +31,7 @@ describe("shareRows", () => {
     expect(rows[1]!.solid).toBeNull();
     expect(rows[1]!.shade).toBeNull();
     expect(rows[1]!.thinValue).toBe(100);
-    // Its whole neighbours each lose their partner in the area, so each gets a dot of its own.
+    // Its whole neighbors each lose their partner in the area, so each gets a dot of its own.
     expect(rows[0]!.lone).toBe(80);
     expect(rows[2]!.lone).toBe(70);
   });
@@ -42,7 +42,7 @@ describe("shareRows", () => {
     expect(rows.every((r) => r.lone === null && r.edge === null)).toBe(true);
   });
 
-  it("marks a first and last bucket the coverage only partly reaches, and joins each to its whole neighbour", () => {
+  it("marks a first and last bucket the coverage only partly reaches, and joins each to its whole neighbor", () => {
     const data = [point("2022-11", 73, 15), point("2022-12", 82, 20), point("2023-01", 79, 20), point("2023-02", 100, 8)];
     const rows = shareRows(data, "monthly", { start: "2022-11-21", end: "2023-02-10" });
     expect(rows[0]).toMatchObject({ partial: true, from: "2022-11-21", to: null, solid: null, edge: 73 });

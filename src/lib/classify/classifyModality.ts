@@ -61,7 +61,7 @@ export function findMovements(text: string): MovementHit[] {
   }
 
   // The implement of each movement's first mention, written right before it; else the one the
-  // movement is defined by. Needs every claim made, so it can tell a neighbouring movement apart.
+  // movement is defined by. Needs every claim made, so it can tell a neighboring movement apart.
   const implementWords = findImplementWords(text);
   for (const v of byId.values()) {
     const implement = implementBefore(implementWords, text, v.at, claimed) ?? v.entry.implement;
@@ -87,7 +87,7 @@ export function findMovements(text: string): MovementHit[] {
  * more specific member of that word's family. Anything else the text found is
  * kept after the typed hits.
  *
- * A row with no `barbell_lift`, or one the lexicon does not recognise, falls
+ * A row with no `barbell_lift`, or one the lexicon does not recognize, falls
  * back to the text alone, exactly as before.
  */
 export function findRowMovements(fields: {
@@ -171,7 +171,7 @@ export function classifyModality(text: string): ModalityClassification {
  */
 export function classifyMovements(movements: MovementHit[]): ModalityClassification {
   if (movements.length === 0) {
-    // Nothing recognised. Reported as unclassified and excluded from every
+    // Nothing recognized. Reported as unclassified and excluded from every
     // average, rather than counted as a workout that was 0% of everything.
     return { split: { ...EMPTY_SPLIT }, movements: [], classified: false };
   }

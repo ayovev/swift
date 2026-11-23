@@ -42,13 +42,13 @@ export function QrScanner({ onDecode, onError, className }: QrScannerProps) {
 
     let stream: MediaStream | undefined;
     let frameHandle: number | undefined;
-    let cancelled = false;
+    let canceled = false;
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d", { willReadFrequently: true });
 
     function tick() {
       const video = videoRef.current;
-      if (cancelled || !video || !context) return;
+      if (canceled || !video || !context) return;
 
       if (video.readyState === video.HAVE_ENOUGH_DATA) {
         canvas.width = video.videoWidth;
@@ -80,14 +80,14 @@ export function QrScanner({ onDecode, onError, className }: QrScannerProps) {
           video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } },
         });
       } catch {
-        if (!cancelled) {
+        if (!canceled) {
           setErrorMessage(CAMERA_DENIED_MESSAGE);
           onErrorRef.current?.("camera_denied");
         }
         return;
       }
 
-      if (cancelled || !videoRef.current) {
+      if (canceled || !videoRef.current) {
         for (const track of stream.getTracks()) track.stop();
         return;
       }
@@ -99,7 +99,7 @@ export function QrScanner({ onDecode, onError, className }: QrScannerProps) {
     void start();
 
     return () => {
-      cancelled = true;
+      canceled = true;
       if (frameHandle !== undefined) cancelAnimationFrame(frameHandle);
       for (const track of stream?.getTracks() ?? []) track.stop();
     };

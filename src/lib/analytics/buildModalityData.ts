@@ -34,7 +34,7 @@ interface ClassifiedRow {
  * Deliberately mirrors the shape of the GPP domain aggregates in
  * buildDashboardData, so the tab components can be near-identical.
  *
- * Workouts where no movement was recognised are EXCLUDED from every average
+ * Workouts where no movement was recognized are EXCLUDED from every average
  * rather than counted as zeroes — otherwise a logged non-workout ("DAILY LAZY
  * MACROS POINTS") would silently drag every modality's share down. The count
  * of those is reported so the UI can caveat it honestly.

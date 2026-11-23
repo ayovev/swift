@@ -77,10 +77,10 @@ describe("MovementsTab", () => {
     expect(screen.getByText("1")).toBeInTheDocument();
   });
 
-  it("says so when nothing in range was recognised", () => {
+  it("says so when nothing in range was recognized", () => {
     const empty = buildMovementData(parseRows([workoutRow({ date: "01/05/2024", title: "MACROS" })]));
     render(<MovementsTab data={empty} granularity="monthly" />);
-    expect(screen.getByText(/No movements were recognised/)).toBeInTheDocument();
+    expect(screen.getByText(/No movements were recognized/)).toBeInTheDocument();
   });
 
   it("keeps an acronym, a mixed-case name and a single capital in a sentence", () => {
