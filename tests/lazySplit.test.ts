@@ -31,11 +31,11 @@ describe("the bundle split", () => {
     expect(sources.find((s) => s.file === "App.tsx")!.text).toMatch(/import\("@\/components\/dashboard\/Dashboard"\)/);
   });
 
-  it.each(["WorkoutsTab", "LiftHistoryTab", "DomainTab", "ModalityTab", "MovementsTab", "BodyCompTab", "LiftsTab", "TimelineTab"])(
+  it.each(["WorkoutsTab", "LiftHistoryTab", "DomainTab", "ModalityTab", "MovementsTab", "BodyCompTab", "LiftsTab", "TimelineTab", "ReportsTab"])(
     "loads %s only through lazyViews.ts",
     (view) => {
       expect(staticImporters(view)).toEqual([]);
-      expect(sources.find((s) => s.file === "components/dashboard/lazyViews.ts")!.text).toContain(`import("./${view}")`);
+      expect(sources.find((s) => s.file === "components/dashboard/lazyViews.ts")!.text).toMatch(new RegExp(`import\\("[^"]*/${view}"\\)`));
     }
   );
 

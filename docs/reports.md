@@ -1,6 +1,6 @@
 # PRD: Reports
 
-Status: v0.1 draft, not built. Everything below is a requirement, not a description of shipped behavior. When it is built, update the CLAUDE.md branding line that calls reports "unbuilt" and add a Reports architecture section to CLAUDE.md in the same change.
+Status: v0.2. The report shell and the Progress report are built (see "Build status"); the Training mix and Body and training reports are not. Requirements below are the target, and "Build status" says which are met.
 
 ## Summary
 
@@ -113,16 +113,16 @@ The order is by value to the person receiving it. Progress is the one report onl
 ## Constraints
 
 - **Data stays in the browser (hard constraint 1).** The report is built and printed locally. The only way it leaves is a file the person saves and sends themselves. There is no upload, hosted link or email-from-app. A saved report can hold health data (body weight), so the Body sections stay opt-in and the preview says the saved file is theirs to protect.
-- **Analytics are closed-vocabulary (hard constraint 2).** Add one usage event for generating a report, carrying only a fixed report kind (progress, training-mix or body-training) and the audience. No period, section list, row count, note text, brand value or filename. `tests/analytics.test.ts` is extended to assert none of it appears.
+- **Analytics are closed-vocabulary (hard constraint 2).** Add one usage event for generating a report, `report_generated`, carrying only a fixed report kind (progress, training-mix or body-training) and the audience. No period, section list, row count, note text, brand value or filename. `tests/analytics.test.ts` is extended to assert none of it appears.
 - **No new classification.** Reports read `Insights`. Any change to keyword lists or matching moves the parity test and is out of scope here.
 - **The Swift mark is never removable** and the coach brand is a local preference. A report does not store or sync the brand, and does not add a `SyncDataset`.
 - **Voice.** State what the data shows; no cheering, no advice, no "you should". Sentences name their denominator and their basis.
 - **TypeScript only, npm only, no new runtime dependency in v1.** If image cards are added later, canvas export is the preferred route over a library; the CSP (`img-src 'self' data: blob:`) already allows it.
-- **Docs are checked against code** (`tests/docs.test.ts`): a document may only name paths and events that exist, so the new event is written in words here and named once it is built.
+- **Docs are checked against code** (`tests/docs.test.ts`): a document may only name paths and events that exist.
 
 ## Print prototype findings
 
-A dev-only prototype (`src/components/reports/ProgressReportPrototype.tsx`, opened with `?report-prototype` in `npm run dev`, never in a build) prints a Progress-style page to Letter PDF in Chromium, in light and dark mode. What it showed:
+A dev-only prototype (since replaced by the shell in `src/components/reports/`) printed a Progress-style page to Letter PDF in Chromium, in light and dark mode. What it showed:
 
 - **Recharts in print works.** A `ResponsiveContainer` chart sizes to the page width and prints sharp, with animation off.
 - **Page numbers work in Chromium** through `@page` margin boxes ("Page 1 of 2"). Other browsers will ignore them, so nothing depends on them.
@@ -131,6 +131,22 @@ A dev-only prototype (`src/components/reports/ProgressReportPrototype.tsx`, open
 - **A dark app printed a black page margin** because `color-scheme: dark` is set inline on `html`. The print stylesheet resets it to light.
 - **Reports are always light, by decision.** The sheet redefines its tokens (`.report-sheet` shares the `:root` token block in `src/index.css`), takes the light-mode accent roles from `accentCssVars(swatch, "light")`, and the `dark` variant is switched off inside it, so `SwiftMark` and any `dark:` class show their light form. Checked: a dark app prints and previews the same white report as a light one.
 - **Not yet checked:** Safari and Firefox, multi-page flow with the Timeline and body sections, and a brand logo in the header.
+
+## Build status
+
+Built (Phase 1, first part):
+
+- **Navigation and view.** A "Reports" section with one view, the Progress report (`src/components/reports/ReportsTab.tsx`), loaded as its own chunk. The app around the sheet is hidden in print, so only the sheet prints (R-1, R-11).
+- **Sheet.** `src/components/reports/ReportSheet.tsx`: always the light page, a coach's logo and name beside the Swift mark, the coach note at the end, and a footer with the basis, the report date and the Swift mark that repeats on every printed page (R-4, R-5, R-8, R-9).
+- **Progress report.** Headline, "Since a chosen date" from `src/lib/analytics/insights/sinceDate.ts` (listing only subjects that carry a verdict or a vote on either date) with "Compared from" printed, every verdict with its change and windows, and a "Not judged" list (R-2, R-3, R-14, R-15, R-16, R-17).
+- **Analytics.** `report_generated` with the kind and the audience only (`tests/analytics.test.ts`).
+
+Not built yet:
+
+- **Changes you made** (R-18), PRs in the period, and the verdict rows' "logged set" for a record.
+- **Chart table twins and text alternatives** (R-6): the Progress report has no chart yet.
+- **Axe in Chromium** over the Reports view and the print preview (R-13), and a check in Safari and Firefox.
+- **The Training mix and Body and training reports**, and the athlete-audience path through a real role split.
 
 ## As-of-date findings
 

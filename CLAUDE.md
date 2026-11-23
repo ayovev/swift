@@ -179,7 +179,7 @@ undoes any of it. The rules that hold everywhere (the full account, with the mea
   Workouts, Lifts (`LiftHistoryTab.tsx`, tab id `lift-history`: the lift, benchmark and PR cards,
   for the selected range), the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
   (Progress, Timeline), grouped for navigation into
-  four sections (see "Architecture: dashboard layout" below). A
+  five sections (see "Architecture: dashboard layout" below). A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
   tabs — they differ in data, not structure. Body Comp is its own component (`BodyCompTab.tsx`),
   always present in the nav even before any InBody data is loaded, and Progress and Timeline follow
@@ -447,12 +447,12 @@ validators and `planTransfer()` rather than growing its own. The format, the enc
 The dashboard's controls are sorted by how often an athlete touches them, and each tier has one
 home. Read the header comments of the files named here before moving anything between tiers.
 
-- **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header, at its true
+- **Navigate** (every visit) — `SectionNav.tsx`. Five sections in the page header, at its true
   center from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Overview (the front page, on its own), Training (Workouts and Lifts, then the ten GPP
   domains, three modalities and Movements — a classification of those same workouts, not separate
   data, which is what their group headers are there to say), Body (Body Comp) and Insights
-  (Progress, Timeline). The views
+  (Progress, Timeline) and Reports (the Progress report, a printable page; see "Architecture: reports"). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
@@ -509,7 +509,7 @@ first card doesn't repeat the page title above it.
 ## Architecture: branding
 
 `docs/branding.md` is the requirements document; this is how it is built and what not to undo. A coach (Settings, shown only while the audience is
-`coach`) can set a gym logo, a name and a brand color, each optional. Reports and image cards are a separate, unbuilt feature that will read the brand
+`coach`) can set a gym logo, a name and a brand color, each optional. Reports (see "Architecture: reports") read the brand; image cards are a separate, unbuilt feature that will also read the brand
 through `useBrand()`.
 
 - **A preference, not a dataset.** `lib/brand/brandStore.ts`, `localStorage` key `swift.brand` (try/catch, in memory when storage throws, read through
@@ -530,6 +530,24 @@ through `useBrand()`.
 - **The Swift mark is never removable.** `BrandMark.tsx` only adds a logo beside `SwiftMark` (Dashboard and Landing headers); alt text is the gym name, else "Gym logo". A see-through
   logo the page would swallow sits on a fixed light or dark plate (`plateFor`, from a tone measured at upload).
 - **Analytics:** `brand_saved` and `brand_removed` are bare `interaction_used` names; no logo, name or color, and not which field.
+
+## Architecture: reports
+
+`docs/reports.md` is the requirements document and its "Build status" says what is built; read it before changing anything here. A report is a printable page built from data the dashboard already
+computes (`src/components/reports/`), reached from the Reports section (one view, so no second row; `REPORTS_TAB`). The rules that apply everywhere:
+
+- **Print-to-PDF, no dependency.** `ReportsTab.tsx` calls `window.print()`; the browser saves the PDF. `Dashboard.tsx` marks its own chrome `print:hidden` on the Reports view, so only the sheet prints. A PDF
+  or canvas library is a new decision, not a default.
+- **A report is always the light page**, whatever the app's mode, in the preview as in print: `.report-sheet` shares the `:root` token block in `index.css`, the `dark` variant is switched off inside it
+  (`@custom-variant dark`), the accent comes from `accentCssVars(swatch, "light")`, and `report.css` resets `color-scheme` for print. Anything inside the sheet that needs a mode must follow the sheet, not the app.
+- **The footer is a table footer group** (`ReportSheet.tsx`), because `position: fixed` overlapped content on page two and a table footer repeats on every printed page. Page numbers use `@page` margin boxes,
+  which only Chromium honors, so nothing depends on them.
+- **Nothing about a report is stored or synced.** The comparison date is chosen each time, the coach note is state in the view, and neither reaches storage, sync, backup or analytics. A stored "last report" date
+  was rejected because an export carries no athlete id, so it could attach to the wrong athlete (see "Decided" in `docs/reports.md`).
+- **Progress as of a date is the verdict engine with a past reference date** (`insights/sinceDate.ts`). `classifySubjects` finds move-ups over the sessions up to that date only; before, a later move up to RX
+  voted Up at an earlier date. `tests/asOfDate.test.ts` sweeps the sample export and fails if the future leaks into the past: keep it passing, and do not read anything dated after the reference date.
+- **A report reads the brand through `useBrand()`** and shows it only for the coach audience; the Swift mark is always there. The logo's plate is computed for the light page.
+- **Analytics** are `report_generated` with a fixed kind and the audience, nothing else (`tests/analytics.test.ts`, `tests/ReportsTab.test.tsx`).
 
 ## Architecture: the stale-log nudge
 

@@ -171,6 +171,18 @@ describe("analytics — backup", () => {
   });
 });
 
+describe("analytics — reports", () => {
+  it("reports only which report was generated and for whom", async () => {
+    const { initAnalytics, capture } = await loadAnalytics("phc_test");
+    await started(initAnalytics);
+    capture({ name: "report_generated", props: { report_kind: "progress", audience: "coach" } });
+    const calls = mocked.capture.mock.calls;
+    expect(calls).toEqual([["report_generated", { report_kind: "progress", audience: "coach" }]]);
+    // No period, section list, note, date or count: the kind and the audience are the whole payload.
+    expect(JSON.stringify(calls)).not.toMatch(/\d{4}-\d{2}-\d{2}|note|since/i);
+  });
+});
+
 describe("analytics — PostHog loads after the first paint", () => {
   it("does not touch PostHog synchronously, and holds events until it is up", async () => {
     const { initAnalytics, capture } = await loadAnalytics("phc_test");

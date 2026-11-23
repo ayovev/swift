@@ -5,6 +5,7 @@ import {
   LIFTS_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
+  REPORTS_TAB,
   TIMELINE_TAB,
   WORKOUTS_TAB,
 } from "./tabs";
@@ -14,7 +15,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type Section = "Overview" | "Training" | "Body" | "Insights";
+export type Section = "Overview" | "Training" | "Body" | "Insights" | "Reports";
 
 interface SubGroup {
   /** Shown as a small label ahead of its tabs — only where a section mixes two kinds of view. */
@@ -23,7 +24,7 @@ interface SubGroup {
 }
 
 /**
- * Twenty views, grouped the way an athlete actually moves between them:
+ * Twenty-one views, grouped the way an athlete actually moves between them:
  * the front page (Overview), what I did and what it was made of (Training —
  * the workout list and the lift and benchmark record, then the ten GPP domains, three modalities and the
  * movements themselves, which are a *classification* of those same workouts
@@ -50,6 +51,8 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
   },
   { id: "Body", groups: [{ values: [BODY_COMP_TAB] }] },
   { id: "Insights", groups: [{ values: [LIFTS_TAB, TIMELINE_TAB] }] },
+  // Printable pages built from the same data (docs/reports.md); a section of its own because a report is an output, not a view with a range.
+  { id: "Reports", groups: [{ values: [REPORTS_TAB] }] },
 ];
 
 export function sectionOf(value: string): Section {
