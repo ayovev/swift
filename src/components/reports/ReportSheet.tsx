@@ -18,8 +18,8 @@ export interface ReportSheetProps {
   title: string;
   /** The dates the report covers, one unbreakable phrase: "Jan 1, 2023 – Dec 31, 2023", or "All time, through Dec 31, 2023". */
   period: string;
-  /** A quieter line under the period: what the report counts and how. */
-  subtitle: string;
+  /** An optional quieter line under the period: what the report counts and how. */
+  subtitle?: string;
   audience: Audience;
   /** YYYY-MM-DD, the report date. */
   today: string;
@@ -71,7 +71,7 @@ export function ReportSheet({ title, period, subtitle, audience, today, basis, n
                   <p className="font-medium" data-testid="report-period">{period}</p>
                   <p className="text-muted-foreground" data-testid="report-prepared">Prepared {dayjs(today).format("MMM D, YYYY")}</p>
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+                {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
                 <div aria-hidden="true" className="mt-3 h-0.5 w-12 bg-primary" />
               </header>
               <div className="mt-5 flex flex-col gap-6">{children}</div>

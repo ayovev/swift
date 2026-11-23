@@ -134,7 +134,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 
 **Brand**
 
-- **R-9** The header is one block for every report: a small label in the accent (the gym's name for a coach, else "Swift"), the title, the period as one unbreakable phrase ("Jan 1, 2023 – Dec 31, 2023", or "All time, through Dec 31, 2023") with the report date opposite it, a quieter line on what the report counts, a short accent rule, then a hairline. A muted row of marks sits opposite the label: for a coach the gym logo through `useBrand()`, and the Swift mark always (never removable). The athlete audience has the Swift mark only. On a phone the marks wrap under the label.
+- **R-9** The header is one block for every report: a small label in the accent (the gym's name for a coach, else "Swift"), the title, the period as one unbreakable phrase ("Jan 1, 2023 – Dec 31, 2023", or "All time, through Dec 31, 2023") with the report date opposite it, an optional quieter line on what the report counts (the Skills report has none: its note at the foot says what a check means), a short accent rule, then a hairline. A muted row of marks sits opposite the label: for a coach the gym logo through `useBrand()`, and the Swift mark always (never removable). The athlete audience has the Swift mark only. On a phone the marks wrap under the label.
 - **R-10** Brand color is used for rules and headings only. Chart series keep their existing fixed and derived colors.
 
 **Quality**
