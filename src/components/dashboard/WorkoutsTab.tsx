@@ -16,7 +16,7 @@ const PAGE_SIZE = 50;
  * The summary line at the top of Workouts, for the selected range: workouts
  * logged, the share done as prescribed, and the scaled count. These were
  * Overview's totals until Overview became the full-history front door
- * (docs/overview.md); they describe the range, so they live with the list.
+ * (CLAUDE.md, "Architecture: the Overview page"); they describe the range, so they live with the list.
  * The RX share is left out when nothing is marked RX or Scaled, rather than
  * shown as a misleading 0%.
  */

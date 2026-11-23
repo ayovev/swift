@@ -107,7 +107,7 @@ function Stat({
 
 /**
  * The Overview tab: where things stand now, from the full history as of today
- * (docs/overview.md). The totals row carries one figure per area: days trained,
+ * (CLAUDE.md, "Architecture: the Overview page"). The totals row carries one figure per area: days trained,
  * the most recent PR, body weight and the Progress headline. Below it, three
  * panels (OverviewPanels.tsx), each the evidence for one stat with a link into
  * its section. Nothing on the page follows the date range or the grouping.

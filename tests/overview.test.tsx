@@ -32,7 +32,7 @@ import type { TimelineEntry } from "@/types/timeline";
 import { liftRow, logRow } from "./fixtures/rows";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
-// Steps 2 and 3 of docs/overview.md: Overview's totals row, scope sentence and
+// Steps 2 and 3 of CLAUDE.md, "Architecture: the Overview page": Overview's totals row, scope sentence and
 // panels, from the full history as of today. `today` is always passed in.
 
 const TODAY = "2026-11-09";

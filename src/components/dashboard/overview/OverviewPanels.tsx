@@ -23,7 +23,7 @@ import { ChartViewToggle, DataTable, seriesSummary, useChartView } from "../char
 import { AREA_LABEL } from "@/types/timeline";
 
 /**
- * Overview's three panels (docs/overview.md). Each is the evidence behind one
+ * Overview's three panels (CLAUDE.md, "Architecture: the Overview page"). Each is the evidence behind one
  * stat in the totals row, as one visual and one link into its section, and
  * never repeats that stat's number. Most recent PR has no panel: its evidence
  * is the PR timeline on Training → Lifts.

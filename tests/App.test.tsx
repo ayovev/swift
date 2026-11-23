@@ -40,7 +40,7 @@ function findDashboard(timeout = 3000) {
 
 /**
  * The dashboard opens on Overview, which reads the full history and has no
- * date range or grouping control (docs/overview.md); Training has both.
+ * date range or grouping control (CLAUDE.md, "Architecture: the Overview page"); Training has both.
  */
 async function findRangeView() {
   await findDashboard();
@@ -335,7 +335,7 @@ describe("App — view scope", () => {
     await findDashboard();
 
     // Overview is where things stand now: full history as of today, with the
-    // last logged date and no range or grouping control (docs/overview.md).
+    // last logged date and no range or grouping control (CLAUDE.md, "Architecture: the Overview page").
     expect(screen.getByText(/^Uses your full history, as of today\. Last workout logged /)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^all time/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Grouped by/ })).not.toBeInTheDocument();

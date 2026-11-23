@@ -17,7 +17,7 @@ export interface Insights {
   /**
    * Every parsed row, oldest first, ignoring `range`: the same parse as
    * everything above, kept for Overview, which reads the full history as of
-   * today (docs/overview.md). Never a second `parseRows()` call.
+   * today (CLAUDE.md, "Architecture: the Overview page"). Never a second `parseRows()` call.
    */
   allRows: ParsedRow[];
 }
