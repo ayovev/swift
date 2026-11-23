@@ -7,6 +7,7 @@ import {
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
   REPORTS_TAB,
+  SKILLS_REPORT_TAB,
   TIMELINE_TAB,
   TRAINING_MIX_REPORT_TAB,
   WORKOUTS_TAB,
@@ -26,7 +27,7 @@ interface SubGroup {
 }
 
 /**
- * Twenty-three views, grouped the way an athlete actually moves between them:
+ * Twenty-four views, grouped the way an athlete actually moves between them:
  * the front page (Overview), what I did and what it was made of (Training —
  * the workout list and the lift and benchmark record, then the ten GPP domains, three modalities and the
  * movements themselves, which are a *classification* of those same workouts
@@ -54,7 +55,7 @@ export const SECTIONS: { id: Section; groups: SubGroup[] }[] = [
   { id: "Body", groups: [{ values: [BODY_COMP_TAB] }] },
   { id: "Insights", groups: [{ values: [LIFTS_TAB, TIMELINE_TAB] }] },
   // Printable pages built from the same data (docs/reports.md); a section of its own because a report is an output, not a view with a range.
-  { id: "Reports", groups: [{ values: [REPORTS_TAB, TRAINING_MIX_REPORT_TAB, BODY_TRAINING_REPORT_TAB] }] },
+  { id: "Reports", groups: [{ values: [REPORTS_TAB, TRAINING_MIX_REPORT_TAB, BODY_TRAINING_REPORT_TAB, SKILLS_REPORT_TAB] }] },
 ];
 
 export function sectionOf(value: string): Section {

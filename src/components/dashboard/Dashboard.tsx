@@ -9,7 +9,7 @@ import { SectionLinks, SubNav, pageSubtitleOf, pageTitleOf, sectionOf } from "./
 import { SettingsSheet } from "./SettingsSheet";
 import type { BodyCompState } from "./BodyCompTab";
 import { OverviewTab } from "./OverviewTab";
-import { BodyCompTab, BodyTrainingTab, DomainTab, LiftHistoryTab, LiftsTab, ModalityTab, MovementsTab, ReportsTab, TimelineTab, TrainingMixTab, WorkoutsTab, preloadViews } from "./lazyViews";
+import { BodyCompTab, BodyTrainingTab, DomainTab, LiftHistoryTab, LiftsTab, ModalityTab, MovementsTab, ReportsTab, SkillsTab, TimelineTab, TrainingMixTab, WorkoutsTab, preloadViews } from "./lazyViews";
 import { LazyView } from "@/components/ui/LazyView";
 import { capturePick } from "./charts/ChartPick";
 import { StaleLogNudge } from "./StaleLogNudge";
@@ -22,6 +22,7 @@ import {
   REPORTS_TAB,
   TRAINING_MIX_REPORT_TAB,
   BODY_TRAINING_REPORT_TAB,
+  SKILLS_REPORT_TAB,
   LIFT_HISTORY_TAB,
   LIFTS_TAB,
   TIMELINE_TAB,
@@ -459,6 +460,12 @@ export function Dashboard({
           <TabsContent value={BODY_TRAINING_REPORT_TAB}>
             <LazyView>
               <BodyTrainingTab parsedRows={insights.allRows} scans={bodyComp.status === "ready" ? bodyComp.rows : NO_SCANS} weighIns={weighIns} timeline={timeline} />
+            </LazyView>
+          </TabsContent>
+
+          <TabsContent value={SKILLS_REPORT_TAB}>
+            <LazyView>
+              <SkillsTab parsedRows={insights.allRows} />
             </LazyView>
           </TabsContent>
 

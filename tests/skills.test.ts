@@ -1,0 +1,128 @@
+import { beforeAll, describe, expect, it } from "vitest";
+import { buildInsights, type Insights } from "@/lib/analytics/buildInsights";
+import { SKILL_LEVELS, SKILL_LIST, SKILL_MODALITY_ORDER, buildSkills } from "@/lib/analytics/skills";
+import { MOVEMENT_LEXICON } from "@/lib/classify/movementLexicon";
+import { workoutRow } from "./fixtures/rows";
+import { loadSampleRows } from "./fixtures/sampleRows";
+
+const modalityOf = new Map(MOVEMENT_LEXICON.map((e) => [e.id, e.modality]));
+
+describe("the skill list", () => {
+  it("names only movement ids that exist in the lexicon", () => {
+    for (const s of SKILL_LIST) for (const id of s.ids) expect(modalityOf.has(id), `${s.key}: ${id}`).toBe(true);
+  });
+
+  it("gives every id the skill's own modality, so a skill sits in the group its movements belong to", () => {
+    for (const s of SKILL_LIST) for (const id of s.ids) expect(modalityOf.get(id), `${s.key}: ${id}`).toBe(s.modality);
+  });
+
+  it("counts a movement toward one skill only, with unique keys and labels", () => {
+    const owner = new Map<string, string>();
+    for (const s of SKILL_LIST) {
+      for (const id of s.ids) {
+        expect(owner.get(id), `${id} is in ${owner.get(id)} and ${s.key}`).toBeUndefined();
+        owner.set(id, s.key);
+      }
+    }
+    expect(new Set(SKILL_LIST.map((s) => s.key)).size).toBe(SKILL_LIST.length);
+    expect(new Set(SKILL_LIST.map((s) => s.label)).size).toBe(SKILL_LIST.length);
+  });
+
+  it("uses only the three named levels, and offers each of W and G at every level", () => {
+    for (const s of SKILL_LIST) expect(SKILL_LEVELS).toContain(s.level);
+    for (const m of ["W", "G"] as const) {
+      for (const level of SKILL_LEVELS) expect(SKILL_LIST.some((s) => s.modality === m && s.level === level), `${m} ${level}`).toBe(true);
+    }
+    // M has no Advanced skill, by decision (docs/reports.md): the lexicon's monostructural movements have none.
+    expect(SKILL_LIST.some((s) => s.modality === "M" && s.level === "advanced")).toBe(false);
+  });
+});
+
+describe("buildSkills", () => {
+  let all: Insights;
+  beforeAll(async () => {
+    all = buildInsights(await loadSampleRows());
+  });
+
+  /** A small log of hand-made rows through the real pipeline. */
+  const log = (rows: ReturnType<typeof workoutRow>[]) => buildInsights(rows).allRows;
+  const row = (date: string, title: string, description: string, rx: string) => workoutRow({ date, title, description, rx_or_scaled: rx });
+
+  it("checks a skill only for a workout flagged RX, and never for a scaled or unflagged one", () => {
+    const rows = log([
+      row("01/10/2025", "A", "10 Pull-ups", "SCALED"),
+      row("01/12/2025", "B", "10 Toes-to-bar", ""),
+      row("01/14/2025", "C", "10 Chest-to-bar", "RX"),
+    ]);
+    const d = buildSkills(rows, null, "2025-12-31");
+    const result = (key: string) => d.groups.flatMap((g) => g.results).find((r) => r.skill.key === key)!;
+    expect(result("pull-ups").through).toBe(false);
+    expect(result("toes-to-bar").through).toBe(false);
+    expect(result("chest-to-bar").through).toBe(true);
+    expect(result("chest-to-bar").first).toEqual({ date: "2025-01-14", title: "C" });
+  });
+
+  it("takes the earliest RX workout as the first, and counts any of a skill's movements", () => {
+    const rows = log([
+      row("03/01/2025", "Later", "5 Strict pull-ups", "RX"),
+      row("02/01/2025", "Earlier", "5 Kipping pull-ups", "RX"),
+    ]);
+    const pull = buildSkills(rows, null, "2025-12-31").groups.flatMap((g) => g.results).find((r) => r.skill.key === "pull-ups")!;
+    expect(pull.first).toEqual({ date: "2025-02-01", title: "Earlier" });
+  });
+
+  it("marks a skill done before the start, new inside the period, or not yet, and counts nothing after the end", () => {
+    const rows = log([
+      row("01/10/2025", "Old", "10 Pull-ups", "RX"),
+      row("03/10/2025", "Inside", "5 Toes-to-bar", "RX"),
+      row("08/10/2025", "After", "5 Chest-to-bar", "RX"),
+    ]);
+    const d = buildSkills(rows, "2025-02-01", "2025-06-30");
+    const result = (key: string) => d.groups.flatMap((g) => g.results).find((r) => r.skill.key === key)!;
+    expect(result("pull-ups")).toMatchObject({ before: true, through: true, isNew: false });
+    expect(result("toes-to-bar")).toMatchObject({ before: false, through: true, isNew: true });
+    expect(result("chest-to-bar")).toMatchObject({ before: false, through: false, isNew: false, first: null });
+    expect(d.newCount).toBe(1);
+    expect(d.lastLogged).toBe("2025-03-10");
+  });
+
+  it("treats the start day as inside the period, and has no 'before' or 'new' for all time", () => {
+    const rows = log([row("02/01/2025", "On the day", "10 Pull-ups", "RX")]);
+    const onStart = buildSkills(rows, "2025-02-01", "2025-06-30").groups.flatMap((g) => g.results).find((r) => r.skill.key === "pull-ups")!;
+    expect(onStart).toMatchObject({ before: false, isNew: true });
+    const allTime = buildSkills(rows, null, "2025-06-30").groups.flatMap((g) => g.results).find((r) => r.skill.key === "pull-ups")!;
+    expect(allTime).toMatchObject({ before: false, through: true, isNew: false });
+  });
+
+  it("groups M, W and G in that order, each by level, with counts that add up", () => {
+    // The sample athlete has every listed skill by the end of the log, so a mid-log end is where some are still open.
+    const d = buildSkills(all.allRows, "2023-01-01", "2023-12-31");
+    expect(d.groups.map((g) => g.modality)).toEqual([...SKILL_MODALITY_ORDER]);
+    for (const g of d.groups) {
+      const ranks = g.results.map((r) => SKILL_LEVELS.indexOf(r.skill.level));
+      expect([...ranks].sort((a, b) => a - b)).toEqual(ranks);
+      expect(g.done).toBe(g.results.filter((r) => r.through).length);
+    }
+    expect(d.done).toBe(d.groups.reduce((n, g) => n + g.done, 0));
+    expect(d.total).toBe(SKILL_LIST.length);
+    expect(d.done).toBeGreaterThan(0);
+    expect(d.done).toBeLessThan(d.total);
+  });
+
+  it("finds, on the sample, only skills whose first RX workout is real: every check names a workout flagged RX", () => {
+    const d = buildSkills(all.allRows, null, "2026-09-11");
+    for (const r of d.groups.flatMap((g) => g.results)) {
+      if (!r.first) continue;
+      const hit = all.allRows.find((row) => row.dateParsed.format("YYYY-MM-DD") === r.first!.date && row.raw.title === r.first!.title && row.raw.rx_or_scaled === "RX");
+      expect(hit, r.skill.key).toBeDefined();
+    }
+  });
+
+  it("is never more than it was: a later end can only add checks", () => {
+    const early = buildSkills(all.allRows, null, "2024-06-30");
+    const late = buildSkills(all.allRows, null, "2026-09-11");
+    expect(late.done).toBeGreaterThanOrEqual(early.done);
+    const doneEarly = new Set(early.groups.flatMap((g) => g.results).filter((r) => r.through).map((r) => r.skill.key));
+    for (const r of late.groups.flatMap((g) => g.results)) if (doneEarly.has(r.skill.key)) expect(r.through).toBe(true);
+  });
+});

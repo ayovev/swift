@@ -1,6 +1,6 @@
 # PRD: Reports
 
-Status: v0.4. The report shell and all three launch reports are built (see "Build status"). Phase 1 and 2 of the phasing are done; what is left is checks and polish. Requirements below are the target, and "Build status" says which are met.
+Status: v0.5. The report shell, the three launch reports and the Skills report are built (see "Build status"; the Skills report is specified in "Skills report"). Phase 1 and 2 of the phasing are done; what is left is checks and polish. Requirements below are the target, and "Build status" says which are met.
 
 ## Summary
 
@@ -62,6 +62,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 | 1. Progress report | SugarWOD | Coach to athlete, athlete to self | Headline (Improving, Steady, Declining) with counts. Each lift and benchmark with its verdict, est. 1RM change, and the logged set a record came from. PRs in the period. Subjects moved up to RX. A subject with too few sessions is listed as such, not judged. **Since a chosen date:** each subject's verdict then and now, PRs and sessions logged since. **Changes you made:** for each Timeline entry the athlete changed, before and after verdicts, with entries that merely happened shown as context |
 | 2. Training mix report | SugarWOD | Coach to athlete, athlete to self | Days trained per month, M/W/G split per month, the ten GPP domains on one shared axis (tags, not a share of 100), most-trained movements, workouts with no recognized movement counted once in a footer |
 | 3. Body and training report | SugarWOD + InBody | Coach to athlete, athlete to self | Pooled body weight line with its noise band, lean and fat mass from scans, scan dates, and over the same months days trained per month beside them, with the Progress headline as of today. Timeline entries marked on the axis |
+| 4. Skills report | SugarWOD | Coach to athlete, athlete to self | A fixed list of movements grouped M, W and G, each with a check when a workout including it was logged RX, as of the start and the end of the period, and the ones done for the first time in the period marked. See "Skills report" |
 
 **Why these three first**
 
@@ -74,6 +75,37 @@ The order is by value to the person receiving it. Progress is the one report onl
 - A single "everything" report. It duplicates the dashboard and answers no one question.
 - Anything scored, graded or compared to a norm (body fat targets, percentile lifts). The app does not claim what it cannot validate.
 - Workout descriptions and athlete notes. Notes are never read; descriptions bulk the page and add privacy exposure without adding a number.
+
+## Skills report
+
+**Does the idea make sense?** Yes. It answers a different question from the other three. Progress asks whether lifts and benchmarks are moving, Training mix what the training was made of, Body and training how the body changed beside it. The Skills report asks which movements the athlete has done as prescribed, and which are new since a date. That is a record of what has been accomplished, which a coach hands over at the end of a block ("you got your first bar muscle-up") and an athlete keeps.
+
+**What a check means.** A skill is *done as prescribed* on a date when the athlete has logged, on or before that date, at least one workout whose recognized movements include the skill and whose SugarWOD flag is RX. That is all the data says. Three limits, stated once on the page rather than hedged everywhere:
+
+- **RX is the workout's flag, not the movement's.** A workout logged RX covers every movement in it, and the app cannot see a scaled movement inside it. "As prescribed" is the athlete's own logged claim.
+- **Movements are read from the workout's text**, by the same classifier every other view uses. A movement named in a workout (an option, a warm-up) can be counted that was not done, and one written in an unusual way can be missed. The report shows the first workout behind each check, so a coach can verify it.
+- **No check is not "cannot do it".** It means no workout with the movement was logged RX. A SCALED workout, or one with no flag, never counts.
+
+**The list.** A fixed, curated list of skills in `src/lib/analytics/skills.ts`, each with a plain level: **Foundation** (movements most athletes do early), **Intermediate** (usually take months of practice and are a common point to scale) and **Advanced** (high skill, commonly scaled). Levels are a judgment, not computed: a level derived from how often a gym's athletes scale a movement would describe that gym's programming, not the movement. A skill names one or more movement ids (a "Pull-up" check counts strict, kipping and butterfly) and the modality they fall under, M, W or G, as the app already defines it (M is monostructural only). A coach-editable list is deferred.
+
+**Requirements**
+
+- **R-19** A fourth tab in the Reports section, "Skills report". It needs only the SugarWOD log, and uses the shared period control, coach note and print button.
+- **R-20** The report groups skills under M, W and G, named as everywhere else ("M · Cardio", "W · Weightlifting", "G · Gymnastics"), in level order within each group. Each row shows the skill, its level, its marks, and the first time it was done as prescribed (the date and the workout's title as logged).
+- **R-21** *Done as prescribed* is as defined above, on or before the period's end. Movements come from `ParsedRow.movements` (`barbell_lift` first), never from a second reading of the text.
+- **R-22** With a period that has a start, each row has two marks, "Before the start" (done before the start day) and "Through the end", and a skill first done inside the period is labeled "New in this period". With All time there is one mark, "Done as prescribed". A period's start and end are the shared control's, so a closed block can be reported after the fact.
+- **R-23** A mark is binary and never rests on color: a checked box and the words "Done", or an empty box and the words "Not yet" for a screen reader. "New in this period" is words.
+- **R-24** Each group and the report open with counts only: "9 of 14 done as prescribed through Jun 30, 2025. 3 new in this period." There is no score, rank, percentage grade, badge or streak.
+- **R-25** A switch, "Show skills not yet done" (on by default), lets a coach print only what has been done. With it off, a group with nothing done is left out.
+- **R-26** One note on the page says what a check means and what no check means, in the app's voice.
+- **R-27** The footer, coach note, brand and light sheet are the other reports'. Analytics are `report_generated` with kind `skills` and the audience, nothing else.
+- **R-28** The list is code, pinned by tests: every movement id exists in the lexicon, every id in a skill has the skill's modality, no id sits in two skills, keys are unique, and levels are the three named. Changing the list is a change to this section.
+
+**Non-goals.** Grading ability, crediting a scaled workout, progress against a load (Progress owns that), per-athlete custom lists, and any comparison between athletes.
+
+**Risks.** A false check from a movement named but not done, mitigated by showing the first workout behind it. The levels are opinion and a gym may disagree, mitigated by being plain about it and keeping the list a single reviewed file. A log with no RX flags (the flag is not guaranteed on every export) shows few checks, which the note explains.
+
+**Decisions to confirm.** The skill list and its levels (the first draft is in `src/lib/analytics/skills.ts`); that only RX counts and a scaled workout never earns a check; that a bare "muscle-up" counts as a ring muscle-up (the sport's default meaning); and that M has no Advanced skill, since the lexicon's monostructural movements have none.
 
 ## Requirements
 
@@ -113,7 +145,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 ## Constraints
 
 - **Data stays in the browser (hard constraint 1).** The report is built and printed locally. The only way it leaves is a file the person saves and sends themselves. There is no upload, hosted link or email-from-app. A saved report can hold health data (body weight), so the Body sections stay opt-in and the preview says the saved file is theirs to protect.
-- **Analytics are closed-vocabulary (hard constraint 2).** Add one usage event for generating a report, `report_generated`, carrying only a fixed report kind (progress, training-mix or body-training) and the audience. No period, section list, row count, note text, brand value or filename. `tests/analytics.test.ts` is extended to assert none of it appears.
+- **Analytics are closed-vocabulary (hard constraint 2).** Add one usage event for generating a report, `report_generated`, carrying only a fixed report kind (progress, training-mix, body-training or skills) and the audience. No period, section list, row count, note text, brand value or filename. `tests/analytics.test.ts` is extended to assert none of it appears.
 - **No new classification.** Reports read `Insights`. Any change to keyword lists or matching moves the parity test and is out of scope here.
 - **The Swift mark is never removable** and the coach brand is a local preference. A report does not store or sync the brand, and does not add a `SyncDataset`.
 - **Voice.** State what the data shows; no cheering, no advice, no "you should". Sentences name their denominator and their basis.
@@ -144,6 +176,7 @@ Built (Phase 1, first part):
 
 - **Training mix report.** `src/components/reports/TrainingMixTab.tsx` over `src/lib/analytics/trainingMix.ts`: workouts and training days for the period, days trained per month, the M/W/G split per month, the ten domains on one shared axis, the most-used movements, and one line for the entries outside the M/W/G split. It reads `Insights.allRows` (the one parse), filters it to the period once, and runs the Training views' own builders over the result, so a number matches the matching Training view for that range (`tests/trainingMix.test.ts`). The domains stay separate bars that add to more than 100% and the modalities stay one split that adds to 100. Months run from the period's first workout to its end, with a cut first or last month marked "(part)". Charts follow the app's chart-or-table preference, so a table twin is one switch away and prints when chosen, and each chart is followed by its summary sentence (R-6, met here). The controls every report shares (period, coach note, print button) are in `src/components/reports/reportShared.tsx`.
 - **Body and training report.** `src/components/reports/BodyTrainingTab.tsx` over `src/lib/analytics/bodyTraining.ts`. Body weight from the pooled scans and weigh-ins on a real date axis (a gap in readings is a gap on the chart, every reading is a dot, nothing is smoothed), with its noise band in words and the first-to-last change by the same rule every other view uses; Timeline entries that touch the period shaded and numbered on the chart, with a numbered list under it; lean and fat mass as two charts on their own scales (scans only); days trained per month (the same block as the Training mix report); and the Progress headline as of the end of the period. It runs on weigh-ins alone, and with neither scans nor weigh-ins the tab says it needs an InBody file or weigh-ins and draws nothing (R-1). The footer names the basis of each source and where the period stops (R-8). The report says in a line that it does not relate body data to Progress, and body readings never change the headline (`tests/bodyTraining.test.ts`).
+- **Skills report.** `src/components/reports/SkillsTab.tsx` over `src/lib/analytics/skills.ts`, specified in "Skills report" (R-19 to R-28). A fixed list of skills grouped M, W and G (the first draft of the list and its levels is in code), each with a checked or empty box for "before the start" and "through the end", "New in this period" in words, and the first workout behind each check (date and title). A check is the earliest workout flagged RX that includes one of the skill's movement ids on or before the end; SCALED and unflagged workouts never count. It reads `Insights.allRows` and `ParsedRow.movements`, never the text again. Counts only, no score or badge. `tests/skills.test.ts` pins the list against the lexicon and the checklist's rules; `tests/SkillsTab.test.tsx` the view. On a phone the level and first workout fold under the skill name instead of columns that would not fit. Chromium: axe clean at desktop, dark, 375px and forced colors; prints to Letter PDF.
 - **PRs and Changes you made.** "PRs" lists SugarWOD's PR flag as logged, within the period only, so not for All time (a report states no recent window of its own), newest first and capped with "N more not shown". "Changes you made" (R-18) lists the Timeline entries that touch the period: an entry the athlete changed gets the Timeline's own before and after (`insights/entryVerdict.ts`), something that happened gets a context line, and body weight over an entry's span is off by default and offered only with readings. An entry's note is not printed. Both are built from `src/lib/analytics/insights/progressReport.ts` (`tests/progressReport.test.ts`).
 
 Checked in Chromium (R-13): axe over all three reports, in light, dark, charts and tables, with a coach brand and a coach note set, finds nothing. At 375px wide the reports and their controls do not scroll sideways, and the sheet header wraps (the title takes the row and the marks sit under it) rather than breaking a long title one word to a line. In emulated forced colors the controls read, the sheet stays its own light page (it is a paper preview), and the Print button reads as a button because the shared `Button` keeps a border on its filled variants there. Windows High Contrast and a screen reader have not been tried, as everywhere else in the app.

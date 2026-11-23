@@ -65,7 +65,7 @@ export type InteractionName =
   | "brand_removed";
 
 /** Which report was generated (docs/reports.md). A fixed list, never a title, period or anything from the log. */
-export type ReportKind = "progress" | "training-mix" | "body-training";
+export type ReportKind = "progress" | "training-mix" | "body-training" | "skills";
 
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }

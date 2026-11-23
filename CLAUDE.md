@@ -554,6 +554,8 @@ computes (`src/components/reports/`), reached from the Reports section (one view
   (`tests/trainingMix.test.ts`). Its charts follow the app's chart-or-table preference (`useChartView`), and the controls every report shares are in `components/reports/reportShared.tsx`.
 - **The Body and training report shows body data beside training and never relates them** (`lib/analytics/bodyTraining.ts`): weight comes from the pooled series with its noise band, lean and fat mass from scans only
   (off by default), and the Progress headline is Progress as of the period's end, unchanged by any body reading (`tests/bodyTraining.test.ts`). It needs an InBody file or weigh-ins and says so when there are none.
+- **The Skills report counts only an RX workout** (`lib/analytics/skills.ts`): a skill is done when the earliest workout flagged RX that includes one of its movement ids falls on or before the period's end; a SCALED or unflagged workout never counts,
+  and the check names the workout behind it. The skill list and its levels are curated, not computed; `tests/skills.test.ts` pins every id against the lexicon and each skill's modality. It shows counts only, never a score, grade or badge.
 - **A report reads the brand through `useBrand()`** and shows it only for the coach audience; the Swift mark is always there. The logo's plate is computed for the light page.
 - **Analytics** are `report_generated` with a fixed kind and the audience, nothing else (`tests/analytics.test.ts`, `tests/ReportsTab.test.tsx`).
 
