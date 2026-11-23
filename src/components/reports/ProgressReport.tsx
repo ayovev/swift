@@ -54,8 +54,12 @@ const KIND_ORDER: VerdictKind[] = ["up", "move-up", "down", "not-tested-since", 
  * The Progress report's body: the headline, optionally what changed since a chosen date, each lift and benchmark's verdict, and the
  * subjects too thin or too old to judge. Wording and numbers are Progress's own (`display.ts`); "est. 1RM" is on every lift sentence.
  */
-export function ProgressReport({ data, since, sections }: { data: ProgressReportData; since: string | null; sections: ProgressSections }) {
+export function ProgressReport({ data, since, endsToday, sections }: { data: ProgressReportData; since: string | null; endsToday: boolean; sections: ProgressSections }) {
   const { headline, comparison, rows } = data;
+  const end = data.today;
+  // A period that runs to today reads "since"; a closed one names both ends.
+  const span = (start: string): string => (endsToday ? `since ${longDate(start)}` : `from ${longDate(start)} to ${longDate(end)}`);
+  const upper = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
   const judged = rows
     .map((row) => ({ row, kind: verdictKindOf(row) }))
@@ -78,23 +82,23 @@ export function ProgressReport({ data, since, sections }: { data: ProgressReport
         <p className="mt-1 text-sm">
           {headline.label ? headlineSentence(headline.label, headline.up, headline.down, headline.noClearChange) : noHeadlineText(headline)}
         </p>
-        {since ? <p className="mt-1 text-sm text-muted-foreground">Compared from {longDate(since)}.</p> : null}
+        {since ? <p className="mt-1 text-sm text-muted-foreground">Compared {span(since)}.</p> : null}
       </section>
 
       {comparison && sections.since ? (
         <section data-testid="report-since">
-          <h3 className="report-heading text-lg font-semibold">Since {longDate(comparison.since)}</h3>
+          <h3 className="report-heading text-lg font-semibold">{upper(span(comparison.since))}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Then: {comparison.headlineThen.label ?? "no headline"}. Now: {comparison.headlineNow.label ?? "no headline"}. Each row is Progress as it stood on {longDate(comparison.since)}, against today.
+            Then: {comparison.headlineThen.label ?? "no headline"}. {endsToday ? "Now" : "At the end"}: {comparison.headlineNow.label ?? "no headline"}. Each row is Progress as it stood on {longDate(comparison.since)}, against {endsToday ? "today" : longDate(end)}.
           </p>
           {sinceSorted.length > 0 ? (
             <table className="mt-2 w-full border-collapse text-left text-sm">
-              <caption className="sr-only">Lifts and benchmarks that changed or were logged since {longDate(comparison.since)}</caption>
+              <caption className="sr-only">Lifts and benchmarks that changed or were logged {span(comparison.since)}</caption>
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground">
                   <th scope="col" className="py-1 pr-2 font-medium">Lift or benchmark</th>
                   <th scope="col" className="py-1 pr-2 font-medium">Then</th>
-                  <th scope="col" className="py-1 pr-2 font-medium">Now</th>
+                  <th scope="col" className="py-1 pr-2 font-medium">{endsToday ? "Now" : "At the end"}</th>
                   <th scope="col" className="py-1 text-right font-medium">Sessions since</th>
                 </tr>
               </thead>
@@ -117,7 +121,7 @@ export function ProgressReport({ data, since, sections }: { data: ProgressReport
 
       {since && sections.prs ? (
         <section data-testid="report-prs">
-          <h3 className="report-heading text-lg font-semibold">PRs since {longDate(since)}</h3>
+          <h3 className="report-heading text-lg font-semibold">PRs {span(since)}</h3>
           {data.prs.length > 0 ? (
             <>
               <ul className="mt-2 divide-y divide-border text-sm">
@@ -174,7 +178,7 @@ export function ProgressReport({ data, since, sections }: { data: ProgressReport
         <section data-testid="report-changes">
           <h3 className="report-heading text-lg font-semibold">Changes you made</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Entries from your Timeline{since ? ` that touch the period since ${longDate(since)}` : ""}. A comparison covers sessions before an entry against sessions during it, and states what was logged, not a cause.
+            Entries from your Timeline{since ? ` that touch the period ${span(since)}` : ""}. A comparison covers sessions before an entry against sessions during it, and states what was logged, not a cause.
           </p>
           <ul className="mt-2 flex flex-col gap-4">
             {data.changes.map(({ entry, verdict, bodyLine }) => {

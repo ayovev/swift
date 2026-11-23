@@ -55,22 +55,46 @@ describe("the Progress report", () => {
     expect(within(sheet()).getByText(/Workout log through .* Report date Sep 11, 2026\./)).toBeInTheDocument();
   });
 
-  it("compares with an earlier date only when one is chosen, and prints which date it compared from", () => {
+  it("compares with an earlier date only when a period is chosen, and prints which date it compared from", () => {
     renderReport();
     expect(within(sheet()).queryByTestId("report-since")).toBeNull();
     expect(within(sheet()).queryByText(/^Compared from/)).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "6 months" }));
+    fireEvent.click(screen.getByRole("button", { name: "Last 6 months" }));
     expect(within(sheet()).getByTestId("report-since")).toBeInTheDocument();
-    expect(within(sheet()).getByText("Compared from Mar 11, 2026.")).toBeInTheDocument();
+    expect(within(sheet()).getByText("Compared since Mar 11, 2026.")).toBeInTheDocument();
   });
 
-  it("refuses a date that is not before today, and prints no comparison for it", () => {
+  it("offers the app's own presets, the same ones the Training date range and the Progress filter use", () => {
     renderReport();
-    fireEvent.click(screen.getByRole("button", { name: "A date" }));
-    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2026-09-11" } });
-    expect(screen.getByRole("alert")).toHaveTextContent("Pick a date before today.");
+    const group = screen.getByRole("group", { name: "Period" });
+    expect(within(group).getAllByRole("button").map((b) => b.textContent)).toEqual([
+      "All time", "Last month", "Last 3 months", "Last 6 months", "Last 9 months", "Last year", "Custom",
+    ]);
+  });
+
+  it("refuses a custom period whose start is not before its end, and prints no comparison for it", () => {
+    renderReport();
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    fireEvent.change(screen.getByLabelText("From"), { target: { value: "2026-06-01" } });
+    fireEvent.change(screen.getByLabelText("To"), { target: { value: "2026-03-01" } });
+    expect(screen.getByRole("alert")).toHaveTextContent("The start must be before the end");
     expect(within(sheet()).queryByTestId("report-since")).toBeNull();
+  });
+
+  it("reports a closed block as it stood on its last day, and says it covers through that day", () => {
+    renderReport();
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
+    fireEvent.change(screen.getByLabelText("From"), { target: { value: "2025-01-06" } });
+    fireEvent.change(screen.getByLabelText("To"), { target: { value: "2025-06-30" } });
+    const page = within(sheet());
+    expect(page.getByText("Verdicts use your full history, as of Jun 30, 2025.")).toBeInTheDocument();
+    expect(page.getByText("Compared from Jan 6, 2025 to Jun 30, 2025.")).toBeInTheDocument();
+    expect(page.getByRole("heading", { name: "From Jan 6, 2025 to Jun 30, 2025" })).toBeInTheDocument();
+    expect(page.getByText(/Report covers through Jun 30, 2025\. Report date Sep 11, 2026\./)).toBeInTheDocument();
+    // Nothing logged after the end is in it: the footer's basis is the last workout on or before it.
+    expect(page.getByText(/Workout log through (?:Jun \d+|May \d+), 2025\./)).toBeInTheDocument();
+    expect(page.getByRole("columnheader", { name: "At the end" })).toBeInTheDocument();
   });
 
   it("leaves a section out when it is switched off", () => {
@@ -86,9 +110,9 @@ describe("PRs since the comparison date", () => {
   it("lists the PRs flagged in SugarWOD after the chosen date, and only when a date is chosen", () => {
     renderReport();
     expect(within(sheet()).queryByTestId("report-prs")).toBeNull();
-    expect(screen.getByRole("checkbox", { name: /^PRs since the chosen date/ })).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: /^PRs in the period/ })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "6 months" }));
+    fireEvent.click(screen.getByRole("button", { name: "Last 6 months" }));
     const prs = within(sheet()).getByTestId("report-prs");
     expect(within(prs).getByRole("heading", { name: "PRs since Mar 11, 2026" })).toBeInTheDocument();
     expect(within(prs).getAllByRole("listitem").length).toBeGreaterThan(0);
@@ -97,8 +121,8 @@ describe("PRs since the comparison date", () => {
 
   it("leaves the section out when it is switched off", () => {
     renderReport();
-    fireEvent.click(screen.getByRole("button", { name: "6 months" }));
-    fireEvent.click(screen.getByRole("checkbox", { name: /^PRs since the chosen date/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Last 6 months" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^PRs in the period/ }));
     expect(within(sheet()).queryByTestId("report-prs")).toBeNull();
   });
 });
@@ -126,7 +150,7 @@ describe("Changes you made", () => {
 
   it("limits the entries to those that touch the chosen period", () => {
     renderReport({ timeline: [changed, happened] });
-    fireEvent.click(screen.getByRole("button", { name: "6 months" }));
+    fireEvent.click(screen.getByRole("button", { name: "Last 6 months" }));
     // Both entries ended in 2025, before Mar 11, 2026.
     expect(within(sheet()).queryByTestId("report-changes")).toBeNull();
   });

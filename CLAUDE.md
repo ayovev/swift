@@ -544,6 +544,8 @@ computes (`src/components/reports/`), reached from the Reports section (one view
   which only Chromium honors, so nothing depends on them.
 - **Nothing about a report is stored or synced.** The comparison date is chosen each time, the coach note is state in the view, and neither reaches storage, sync, backup or analytics. A stored "last report" date
   was rejected because an export carries no athlete id, so it could attach to the wrong athlete (see "Decided" in `docs/reports.md`).
+- **A report's period uses the app's one set of date presets** (`PRESET_OPTIONS` in `lib/analytics/dateRange.ts`, through `insights/period.ts` and `insights/reportPeriod.ts`): a preset ends today, a custom period has a From and a To and may end
+  in the past, and All time means no comparison. The Progress "last logged in" filter derives from the same list. Never retype a preset; `tests/presets.test.ts` fails if a list drifts. The Timeline zoom is the one deliberate exception.
 - **Progress as of a date is the verdict engine with a past reference date** (`insights/sinceDate.ts`). `classifySubjects` finds move-ups over the sessions up to that date only; before, a later move up to RX
   voted Up at an earlier date. `tests/asOfDate.test.ts` sweeps the sample export and fails if the future leaks into the past: keep it passing, and do not read anything dated after the reference date.
 - **Changes you made and PRs reuse existing engines** (`insights/progressReport.ts`): `entryVerdict` for the Timeline's before and after, `entryBodyWeightLine` for body weight (off by default in a report), and SugarWOD's PR flag as logged,

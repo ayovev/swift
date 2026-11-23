@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { entryEnd } from "../timeline";
 import { pooledReadings, pooledScanRows } from "../weighIns";
 import { classifySubjects, type ProgressHeadline, type ProgressRow } from "./headline";
@@ -17,7 +16,8 @@ import type { WeighIn } from "@/types/weighIn";
 /**
  * Everything the Progress report prints (docs/reports.md). The same functions Progress and the Timeline use (`buildProgressSubjects`,
  * `classifySubjects`, `entryVerdict`, `entryBodyWeightLine`) plus the comparison in `sinceDate.ts`; nothing here classifies or counts
- * anything new. Dates are passed in, never read from the clock.
+ * anything new. Dates are passed in, never read from the clock. `today` is the reference date, which is the end of the report's period:
+ * today for a report that runs to now, an earlier day for a closed block.
  */
 export interface PrItem {
   /** YYYY-MM-DD. */
@@ -120,11 +120,4 @@ export function buildProgressReportData(
     hasBodyReadings: readings.length > 0,
     lastLogged,
   };
-}
-
-/** A comparison date from a preset: weeks or months before today. */
-export type SincePreset = "4w" | "8w" | "6m";
-export function sinceFromPreset(preset: SincePreset, today: string): string {
-  const d = dayjs(today);
-  return (preset === "6m" ? d.subtract(6, "month") : d.subtract(preset === "4w" ? 4 : 8, "week")).format("YYYY-MM-DD");
 }

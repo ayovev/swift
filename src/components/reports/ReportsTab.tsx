@@ -4,7 +4,9 @@ import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/dashboard/SegmentedControl";
 import { readAudience } from "@/lib/audience";
-import { buildProgressReportData, sinceFromPreset, type SincePreset } from "@/lib/analytics/insights/progressReport";
+import { PERIOD_OPTIONS, type PeriodPreset } from "@/lib/analytics/insights/period";
+import { buildProgressReportData } from "@/lib/analytics/insights/progressReport";
+import { reportPeriod } from "@/lib/analytics/insights/reportPeriod";
 import { capture } from "@/lib/posthog";
 import { accentCssVars } from "@/lib/theme/palette";
 import { useTheme } from "@/lib/theme/useTheme";
@@ -15,15 +17,6 @@ import type { WeighIn } from "@/types/weighIn";
 import { ProgressReport, type ProgressSections } from "./ProgressReport";
 import { ReportSheet } from "./ReportSheet";
 import { COACH_NOTE_MAX } from "./reportNote";
-
-type SinceMode = "full" | SincePreset | "custom";
-const SINCE_OPTIONS = [
-  { id: "full", label: "Full history" },
-  { id: "4w", label: "4 weeks" },
-  { id: "8w", label: "8 weeks" },
-  { id: "6m", label: "6 months" },
-  { id: "custom", label: "A date" },
-] as const;
 
 interface ReportsTabProps {
   workouts: readonly SugarWodRow[];
@@ -48,24 +41,32 @@ const NO_SCANS: readonly InBodyRow[] = [];
 const NO_WEIGH_INS: readonly WeighIn[] = [];
 
 export function ReportsTab({ workouts, timeline = NO_ENTRIES, scans = NO_SCANS, weighIns = NO_WEIGH_INS, asOf }: ReportsTabProps) {
+  // The report date, which is also the end of every preset's period. A custom period may end earlier.
   const today = useMemo(() => asOf ?? dayjs().format("YYYY-MM-DD"), [asOf]);
   const audience = useMemo(() => readAudience() ?? "athlete", []);
   const { swatch } = useTheme();
   // The sheet is always the light page: the app's accent, with its light-mode roles.
   const sheetAccent = useMemo(() => accentCssVars(swatch, "light") as CSSProperties, [swatch]);
 
-  const [mode, setMode] = useState<SinceMode>("full");
-  const [custom, setCustom] = useState("");
+  // The period uses the app's one set of presets (tests/presets.test.ts). It is not the Training range and is not stored (R-15).
+  const [preset, setPreset] = useState<PeriodPreset>("all_time");
+  const [custom, setCustom] = useState({ start: "", end: "" });
   const [sections, setSections] = useState<ProgressSections>({ since: true, prs: true, verdicts: true, changes: true, body: false, notJudged: false });
   const [note, setNote] = useState("");
-  const ids = { date: useId(), note: useId(), noteCount: useId() };
+  const ids = { from: useId(), to: useId(), note: useId(), noteCount: useId() };
 
-  const customValid = custom !== "" && dayjs(custom).isValid() && custom < today;
-  const since = mode === "full" ? null : mode === "custom" ? (customValid ? custom : null) : sinceFromPreset(mode, today);
-  const data = useMemo(() => buildProgressReportData(workouts, today, since, { timeline, scans, weighIns }), [workouts, today, since, timeline, scans, weighIns]);
+  const chosen = reportPeriod(preset, today, custom);
+  const invalid = chosen === "invalid";
+  // An invalid custom period is reported as all time until it is fixed, with the reason shown beside the control.
+  const period = chosen === "invalid" ? { start: null, end: today } : chosen;
+  const since = period.start;
+  const end = period.end;
+  const endsToday = end === today;
+  const data = useMemo(() => buildProgressReportData(workouts, end, since, { timeline, scans, weighIns }), [workouts, end, since, timeline, scans, weighIns]);
 
-  const subtitle = `Verdicts use your full history, as of ${dayjs(today).format("MMM D, YYYY")}.`;
-  const basis = data.lastLogged ? `Workout log through ${dayjs(data.lastLogged).format("MMM D, YYYY")}.` : "Workout log is empty.";
+  const fmt = (iso: string): string => dayjs(iso).format("MMM D, YYYY");
+  const subtitle = `Verdicts use your full history, as of ${fmt(end)}.`;
+  const basis = `${data.lastLogged ? `Workout log through ${fmt(data.lastLogged)}.` : "Workout log is empty."}${endsToday ? "" : ` Report covers through ${fmt(end)}.`}`;
 
   const toggle = (key: keyof ProgressSections) => setSections((s) => ({ ...s, [key]: !s[key] }));
   const print = () => {
@@ -78,28 +79,42 @@ export function ReportsTab({ workouts, timeline = NO_ENTRIES, scans = NO_SCANS, 
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-5 rounded-lg border border-border p-4 print:hidden">
         <div className="flex flex-col gap-2">
-          <span id="report-since-label" className="text-xs font-medium text-muted-foreground">Compare with Progress as of</span>
+          <span id="report-period-label" className="text-xs font-medium text-muted-foreground">Period</span>
           <div className="flex flex-wrap items-center gap-3">
-            <SegmentedControl value={mode} onChange={setMode} options={SINCE_OPTIONS} ariaLabel="Compare with Progress as of" wrap />
-            {mode === "custom" ? (
-              <label className="flex items-center gap-1.5 text-sm text-muted-foreground" htmlFor={ids.date}>
-                Date
-                <input
-                  id={ids.date}
-                  type="date"
-                  max={dayjs(today).subtract(1, "day").format("YYYY-MM-DD")}
-                  value={custom}
-                  onChange={(e) => setCustom(e.target.value)}
-                  aria-invalid={custom !== "" && !customValid}
-                  className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
-                />
-              </label>
+            <SegmentedControl value={preset} onChange={setPreset} options={PERIOD_OPTIONS} ariaLabel="Period" wrap />
+            {preset === "custom" ? (
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <label className="flex items-center gap-1.5" htmlFor={ids.from}>
+                  From
+                  <input
+                    id={ids.from}
+                    type="date"
+                    max={today}
+                    value={custom.start}
+                    onChange={(e) => setCustom({ ...custom, start: e.target.value })}
+                    aria-invalid={invalid}
+                    className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5" htmlFor={ids.to}>
+                  To
+                  <input
+                    id={ids.to}
+                    type="date"
+                    max={today}
+                    value={custom.end}
+                    onChange={(e) => setCustom({ ...custom, end: e.target.value })}
+                    aria-invalid={invalid}
+                    className="rounded-md border border-border bg-background px-2 py-1 text-sm text-foreground"
+                  />
+                </label>
+              </div>
             ) : null}
           </div>
-          {mode === "custom" && custom !== "" && !customValid ? (
-            <p role="alert" className="text-sm text-destructive">Pick a date before today.</p>
-          ) : null}
-          <p className="text-xs text-muted-foreground">Verdicts always use your full history. A date adds what changed since then.</p>
+          {invalid ? <p role="alert" className="text-sm text-destructive">The start must be before the end, and the end cannot be after today.</p> : null}
+          <p className="text-xs text-muted-foreground">
+            All time prints Progress as of today. A period prints Progress as of its end and what changed since its start. Verdicts always use your full history up to the end.
+          </p>
         </div>
 
         <fieldset className="flex flex-col gap-2">
@@ -110,11 +125,11 @@ export function ReportsTab({ workouts, timeline = NO_ENTRIES, scans = NO_SCANS, 
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={sections.since} onChange={() => toggle("since")} disabled={since === null} />
-            Since the chosen date{since === null ? " (choose a date first)" : ""}
+            What changed in the period{since === null ? " (choose a period first)" : ""}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={sections.prs} onChange={() => toggle("prs")} disabled={since === null} />
-            PRs since the chosen date{since === null ? " (choose a date first)" : ""}
+            PRs in the period{since === null ? " (choose a period first)" : ""}
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={sections.changes} onChange={() => toggle("changes")} disabled={timeline.length === 0} />
@@ -156,7 +171,7 @@ export function ReportsTab({ workouts, timeline = NO_ENTRIES, scans = NO_SCANS, 
       </div>
 
       <ReportSheet title="Progress report" subtitle={subtitle} audience={audience} today={today} basis={basis} note={audience === "coach" ? note : ""} style={sheetAccent}>
-        <ProgressReport data={data} since={since} sections={sections} />
+        <ProgressReport data={data} since={since} endsToday={endsToday} sections={sections} />
       </ReportSheet>
     </div>
   );

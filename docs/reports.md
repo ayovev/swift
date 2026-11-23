@@ -49,7 +49,7 @@ The strongest reports lean on analysis that is already built and tested, and say
 
 Three existing rules carry straight into reports:
 
-- **Verdicts use the full history as of today**, not the Training date range, so a report states its basis rather than implying a range.
+- **Verdicts use the full history as of the end of the report's period** (today unless a custom period ends earlier), not the Training date range, so a report states its basis rather than implying a range.
 - **A lift's pounds are always an estimate** ("est. 1RM"), and a record names the logged set it came from.
 - **Body composition never feeds a verdict or count.** A report may show it beside training; it never relates the two in a sentence.
 
@@ -80,16 +80,16 @@ The order is by value to the person receiving it. Progress is the one report onl
 **Flow**
 
 - **R-1** A "Reports" entry in the dashboard header lists the reports, with those that need unavailable data shown disabled and a plain reason ("Needs an InBody file or weigh-ins").
-- **R-2** Choosing a report opens a preview in the app. A period control (last 4 weeks, 12 weeks, 6 months, all time, custom) applies to Training mix and Body and training. Progress offers its own period (R-14): since a chosen date, or full history, with presets (4 weeks, 8 weeks, 6 months) beside the date picker. Its verdicts always use history up to today, so the period frames what changed, not what is judged.
+- **R-2** Choosing a report opens a preview in the app. One period control serves every report, and it offers the app's own presets and nothing else: All time, Last month, Last 3 months, Last 6 months, Last 9 months, Last year, and Custom with a From and a To (the same list as the Training date range and the Progress filter; `tests/presets.test.ts` pins it). A preset ends today; a custom period may end earlier, so a closed block can be reported on after the fact. The period is the report's own: it is not the Training range, and it is not stored. On Progress it frames what changed (R-14); verdicts always use history up to the end of the period.
 - **R-3** Each section has an on/off switch. Body composition sections are **off by default** in every report that can include them.
 - **R-4** An optional coach note (plain text, up to 500 characters) appears at the **end** of the report, after the data, under a "Coach note" heading. It is never stored, synced or backed up, and never enters analytics. It always starts empty.
 
 **Progress report: period and changes**
 
-- **R-14** "Since a chosen date" compares Progress now with Progress as of that date: each subject's verdict then and now ("Steady to Up"), PRs and sessions logged since, and subjects that moved up to RX. The state "as of then" uses only rows on or before that date, run through the same verdict engine with that date as its reference (the engine takes its reference date as an argument and never reads the clock). Checked against the sample export (see "As-of-date findings"). A subject without enough sessions then is shown as "not judged then".
-- **R-15** Nothing is stored for the comparison. The date is chosen in the preview each time: no marker, no storage key, nothing synced or backed up. Swift cannot tell whose file is loaded (an export carries no athlete id), so a stored date could attach to the wrong athlete when a coach changes files; this avoids that and works for any number of athletes.
-- **R-16** The report prints "Compared from `<date>`" under the headline and its own report date in the footer, so a coach reads the date off the previous PDF and enters it next time.
-- **R-17** With no date chosen, Progress uses full history and says so. There is no "since the last report" default.
+- **R-14** A period compares Progress at its end (today, or the chosen To) with Progress as of its start: each subject's verdict then and now ("Steady to Up"), PRs and sessions logged in the period, and subjects that moved up to RX. All time has no start, so it prints Progress as of today and no comparison. A state "as of then" uses only rows on or before its date, run through the same verdict engine with that date as its reference (the engine takes its reference date as an argument and never reads the clock). Checked against the sample export (see "As-of-date findings"). A subject without enough sessions then is shown as "not judged then".
+- **R-15** Nothing is stored for the period. It is chosen in the preview each time: no marker, no storage key, nothing synced or backed up. Swift cannot tell whose file is loaded (an export carries no athlete id), so a stored date could attach to the wrong athlete when a coach changes files; this avoids that and works for any number of athletes.
+- **R-16** The report prints "Compared since `<date>`" (or "Compared from `<date>` to `<date>`" for a closed period) under the headline, and its own report date in the footer with "Report covers through `<date>`" when the period ended earlier, so a coach can read the dates off the previous PDF and enter them next time.
+- **R-17** The default period is All time: Progress as of today, with no comparison. There is no "since the last report" default.
 - **R-18** "Changes you made" appears when Timeline entries exist. For each entry the athlete changed, it shows the name, span and the before and after verdicts from the existing entry rules, or the shortfall sentence when fewer than 3 subjects qualify. Entries that happened show as context lines with no verdict. Body weight over an entry's span appears only when the body section is on, with no sentence relating it to a verdict. This section needs no InBody data.
 
 **Output**
@@ -136,12 +136,13 @@ A dev-only prototype (since replaced by the shell in `src/components/reports/`) 
 
 Built (Phase 1, first part):
 
+- **One set of presets.** The report's period control, the Progress "last logged in" filter and the Training date range all use `PRESET_OPTIONS` in `src/lib/analytics/dateRange.ts`; the Progress filter had its own list that lacked Last 9 months and said "All" for "All time". The Timeline's zoom (All, 1 year, 6 months) is the one deliberate exception, because it is a zoom and "Last year" there read as the date range it is not.
 - **Navigation and view.** A "Reports" section with one view, the Progress report (`src/components/reports/ReportsTab.tsx`), loaded as its own chunk. The app around the sheet is hidden in print, so only the sheet prints (R-1, R-11).
 - **Sheet.** `src/components/reports/ReportSheet.tsx`: always the light page, a coach's logo and name beside the Swift mark, the coach note at the end, and a footer with the basis, the report date and the Swift mark that repeats on every printed page (R-4, R-5, R-8, R-9).
-- **Progress report.** Headline, "Since a chosen date" from `src/lib/analytics/insights/sinceDate.ts` (listing only subjects that carry a verdict or a vote on either date) with "Compared from" printed, every verdict with its change and windows, and a "Not judged" list (R-2, R-3, R-14, R-15, R-16, R-17).
+- **Progress report.** Headline, the period's comparison from `src/lib/analytics/insights/sinceDate.ts` (listing only subjects that carry a verdict or a vote on either date) with "Compared since" or "Compared from … to …" printed, every verdict with its change and windows, and a "Not judged" list (R-2, R-3, R-14, R-15, R-16, R-17).
 - **Analytics.** `report_generated` with the kind and the audience only (`tests/analytics.test.ts`).
 
-- **PRs and Changes you made.** "PRs since" lists SugarWOD's PR flag as logged, after the chosen date only (a report states no recent window of its own), newest first and capped with "N more not shown". "Changes you made" (R-18) lists the Timeline entries that touch the period: an entry the athlete changed gets the Timeline's own before and after (`insights/entryVerdict.ts`), something that happened gets a context line, and body weight over an entry's span is off by default and offered only with readings. An entry's note is not printed. Both are built from `src/lib/analytics/insights/progressReport.ts` (`tests/progressReport.test.ts`).
+- **PRs and Changes you made.** "PRs" lists SugarWOD's PR flag as logged, within the period only, so not for All time (a report states no recent window of its own), newest first and capped with "N more not shown". "Changes you made" (R-18) lists the Timeline entries that touch the period: an entry the athlete changed gets the Timeline's own before and after (`insights/entryVerdict.ts`), something that happened gets a context line, and body weight over an entry's span is off by default and offered only with readings. An entry's note is not printed. Both are built from `src/lib/analytics/insights/progressReport.ts` (`tests/progressReport.test.ts`).
 
 Not built yet:
 
@@ -172,7 +173,7 @@ Not built yet:
 **Risks**
 
 - **Verdicts carry more weight on paper.** The `PV_*` thresholds were validated on one athlete, and a coach may hand the page over as a judgment. Mitigation: print the basis and the "est." wording, never judge a subject with too few sessions, and check them on a second athlete's export before a wider release.
-- **The coach supplies the comparison date.** A forgotten or mistyped date gives the wrong comparison, and a past-dated verdict is a new code path for the engine. Mitigation: presets, the date printed on the report, and the engine tested at past dates against the sample export.
+- **The coach supplies a custom period.** A forgotten or mistyped date gives the wrong comparison, and a past-dated verdict is a new code path for the engine. Mitigation: the app's presets, the dates printed on the report, and the engine tested at past dates against the sample export.
 - **Body data on a handed-over page.** Weight and body fat can land badly. Mitigation: opt-in, no targets or comparisons, and no sentence tying body change to performance.
 - **Print is uneven across browsers.** Chart sizing and page breaks differ. Mitigation: fixed print widths, `break-inside: avoid` on cards, and a Chromium check; Safari and Firefox checked by hand.
 - **Saved PDFs are not tagged for screen readers by every browser.** The on-screen preview is the accessible form; this is stated in the report menu.
@@ -181,7 +182,7 @@ Not built yet:
 
 - v1 output is print-to-PDF. A one-click PDF download is deferred.
 - The coach note is in v1, at the end of the report, and always starts empty. A remembered note could land on the next athlete's report.
-- Progress supports a period from a chosen date and stores nothing. A saved last-report date was dropped: Start over would wipe it, Replace file would carry it to the wrong athlete, and an export has no athlete id.
+- Progress supports a period, with a start and an end, and stores nothing. A saved last-report date was dropped: Start over would wipe it, Replace file would carry it to the wrong athlete, and an export has no athlete id.
 - Change review is a section of Progress, not its own report.
 - Body and training shows one Progress headline as of today beside days trained per month, not a headline per month. A per-month headline would need Progress computed at many past dates.
 - v1 is a beta tested with gym members. Checking the Progress thresholds on a second athlete's export is deferred until a wider release.
