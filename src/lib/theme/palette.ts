@@ -146,13 +146,17 @@ export function accentRoles(swatch: AccentSwatch, mode: ThemeMode): AccentRoles 
   const ramp = deriveRamp(swatch);
   const roles = ROLE_SHADES[mode];
   const primary = ramp[roles.primary];
+  const whiteLabel = pickForeground(primary) === "white";
+  // The hover fill is drawn under the same label as the primary fill, so it has to move the way that keeps the label readable: a white label
+  // goes darker in light mode and a dark label goes lighter, never the other way (a darker green under black text fell to 3.3:1).
+  const hover: Shade = whiteLabel ? (mode === "light" ? roles.hover : roles.primary) : mode === "light" ? 500 : roles.hover;
 
   return {
     primary,
     // Chosen by measured contrast, not assumed — a light amber button needs
     // black text where a blue one needs white.
     primaryForeground: pickForeground(primary) === "white" ? WHITE : BLACK,
-    primaryHover: ramp[roles.hover],
+    primaryHover: ramp[hover],
     link: ramp[roles.link],
     ring: ramp[roles.ring],
     subtle: ramp[roles.subtle],

@@ -64,7 +64,8 @@ export function ChartViewToggle({ className }: { className?: string }) {
     <button
       type="button"
       aria-pressed={table}
-      aria-label={table ? "Show charts" : "Show charts as tables"}
+      // The name starts with the visible word, so it holds for someone who speaks the button's text (WCAG 2.5.3).
+      aria-label={table ? "Chart, show charts" : "Table, show charts as tables"}
       onClick={() => {
         setView(table ? "chart" : "table");
         capture({ name: "interaction_used", props: { interaction: "chart_view_toggled" } });
@@ -92,7 +93,13 @@ export interface TableColumn {
  */
 export function DataTable({ caption, columns, rows }: { caption: string; columns: TableColumn[]; rows: ReactNode[][] }) {
   return (
-    <div className="max-h-80 overflow-auto rounded-lg border border-border">
+    // A box that scrolls has to be reachable by keyboard (axe: scrollable-region-focusable), so it is a focusable region named by the caption.
+    <div
+      role="region"
+      aria-label={caption}
+      tabIndex={0}
+      className="max-h-80 overflow-auto rounded-lg border border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
       <table className="w-full text-sm" data-chart-table>
         <caption className="sr-only">{caption}</caption>
         <thead className="sticky top-0 bg-muted text-xs text-muted-foreground">

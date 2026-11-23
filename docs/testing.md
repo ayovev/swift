@@ -6,38 +6,30 @@ Back to the [README](../README.md).
 npm test
 ```
 
-Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather than the UI — there are no end-to-end browser tests. Broadly:
+Vitest, jsdom environment, suites in `tests/`. Coverage is on the logic rather than the UI: there are no end-to-end browser tests, and jsdom has no layout, canvas, WebRTC or camera. What jsdom cannot show is checked by hand in a real browser (see "Checked by hand" below).
 
-- `matcher.test.ts` — the shared matching engine: substring vs. token mode, exclusions, glued-together text.
-- `domainClassifier.test.ts` — each of the ten GPP domains, multi-domain workouts, which keyword gets reported, the measured false-positive corrections, and known limitations pinned deliberately so they change visibly rather than silently.
-- `modalityClassifier.test.ts` / `buildModalityData.test.ts` — single- and multi-modality splits, the rounding invariant, aggregation, drill-down lists, and behaviour against the real sample export. `modalityClassifier.test.ts` also pins the lexicon's integrity (one label and modality per id), the movement variants and the families that keep them, and the movements added from CrossFit's list.
-- `implement.test.tsx` — reading dumbbell, kettlebell or barbell from the words before a movement (and where it must stop: another line, another movement, a hyphenated modifier), that it never adds a movement or moves a split, the measured label counts on the sample export, and the Movements view's Implement control.
-- `movementsView.test.tsx` — the Movements view: family and single-movement selection, what the picker offers, the trend and the matched-on list.
-- `buildDashboardData.parity.test.ts` — the GPP pipeline compared row by row against the output of the original validated Python reference implementation, committed as a fixture in `tests/fixtures/`. Structural output is compared exactly; every intentional divergence is enumerated in the test itself, so any unintended change fails. Those divergences are a rounding-mode difference, a few substring false positives the reference got wrong, and the inflected forms it missed. Read that file for the current specifics.
-- `parseCsv.test.ts` — the failure paths and their plain-language messages.
-- `themeContrast.test.ts` — every accent swatch holds adequate contrast in both light and dark mode.
-- `analytics.test.ts` — analytics stays off without a key, and no event payload can carry workout content.
-- `progressVerdict.test.ts`, `progressDisplay.test.ts`, `LiftsTab.test.tsx` — the Insights engine and the Progress view: the verdict rules as cases, the words, the groups and the headline, pinned on the bundled sample.
-- `scoreUnit.test.ts` — a score shown with its unit from SugarWOD's score type (loads in pounds, reps, calories, metres, inches, points), times, rounds plus reps and free text left exactly as logged, checked against every PR in the sample export.
-- `extendSample.test.ts` — the sample's generated tail (from the export's last date to today): only dates after the export and up to today, a session on today, determinism, schema-valid rows, and lifts that follow the athlete: a lift PR only when it beats the best so far, PR rates near the history's own, and each lift's best growing at a bounded yearly rate however old the export gets.
-- `timeline.test.ts`, `entryVerdict.test.ts`, `TimelineTab.test.tsx`, `generateSampleTimeline` via `sampleDataFullness.test.ts` — the entry form's rules, an entry's before and after, and the Timeline view (lanes, selection, the entry dialog, confirmed delete).
-- `weighIns.test.tsx` — manual weigh-ins: validation, pooling with scans, storage, sync and the panel.
-- `weightNoiseBand.test.ts` — the weight noise band: the paired-scans, rolling-median and default methods and the fallback ladder between them.
-- `parseInBodyCsv.test.ts` — InBody's own required-columns/empty/malformed-date failure paths.
-- `idbStore.test.ts` — the generic IndexedDB primitives: get/set/delete/clear round trips, isolated per test with a `fake-indexeddb` polyfill since jsdom has no native IndexedDB.
-- `workoutStorage.test.ts` / `bodyCompStorage.test.ts` / `viewPreferencesStorage.test.ts` — save/load/clear round trips for each persisted dataset, using real parsed rows.
-- `App.test.tsx` — the app shell end to end: restoring persisted data (including the selected date range and granularity) on mount, persisting a fresh upload, persisting range/granularity changes across a remount, "Start over" requiring confirmation before it clears storage (and only for real uploaded data — sample mode still resets in one click), the Settings sheet's workout "Replace file" control replacing the workout log without disturbing anything else, Insights views stating that the date range doesn't apply to them, and sample mode being announced by exactly one full-width strip above the header.
-- `domainDefinitions.test.tsx` — every GPP domain page shows CrossFit's definition of that skill under its heading, separately from the app's own description, and no other view gets a subtitle.
-- `overview.test.tsx` — the Overview redesign (steps 2 and 3): the 90-day window, the scope sentence's last logged date, days trained (days not entries, the comparison dropped before the first workout), the most recent PR by SugarWOD's flag (first in log order on a shared day), body weight's 90-day and since-first changes inside and outside the noise band, the Progress label restated with its counts, that each totals stat opens its section, and the panels: 12 calendar months of days trained ending with a partial current month (from row dates, whatever the grouping), each month's M/W/G split to 100 over the same months as the days chart (unclassified workouts left out, an empty month without a split), the most-trained list gone, what moved (up and down only, most recent first, at most five), the latest Timeline entry, every panel's one-line empty state (What moved says nothing changed only once something got a verdict, an empty year of Showing up is a sentence, and no stat and panel say the same thing twice), and Progress opening the row a What moved link names.
-- `liftHistory.test.tsx` — step 1 of the Overview redesign: the lift, benchmark and PR cards are on Training → Lifts in their old order and gone from Overview, and the Workouts summary line states workouts logged, the RX share (left out when nothing is marked RX or Scaled) and the scaled count.
-- `sectionNav.test.tsx` — every view lands in exactly one of the four sections, sections open on their first view, Overview and Body show no second row, and Training lists Workouts and Lifts first, then all ten domains and three modalities at once as two groups, each headed by its label above the tabs, then Movements.
-- `backup.test.ts`, `backupEncryption.test.ts`, `passphrase.test.ts`, `planTransfer.test.ts`, `backupRestore.test.tsx`, `backupPassphrase.test.tsx` — the backup file's format and rejections, the plan that applies the workout log last, and download/restore end to end, including encrypted backups (tampering, wrong passphrase, the passphrase prompt and the download form) and (landing-page restore, including a backup dropped or pasted on the upload area, persisting every dataset, confirmation and Cancel from Settings).
-- `settingsSheet.test.tsx` — the Settings sheet's five groups, sync enabled on uploaded data and disabled (with the reason) on sample data, accent/mode changes, and sample-mode Start over resetting without a confirmation.
-- `BodyCompTab.test.tsx` — the empty-state upload dropzone and the ready-state "Replace file" control both forward a newly picked file to the same handler.
-- `validateReceived.test.ts` / `receivedDatasets.test.ts` / `SyncDialog.test.tsx` — what a joiner does with what arrives: every dataset validated before anything is written (the real sample exports accepted, all-or-nothing rejection with a reason naming the row), one confirmation for the whole transfer, all-or-nothing application (one rejected or damaged dataset means nothing is applied, and it is reported instead of silently skipped), and damaged payloads survived.
-- `chunking.test.ts` / `pairingCode.test.ts` — cross-device sync's wire framing (chunk/reassemble round trips, corrupted/truncated data) and QR pairing-code encoding (round trips, oversized-SDP trimming, malformed input), both pure logic with no WebRTC involved.
-- `fakeSyncTransport.test.ts` / `syncSession.test.ts` — the pairing/transfer state machine driven end to end through a fake in-memory transport standing in for a real `RTCDataChannel`: the full host-to-joiner handshake, multi-dataset transfers, and every failure path (invalid pairing code, a peer disconnecting mid-transfer, an unsupported browser). Real two-device WebRTC/ICE negotiation and camera-based QR scanning aren't covered here — see [Architecture](#architecture) — and are verified manually instead.
-- `syncAnalytics.test.ts` — the sync event payloads carry only a role and a closed-vocabulary reason, never a device identifier, session token, or SDP fragment.
+## How the suites are organised
+
+This page used to list every suite. It does not any more, because the list was the first thing to go stale. The names and header comments carry that information instead:
+
+- One suite per module or behaviour, named after it (`matcher.test.ts`, `weighIns.test.tsx`, `TimelineTab.test.tsx`). Open the file: its header comment says what it pins and why.
+- Hand-made rows come from `tests/fixtures/rows.ts`; real exports come from `tests/fixtures/sampleRows.ts`, which loads the bundled sample through the real production parser.
+- A deliberate deviation or a known limitation is pinned as a test rather than left implicit, so it changes visibly instead of silently.
+- Write the tests alongside the code they cover.
+
+## The suites that are not self-evident
+
+- **`buildDashboardData.parity.test.ts`** compares the GPP pipeline row by row against the output of the original validated Python reference implementation, committed as a fixture in `tests/fixtures/`. Structural output is compared exactly, and every intentional divergence is enumerated in the test itself, so any unintended change fails. Those divergences are a rounding-mode difference, a few substring false positives the reference got wrong, and the inflected forms it missed. Read that file for the current specifics. The suite needs no Python.
+- **`analytics.test.ts` and `syncAnalytics.test.ts`** are the privacy guarantee: analytics stays off without a key, and no event payload can carry workout content (the first rebuilds real workout titles from the sample and fails if any appears in a payload). If one fails, the change is wrong, not the test.
+- **`themeContrast.test.ts`** holds every accent swatch to the contrast rules in both modes, and the brand colour is held to the same rules in `brand.test.ts`. Adding a swatch means the suite must still pass; a threshold is never lowered.
+- **`lazySplit.test.ts` and `securityHeaders.test.ts`** keep the bundle split and the CSP honest: a static import that undoes the split, or an inline script whose hash changed, fails them.
+- **`docs.test.ts`** checks the Markdown against the code: file paths, links, cited headings and event names must exist.
+- **The sync suites** (`chunking`, `pairingCode`, `fakeSyncTransport`, `syncSession`) drive the pairing and transfer state machine through a fake in-memory transport standing in for a real `RTCDataChannel`, covering the full host-to-joiner handshake, multi-dataset transfers and every failure path.
+
+## Checked by hand
+
+- Real two-device WebRTC and ICE negotiation, and camera-based QR scanning, before any change to sync ships.
+- Anything that needs layout or a canvas (chart drag gestures, logo re-encoding, the header at phone width), in Chromium.
+- Accessibility: axe-core in Chromium over every view and the states that render different markup, in light, dark and forced colors. A real screen reader pass has not been done.
 
 `scripts/generate_parity_fixture.py` regenerated the Python reference fixture once, against the proof-of-concept implementation. It is dev-only and never bundled; the committed fixture means the test suite needs no Python.
-

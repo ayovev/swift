@@ -71,7 +71,7 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
    a dev-only run-once script that is not application code and is never bundled.
 4. **The classifier is validated against a golden fixture.** `tests/fixtures/python_reference_output.json`
    was generated from the Python reference implementation in the Stride PoC over the
-   1,209-row sample export. Any change to the GPP keyword lists, the exclusion list, or the
+   sample export. Any change to the GPP keyword lists, the exclusion list, or the
    matching logic **will** move `tests/buildDashboardData.parity.test.ts`. The required
    workflow: measure the change against the real sample export, then update that test's
    `EXPECTED_DIFF` (and the bounds/comments) deliberately, entry by entry, with the reason
@@ -125,11 +125,10 @@ a broadening rule must land only on genuine inflections, and it will move the pa
 **A percentage base is a reference, not a movement** (movement classifier only). `findAllMatches(..., { skipPercentBases: true })` in `matcher.ts`,
 which `findMovements` passes, rejects an occurrence directly after "% of" (with "your", "my", "the", "1RM", "5-rep max" allowed between), and
 `findPercentBases` claims the whole base phrase so a shorter phrase inside it cannot match in its place (`% of clean and jerk` is not a jerk). It needs
-the word "of": `75% back squat` is as likely to be the lift performed, so it is left alone. The same lift named anywhere else still counts. Measured on the
-sample: 70 rows name a lift as a base, 51 rows' movements change (a front squat session "at 80% of your clean" is no longer also a clean; a clean pull
-or a snatch grip deadlift is no longer also a clean or a snatch), 1 modality split moves (`Power Cean 4x3 @ 67% of clean`, a typo'd title with no other
-movement, is now unclassified), and no domain tag moves. **The GPP domain keywords deliberately do not use it**: they have no claiming, so rejecting
-"clean and jerk" would let the keyword "jerk" match inside it (measured: new Power and Strength tags on 4 rows), and the parity fixture pins them. So a
+the word "of": `75% back squat` is as likely to be the lift performed, so it is left alone. The same lift named anywhere else still counts. Its effect on the sample
+is pinned by the tests: a front squat session "at 80% of your clean" is no longer also a clean, a clean pull or a snatch grip deadlift is no longer also a clean or a snatch, a typo'd
+`Power Cean 4x3 @ 67% of clean` with no other movement becomes unclassified, and no domain tag moves. **The GPP domain keywords deliberately do not use it**: they have no claiming, so rejecting
+"clean and jerk" would let the keyword "jerk" match inside it (measured: it adds Power and Strength tags to real rows), and the parity fixture pins them. So a
 domain tag can still come from a base (pinned in `tests/domainClassifier.test.ts`); fixing that needs claiming in the domain classifier first.
 
 ## Deployment headers
@@ -143,44 +142,18 @@ remote-config features (exception capture, dead clicks, heatmaps, surveys) off i
 
 ## Architecture: the bundle split
 
-The production build used to be one 1.73 MB chunk (535 kB gzipped) that every visit paid for in full. It is now split along who actually
-needs what, and `tests/lazySplit.test.ts` fails if a static import undoes any of it. Before changing an import that touches these, read this.
+The production build used to be one 1.73 MB chunk that every visit paid for in full; it is now split along who needs what, and `tests/lazySplit.test.ts` fails if a static import
+undoes any of it. The rules that hold everywhere (the full account, with the measurements, is in `docs/bundle-split.md`; read it before changing an import in these areas):
 
-- **The upload screen does not load the dashboard.** `App.tsx` reaches `Dashboard` only through `lazyComponent()`, so Recharts and every view
-  stay out of the first load of a new visitor. The fetch starts early for whoever will need it: a returning athlete as soon as storage says
-  there is a log, a first-time visitor in idle time on the landing page, an upload or the sample the moment it begins (so the parse and the
-  download overlap).
-- **Overview is in the Dashboard chunk; the other views are their own chunks** (`dashboard/lazyViews.ts`: Workouts, Lifts, the domain and modality
-  pages, Movements, Body Comp, Progress, Timeline). `preloadViews()` fetches them in idle time once the dashboard has mounted, so by the time one is
-  opened it is already here. Add a new view to `lazyViews.ts` and render it inside `<LazyView>`, never as a static import in `Dashboard.tsx`.
-- **`lazyComponent()` (`components/ui/lazyComponent.tsx`) is used instead of bare `React.lazy` on purpose.** `React.lazy` always suspends on its
-  first render, even for a chunk the browser already has, and React then holds the real content back for ~300ms after committing the fallback.
-  Measured with plain `React.lazy`: every view opened 300 to 500 ms slower than before the split, preloaded or not. `lazyComponent` renders a
-  chunk that has arrived synchronously, as a static import would, and only a mount that really has to wait suspends. Which one a mount uses is
-  fixed at mount, so a mount that waited keeps its state. Do not swap it for `React.lazy`.
-- **The sync wizard is fetched on first use.** `SyncEntryPoint` mounts `SyncDialog` (the only importer of `jsqr`, `qrcode` and real WebRTC, ~175 kB)
-  after the press has waited on the chunk (`whenLoaded()`, with the button `aria-busy`, not behind a Suspense fallback), and starts the fetch on hover and
-  focus. Backup is not split: it is ~30 kB of source, shares its validators with sync's planner, and the landing page needs it.
-- **PostHog loads after the first paint** (`posthog.ts`: `import("posthog-js")` in idle time; about a third of the old bundle). `capture()` keeps its
-  signature; events fired before the library is up are held in memory with their time and sent in order once it is. The privacy config is untouched and
-  `tests/analytics.test.ts` still pins it. If the chunk can't load, held events are dropped: analytics is never a requirement. The chunk is served from our
-  own origin, so the CSP's `script-src 'self'` covers it and every lazy chunk; no host was added (`tests/securityHeaders.test.ts` pins that).
-- **Loading and failure states** (`components/ui/LazyView.tsx`): a lazily loaded view shows one plain line, invisible for the first 300ms (`.loading-note`,
-  `index.css`) so a fast connection never flashes it, in a box that reserves a view's height so the footer doesn't jump. A chunk that fails to load
-  (usually a tab left open across a deploy) gets a plain notice and a Reload button rather than a blank page.
-- **`vite.config.ts` names a `react` chunk and nothing else.** Left to itself Rolldown lays chunks out by who imports what, and with a PostHog key set about
-  70 kB of dialog and Radix code landed in the entry chunk. A named group for Recharts was tried and dropped: it pulled Recharts into the entry chunk's
-  static imports, which is exactly what the split avoids. Check the result with a build that has `VITE_PUBLIC_POSTHOG_KEY` set (as Vercel does); without a
-  key PostHog is dead-code-eliminated and the numbers flatter the build.
-- **The classify/analytics pipeline is its own chunk** (`buildInsights`, the movement lexicon, keyword lists and aggregators, ~40 kB; the entry chunk went
-  from 228 to 189 kB). `lib/analytics/pipeline.ts` is the one seam: `loadPipeline()` is a dynamic import that `App.tsx` starts as an upload or the sample
-  begins (it overlaps the parse), and a returning athlete stays on the loading screen until it has arrived, as does a reveal from sync or backup restore.
-  A chunk that fails to load shows `ChunkFailedNotice` (Reload), never the upload screen, because that screen's error dismisses through `reset()`, which
-  wipes storage. `tests/lazySplit.test.ts` walks the entry point's static imports and fails if `lib/classify/*`, `buildInsights` or the aggregators are
-  reachable. That chain was real once: `weighIns` -> `bodyContext` -> `display` -> `sessions` -> `liftSubjects` -> `buildDashboardData` -> the lexicon,
-  broken by moving `REPS_PER_ROUND` and `parseRoundsReps` into `insights/roundsReps.ts`. Keep that file, and anything the upload screen imports, free of
-  imports from the pipeline.
-- **Not split, left for later:** `react-day-picker` and `date-fns` ride in the Dashboard chunk with the Settings sheet and date picker.
+- **The upload screen does not load the dashboard.** `App.tsx` reaches `Dashboard` only through `lazyComponent()`. Other views are their own chunks (`dashboard/lazyViews.ts`, rendered
+  inside `<LazyView>`); add a new view there, never as a static import in `Dashboard.tsx`.
+- **Use `lazyComponent()`, never bare `React.lazy`**: `React.lazy` always suspends on first render and held every view back 300 to 500 ms even when preloaded.
+- **The classify/analytics pipeline is its own chunk behind one seam**, `lib/analytics/pipeline.ts` (`loadPipeline()`). Keep anything the upload screen imports free of imports from
+  `lib/classify/*`, `buildInsights` or the aggregators (that chain was real once; `REPS_PER_ROUND` and `parseRoundsReps` live in `insights/roundsReps.ts` for this reason). A chunk that fails to
+  load shows `ChunkFailedNotice` (Reload), never the upload screen, whose error dismisses through `reset()` and wipes storage.
+- **The sync wizard and PostHog are fetched on first use or after first paint.** Lazy chunks come from our own origin, so the CSP's `script-src 'self'` covers them and no host is added.
+- **`vite.config.ts` names a `react` chunk and nothing else** (a named Recharts group pulled Recharts into the entry chunk). Check bundle changes with a build that has
+  `VITE_PUBLIC_POSTHOG_KEY` set, as Vercel does; without a key PostHog is dead-code-eliminated and the numbers flatter the build.
 
 ## Architecture: classify → analytics → components
 
@@ -192,7 +165,7 @@ needs what, and `tests/lazySplit.test.ts` fails if a static import undoes any of
 - **analytics**: `buildInsights.ts` is the whole pipeline entry point. It calls `parseRows()`
   from `buildDashboardData.ts` **once** and hands the same `ParsedRow[]` to
   `buildFromParsedRows()` and `buildModalityData()`. Rows are date-parsed, text-built and
-  GPP-classified exactly once and shared, because at ~1,200 rows doing it twice is the
+  GPP-classified exactly once and shared, because on a real log doing it twice is the
   difference between comfortably inside the 5-second performance budget and not. Do not make
   `buildModalityData` re-parse the file, and do not add a second `parseRows()` call path.
   `parseRows()` also takes the selected `Granularity` (`granularity.ts`; daily/weekly/monthly/
@@ -202,7 +175,7 @@ needs what, and `tests/lazySplit.test.ts` fails if a static import undoes any of
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 20 views (`tabs.ts` → `ALL_TABS`): Overview,
+- **components**: `Dashboard.tsx` renders every view (`tabs.ts` → `ALL_TABS`): Overview,
   Workouts, Lifts (`LiftHistoryTab.tsx`, tab id `lift-history`: the lift, benchmark and PR cards,
   for the selected range), the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
   (Progress, Timeline), grouped for navigation into
@@ -242,7 +215,7 @@ Movements charts, on `LiftChart`/`LiftGrid`, so the Lifts view, and on Body Comp
 says what is showing and the picker undoes it. A mouse or pen drags on the chart (after 6px, so a click that does not move still picks a point, and the
 release of a drag is never also a pick); a finger drags on a strip under the chart that only a coarse pointer shows (`pointer-coarse:`), because a drag
 on the chart itself is how a phone scrolls. The lift charts are small multiples on one shared date domain and plot width, so a touch screen gets one strip
-above the whole grid (not 14), measured from the grid and drawing its band in itself. One gesture core (`useRangeGesture`) serves both mappings: a share
+above the whole grid (not one per chart), measured from the grid and drawing its band in itself. One gesture core (`useRangeGesture`) serves both mappings: a share
 chart's points are buckets spaced evenly (`useRangeDrag`, whole buckets), a lift chart's x axis is a continuous date scale (`useTimeRangeDrag`, any two
 days). A bucket mapping has a layout: share and line charts draw buckets as points spaced evenly (a line chart's x axis padding insets them, 12px
 on Body Comp), a bar chart as equal slices of the plot (`BucketLayout`, `indexAt`, `bucketBand`). Body Comp's line charts draw only the buckets a scan
@@ -259,7 +232,7 @@ is straight, every tooltip names its denominator ("9 of 15 workouts"), a key nam
 buckets the chart is a sentence. The grouping menu says weekly is noisy over a range longer than a year.
 
 **Every time axis is angled the same way** (`TIME_AXIS_PROPS` in `chartUtils.ts`, -35 degrees): angled so labels don't collide as the
-grouping gets finer, and one angle on every chart. Flat labels were tried on Lifts and Overview and dropped; `tests/timeAxis.test.ts`
+grouping gets finer, and one angle on every chart (flat labels were tried and dropped); `tests/timeAxis.test.ts`
 fails if an `<XAxis>` sets its own angle or leaves the shared setting out.
 
 **Every chart has a table twin and a text alternative** (`charts/ChartTable.tsx`). One "Table" switch, shown in each chart card's
@@ -292,60 +265,22 @@ times it is named. Workouts where nothing is recognised are marked `classified: 
 every modality's share down); the count is surfaced as `unclassified_count` so the UI can
 caveat it honestly.
 
-Movements have **stable ids**, not just labels: every `MOVEMENT_LEXICON` entry carries an `id`
-(kebab-case, shared by all aliases of one movement, one label and one modality per id — pinned in
-`tests/modalityClassifier.test.ts`), and `MovementHit` carries it. Anything that stores or filters by
-movement uses the id; labels are display text and may be reworded. `movementFamilies.ts` groups ids
-("Clean" = clean, power clean, hang clean, ...) as a deliberate list, never a prefix match, so a new
-lexicon entry cannot silently join a family. `parseRows()` runs `findMovements` once per row into
-`ParsedRow.movements`, and `buildModalityData` classifies from that rather than re-reading the text.
-**`barbell_lift` outranks the text.** It is the one column that names a movement as data, so
-`findRowMovements()` (`classifyModality.ts`) reads it first through the same lexicon (aliases and spellings
-resolve to the same ids, no separate table) and those hits come first, tagged `source: "barbell_lift"`. The text is
-still searched for other movements, but a family's *generic* bare word (`MovementFamily.generic`: "squat",
-"clean", "snatch", ...) is dropped when the typed lift is a more specific member of that family, so a front squat
-session is not also a vague squat. Rows with no recognised typed lift behave exactly as before. Measured on the
-sample: 279 of 1,209 rows have the field, 25 rows' identities changed and no modality split moved (all typed lifts
-are W). A lift named only as the base of a percentage ("75% of snatch") is not read as that movement: see the next paragraph.
-**Variants are their own ids, and their family keeps them.** CrossFit's movement list separates strict, kipping and
-butterfly pull-ups, the GHD movements, legless and L-sit rope climbs, walking and front-rack lunges and so on, so each
-is a lexicon id (`strict-pull-ups`) and a member of its family (`pull-up`); picking the family still finds every variant,
-picking the plain `pull-ups` id finds only the unqualified ones. The longer phrase wins the range, which also ends the
-double count (`chest-to-bar pull-ups` is one movement, not `chest-to-bar` plus `pull-ups`). A variant phrase must
-carry any suffix a shorter phrase could claim (`strict chest-to-bar pull-up`), or the shorter one claims the range
-first and the qualifier is lost. A prefixed complex stays split into its parts via `exclude` (`power clean and push
-jerk` is not a `clean-and-push-jerk`). Measured on the sample: 117 rows' movements changed and 40 modality splits
-moved, from three causes: double counts merged (9), `single-leg squat` read as a pistol and so G rather than W (13),
-and variants newly recognised (18). Dumbbell and kettlebell versions of lifts are deliberately **not** separate ids:
-that is an implement axis, not 14 more ids that duplicate the barbell ones.
-A double count is found by auditing the sample for two different movements whose matched text touches (or sits a
-few letters apart) in one row, then asking whether the sport names that as one movement: a farmers carry, a burpee
-pull-up, a snatch deadlift, a clean grip deadlift, a squat clean & jerk and a lateral burpee bar step-over are, so
-each is one entry whose longer phrase claims the range. A complex written with `+` ("clean + front squat") and glued
-lines are several movements and stay several. Left as two on purpose and pinned in `tests/modalityClassifier.test.ts`:
-burpee deadlifts, squat clean thrusters and wall ball sit-ups. Measured on the sample: 30 rows' movements changed and
-17 splits moved (farmers carry 13 rows no longer also a loaded carry; burpee pull-ups; a lateral burpee bar step-over
-moves from W to G; a hyphenated `bent-over rows` stops reading as a rower, M to W).
-Movement and family labels are in sentence case (pinned in `tests/modalityClassifier.test.ts`); a name keeps its capitals
-(`GHD`, `AbMat`, `L-sit`, `Turkish`). Inside a sentence use `labelInSentence()` (`buildMovementData.ts`), which lowers only the
-first letter and only when it starts an ordinary word, never `toLowerCase()`, which turned `Hanging L-sit` into `hanging l-sit`.
-A brand or a pace is not a movement: `assault bike` and `echo bike` are aliases of `bike`, and `sprint` is an alias of `run` (a
-workout naming both counts the movement once). The aliases keep the phrase the workout used for the "matched on" text.
-A sprint on a bike or rower would also read as a run; no exclusion is added until a real export shows one. Measured on
-the sample: 7 rows' movements changed and 4 splits moved, all from two ids merging into one.
-Bare equipment words (`db`, `kb`, `dumbbell`, `kettlebell`) are deliberately **not** lexicon entries: they name the
-implement, not the movement, and counting them inflated W.
-**Implement is a label on a movement, not a movement.** `MovementHit.implement` (`barbell | dumbbell | kettlebell`,
-absent when the workout does not say, which is not "bodyweight") is read by `implement.ts` from the words written
-directly before the first mention of a movement: at most two plain words between, and nothing else. SugarWOD glues
-lines together, so a digit or punctuation mark, another claimed movement in between (`dumbbell squatsbar-facing
-burpees`), or a hyphen straight after the implement (`db-facing burpees`) all end it. An implement named once for a
-list is not carried forward. A lexicon entry defined by its implement (`kettlebell-swing`, `dumbbell-row`,
-`barbell-row`) carries it as `MovementEntry.implement`, and what is written outranks it. A lift from the `barbell_lift`
-field is barbell. It never adds a movement and never moves a modality split. The Movements view narrows a selection
-with `MovementSelection.implement` (the "Implement" control appears only when a workout names one for the selection;
-`implement_selected` is the value-free analytics name). Measured on the sample: 127 dumbbell, 66 kettlebell and 6
-barbell labels from the text (one of the dumbbell labels is a stray "carry" in "use two dbs for the carry").
+Movements have **stable ids**, not just labels (the full account of variants, families, the double-count audit, the `barbell_lift` column, implement labels and the measured effect of each rule on the
+sample is in `docs/movement-lexicon.md`; read it before changing `movementLexicon.ts`, `movementFamilies.ts` or `implement.ts`). The rules that apply everywhere:
+
+- Every `MOVEMENT_LEXICON` entry carries a kebab-case `id`, shared by all aliases of one movement, with one label and one modality per id (pinned in `tests/modalityClassifier.test.ts`). Anything that
+  stores or filters by movement uses the id; labels are display text and may be reworded. `parseRows()` runs `findMovements` once per row into `ParsedRow.movements`, and `buildModalityData`
+  classifies from that rather than re-reading the text.
+- **Variants are their own ids and their family keeps them** (`strict-pull-ups` is in the `pull-up` family). `movementFamilies.ts` is a deliberate list, never a prefix match, so a new entry cannot
+  silently join a family. The longer phrase wins the range, which also ends double counts; a variant phrase must carry any suffix a shorter phrase could claim.
+- **`barbell_lift` outranks the text**: `findRowMovements()` reads it first through the same lexicon, and a family's generic bare word ("squat", "clean") is dropped when the typed lift is a more
+  specific member. A lift named only as the base of a percentage is not read as that movement.
+- **A brand or a pace is not a movement** (`assault bike`, `echo bike` are aliases of `bike`; `sprint` of `run`). Bare equipment words (`db`, `kb`, `dumbbell`, `kettlebell`) are deliberately **not**
+  lexicon entries, and dumbbell and kettlebell versions of lifts are not separate ids.
+- **Implement is a label on a movement, not a movement** (`MovementHit.implement`, read from the words directly before the first mention). It never adds a movement or moves a split.
+- **A double count is found by auditing the sample**, then asking whether the sport names the touching pair as one movement; a `+` complex and glued lines stay several. Measure every change against the
+  sample export and record the effect, as the parity workflow requires.
+- Movement and family labels are sentence case (pinned in `tests/modalityClassifier.test.ts`); inside a sentence use `labelInSentence()` (`buildMovementData.ts`), never `toLowerCase()`.
 
 Order *is* significant in `DOMAIN_KEYWORDS` (`domainKeywords.ts`): the keyword reported as
 "matched on" in the drill-down is whichever is checked first and hits. Reordering a list
@@ -416,17 +351,14 @@ body fat have no band, because nothing compares them.
 - **Design decisions kept for now, by the owner** (from the 2026 design critique, since deleted; its reasons now live next to the code):
   the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
   orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps
-  its 16 tabs (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); and the red accent
-  stays as it is, a known overlap with `--destructive`. Measured as OKLab distance x100 from `--destructive`, the red swatch's button
-  colour is 8.8 (light) and 5.2 (dark), where every other swatch is above 10. Moving its hue to 0 cleared 8 but read as pink beside
-  magenta; hue 45 at chroma 0.14 cleared it (12.1, 9.1) but read as rust, not red. A later redesign of the swatches, or a free colour
-  picker, should keep the button and link colours at least 8 from `--destructive` in both modes, as a test.
+  its long tab row (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); and the red accent
+  stays as it is, a known overlap with `--destructive` (the red swatch's button colour is under 8 OKLab x100 from it in dark mode, where every other swatch is clear; moving its hue
+  away cleared the distance but read as pink or rust, not red). A later redesign of the swatches, or a free colour picker, should keep the button and link colours at least 8 from
+  `--destructive` in both modes, as a test (`brand.test.ts` does this for a brand colour and pins the red swatch as the one exception).
 - **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
   is a separate, unbuilt idea.
-- **Not yet checked**: a real screen reader pass (axe-core is clean on every view, the landing page, the Settings sheet and the entry dialog, in both
-  modes, and the keyboard order, skip link and dialog focus were walked in Chromium, but that is not a screen reader), and an export from a second athlete.
-  Forced colors was checked by emulation only (Chromium's `forcedColors: "active"`), not on Windows High Contrast itself. The usability study plan
-  (five tasks on the core questions) is issue #67.
+- **Assistive technology is unverified.** No real screen reader pass has been done, and forced colors was checked only by Chromium's emulation, not on Windows High Contrast
+  (what axe covers is in "Accessibility conventions"). The usability study plan (five tasks on the core questions) is issue #67.
 - **Backup encryption is settled as it is.** The iteration count (600,000, OWASP's floor) and the strength bands stay; derive time has not been
   measured on a mid-range phone, so measure it before ever raising the count. The strength hint is length-only by design, with one guard for
   fewer than 5 distinct characters; long predictable passphrases rate "Strong" (pinned in `tests/passphrase.test.ts`). Argon2id would be a new
@@ -449,8 +381,7 @@ a received list (`validateEntryList`, shape only so another device's clock canno
 - **The view** (`TimelineTab.tsx`, tab id `timeline`, over `components/dashboard/timeline/`): entries as bars stacked in lanes above one lane per
   verdict, laid out as HTML by percentages (so text keeps its size on a phone), lanes packed by measured pixel width so labels never collide. A
   verdict row is words only for now: name, the verdict pill (as on Progress) and change, then "Compared Jan to Jun 2024 with Jul 2024 to Oct 2026" (the months of
-  the two windows). Two drawings were tried and dropped: a line between the two bests (its length read as the size of the change), and
-  the two windows as bands with the best of each as a dot (the dot fell anywhere in its band, so rows looked irregular). One
+  the two windows). Two drawings were tried and dropped (a line between the two bests read as the size of the change; windows as bands with a dot looked irregular). One
   Selected panel, the entry form in a dialog, delete behind a confirmation. A row on Progress opens its lane through "See on timeline" under its
   opened chart (not for a subject without a lane, nor a move up to RX).
 - **Storage and names.** Key `"timeline-entries"` (`storage/timelineStorage.ts`), persisted only when `source === "upload"`, wiped by Start over,
@@ -475,154 +406,40 @@ smoothing. Analytics: `weigh_in_saved`, `weigh_in_deleted` and `weigh_in_delete_
 
 ## Architecture: cross-device sync
 
-`src/lib/sync/` moves a dataset from one device to another (issue #15) without ever relaxing
-hard constraint #1: no backend, and training data never leaves the browser. Two browsers
-negotiate a WebRTC `RTCDataChannel` directly; the SDP offer/answer is exchanged by
-displaying/scanning QR codes instead of over a signaling server, so the *only* things that ever
-cross a QR code or a public STUN server are connection metadata (ICE candidates, DTLS
-fingerprints) — never a row of workout data. No TURN server is configured, on purpose: a TURN
-relay would see the (encrypted) bytes in transit, and this feature has no relay-of-last-resort —
-if STUN can't punch through, the UI says "get on the same Wi-Fi" rather than silently falling
-back to one.
+`src/lib/sync/` moves the athlete's data from one device to another (issue #15) without relaxing hard constraint 1: two browsers negotiate a WebRTC `RTCDataChannel` directly, with the
+SDP exchanged by displaying and scanning QR codes instead of a signaling server, so only connection metadata ever crosses a QR code or a public STUN server. No TURN server is configured, on
+purpose (a relay would see the bytes in transit). The full account (engine layout, wire protocol, dialog behaviour, wiring) is in `docs/sync.md`; read it before changing anything here. The rules
+that apply everywhere:
 
-- **The engine is entirely WebRTC- and framework-agnostic**, mirroring the classify → analytics
-  → components split elsewhere in this codebase: `chunking.ts` (wire framing — a small JSON
-  header naming the dataset and byte count, then fixed-size binary chunks, since
-  `RTCDataChannel` messages cap around 16KB cross-browser), `pairingCode.ts` (SDP ↔ QR-payload
-  encoding, with its own size budget and candidate-trimming for QR scannability), `syncTransport.ts`
-  (the `SyncTransport` send/receive interface), `peerConnection.ts` (the `PeerConnection`/
-  `PeerConnectionFactory` interface, plus the `IceGatheringTimeoutError`/`WebrtcUnsupportedError`
-  types), and `syncSession.ts` (the pairing/transfer state machine, `idle → generating-offer →
-  awaiting-answer → connecting → connected → transferring → done | failed`). None of these five
-  files import `RTCPeerConnection` or a QR library — `webrtcTransport.ts` is the *only* file that
-  touches real WebRTC APIs (the same "one seam" discipline `idbStore.ts` uses for `indexedDB`),
-  and `src/components/sync/QrDisplay.tsx`/`QrScanner.tsx` are the only files that import
-  `qrcode`/`jsqr` or call `getUserMedia`. This is what makes the pairing/transfer logic fully
-  unit-testable (`tests/chunking.test.ts`, `tests/pairingCode.test.ts`, `tests/syncSession.test.ts`)
-  with a fake in-memory transport (`tests/fixtures/fakeSyncTransport.ts`,
-  `tests/fixtures/fakePeerConnection.ts`) even though jsdom has no WebRTC or camera stack at all.
-- **What's deliberately *not* automated**: real two-device `RTCPeerConnection`/ICE/STUN
-  negotiation and real camera-based QR scanning. This repo has no Playwright/e2e infrastructure,
-  and adding one was scoped out of this feature — see `webrtcTransport.ts`'s header comment.
-  Those two paths are verified manually, across two real devices, before any change here ships.
-- **The wire protocol**, once connected: the host sends one small manifest naming which
-  datasets it's about to send — some subset of `["workout", "bodyComp", "weighIns", "timeline"]`, never
-  assumed, since a device might not have InBody data or entries — then for each
-  dataset in order, `chunkPayload()`'s header followed by its chunks; once every dataset is sent,
-  the host closes the channel. The joiner feeds every message after the manifest into a fresh
-  `Reassembler` per dataset until each reports done.
-- **`SyncDialog.tsx`** (`src/components/sync/`) is the pairing wizard shell — the one place that
-  owns a `SyncSession` (via the `useSyncSession` hook, always backed by the real
-  `webrtcConnectionFactory`) for the dialog's lifetime, and the one place that decides whether a
-  received data needs confirmation before it's applied. **A sync is all or nothing: there is no
-  per-dataset prompt.** If the joining device already has any of the incoming datasets, one
-  `AlertDialog` (`ReplaceConfirmDialog.tsx`, shared with backup restore; same register as "Start
-  over") names every dataset that would be replaced with both entry counts, and Replace applies the
-  whole transfer while Cancel applies none of it. Only after that (or immediately, if there's nothing
-  to conflict with) does it call the `onSynced*` handlers. The pure `planTransfer()` in
-  `src/lib/sync/planTransfer.ts` (over `planReceived()` in `receivedDatasets.ts`) decides this; it
-  queues every write and `flush()` applies them with the workout log last, because applying the
-  workout log moves `App` to its reveal screen, which unmounts the dashboard and this dialog with it.
-  Backup restore uses the same plan.
-- **What syncs: the athlete's data, and only their data.** The workout log, the InBody history, manual weigh-ins
-  and timeline entries. Preferences and configuration deliberately do **not** sync: theme
-  (accent, light/dark mode), grouping and date range stay per device, since a phone and a laptop
-  reasonably want different ones. PostHog's anonymous id in `localStorage` doesn't either — it is an
-  analytics identifier. This is enforced at the wire, not by convention: `SyncDataset` has exactly
-  four members and `decodeHeader` rejects any other name (`tests/chunking.test.ts` pins that
-  `preferences` and `theme` are rejected). **A new persisted dataset that is the athlete's data must
-  be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a
-  case in `planReceived`, an `onSynced*` handler in `App.tsx`), which also adds it to backup, since
-  `BackupDatasets` is keyed by `SyncDataset`; a new preference or setting must not.
-  **Everything that arrives is validated before anything is written**, to the shape its own parser
-  produces (`validateReceived.ts` for the workout log and InBody history, `validateWeighIns`,
-  `validateEntryList` for the timeline). Validation is all-or-nothing for the whole transfer: one bad row rejects
-  its dataset with a reason naming the row, and then nothing at all is applied, the local copy is
-  left exactly as it was, and a rejected dataset never becomes an overwrite prompt. Cells must be text (a parsed CSV has nothing else),
-  columns the app doesn't read are kept, and a payload that isn't valid JSON is reported as
-  damaged (an unreadable dataset also means nothing is applied). `SyncDialog` then says which
-  dataset was rejected and why, states that nothing was synced, stays open on that notice, and counts
-  the transfer as `sync_failed` with the fixed reason `invalid_data`. Datasets that were fine are
-  not applied either.
-- **Wired into `App.tsx`** as `handleSyncedWorkoutData`/`handleSyncedBodyCompData` (and
-  `handleSyncedTimeline`) — all are
-  unconditional writers, exactly like `handleFile`/`handleBodyCompFile` are today, because
-  `SyncDialog` is what gates the call, not the handler. Synced data always carries
-  `source: "upload"` (sync's entry points in the dashboard's Settings sheet, `SettingsSheet.tsx`,
-  are disabled unless `source === "upload"` — sample data was never meant to sync anywhere), so
-  it persists and participates in "Start over" identically to a direct upload.
-  `handleSyncedWorkoutData` reuses `run()`'s shared post-parse tail
-  (`finishSuccessfulLoad`, extracted from `run()` for exactly this reason) rather than
-  duplicating the reset-range/persist/reveal sequence, since sync hands over already-parsed rows
-  (read from the host's own storage) rather than raw CSV text.
-- **Analytics**: `sync_attempted`/`sync_succeeded`/`sync_failed` in `src/lib/posthog.ts`, same
-  closed-vocabulary discipline as every other `SwiftEvent` — `role` (`"host" | "joiner"`) and,
-  for failures, a fixed `SyncFailureReason` (`ice_timeout`, `camera_denied`, `invalid_qr`,
-  `connection_dropped`, `declined_overwrite`, `unsupported_browser`, `invalid_data`). No device identifiers, no
-  session/pairing tokens, no SDP fragments — the payload types make that structurally
-  impossible, not just a convention (`tests/syncAnalytics.test.ts`).
+- **One WebRTC seam.** `webrtcTransport.ts` is the only file that touches real WebRTC, and `components/sync/QrDisplay.tsx` and `QrScanner.tsx` are the only files that import `qrcode`/`jsqr` or call
+  `getUserMedia`, so the engine is unit-tested with fakes. Real two-device negotiation and camera scanning are not automated; they are checked by hand across two devices before a change here ships.
+- **What syncs is the athlete's data, and only that**: `SyncDataset` is exactly `workout`, `bodyComp`, `weighIns` and `timeline`, and `decodeHeader` rejects any other name. Theme, grouping, date range,
+  branding and PostHog's id never sync. **A new persisted dataset that is the athlete's data must be added to sync in the same change** (a `SyncDataset`, an outgoing entry in `Dashboard.tsx`, a case in
+  `planReceived`, an `onSynced*` handler in `App.tsx`), which also adds it to backup; a new preference or setting must not.
+- **A sync is all or nothing.** Everything that arrives is validated before anything is written (`validateReceived.ts`, `validateWeighIns`, `validateEntryList`); one bad row rejects its dataset with a
+  reason, nothing is applied, and a rejected dataset never becomes an overwrite prompt. One `AlertDialog` (`ReplaceConfirmDialog.tsx`, shared with backup restore) covers every dataset that would be
+  replaced. `planTransfer()` queues every write and `flush()` applies the workout log last, because applying it moves `App` to its reveal screen and unmounts the dialog.
+- **The `handleSynced*` handlers in `App.tsx` are unconditional writers and must never look at `state`**: on the landing page it is still the previous screen. Synced data always carries
+  `source: "upload"`, so sync's Settings entry points are disabled in sample mode.
+- **Analytics** are `sync_attempted`, `sync_succeeded` and `sync_failed` with a role and a fixed `SyncFailureReason`, never a device id, token or SDP fragment (`tests/syncAnalytics.test.ts`).
 
 ## Architecture: backup
 
-`src/lib/backup/` and `src/components/backup/` let an athlete download everything they have in
-the app as one JSON file and restore it later, after clearing the browser or on another computer.
-The workout and InBody CSVs are already their own backups; what only a backup file preserves is
-**timeline entries and weigh-ins**. It reuses sync's validators and planner rather than growing its
-own, so the two can't drift on what a valid row is.
+`src/lib/backup/` and `src/components/backup/` let an athlete download everything they have as one JSON file and restore it later, in another browser or after clearing site data. It reuses sync's
+validators and `planTransfer()` rather than growing its own. The format, the encryption design and the wiring are in `docs/backup.md`; read it before changing any of them. The rules that apply everywhere:
 
-- **Format (v1)**: `{ format: "swift-backup", version, exportedAt, encoding: "plain", datasets }`, or
-  for an encrypted one `encoding: "aes-256-gcm"` with `kdf`, `iv` and `ciphertext` in place of
-  `datasets`. `datasets` (or the decrypted plaintext) holds the same bare arrays sync puts on the wire,
-  keyed by `SyncDataset`. Athlete data
-  only: never theme, grouping or date range. Empty datasets are omitted from the file, so a
-  backup only ever replaces, never tells a restore to clear something. A file is written with
-  `workout`, `bodyComp`, `weighIns` and `timeline`. Unknown dataset keys are
-  ignored; a newer `version` or unknown `encoding` is refused with "made by a newer version".
-- **Encryption is optional and off by default** (`encryption.ts`, `passphrase.ts`). PBKDF2-HMAC-SHA-256
-  (`KDF_ITERATIONS` = 600,000, OWASP's floor for it) into an AES-256-GCM key, a fresh random 16-byte salt
-  and 12-byte IV per export, all through Web Crypto: **no dependency**. PBKDF2 was chosen because it is
-  native (nothing to ship, and nothing to be abandoned before a backup is opened years later), not
-  because it is the strongest: it needs almost no memory, so GPUs guess faster against it than against
-  scrypt or Argon2id, and the 8-character floor and the strength hint are what make up for that. The KDF
-  is named in the file (`kdf.name`), so Argon2id is a new `encoding`, not a rewrite, and PBKDF2 backups
-  must stay readable forever. The plaintext encrypted is exactly the plain `datasets` JSON, so
-  validation and `planTransfer` are shared. The additional authenticated data
-  (`swift-backup:<version>:<encoding>`) binds the ciphertext to its header. The iteration count is stored
-  per file and bounds-checked on read (`MAX_KDF_ITERATIONS`) so a crafted file can't hang the tab. The
-  passphrase is NFKC-normalised before deriving (so accents typed on two devices match) and is otherwise
-  untouched: not trimmed, not case-folded. **The passphrase is never stored, logged, sent or put in
-  analytics**: it is a function argument, held in component state only until the download or restore
-  finishes. AES-GCM can't tell a wrong passphrase from a damaged or tampered file, so `readBackup`
-  returns `wrong_passphrase` for both and the UI says so. There is no recovery: Swift has no account and
-  no server, and the form says so once. What the file still shows: format, version, export time, KDF
-  parameters and the approximate size, never dataset names or counts. `readBackup` returns
-  `needs_passphrase` for an encrypted file given none. A plain backup is plaintext health data; the
-  Settings copy says so once.
-- **Restore replaces per dataset, never merges**, and a missing dataset leaves the local copy alone.
-  A backup must contain a workout log (Download always writes one), so a half-restored state where
-  InBody data persists but the app lands on the upload screen can't happen.
-- **Nothing is written until the whole file is usable.** It uses the same all-or-nothing
-  `planTransfer()` as sync (see the sync section for why the workout log is applied last): any
-  dataset that fails validation aborts the restore with a reason, and the athlete confirms once for
-  everything that would overwrite through the shared `ReplaceConfirmDialog`. An encrypted file asks for
-  its passphrase first (`PassphraseDialog`, which stays open on a wrong one), before any overwrite
-  confirmation; nothing is written while it is locked.
-- **Wiring**: Download (`DownloadBackupButton`, with `BackupPassphraseForm`: a "Protect with a
-  passphrase" checkbox, the passphrase typed twice, a length-band strength hint and a show/hide toggle
-  inside each field) and Restore (`useBackupRestore`) sit in Settings'
-  Backup section; restore is also on the landing page ("Restore from a backup", grouped with sync under "Already use
-  Swift?"), the only place a new browser can reach. The landing page's dropzone and paste handler
-  route a `.json` file (`looksLikeBackup`) to restore instead of the CSV parser, which would reject it. The labels are Backup/Restore, not Export/Import, because the athlete's
-  goal is getting their data back, because "Import" suggests adding rather than replacing, and
-  because "Export" already means the SugarWOD CSV on the landing page. Timeline entries have no separate
-  export or import: they travel in the backup like everything else, which is all-or-nothing and replaces
-  rather than merges. Sample data can't be backed up and has nothing to confirm on
-  restore (it is never stored). Restore errors stay inline: `Landing`'s own error alert dismisses through `reset()`, which wipes storage. Both reuse
-  the `onSynced*` handlers. `handleSyncedTimeline` must not look at `state`: on the landing page
-  it is still the previous screen, which used to make received entries vanish on reload.
-- **Analytics**: `interaction_used` with `backup_exported`/`backup_imported` (the event names predate the Download/Restore labels and stay as
-  they are: a closed vocabulary, not copy), nothing else: no
-  filename, counts or failure text, and not whether a backup was encrypted (`tests/backupPassphrase.test.tsx` pins that the passphrase and the word "encrypted" never reach a payload).
+- **Athlete data only**: the same four datasets sync carries (never theme, grouping, date range or branding). Empty datasets are omitted, so a backup only ever replaces. A newer `version` or unknown
+  `encoding` is refused.
+- **Restore replaces per dataset, never merges**, and a missing dataset leaves the local copy alone. A backup must contain a workout log, so a half-restored state cannot happen.
+- **Nothing is written until the whole file is usable**: the same all-or-nothing plan as sync (workout log applied last), one confirmation through `ReplaceConfirmDialog`, and an encrypted file asks for its
+  passphrase before any confirmation.
+- **Encryption is optional and off by default**: PBKDF2-HMAC-SHA-256 at 600,000 iterations into AES-256-GCM through Web Crypto, no dependency. The KDF is named in the file, so a stronger one is a new
+  `encoding`, and PBKDF2 backups must stay readable forever. **The passphrase is never stored, logged, sent or put in analytics.** There is no recovery, by design, and a wrong passphrase is
+  indistinguishable from a damaged file (`wrong_passphrase`).
+- **Labels are Backup and Restore**, not Export and Import ("Import" suggests adding, and "Export" already means the SugarWOD CSV). Restore errors stay inline on the landing page, because its own error
+  alert dismisses through `reset()`, which wipes storage.
+- **Analytics** are `interaction_used` with `backup_exported` or `backup_imported` and nothing else: no filename, counts, failure text, or whether the file was encrypted
+  (`tests/backupPassphrase.test.tsx`).
 
 ## Architecture: dashboard layout
 
@@ -640,7 +457,7 @@ home. Read the header comments of the files named here before moving anything be
   view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
   header — in line with them it read as one more tab. Workouts and Lifts share an unlabelled
   group (the record of what was done) and Movements is a group of one, so neither has a header;
-  Workouts comes first, so selecting Training opens the log. Training is the long row (16 tabs): it fits at 1280px with
+  Workouts comes first, so selecting Training opens the log. Training is the long row: it fits at 1280px with
   the gaps tightened from `lg`, and below that scrolls sideways, with a fade (and on a pointer device a button) at each edge that
   has more tabs past it and the selected tab scrolled into view. The Cardio domain and the M modality are both labelled "Cardio" on
   purpose: the Domains and Modalities headers tell them apart (`MODALITY_NAMES`, pinned in `tests/sectionNav.test.tsx`). A third nav level for it would break "never a dropdown", so it hasn't
@@ -687,6 +504,27 @@ only one. Its copy is deliberately one line at phone width ("Sample data · Use 
 confirmation since nothing from the sample is stored. The totals on Overview are a ruled row
 rather than a card (they're the page's headline, not one panel among several), and a view's
 first card doesn't repeat the page title above it.
+
+## Architecture: branding
+
+`docs/branding.md` is the requirements document; this is how it is built and what not to undo. A coach (Settings, shown only while the audience is
+`coach`) can set a gym logo, a name and a brand colour, each optional. Reports and image cards are a separate, unbuilt feature that will read the brand
+through `useBrand()`.
+
+- **A preference, not a dataset.** `lib/brand/brandStore.ts`, `localStorage` key `swift.brand` (try/catch, in memory when storage throws, read through
+  `useSyncExternalStore`). It is **not** in IndexedDB, so "Start over" (`idbClearAll()`) leaves it, on purpose: a coach moves from athlete to athlete. It is **not** a
+  `SyncDataset`, so it never syncs or backs up (`tests/brand.test.ts` pins that the wire rejects a `brand` dataset). Components read it only through `useBrand()`.
+- **The logo is re-drawn, never stored as chosen** (`lib/brand/image.ts`). Raster only (PNG, JPEG, WebP, found by magic bytes, not name or type); **SVG is refused**. The
+  file is decoded, drawn on a canvas at most 512px on the long edge and written back out as WebP (PNG where the browser can't), which drops EXIF/GPS and keeps the
+  stored data URL under `MAX_STORED_CHARS`. `parseBrand()` re-validates whatever is in storage and drops anything that isn't a base64 PNG/JPEG/WebP data URL. jsdom has no
+  canvas, so `normaliseLogo` is checked in Chromium; the pure parts are tested.
+- **The brand colour goes through the accent pipeline** (`lib/brand/color.ts` -> `useTheme()`). `accent` is an `AccentChoice` (a stock id or `"brand"`) and `swatch` is the
+  resolved swatch. `brandSwatch()` reduces the colour to hue and capped chroma, then holds it to every rule `themeContrast.test.ts` holds the stock swatches to, plus an
+  OKLab distance of 8 from `--destructive`, by nudging chroma and hue; a threshold is never lowered. It reports `adjusted` so the form says so. The known red-swatch
+  overlap is pinned in `tests/brand.test.ts`. "brand" with no brand colour falls back to the default accent.
+- **The Swift mark is never removable.** `BrandMark.tsx` only adds a logo beside `SwiftMark` (Dashboard and Landing headers); alt text is the gym name, else "Gym logo". A see-through
+  logo the page would swallow sits on a fixed light or dark plate (`plateFor`, from a tone measured at upload).
+- **Analytics:** `brand_saved` and `brand_removed` are bare `interaction_used` names; no logo, name or colour, and not which field.
 
 ## Architecture: the stale-log nudge
 
@@ -829,9 +667,18 @@ and Recharts series pick it up with no per-component wiring.
 
 ## Accessibility conventions
 
-Measured with axe-core (WCAG 2.2 AA and best-practice rules) in Chromium over every view, the landing and role-split screens, the Settings sheet and
-the entry dialog, in light and dark; all clean. Keep it that way:
+Measured with axe-core (WCAG 2.2 AA and best-practice rules) in Chromium over every view, the landing and role-split screens, the Settings sheet (with
+Branding) and the entry dialog, in light, dark and emulated forced colors, with a coach brand set, and at 375px wide, plus the states that render different markup: charts
+as tables, an expanded workout row, an opened Progress row, a selected Timeline entry, Body Comp with data, a picked chart point and a hovered button. All clean. Scan those
+states, not only each view's default, because the defaults missed real findings. Keep it that way:
 
+- **The accessible name contains the visible text** (WCAG 2.5.3, axe `label-content-name-mismatch`). A button's `aria-label` starts with its visible word ("Replace file,
+  workout log", "Table, show charts as tables"); the upload dropzone's name is its file description followed by its on-screen prompt and hint, which are separated by a real
+  space in the markup because axe compares the two as strings.
+- **A scrolling box is a focusable, named region** (`DataTable` in `ChartTable.tsx`: `role="region"`, `tabIndex={0}`, named by the caption), or a keyboard user cannot scroll it.
+- **A filled button hovers to `--primary-hover`, never `bg-primary/90`**, which lightened the fill and took white on blue to 4.0:1. The hover shade moves the way that keeps
+  the label readable (`accentRoles`), and `themeContrast.test.ts` and the brand-colour check both hold it.
+- **A long unbreakable title wraps** (`break-words` on the view `h1`) rather than widening the page at phone width.
 - **Heading levels step by one.** A page's view title is the `h1`; a chart card's title is an `h2` (they were `h3`, which skipped a level on 30 views).
 - **A file input is not a control.** The button or dropzone is; the `<input type="file">` it clicks is `aria-hidden`, and sits beside the dropzone, not inside
   its `role="button"` (axe: `label`, `nested-interactive`).
@@ -904,6 +751,10 @@ through, not a backlog of fixes.
   and the lexicon-integrity block in `tests/modalityClassifier.test.ts` (lowercase phrases,
   no duplicates, valid modality). If you fix a pinned limitation, move the test rather than
   deleting it, and update the parity expectations in the same commit.
+- **Documentation is checked against the code** (`tests/docs.test.ts`): every relative link and its heading, every `src/`, `tests/` or `docs/` path in backticks, every
+  quoted CLAUDE.md heading cited from a comment, and every analytics or sync event named on an event line must exist. Rename a file, heading or event and update the text in the
+  same change. The test checks that things exist, not that prose is true, so keep figures that drift (counts, measurements, line numbers) out of documents: state the rule, and let a
+  test pin the number if it matters.
 - Known benign divergences from the Python reference, already documented in the parity test:
   `Math.round` vs Python's round-half-even (tenth-of-a-percent cell differences on exact
   `.x5` ties), delta computed from rounded percentages, and pandas' unstable quicksort making

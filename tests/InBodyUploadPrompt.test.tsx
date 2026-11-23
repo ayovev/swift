@@ -10,7 +10,7 @@ describe("InBodyUploadPrompt", () => {
       </InBodyUploadPrompt>
     );
     expect(screen.getByText("Needs an InBody export.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Upload your InBody CSV export" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Upload your InBody CSV export/ })).toBeInTheDocument();
     expect(screen.getByText("Your files never leave this browser.")).toBeInTheDocument();
   });
 
@@ -22,7 +22,7 @@ describe("InBodyUploadPrompt", () => {
       </InBodyUploadPrompt>
     );
     const file = new File(["date,Weight(lb)\n"], "inbody.csv", { type: "text/csv" });
-    fireEvent.drop(screen.getByRole("button", { name: "Upload your InBody CSV export" }), { dataTransfer: { files: [file] } });
+    fireEvent.drop(screen.getByRole("button", { name: /^Upload your InBody CSV export/ }), { dataTransfer: { files: [file] } });
     expect(onFile).toHaveBeenCalledWith(file);
   });
 

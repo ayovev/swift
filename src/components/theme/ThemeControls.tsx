@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ACTIVE_SEGMENT_CLASSES } from "@/components/dashboard/SegmentedControl";
 import { capture } from "@/lib/posthog";
 import { formatOklch } from "@/lib/theme/contrast";
-import { ACCENT_SWATCHES, accentRoles, getSwatch } from "@/lib/theme/palette";
+import { ACCENT_SWATCHES, accentRoles } from "@/lib/theme/palette";
 import { useTheme, type ModePreference } from "@/lib/theme/useTheme";
 import { cn } from "@/lib/utils";
 
@@ -29,8 +29,8 @@ const MODE_OPTIONS: { value: ModePreference; label: string; Icon: typeof Sun }[]
  */
 export function ThemeControls() {
   const [accentOpen, setAccentOpen] = useState(false);
-  const { accent, setAccent, mode, setMode, resolvedMode } = useTheme();
-  const current = accentRoles(getSwatch(accent), resolvedMode);
+  const { accent, swatch: activeSwatch, setAccent, mode, setMode, resolvedMode } = useTheme();
+  const current = accentRoles(activeSwatch, resolvedMode);
 
   return (
     <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
@@ -39,7 +39,7 @@ export function ThemeControls() {
           <Button
             variant="ghost"
             size="sm"
-            aria-label={`Accent colour: ${getSwatch(accent).name}`}
+            aria-label={`Accent colour: ${activeSwatch.name}`}
             className="h-7 w-8 px-0"
           >
             <span

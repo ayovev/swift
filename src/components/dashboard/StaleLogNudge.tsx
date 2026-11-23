@@ -56,7 +56,7 @@ export function StaleLogNudge({ staleness, today, includeLastWorkout, onWorkoutF
         <div className="flex flex-wrap items-center gap-2">
           <FilePickerButton
             variant="default"
-            ariaLabel="Replace workout log"
+            ariaLabel="Replace file, workout log"
             className="h-8"
             onFile={(file) => {
               capture({ name: "interaction_used", props: { interaction: "stale_log_replace_clicked" } });

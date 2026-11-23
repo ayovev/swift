@@ -60,9 +60,9 @@ describe("SettingsSheet", () => {
     for (const name of ["Your data", "Backup", "Other devices", "Appearance", "Start over"]) {
       expect(screen.getByRole("region", { name })).toBeInTheDocument();
     }
-    expect(screen.getByRole("button", { name: "Replace workout log" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Replace file, workout log" })).toBeInTheDocument();
     // No InBody data loaded yet, so the same slot offers to add one.
-    expect(screen.getByRole("button", { name: "Add InBody file" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add file, InBody" })).toBeInTheDocument();
   });
 
   it("offers backup download and restore, and disables download on sample data", async () => {

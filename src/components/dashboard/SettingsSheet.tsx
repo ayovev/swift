@@ -29,6 +29,7 @@ import { useBackupRestore } from "@/components/backup/useBackupRestore";
 import { SyncEntryPoint } from "@/components/sync/SyncEntryPoint";
 import { ACTIVE_SEGMENT_CLASSES } from "./SegmentedControl";
 import { FilePickerButton } from "./FilePickerButton";
+import { BrandingControls } from "./BrandingControls";
 import type { BodyCompState } from "./BodyCompTab";
 import { readAudience, writeAudience, type Audience } from "@/lib/audience";
 import { cryptoAvailable } from "@/lib/backup/encryption";
@@ -193,7 +194,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
               title="Workout log"
               detail={`SugarWOD · ${props.workoutRows.length.toLocaleString()} workouts`}
               action={
-                <FilePickerButton onFile={props.onWorkoutFile} ariaLabel="Replace workout log" className="h-8">
+                <FilePickerButton onFile={props.onWorkoutFile} ariaLabel="Replace file, workout log" className="h-8">
                   Replace file
                 </FilePickerButton>
               }
@@ -208,7 +209,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
               action={
                 <FilePickerButton
                   onFile={props.onBodyCompFile}
-                  ariaLabel={props.bodyComp.status === "ready" ? "Replace InBody file" : "Add InBody file"}
+                  ariaLabel={props.bodyComp.status === "ready" ? "Replace file, InBody" : "Add file, InBody"}
                   className="h-8"
                 >
                   {props.bodyComp.status === "ready" ? "Replace file" : "Add file"}
@@ -386,6 +387,12 @@ export function SettingsSheet(props: SettingsSheetProps) {
               </div>
             </div>
           </Section>
+
+          {audience === "coach" ? (
+            <Section title="Branding">
+              <BrandingControls />
+            </Section>
+          ) : null}
 
           <Section title="Role">
             <div className="flex flex-wrap items-center justify-between gap-3">

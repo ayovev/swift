@@ -21,6 +21,9 @@ interface UploadDropzoneProps {
 }
 
 /** Drag-and-drop or click-to-browse CSV input. */
+/** The visible prompt, also part of the control's accessible name. */
+const DROP_TEXT = "Drop your CSV here, or browse";
+
 export function UploadDropzone({
   loading,
   onFile,
@@ -67,7 +70,9 @@ export function UploadDropzone({
         }}
         role="button"
         tabIndex={0}
-        aria-label={ariaLabel}
+        // The name carries what is on screen as well as which file this is: a name that leaves out the visible words fails
+        // for someone who speaks them (WCAG 2.5.3).
+        aria-label={`${ariaLabel}. ${loading ? `${loadingLabel} ${loadingHint}` : `${DROP_TEXT} ${hint}`}`}
         aria-busy={loading}
         className={cn(
           "group relative flex w-full cursor-pointer flex-col items-center justify-center gap-3",
@@ -90,6 +95,8 @@ export function UploadDropzone({
               <Loader2 className="size-6 animate-spin text-primary" aria-hidden="true" />
             )}
             <p className="text-sm font-medium">{loadingLabel}</p>
+            {/* A real space between the two lines, so the visible text reads as the label does (the two are compared). */}
+            {" "}
             <p className="text-xs text-muted-foreground">{loadingHint}</p>
           </>
         ) : (
@@ -101,6 +108,7 @@ export function UploadDropzone({
             <p className="text-sm font-medium">
               Drop your CSV here, or <span className="text-accent-link underline underline-offset-4">browse</span>
             </p>
+            {" "}
             <p className="text-xs text-muted-foreground">{hint}</p>
           </>
         )}

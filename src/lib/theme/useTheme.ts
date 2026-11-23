@@ -6,14 +6,20 @@ import {
   useMemo,
   useState,
 } from "react";
+import { BRAND_ACCENT_ID, brandSwatch } from "@/lib/brand/color";
+import { useBrand } from "@/lib/brand/brandStore";
 import {
   ACCENT_SWATCHES,
   DEFAULT_ACCENT,
   accentCssVars,
   getSwatch,
   type AccentId,
+  type AccentSwatch,
   type ThemeMode,
 } from "./palette";
+
+/** A stock swatch, or the coach's brand colour (only while one is set). */
+export type AccentChoice = AccentId | typeof BRAND_ACCENT_ID;
 
 /** What the user picked. "system" follows the OS, and keeps following it. */
 export type ModePreference = ThemeMode | "system";
@@ -22,9 +28,12 @@ export interface ThemeState {
   mode: ModePreference;
   /** The mode actually being rendered, after resolving "system". */
   resolvedMode: ThemeMode;
-  accent: AccentId;
+  /** What is in effect: "brand" only while a valid brand colour is set, otherwise the stock accent it falls back to. */
+  accent: AccentChoice;
+  /** The swatch for `accent`, brand colour included. */
+  swatch: AccentSwatch;
   setMode: (mode: ModePreference) => void;
-  setAccent: (accent: AccentId) => void;
+  setAccent: (accent: AccentChoice) => void;
 }
 
 /** Shared with the pre-hydration script in index.html — keep both in step. */
@@ -33,7 +42,7 @@ const DARK_QUERY = "(prefers-color-scheme: dark)";
 
 interface StoredTheme {
   mode?: ModePreference;
-  accent?: AccentId;
+  accent?: AccentChoice;
 }
 
 function readStored(): StoredTheme {
@@ -63,8 +72,8 @@ function systemMode(): ThemeMode {
   return window.matchMedia(DARK_QUERY).matches ? "dark" : "light";
 }
 
-const isAccentId = (value: unknown): value is AccentId =>
-  ACCENT_SWATCHES.some((s) => s.id === value);
+const isAccentChoice = (value: unknown): value is AccentChoice =>
+  value === BRAND_ACCENT_ID || ACCENT_SWATCHES.some((s) => s.id === value);
 
 const isModePreference = (value: unknown): value is ModePreference =>
   value === "light" || value === "dark" || value === "system";
@@ -83,10 +92,15 @@ export function useThemeState(): ThemeState {
     const stored = readStored().mode;
     return isModePreference(stored) ? stored : "system";
   });
-  const [accent, setAccentState] = useState<AccentId>(() => {
+  const [chosen, setAccentState] = useState<AccentChoice>(() => {
     const stored = readStored().accent;
-    return isAccentId(stored) ? stored : DEFAULT_ACCENT;
+    return isAccentChoice(stored) ? stored : DEFAULT_ACCENT;
   });
+  const brandColor = useBrand().color;
+  const brand = useMemo(() => (brandColor ? brandSwatch(brandColor) : null), [brandColor]);
+  // "brand" with no brand colour (removed, or storage cleared) quietly falls back to the default.
+  const accent: AccentChoice = chosen === BRAND_ACCENT_ID && !brand ? DEFAULT_ACCENT : chosen;
+  const swatch: AccentSwatch = accent === BRAND_ACCENT_ID && brand ? brand.swatch : getSwatch(accent === BRAND_ACCENT_ID ? DEFAULT_ACCENT : accent);
   const [systemPreference, setSystemPreference] = useState<ThemeMode>(systemMode);
 
   // Keep following the OS while the preference is "system" — a user who
@@ -109,25 +123,25 @@ export function useThemeState(): ThemeState {
     root.style.colorScheme = resolvedMode;
     root.setAttribute("data-accent", accent);
 
-    const vars = accentCssVars(getSwatch(accent), resolvedMode);
+    const vars = accentCssVars(swatch, resolvedMode);
     for (const [name, value] of Object.entries(vars)) {
       root.style.setProperty(name, value);
     }
-  }, [resolvedMode, accent]);
+  }, [resolvedMode, accent, swatch]);
 
   const setMode = useCallback((next: ModePreference) => {
     setModeState(next);
     writeStored({ ...readStored(), mode: next });
   }, []);
 
-  const setAccent = useCallback((next: AccentId) => {
+  const setAccent = useCallback((next: AccentChoice) => {
     setAccentState(next);
     writeStored({ ...readStored(), accent: next });
   }, []);
 
   return useMemo(
-    () => ({ mode, resolvedMode, accent, setMode, setAccent }),
-    [mode, resolvedMode, accent, setMode, setAccent]
+    () => ({ mode, resolvedMode, accent, swatch, setMode, setAccent }),
+    [mode, resolvedMode, accent, swatch, setMode, setAccent]
   );
 }
 

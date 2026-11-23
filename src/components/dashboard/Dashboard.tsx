@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FlaskConical } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { SwiftMark } from "@/components/SwiftMark";
+import { BrandMark } from "@/components/BrandMark";
 import { ScopeLine } from "./ScopeLine";
 import { SectionLinks, SubNav, pageSubtitleOf, pageTitleOf, sectionOf } from "./SectionNav";
 import { SettingsSheet } from "./SettingsSheet";
@@ -264,6 +265,7 @@ export function Dashboard({
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-10 px-5 sm:px-8 lg:grid lg:grid-cols-[1fr_auto_1fr]">
           <div className="flex h-16 shrink-0 items-center gap-3">
             <SwiftMark className="[&_img]:h-7" />
+            <BrandMark />
           </div>
           <div className="order-last -mx-5 w-[calc(100%+2.5rem)] border-t border-border px-5 sm:-mx-8 sm:w-[calc(100%+4rem)] sm:px-8 lg:order-none lg:mx-0 lg:w-auto lg:border-t-0 lg:px-0">
             <SectionLinks value={tab} onValueChange={onTabChange} />
@@ -308,7 +310,7 @@ export function Dashboard({
                 </span>
               ) : null}
             </div>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-[40px] sm:leading-[1.1]">
+            <h1 className="text-3xl font-semibold tracking-tight break-words sm:text-[40px] sm:leading-[1.1]">
               {pageTitleOf(tab)}
             </h1>
             {pageSubtitleOf(tab) ? (
