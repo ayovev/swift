@@ -71,7 +71,7 @@ Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample
    a dev-only run-once script that is not application code and is never bundled.
 4. **The classifier is validated against a golden fixture.** `tests/fixtures/python_reference_output.json`
    was generated from the Python reference implementation in the Stride PoC over the
-   1,209-row sample export. Any change to the GPP keyword lists, the exclusion list, or the
+   sample export. Any change to the GPP keyword lists, the exclusion list, or the
    matching logic **will** move `tests/buildDashboardData.parity.test.ts`. The required
    workflow: measure the change against the real sample export, then update that test's
    `EXPECTED_DIFF` (and the bounds/comments) deliberately, entry by entry, with the reason
@@ -125,11 +125,10 @@ a broadening rule must land only on genuine inflections, and it will move the pa
 **A percentage base is a reference, not a movement** (movement classifier only). `findAllMatches(..., { skipPercentBases: true })` in `matcher.ts`,
 which `findMovements` passes, rejects an occurrence directly after "% of" (with "your", "my", "the", "1RM", "5-rep max" allowed between), and
 `findPercentBases` claims the whole base phrase so a shorter phrase inside it cannot match in its place (`% of clean and jerk` is not a jerk). It needs
-the word "of": `75% back squat` is as likely to be the lift performed, so it is left alone. The same lift named anywhere else still counts. Measured on the
-sample: 70 rows name a lift as a base, 51 rows' movements change (a front squat session "at 80% of your clean" is no longer also a clean; a clean pull
-or a snatch grip deadlift is no longer also a clean or a snatch), 1 modality split moves (`Power Cean 4x3 @ 67% of clean`, a typo'd title with no other
-movement, is now unclassified), and no domain tag moves. **The GPP domain keywords deliberately do not use it**: they have no claiming, so rejecting
-"clean and jerk" would let the keyword "jerk" match inside it (measured: new Power and Strength tags on 4 rows), and the parity fixture pins them. So a
+the word "of": `75% back squat` is as likely to be the lift performed, so it is left alone. The same lift named anywhere else still counts. Its effect on the sample
+is pinned by the tests: a front squat session "at 80% of your clean" is no longer also a clean, a clean pull or a snatch grip deadlift is no longer also a clean or a snatch, a typo'd
+`Power Cean 4x3 @ 67% of clean` with no other movement becomes unclassified, and no domain tag moves. **The GPP domain keywords deliberately do not use it**: they have no claiming, so rejecting
+"clean and jerk" would let the keyword "jerk" match inside it (measured: it adds Power and Strength tags to real rows), and the parity fixture pins them. So a
 domain tag can still come from a base (pinned in `tests/domainClassifier.test.ts`); fixing that needs claiming in the domain classifier first.
 
 ## Deployment headers
@@ -166,7 +165,7 @@ undoes any of it. The rules that hold everywhere (the full account, with the mea
 - **analytics**: `buildInsights.ts` is the whole pipeline entry point. It calls `parseRows()`
   from `buildDashboardData.ts` **once** and hands the same `ParsedRow[]` to
   `buildFromParsedRows()` and `buildModalityData()`. Rows are date-parsed, text-built and
-  GPP-classified exactly once and shared, because at ~1,200 rows doing it twice is the
+  GPP-classified exactly once and shared, because on a real log doing it twice is the
   difference between comfortably inside the 5-second performance budget and not. Do not make
   `buildModalityData` re-parse the file, and do not add a second `parseRows()` call path.
   `parseRows()` also takes the selected `Granularity` (`granularity.ts`; daily/weekly/monthly/
@@ -176,7 +175,7 @@ undoes any of it. The rules that hold everywhere (the full account, with the mea
   pre-group rows by bucket into a `Map` rather than re-filtering the full set per domain per
   bucket (10 domains × ~47 monthly buckets is noticeably slow otherwise, and daily/weekly
   buckets are more numerous still).
-- **components**: `Dashboard.tsx` renders 20 views (`tabs.ts` → `ALL_TABS`): Overview,
+- **components**: `Dashboard.tsx` renders every view (`tabs.ts` → `ALL_TABS`): Overview,
   Workouts, Lifts (`LiftHistoryTab.tsx`, tab id `lift-history`: the lift, benchmark and PR cards,
   for the selected range), the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
   (Progress, Timeline), grouped for navigation into
@@ -216,7 +215,7 @@ Movements charts, on `LiftChart`/`LiftGrid`, so the Lifts view, and on Body Comp
 says what is showing and the picker undoes it. A mouse or pen drags on the chart (after 6px, so a click that does not move still picks a point, and the
 release of a drag is never also a pick); a finger drags on a strip under the chart that only a coarse pointer shows (`pointer-coarse:`), because a drag
 on the chart itself is how a phone scrolls. The lift charts are small multiples on one shared date domain and plot width, so a touch screen gets one strip
-above the whole grid (not 14), measured from the grid and drawing its band in itself. One gesture core (`useRangeGesture`) serves both mappings: a share
+above the whole grid (not one per chart), measured from the grid and drawing its band in itself. One gesture core (`useRangeGesture`) serves both mappings: a share
 chart's points are buckets spaced evenly (`useRangeDrag`, whole buckets), a lift chart's x axis is a continuous date scale (`useTimeRangeDrag`, any two
 days). A bucket mapping has a layout: share and line charts draw buckets as points spaced evenly (a line chart's x axis padding insets them, 12px
 on Body Comp), a bar chart as equal slices of the plot (`BucketLayout`, `indexAt`, `bucketBand`). Body Comp's line charts draw only the buckets a scan
@@ -352,7 +351,7 @@ body fat have no band, because nothing compares them.
 - **Design decisions kept for now, by the owner** (from the 2026 design critique, since deleted; its reasons now live next to the code):
   the fixed M/W/G colours stay red, green and blue (red sits beside green on the Workouts bars; a colour-blind-safe set such as blue,
   orange and a dark neutral is the alternative, and `tests/modalityColors.test.ts` pins the one pair below target); Training keeps
-  its 16 tabs (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); and the red accent
+  its long tab row (folding the ten domains into one view, with the comparison strip as its picker, is the alternative); and the red accent
   stays as it is, a known overlap with `--destructive`. Measured as OKLab distance x100 from `--destructive`, the red swatch's button
   colour is 8.8 (light) and 5.2 (dark), where every other swatch is above 10. Moving its hue to 0 cleared 8 but read as pink beside
   magenta; hue 45 at chroma 0.14 cleared it (12.1, 9.1) but read as rust, not red. A later redesign of the swatches, or a free colour
@@ -462,7 +461,7 @@ home. Read the header comments of the files named here before moving anything be
   view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
   header — in line with them it read as one more tab. Workouts and Lifts share an unlabelled
   group (the record of what was done) and Movements is a group of one, so neither has a header;
-  Workouts comes first, so selecting Training opens the log. Training is the long row (16 tabs): it fits at 1280px with
+  Workouts comes first, so selecting Training opens the log. Training is the long row: it fits at 1280px with
   the gaps tightened from `lg`, and below that scrolls sideways, with a fade (and on a pointer device a button) at each edge that
   has more tabs past it and the selected tab scrolled into view. The Cardio domain and the M modality are both labelled "Cardio" on
   purpose: the Domains and Modalities headers tell them apart (`MODALITY_NAMES`, pinned in `tests/sectionNav.test.tsx`). A third nav level for it would break "never a dropdown", so it hasn't
@@ -672,7 +671,7 @@ and Recharts series pick it up with no per-component wiring.
 
 ## Accessibility conventions
 
-Measured with axe-core (WCAG 2.2 AA and best-practice rules) in Chromium over every one of the 20 views, the landing and role-split screens, the Settings sheet (with
+Measured with axe-core (WCAG 2.2 AA and best-practice rules) in Chromium over every view, the landing and role-split screens, the Settings sheet (with
 Branding) and the entry dialog, in light, dark and emulated forced colors, with a coach brand set, and at 375px wide, plus the states that render different markup: charts
 as tables, an expanded workout row, an opened Progress row, a selected Timeline entry, Body Comp with data, a picked chart point and a hovered button. All clean. Scan those
 states, not only each view's default, because the defaults missed real findings. Keep it that way:
@@ -756,6 +755,10 @@ through, not a backlog of fixes.
   and the lexicon-integrity block in `tests/modalityClassifier.test.ts` (lowercase phrases,
   no duplicates, valid modality). If you fix a pinned limitation, move the test rather than
   deleting it, and update the parity expectations in the same commit.
+- **Documentation is checked against the code** (`tests/docs.test.ts`): every relative link and its heading, every `src/`, `tests/` or `docs/` path in backticks, every
+  quoted CLAUDE.md heading cited from a comment, and every analytics or sync event named on an event line must exist. Rename a file, heading or event and update the text in the
+  same change. The test checks that things exist, not that prose is true, so keep figures that drift (counts, measurements, line numbers) out of documents: state the rule, and let a
+  test pin the number if it matters.
 - Known benign divergences from the Python reference, already documented in the parity test:
   `Math.round` vs Python's round-half-even (tenth-of-a-percent cell differences on exact
   `.x5` ties), delta computed from rounded percentages, and pandas' unstable quicksort making

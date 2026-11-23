@@ -88,7 +88,7 @@ One phase: the brand profile and web app (FR-1 to FR-11). It adds no dependency.
 
 ## 10. Implementation notes (for the build phase)
 
-Reuse: `FilePickerButton`, `SettingsSheet.tsx` sections, `palette.ts`/`contrast.ts`, the `useTheme()` and `swift.audience` localStorage pattern, `AlertDialog` for removal. New: `src/lib/brand/` (image normalisation, storage, colour derivation as pure functions, luminance check) and `src/components/dashboard/BrandMark.tsx`. Tests: pure-function tests for image sizing, luminance and colour adjustment (jsdom has no canvas, so decoding is verified in Chromium), brand storage fallback, themeContrast over brand colours, analytics payload check, lazySplit unchanged.
+Reuse: `FilePickerButton`, `SettingsSheet.tsx` sections, `palette.ts`/`contrast.ts`, the `useTheme()` and `swift.audience` localStorage pattern, `AlertDialog` for removal. New: `src/lib/brand/` (image normalisation, storage, colour derivation as pure functions, luminance check) and `src/components/BrandMark.tsx`. Tests: pure-function tests for image sizing, luminance and colour adjustment (jsdom has no canvas, so decoding is verified in Chromium), brand storage fallback, themeContrast over brand colours, analytics payload check, lazySplit unchanged.
 
 ## 11. Docs to update with the build
 
