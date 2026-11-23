@@ -114,14 +114,15 @@ function Headline({ data }: { data: SkillsData }) {
       )}
 
       <div className="mt-3 flex h-2.5 w-full overflow-hidden rounded-full border border-border" aria-hidden="true" data-testid="skills-bar">
-        {hasStart && data.newCount > 0 ? <div className="bg-primary" style={{ width: pct(data.newCount) }} /> : null}
+        {/* Left to right in time: what was done before, then what is new, then what is not yet. */}
         {hasStart ? <div className="bg-accent-border" style={{ width: pct(before) }} /> : <div className="bg-primary" style={{ width: pct(data.done) }} />}
+        {hasStart && data.newCount > 0 ? <div className="bg-primary" style={{ width: pct(data.newCount) }} /> : null}
       </div>
       <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground" data-testid="skills-bar-key">
         {hasStart ? (
           <>
-            <li className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-primary" aria-hidden="true" />{data.newCount} new</li>
             <li className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-accent-border" aria-hidden="true" />{before} done before</li>
+            <li className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-primary" aria-hidden="true" />{data.newCount} new</li>
           </>
         ) : (
           <li className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-primary" aria-hidden="true" />{data.done} done</li>
