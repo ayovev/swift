@@ -522,6 +522,10 @@ through `useBrand()`.
   resolved swatch. `brandSwatch()` reduces the colour to hue and capped chroma, then holds it to every rule `themeContrast.test.ts` holds the stock swatches to, plus an
   OKLab distance of 8 from `--destructive`, by nudging chroma and hue; a threshold is never lowered. It reports `adjusted` so the form says so. The known red-swatch
   overlap is pinned in `tests/brand.test.ts`. "brand" with no brand colour falls back to the default accent.
+- **A logo's colours are suggested, never applied.** `dominantColors()` (`lib/brand/color.ts`, a pure function over the same RGBA bytes `measureTone` reads) groups visible, chromatic pixels by hue,
+  scores them by chroma times area, and returns at most three hex colours, stored as `Brand.palette` (`[]` means the logo has none; absent means it was never looked for) and removed with the logo.
+  `BrandingControls` shows them as buttons; picking one is the same as choosing the colour, so `brandSwatch()`'s adjustment applies, and a colour the coach already chose is never overwritten.
+  Its tests are mutation-checked (the hue-edge merge, the chroma weighting and the neighbour suppression each have a test that fails without them): keep them that way.
 - **The Swift mark is never removable.** `BrandMark.tsx` only adds a logo beside `SwiftMark` (Dashboard and Landing headers); alt text is the gym name, else "Gym logo". A see-through
   logo the page would swallow sits on a fixed light or dark plate (`plateFor`, from a tone measured at upload).
 - **Analytics:** `brand_saved` and `brand_removed` are bare `interaction_used` names; no logo, name or colour, and not which field.

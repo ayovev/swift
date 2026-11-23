@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { isHexColor } from "./color";
+import { isHexColor, MAX_PALETTE } from "./color";
 import { MAX_STORED_CHARS, type LogoTone } from "./image";
 
 /**
@@ -16,6 +16,8 @@ export interface Brand {
   /** A normalised PNG/JPEG/WebP data URL (see image.ts). */
   logo?: string;
   tone?: LogoTone;
+  /** Up to three colours found in the logo (see `dominantColors`), offered as suggestions. `[]` means the logo has none; absent means not looked for. */
+  palette?: string[];
   /** Plain text; also the logo's alt text. */
   name?: string;
   /** "#rrggbb". */
@@ -44,6 +46,9 @@ export function parseBrand(raw: string | null): Brand {
     const t = v.tone as Record<string, unknown> | undefined;
     if (t && typeof t.luminance === "number" && typeof t.transparent === "boolean") {
       brand.tone = { luminance: Math.min(1, Math.max(0, t.luminance)), transparent: t.transparent };
+    }
+    if (Array.isArray(v.palette)) {
+      brand.palette = v.palette.filter(isHexColor).map((c) => c.toLowerCase()).slice(0, MAX_PALETTE);
     }
   }
   if (typeof v.name === "string" && v.name.trim() !== "") brand.name = v.name.trim().slice(0, MAX_NAME_LENGTH);
@@ -89,7 +94,10 @@ export function updateBrand(patch: { [K in keyof Brand]?: Brand[K] | undefined }
     if (value === undefined) delete next[key as keyof Brand];
     else (next as Record<string, unknown>)[key] = value;
   }
-  if (!next.logo) delete next.tone;
+  if (!next.logo) {
+    delete next.tone;
+    delete next.palette;
+  }
   writeBrand(parseBrand(JSON.stringify(next)));
 }
 

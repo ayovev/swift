@@ -1,3 +1,5 @@
+import { dominantColors } from "./color";
+
 /**
  * Turning a chosen file into the one small, safe image Swift keeps as a logo.
  *
@@ -104,6 +106,8 @@ export function plateFor(tone: LogoTone | undefined, mode: "light" | "dark"): Pl
 export interface NormalisedLogo {
   dataUrl: string;
   tone: LogoTone;
+  /** Up to three colours found in the logo, most prominent first; empty when it has none (a black and white logo). */
+  palette: string[];
 }
 
 /** Decode, redraw and re-encode. Throws `LogoError`. */
@@ -128,10 +132,12 @@ export async function normaliseLogo(file: File): Promise<NormalisedLogo> {
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new LogoError("unreadable");
       ctx.drawImage(bitmap, 0, 0, width, height);
-      const tone = measureTone(ctx.getImageData(0, 0, width, height).data);
+      const pixels = ctx.getImageData(0, 0, width, height).data;
+      const tone = measureTone(pixels);
+      const palette = dominantColors(pixels);
       // WebP where the browser can write it; PNG otherwise (a browser that can't ignores the request and returns PNG).
       const dataUrl = canvas.toDataURL("image/webp", 0.9);
-      if (dataUrl.length <= MAX_STORED_CHARS) return { dataUrl, tone };
+      if (dataUrl.length <= MAX_STORED_CHARS) return { dataUrl, tone, palette };
     }
     throw new LogoError("too_large");
   } finally {

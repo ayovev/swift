@@ -90,6 +90,9 @@ always there too. The colour becomes the accent, adjusted automatically if it
 would be hard to read in either mode, and the form says when it did that. The
 logo can be a PNG, JPEG or WebP up to 5 MB; SVG isn't accepted. A logo that would
 disappear against the page (white on light, black on dark) sits on a small plate.
+When you add a logo, Swift offers up to three of the colours in it under the colour
+field; pick one to use it, or choose your own. It never changes your colour by itself,
+and a black and white logo has none to offer.
 Branding stays on this device: it isn't uploaded, synced or included in a backup,
 and **Start over** doesn't remove it, so a coach moving between athletes keeps it.
 **Remove branding** clears it. Athletes don't see a coach's branding; it shows
