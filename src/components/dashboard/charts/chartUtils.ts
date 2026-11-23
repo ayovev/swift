@@ -377,15 +377,6 @@ export const FIXED_REPMAX_COLORS: Record<RepMaxCategory, string> = {
 export const MODALITY_DRAW_ORDER: readonly Modality[] = ["W", "G", "M"];
 
 /**
- * "35 workouts with no recognised movement are left out." The modality shares are averages over classified workouts only, so the
- * caveat sits beside the chart it qualifies, not only in the page footer.
- */
-export function unclassifiedNote(n: number): string | null {
-  if (n <= 0) return null;
-  return n === 1 ? "1 workout with no recognised movement is left out." : `${n.toLocaleString()} workouts with no recognised movement are left out.`;
-}
-
-/**
  * A workout's split as text, in the same order its bar is drawn (MODALITY_DRAW_ORDER): "W 67 · G 0 · M 33". The bar runs W, G, M left
  * to right; text in the canonical M, W, G order under it read the segments backwards.
  */

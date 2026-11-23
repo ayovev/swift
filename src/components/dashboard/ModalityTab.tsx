@@ -4,7 +4,7 @@ import { ChartViewToggle } from "./charts/ChartTable";
 import { ModalityStrip } from "./charts/ComparisonStrip";
 import { ChartPickNote, scrollToList, useBucketPick } from "./charts/ChartPick";
 import { ShareAreaChart } from "./charts/ShareAreaChart";
-import { modalityColor, splitText, unclassifiedNote } from "./charts/chartUtils";
+import { modalityColor, splitText } from "./charts/chartUtils";
 import { TrendStat } from "./TrendStat";
 import { WorkoutList } from "./WorkoutList";
 import { GRANULARITY_NOUN, granularityLabel, type Granularity } from "@/lib/analytics/granularity";
@@ -76,9 +76,6 @@ export function ModalityTab({
               appears in {overall.count.toLocaleString()} of{" "}
               {data.classified_count.toLocaleString()} workouts
             </div>
-            {unclassifiedNote(data.unclassified_count) ? (
-              <p className="w-full text-xs text-muted-foreground">{unclassifiedNote(data.unclassified_count)}</p>
-            ) : null}
           </div>
           <ModalityStrip data={data} current={modality} onOpen={onOpen} />
         </CardContent>

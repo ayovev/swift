@@ -262,8 +262,8 @@ always beats the generic one inside it. Array order in `MOVEMENT_LEXICON` is irr
 adding an entry never requires reordering anything else. A movement counts once however many
 times it is named. Workouts where nothing is recognised are marked `classified: false` and
 **excluded from every average**, not counted as zeroes (otherwise a logged non-workout drags
-every modality's share down); the count is surfaced as `unclassified_count` so the UI can
-caveat it honestly.
+every modality's share down); the count is kept as `unclassified_count` (the page footer says
+how many; no chart prints a note about it).
 
 Movements have **stable ids**, not just labels (the full account of variants, families, the double-count audit, the `barbell_lift` column, implement labels and the measured effect of each rule on the
 sample is in `docs/movement-lexicon.md`; read it before changing `movementLexicon.ts`, `movementFamilies.ts` or `implement.ts`). The rules that apply everywhere:
@@ -355,7 +355,7 @@ body fat have no band, because nothing compares them.
   stays as it is, a known overlap with `--destructive` (the red swatch's button colour is under 8 OKLab x100 from it in dark mode, where every other swatch is clear; moving its hue
   away cleared the distance but read as pink or rust, not red). A later redesign of the swatches, or a free colour picker, should keep the button and link colours at least 8 from
   `--destructive` in both modes, as a test (`brand.test.ts` does this for a brand colour and pins the red swatch as the one exception).
-- **Overview's days-trained bars follow the accent**, chosen by the owner over a neutral ink that avoided matching the M/W/G colours under it (the default blue, green and dark-mode red come within 8 OKLab x100 of one of them; teal, slate, violet, magenta and amber are clear). If it reads as one series in practice, the alternatives are the neutral ink again, or neutral only for the colliding accents. The Overview M/W/G chart also prints no note about workouts with no recognised movement (the modality pages still do; `unclassified` stays in the data).
+- **Overview's days-trained bars follow the accent**, chosen by the owner over a neutral ink that avoided matching the M/W/G colours under it (the default blue, green and dark-mode red come within 8 OKLab x100 of one of them; teal, slate, violet, magenta and amber are clear). If it reads as one series in practice, the alternatives are the neutral ink again, or neutral only for the colliding accents. No chart prints a note about workouts with no recognised movement (neither Overview's M/W/G chart nor the modality pages); `unclassified` and `unclassified_count` stay in the data, the page footer still says how many entries sit outside the split, and the grey "Not classified" key on Workouts rows stays because it names a mark that is drawn.
 - **Timeline verdict rows have no drawing** (see "Architecture: the Timeline"); shading an entry's span on Progress's evidence chart
   is a separate, unbuilt idea.
 - **Assistive technology is unverified.** No real screen reader pass has been done, and forced colors was checked only by Chromium's emulation, not on Windows High Contrast
