@@ -61,7 +61,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 | --- | --- | --- | --- |
 | 1. Progress report | SugarWOD | Coach to athlete, athlete to self | Headline (Improving, Steady, Declining) with counts. Each lift and benchmark with its verdict, est. 1RM change, and the logged set a record came from. PRs in the period. Subjects moved up to RX. A subject with too few sessions is listed as such, not judged. **Since a chosen date:** each subject's verdict then and now, PRs and sessions logged since. **Changes you made:** for each Timeline entry the athlete changed, before and after verdicts, with entries that merely happened shown as context |
 | 2. Training mix report | SugarWOD | Coach to athlete, athlete to self | Days trained per month, M/W/G split per month, the ten GPP domains on one shared axis (tags, not a share of 100), most-trained movements, workouts with no recognized movement counted once in a footer |
-| 3. Body and training report | SugarWOD + InBody | Coach to athlete, athlete to self | Pooled body weight line with its noise band, lean and fat mass from scans, scan dates, and over the same months the Progress headline and days trained, side by side. Timeline entries marked on the axis |
+| 3. Body and training report | SugarWOD + InBody | Coach to athlete, athlete to self | Pooled body weight line with its noise band, lean and fat mass from scans, scan dates, and over the same months days trained per month beside them, with the Progress headline as of today. Timeline entries marked on the axis |
 
 **Why these three first**
 
@@ -144,6 +144,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 - The coach note is in v1, at the end of the report, and always starts empty. A remembered note could land on the next athlete's report.
 - Progress supports a period from a chosen date and stores nothing. A saved last-report date was dropped: Start over would wipe it, Replace file would carry it to the wrong athlete, and an export has no athlete id.
 - Change review is a section of Progress, not its own report.
+- Body and training shows one Progress headline as of today beside days trained per month, not a headline per month. A per-month headline would need Progress computed at many past dates.
 - v1 is a beta tested with gym members. Checking the Progress thresholds on a second athlete's export is deferred until a wider release.
 - A coach-typed athlete label that remembers a date per athlete is deferred, not built.
 
