@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import dayjs from "dayjs";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { useTheme } from "@/lib/theme/useTheme";
+import { accentCssVars } from "@/lib/theme/palette";
 import { SwiftMark } from "@/components/SwiftMark";
 import { TIME_AXIS_PROPS } from "@/components/dashboard/charts/chartUtils";
 import { VerdictPill, headlineLabelClass, type VerdictKind } from "@/components/dashboard/progress/verdictMark";
@@ -31,6 +33,10 @@ function verdictKindOf(row: ProgressRow): VerdictKind | null {
 }
 
 export function ProgressReportPrototype({ rows, today }: { rows: SugarWodRow[]; today: string }) {
+  // The sheet is always the light page: its tokens come from `.report-sheet` (index.css) and its accent from the light-mode roles, so a dark
+  // app prints and previews the same report as a light one.
+  const { swatch } = useTheme();
+  const lightAccent = useMemo(() => accentCssVars(swatch, "light") as CSSProperties, [swatch]);
   const [pipelineReady, setPipelineReady] = useState(getPipeline() !== null);
   useEffect(() => {
     void loadPipeline().then(() => setPipelineReady(true));
@@ -59,7 +65,7 @@ export function ProgressReportPrototype({ rows, today }: { rows: SugarWodRow[]; 
         </button>
       </div>
 
-      <article className="report-sheet mx-auto max-w-[8.5in] bg-background p-[0.6in] shadow-sm">
+      <article className="report-sheet mx-auto max-w-[8.5in] bg-background p-[0.6in] shadow-sm" style={lightAccent}>
         <table className="report-table w-full">
           <tbody>
             <tr>

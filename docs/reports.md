@@ -86,7 +86,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 
 **Progress report: period and changes**
 
-- **R-14** "Since a chosen date" compares Progress now with Progress as of that date: each subject's verdict then and now ("Steady to Up"), PRs and sessions logged since, and subjects that moved up to RX. The state "as of then" uses only rows on or before that date, run through the same verdict engine with that date as its reference (the engine takes its reference date as an argument and never reads the clock). To confirm in the build that every verdict step can run at a past date unchanged. A subject without enough sessions then is shown as "not judged then".
+- **R-14** "Since a chosen date" compares Progress now with Progress as of that date: each subject's verdict then and now ("Steady to Up"), PRs and sessions logged since, and subjects that moved up to RX. The state "as of then" uses only rows on or before that date, run through the same verdict engine with that date as its reference (the engine takes its reference date as an argument and never reads the clock). Checked against the sample export (see "As-of-date findings"). A subject without enough sessions then is shown as "not judged then".
 - **R-15** Nothing is stored for the comparison. The date is chosen in the preview each time: no marker, no storage key, nothing synced or backed up. Swift cannot tell whose file is loaded (an export carries no athlete id), so a stored date could attach to the wrong athlete when a coach changes files; this avoids that and works for any number of athletes.
 - **R-16** The report prints "Compared from `<date>`" under the headline and its own report date in the footer, so a coach reads the date off the previous PDF and enters it next time.
 - **R-17** With no date chosen, Progress uses full history and says so. There is no "since the last report" default.
@@ -94,7 +94,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 
 **Output**
 
-- **R-5** v1 output is the browser's print dialog with a print stylesheet (Letter and A4), always in light mode, one report per print. The person saves a PDF from the dialog. No PDF or canvas library is added.
+- **R-5** v1 output is the browser's print dialog with a print stylesheet (Letter and A4), always on a white page in light mode, one report per print. A report ignores the app's light or dark mode in the preview as well as in print. The person saves a PDF from the dialog. No PDF or canvas library is added.
 - **R-6** Every chart has its table twin and text alternative in the preview, as elsewhere in the app. In print, each chart is followed by its summary sentence, so the report reads without the picture.
 - **R-7** A verdict never rests on color: the existing glyph and word appear beside every verdict, which also survives black and white printing.
 - **R-8** Every report footer carries the as-of date, the data basis ("Workout log through Nov 6. InBody scans through Oct 28") and the Swift mark.
@@ -129,9 +129,17 @@ A dev-only prototype (`src/components/reports/ProgressReportPrototype.tsx`, open
 - **A repeating footer needs a table footer group.** A `position: fixed` footer overlapped content on page 2. A `<tfoot>` repeats on every page, takes up room, and can hold the Swift mark.
 - **Rows and cards stay whole** with `break-inside: avoid`, and a heading stays with what follows with `break-after: avoid`.
 - **A dark app printed a black page margin** because `color-scheme: dark` is set inline on `html`. The print stylesheet resets it to light.
-- **Open: the Swift wordmark is invisible on the light sheet in dark mode.** `SwiftMark` swaps images with `dark:` variants, which follow the app's mode, not the sheet. The report needs a mark that follows the sheet.
-- **Open: `dark:` classes inside the sheet** also follow the app's mode. The sheet keeps its tokens light by redefining them (`.report-sheet` shares the `:root` token block in `src/index.css`), but any component that uses a `dark:` variant needs the same care, or the report should force the `dark` class off while it is open.
+- **Reports are always light, by decision.** The sheet redefines its tokens (`.report-sheet` shares the `:root` token block in `src/index.css`), takes the light-mode accent roles from `accentCssVars(swatch, "light")`, and the `dark` variant is switched off inside it, so `SwiftMark` and any `dark:` class show their light form. Checked: a dark app prints and previews the same white report as a light one.
 - **Not yet checked:** Safari and Firefox, multi-page flow with the Timeline and body sections, and a brand logo in the header.
+
+## As-of-date findings
+
+`tests/asOfDate.test.ts` runs Progress at past reference dates across the whole sample export and compares it with Progress over a log that stops on that date, which is what "Progress as of then" must equal (R-14).
+
+- **A real leak, now fixed.** `classifySubjects` found move-ups over the whole history, so a move up to RX dated after the reference date counted as an Up vote at an earlier date (a back squat that moved up in Aug 2023 read as Up in Jan 2023). Move-ups are now found over the sessions up to the reference date. The test fails without that change.
+- **Verdicts and votes match.** With the fix, every subject that carries a verdict or a vote, and the headline counts, are identical across the sweep.
+- **Subjects with fewer than 6 sessions can differ and are never judged.** A lift named only by its title is folded in once the whole log shows the lift exists, so a past-dated run over the whole log can list a subject that a truncated log would not. Reports state nothing about these subjects, so the test compares only judged rows.
+- **Not covered:** Timeline entries' before and after verdicts, which use their own windows (R-18), and a log with a different athlete's data.
 
 ## Success, phasing, risks and decisions
 
