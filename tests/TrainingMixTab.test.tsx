@@ -97,7 +97,7 @@ describe("the period", () => {
     ]);
     const all = within(sheet()).getByTestId("mix-summary").textContent!;
     fireEvent.click(screen.getByRole("button", { name: "Last 3 months" }));
-    expect(screen.getByText("Workouts from Jun 11, 2026 to Sep 11, 2026.")).toBeInTheDocument();
+    expect(screen.getByTestId("report-period")).toHaveTextContent("Jun 11, 2026 – Sep 11, 2026");
     expect(within(sheet()).getByTestId("mix-summary").textContent).not.toBe(all);
   });
 
@@ -107,8 +107,8 @@ describe("the period", () => {
     fireEvent.change(screen.getByLabelText("From"), { target: { value: "2025-01-06" } });
     fireEvent.change(screen.getByLabelText("To"), { target: { value: "2025-06-30" } });
     const page = within(sheet());
-    expect(page.getByText("Workouts from Jan 6, 2025 to Jun 30, 2025.")).toBeInTheDocument();
-    expect(page.getByText(/Report covers through Jun 30, 2025\. Report date Sep 11, 2026\./)).toBeInTheDocument();
+    expect(page.getByTestId("report-period")).toHaveTextContent("Jan 6, 2025 – Jun 30, 2025");
+    expect(page.getByText(/Report covers through Jun 30, 2025\./)).toBeInTheDocument();
   });
 
   it("says so, and draws nothing, for a period with no workouts", () => {

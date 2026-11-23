@@ -130,11 +130,11 @@ The order is by value to the person receiving it. Progress is the one report onl
 - **R-5** v1 output is the browser's print dialog with a print stylesheet (Letter and A4), always on a white page in light mode, one report per print. A report ignores the app's light or dark mode in the preview as well as in print. The person saves a PDF from the dialog. No PDF or canvas library is added.
 - **R-6** Every chart has its table twin and text alternative in the preview, as elsewhere in the app. In print, each chart is followed by its summary sentence, so the report reads without the picture.
 - **R-7** A verdict never rests on color: the existing glyph and word appear beside every verdict, which also survives black and white printing.
-- **R-8** Every report footer carries the as-of date, the data basis ("Workout log through Nov 6. InBody scans through Oct 28") and the Swift mark.
+- **R-8** Every report footer carries the data basis ("Workout log through Nov 6. InBody scans through Oct 28") and the Swift mark. The report date is in the header ("Prepared Nov 6, 2026"), not repeated in the footer.
 
 **Brand**
 
-- **R-9** For the coach audience, the report header shows the gym logo, name and brand color through `useBrand()`, with the Swift mark beside them (never removable). The athlete audience prints the Swift mark only.
+- **R-9** The header is one block for every report: a small label in the accent (the gym's name for a coach, else "Swift"), the title, the period as one unbreakable phrase ("Jan 1, 2023 – Dec 31, 2023", or "All time, through Dec 31, 2023") with the report date opposite it, a quieter line on what the report counts, a short accent rule, then a hairline. A muted row of marks sits opposite the label: for a coach the gym logo through `useBrand()`, and the Swift mark always (never removable). The athlete audience has the Swift mark only. On a phone the marks wrap under the label.
 - **R-10** Brand color is used for rules and headings only. Chart series keep their existing fixed and derived colors.
 
 **Quality**

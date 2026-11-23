@@ -50,9 +50,10 @@ describe("the Progress report", () => {
     expect(sheet().querySelector("[data-verdict='up']")).not.toBeNull();
   });
 
-  it("says its basis in the footer: the log's last day and the report date", () => {
+  it("says its basis in the footer (the log's last day) and the report date in the header", () => {
     renderReport();
-    expect(within(sheet()).getByText(/Workout log through .* Report date Sep 11, 2026\./)).toBeInTheDocument();
+    expect(within(sheet()).getByText(/^Workout log through /)).toBeInTheDocument();
+    expect(within(sheet()).getByTestId("report-prepared")).toHaveTextContent("Prepared Sep 11, 2026");
   });
 
   it("compares with an earlier date only when a period is chosen, and prints which date it compared from", () => {
@@ -88,10 +89,10 @@ describe("the Progress report", () => {
     fireEvent.change(screen.getByLabelText("From"), { target: { value: "2025-01-06" } });
     fireEvent.change(screen.getByLabelText("To"), { target: { value: "2025-06-30" } });
     const page = within(sheet());
-    expect(page.getByText("Verdicts use your full history, as of Jun 30, 2025.")).toBeInTheDocument();
+    expect(page.getByTestId("report-period")).toHaveTextContent("Jan 6, 2025 – Jun 30, 2025");
     expect(page.getByText("Compared from Jan 6, 2025 to Jun 30, 2025.")).toBeInTheDocument();
     expect(page.getByRole("heading", { name: "From Jan 6, 2025 to Jun 30, 2025" })).toBeInTheDocument();
-    expect(page.getByText(/Report covers through Jun 30, 2025\. Report date Sep 11, 2026\./)).toBeInTheDocument();
+    expect(page.getByText(/Report covers through Jun 30, 2025\./)).toBeInTheDocument();
     // Nothing logged after the end is in it: the footer's basis is the last workout on or before it.
     expect(page.getByText(/Workout log through (?:Jun \d+|May \d+), 2025\./)).toBeInTheDocument();
     expect(page.getByRole("columnheader", { name: "At the end" })).toBeInTheDocument();
@@ -193,6 +194,8 @@ describe("the coach's report", () => {
   it("shows the gym's logo beside the Swift mark", () => {
     updateBrand({ logo: PNG, name: "Iron Works" });
     renderReport();
+    // The label above the title is the gym's name for a coach, and the Swift product for an athlete.
+    expect(within(sheet()).getByTestId("report-label")).toHaveTextContent("Iron Works");
     const brand = within(sheet()).getByTestId("report-brand");
     expect(within(brand).getByRole("img", { name: "Iron Works" })).toBeInTheDocument();
     expect(within(sheet()).getAllByAltText("Swift").length).toBeGreaterThan(0);
@@ -204,6 +207,7 @@ describe("the athlete's report", () => {
     updateBrand({ logo: PNG, name: "Iron Works" });
     renderReport();
     expect(screen.queryByLabelText(/^Coach note/)).toBeNull();
+    expect(within(sheet()).getByTestId("report-label")).toHaveTextContent("Swift");
     expect(within(sheet()).queryByTestId("report-brand")).toBeNull();
     expect(within(sheet()).getAllByAltText("Swift").length).toBeGreaterThan(0);
   });

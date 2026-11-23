@@ -104,7 +104,7 @@ describe("the Body and training report", () => {
   });
 
   it("states the basis of every source, and where the report stops", () => {
-    expect(within(sheet()).getByText(/Workout log through .*\. InBody scans through May 10, 2025\. Weigh-ins through Apr 15, 2025\. Report covers through Jun 30, 2025\. Report date Sep 11, 2026\./)).toBeInTheDocument();
+    expect(within(sheet()).getByText(/Workout log through .*\. InBody scans through May 10, 2025\. Weigh-ins through Apr 15, 2025\. Report covers through Jun 30, 2025\./)).toBeInTheDocument();
   });
 
   it("says so, and draws no chart, for a period with no readings", () => {

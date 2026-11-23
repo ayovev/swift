@@ -9,13 +9,16 @@ import "./report.css";
 
 /**
  * The page every report is printed on (docs/reports.md). It is always the light page, whatever the app's mode (`.report-sheet` in index.css
- * and report.css), so the preview is what prints. It owns what every report shares: the header (the gym's logo and name for a coach, the
- * Swift mark always, R-9), the optional coach note at the end (R-4), and a footer with the basis and the report date (R-8), set as a table
- * footer so it repeats on every printed page without overlapping content. A report supplies only its title and its body.
+ * and report.css), so the preview is what prints. It owns what every report shares: the header (a small label, the title, the period and the
+ * report date, then one muted row of marks: the gym's logo for a coach and the Swift mark always, R-9), the optional coach note at the end (R-4),
+ * and a footer with the basis (R-8), set as a table footer so it repeats on every printed page without overlapping content. A report supplies
+ * only its title, its period and its body.
  */
 export interface ReportSheetProps {
   title: string;
-  /** One line under the title: what the report covers and how. */
+  /** The dates the report covers, one unbreakable phrase: "Jan 1, 2023 – Dec 31, 2023", or "All time, through Dec 31, 2023". */
+  period: string;
+  /** A quieter line under the period: what the report counts and how. */
   subtitle: string;
   audience: Audience;
   /** YYYY-MM-DD, the report date. */
@@ -29,7 +32,7 @@ export interface ReportSheetProps {
   children: ReactNode;
 }
 
-export function ReportSheet({ title, subtitle, audience, today, basis, note, style, children }: ReportSheetProps) {
+export function ReportSheet({ title, period, subtitle, audience, today, basis, note, style, children }: ReportSheetProps) {
   const { logo, name, tone } = useBrand();
   // Only a coach's report carries the gym's brand; an athlete's has the Swift mark alone.
   const branded = audience === "coach" && (logo || name);
@@ -42,29 +45,34 @@ export function ReportSheet({ title, subtitle, audience, today, basis, note, sty
         <tbody>
           <tr>
             <td className="align-top">
-              <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b-2 border-primary pb-3">
-                {/* On a phone the title takes the whole row and the marks wrap under it, so a long title does not wrap one word to a line. */}
-                <div className="min-w-0 basis-full sm:basis-0 sm:flex-1">
-                  <h2 className="text-2xl font-semibold break-words">{title}</h2>
-                  <p className="text-sm text-muted-foreground">{subtitle}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  {branded ? (
-                    <div className="flex items-center gap-2" data-testid="report-brand">
-                      {logo ? (
+              <header className="border-b border-border pb-3" data-testid="report-header">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+                  {/* The gym's name for a coach, else the product's: what the report comes from, in the accent. */}
+                  <p className="min-w-0 text-[11px] font-semibold tracking-[0.14em] text-accent-link uppercase" data-testid="report-label">
+                    {branded && name ? name : "Swift"}
+                  </p>
+                  <div className="flex shrink-0 items-center gap-2.5 opacity-90">
+                    {branded && logo ? (
+                      <div className="flex items-center gap-2.5" data-testid="report-brand">
                         <img
                           src={logo}
                           alt={name ?? "Gym logo"}
                           style={plate ? { backgroundColor: plate === "light" ? "#ffffff" : "#1c1c1c" } : undefined}
-                          className={plate ? "h-8 max-h-8 w-auto max-w-40 object-contain p-1" : "h-8 max-h-8 w-auto max-w-40 object-contain"}
+                          className={plate ? "h-6 max-h-6 w-auto max-w-32 object-contain p-0.5" : "h-6 max-h-6 w-auto max-w-32 object-contain"}
                         />
-                      ) : null}
-                      {name && !logo ? <span className="text-sm font-semibold">{name}</span> : null}
-                      <span aria-hidden="true" className="h-5 w-px bg-border" />
-                    </div>
-                  ) : null}
-                  <SwiftMark className="[&_img]:h-7" />
+                        <span aria-hidden="true" className="h-4 w-px bg-border" />
+                      </div>
+                    ) : null}
+                    <SwiftMark className="[&_img]:h-5" />
+                  </div>
                 </div>
+                <h2 className="mt-2 text-3xl leading-tight font-semibold break-words">{title}</h2>
+                <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-sm">
+                  <p className="font-medium" data-testid="report-period">{period}</p>
+                  <p className="text-muted-foreground" data-testid="report-prepared">Prepared {dayjs(today).format("MMM D, YYYY")}</p>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+                <div aria-hidden="true" className="mt-3 h-0.5 w-12 bg-primary" />
               </header>
               <div className="mt-5 flex flex-col gap-6">{children}</div>
               {trimmed ? (
@@ -81,7 +89,7 @@ export function ReportSheet({ title, subtitle, audience, today, basis, note, sty
             <td>
               <footer className="report-footer mt-6 flex items-center justify-between gap-4 border-t border-border pt-2 text-xs text-muted-foreground">
                 <span>
-                  {basis} Report date {dayjs(today).format("MMM D, YYYY")}.
+                  {basis}
                 </span>
                 <SwiftMark className="[&_img]:h-5" />
               </footer>

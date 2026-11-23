@@ -27,7 +27,8 @@ export function TrainingMixTab({ parsedRows, asOf }: TrainingMixTabProps) {
   const [view] = useChartView();
 
   const data = useMemo(() => buildTrainingMix(parsedRows, start, end), [parsedRows, start, end]);
-  const subtitle = start ? `Workouts from ${fmtDate(start)} to ${fmtDate(end)}.` : `All workouts through ${fmtDate(end)}.`;
+  const periodLabel = start ? `${fmtDate(start)} – ${fmtDate(end)}` : `All time, through ${fmtDate(end)}`;
+  const subtitle = "Workouts, domains, movements and the M/W/G split.";
   const toggle = (key: keyof TrainingMixSections) => setSections((s) => ({ ...s, [key]: !s[key] }));
 
   return (
@@ -66,7 +67,7 @@ export function TrainingMixTab({ parsedRows, asOf }: TrainingMixTabProps) {
         <PrintRow kind="training-mix" audience={audience} />
       </div>
 
-      <ReportSheet title="Training mix report" subtitle={subtitle} audience={audience} today={today} basis={basisText(data.lastLogged, end, endsToday)} note={audience === "coach" ? note : ""} style={sheetAccent}>
+      <ReportSheet title="Training mix report" period={periodLabel} subtitle={subtitle} audience={audience} today={today} basis={basisText(data.lastLogged, end, endsToday)} note={audience === "coach" ? note : ""} style={sheetAccent}>
         <TrainingMixReport data={data} sections={sections} view={view} />
       </ReportSheet>
     </div>

@@ -130,9 +130,9 @@ function Headline({ data }: { data: SkillsData }) {
         <li className="flex items-center gap-1.5"><span className="size-2 rounded-full border border-border" aria-hidden="true" />{open} not yet</li>
       </ul>
 
-      <dl className="mt-4 grid grid-cols-3 gap-3" data-testid="skills-by-modality">
+      <dl className="mt-4 grid grid-cols-3 gap-3 max-sm:grid-cols-1 max-sm:gap-1" data-testid="skills-by-modality">
         {data.groups.map((g) => (
-          <div key={g.modality}>
+          <div key={g.modality} className="max-sm:flex max-sm:items-baseline max-sm:justify-between max-sm:gap-3">
             <dt className="text-xs font-medium text-muted-foreground">{modalityKeyLabel(g.modality)}</dt>
             <dd className="text-sm">
               {hasStart ? <><span className="font-semibold text-accent-link">{g.newCount}</span> new · </> : null}

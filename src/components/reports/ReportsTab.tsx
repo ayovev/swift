@@ -38,7 +38,8 @@ export function ReportsTab({ workouts, timeline = NO_ENTRIES, scans = NO_SCANS, 
   const [note, setNote] = useState("");
 
   const data = useMemo(() => buildProgressReportData(workouts, end, since, { timeline, scans, weighIns }), [workouts, end, since, timeline, scans, weighIns]);
-  const subtitle = `Verdicts use your full history, as of ${fmtDate(end)}.`;
+  const periodLabel = since ? `${fmtDate(since)} – ${fmtDate(end)}` : `All time, through ${fmtDate(end)}`;
+  const subtitle = "Verdicts use your full history up to the end of the period.";
   const toggle = (key: keyof ProgressSections) => setSections((s) => ({ ...s, [key]: !s[key] }));
 
   return (
@@ -83,7 +84,7 @@ export function ReportsTab({ workouts, timeline = NO_ENTRIES, scans = NO_SCANS, 
         <PrintRow kind="progress" audience={audience} />
       </div>
 
-      <ReportSheet title="Progress report" subtitle={subtitle} audience={audience} today={today} basis={basisText(data.lastLogged, end, endsToday)} note={audience === "coach" ? note : ""} style={sheetAccent}>
+      <ReportSheet title="Progress report" period={periodLabel} subtitle={subtitle} audience={audience} today={today} basis={basisText(data.lastLogged, end, endsToday)} note={audience === "coach" ? note : ""} style={sheetAccent}>
         <ProgressReport data={data} since={since} endsToday={endsToday} sections={sections} />
       </ReportSheet>
     </div>

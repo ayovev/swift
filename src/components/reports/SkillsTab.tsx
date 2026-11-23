@@ -24,7 +24,8 @@ export function SkillsTab({ parsedRows, asOf }: SkillsTabProps) {
   const [note, setNote] = useState("");
 
   const data = useMemo(() => buildSkills(parsedRows, start, end), [parsedRows, start, end]);
-  const subtitle = start ? `Movements done as prescribed (RX), from ${fmtDate(start)} to ${fmtDate(end)}.` : `Movements done as prescribed (RX), through ${fmtDate(end)}.`;
+  const periodLabel = start ? `${fmtDate(start)} – ${fmtDate(end)}` : `All time, through ${fmtDate(end)}`;
+  const subtitle = "Movements done as prescribed (RX).";
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,7 +49,7 @@ export function SkillsTab({ parsedRows, asOf }: SkillsTabProps) {
         <PrintRow kind="skills" audience={audience} />
       </div>
 
-      <ReportSheet title="Skills report" subtitle={subtitle} audience={audience} today={today} basis={basisText(data.lastLogged, end, endsToday)} note={audience === "coach" ? note : ""} style={sheetAccent}>
+      <ReportSheet title="Skills report" period={periodLabel} subtitle={subtitle} audience={audience} today={today} basis={basisText(data.lastLogged, end, endsToday)} note={audience === "coach" ? note : ""} style={sheetAccent}>
         <SkillsReport data={data} showOpen={showOpen} />
       </ReportSheet>
     </div>
