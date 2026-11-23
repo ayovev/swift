@@ -9,8 +9,8 @@ import "./report.css";
 
 /**
  * The page every report is printed on (docs/reports.md). It is always the light page, whatever the app's mode (`.report-sheet` in index.css
- * and report.css), so the preview is what prints. It owns what every report shares: the header (a small label, the title, the period and the
- * report date, then one muted row of marks: the gym's logo for a coach and the Swift mark always, R-9), the optional coach note at the end (R-4),
+ * and report.css), so the preview is what prints. It owns what every report shares: the header (one row with the gym's logo at the left for a coach and the Swift mark at the right, always, R-9; then the title, the period and the
+ * report date), the optional coach note at the end (R-4),
  * and a footer with the basis (R-8), set as a table footer so it repeats on every printed page without overlapping content. A report supplies
  * only its title, its period and its body.
  */
@@ -46,25 +46,25 @@ export function ReportSheet({ title, period, subtitle, audience, today, basis, n
           <tr>
             <td className="align-top">
               <header className="border-b border-border pb-3" data-testid="report-header">
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-                  {/* The gym's name for a coach, else the product's: what the report comes from, in the accent. */}
-                  <p className="min-w-0 text-[11px] font-semibold tracking-[0.14em] text-accent-link uppercase" data-testid="report-label">
-                    {branded && name ? name : "Swift"}
-                  </p>
-                  <div className="flex shrink-0 items-center gap-2.5 opacity-90">
-                    {branded && logo ? (
-                      <div className="flex items-center gap-2.5" data-testid="report-brand">
+                {/* One row, centered on one line: the gym's logo (a coach's) at the left, the Swift mark at the right. A gym with a name and no logo gets its name in the logo's place. */}
+                <div className="flex items-center justify-between gap-4">
+                  {branded ? (
+                    <div className="flex min-w-0 items-center" data-testid="report-brand">
+                      {logo ? (
                         <img
                           src={logo}
                           alt={name ?? "Gym logo"}
                           style={plate ? { backgroundColor: plate === "light" ? "#ffffff" : "#1c1c1c" } : undefined}
-                          className={plate ? "h-6 max-h-6 w-auto max-w-32 object-contain p-0.5" : "h-6 max-h-6 w-auto max-w-32 object-contain"}
+                          className={plate ? "h-7 max-h-7 w-auto max-w-48 object-contain p-0.5" : "h-7 max-h-7 w-auto max-w-48 object-contain"}
                         />
-                        <span aria-hidden="true" className="h-4 w-px bg-border" />
-                      </div>
-                    ) : null}
-                    <SwiftMark className="[&_img]:h-5" />
-                  </div>
+                      ) : (
+                        <span className="truncate text-base font-semibold">{name}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <span aria-hidden="true" />
+                  )}
+                  <SwiftMark className="shrink-0 [&_img]:h-7" />
                 </div>
                 <h2 className="mt-2 text-3xl leading-tight font-semibold break-words">{title}</h2>
                 <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 text-sm">

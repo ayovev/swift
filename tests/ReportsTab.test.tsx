@@ -194,8 +194,8 @@ describe("the coach's report", () => {
   it("shows the gym's logo beside the Swift mark", () => {
     updateBrand({ logo: PNG, name: "Iron Works" });
     renderReport();
-    // The label above the title is the gym's name for a coach, and the Swift product for an athlete.
-    expect(within(sheet()).getByTestId("report-label")).toHaveTextContent("Iron Works");
+    // The gym's logo leads the header row, and there is no separate gym-name label.
+    expect(within(sheet()).queryByTestId("report-label")).toBeNull();
     const brand = within(sheet()).getByTestId("report-brand");
     expect(within(brand).getByRole("img", { name: "Iron Works" })).toBeInTheDocument();
     expect(within(sheet()).getAllByAltText("Swift").length).toBeGreaterThan(0);
@@ -207,7 +207,6 @@ describe("the athlete's report", () => {
     updateBrand({ logo: PNG, name: "Iron Works" });
     renderReport();
     expect(screen.queryByLabelText(/^Coach note/)).toBeNull();
-    expect(within(sheet()).getByTestId("report-label")).toHaveTextContent("Swift");
     expect(within(sheet()).queryByTestId("report-brand")).toBeNull();
     expect(within(sheet()).getAllByAltText("Swift").length).toBeGreaterThan(0);
   });
