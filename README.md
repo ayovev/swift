@@ -153,6 +153,7 @@ how the Timeline works.
 - [Architecture](docs/architecture.md): how the code is organised
 - [How classification works](docs/classification.md): the GPP and M/W/G logic
 - [Testing](docs/testing.md)
+- [The movement lexicon](docs/movement-lexicon.md), [cross-device sync](docs/sync.md), [backup](docs/backup.md) and [the bundle split](docs/bundle-split.md): developer references for those areas
 - [Contributing](CONTRIBUTING.md) and [Security](SECURITY.md)
 
 Stack: Vite, React, TypeScript, Tailwind CSS, shadcn/ui, Recharts, PapaParse,
