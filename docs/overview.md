@@ -107,8 +107,8 @@ a phone.
 28. **Showing up:** days trained per calendar month, as bars, over **the last 12 months**.
 29. The panel header carries a small muted caption: *"Last 12 months, by month"*.
     - This is the one place on the page that doesn't use full history, so it says so where it applies.
-30. The bars are drawn in the neutral foreground ink, not the accent: the M/W/G chart below them uses fixed red, green and blue,
-    and an accent fill matched one of those for half the swatches, which read as one series. The current month's bar is drawn with a diagonal hatch (one direction of 45° lines) in the same ink, outlined, with a small key under the
+30. The bars are drawn in the accent at full strength. They were neutral for a time, because the M/W/G chart below them uses fixed red, green and blue
+    and some accents (the default blue, green, red in dark mode) sit close to one of those; the owner chose the accent knowing that. The current month's bar is drawn with a diagonal hatch (one direction of 45° lines) in the same ink, outlined, with a small key under the
     chart ("This month so far") and "so far" in its tooltip, so a partial month doesn't read as a drop. A pattern
     rather than a lighter shade, so it reads as a different kind of bar rather than a smaller amount, without relying
     on colour. One direction of lines was chosen over a diamond cross-hatch (busier, harder to read the bar's top) and a

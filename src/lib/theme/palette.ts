@@ -1,7 +1,10 @@
 import {
   BLACK,
+  CONTRAST_TEXT,
+  CONTRAST_UI,
   WHITE,
   clampToGamut,
+  contrastRatio,
   formatOklch,
   pickForeground,
   type Oklch,
@@ -41,6 +44,12 @@ export interface AccentSwatch {
   hue: number;
   /** Peak chroma at mid-lightness. Tapered toward both ends of the ramp. */
   chroma: number;
+  /**
+   * The colour's own OKLCH lightness. Set only for a coach's brand colour (the stock swatches leave it out and keep their fixed shades). When it is set,
+   * the interactive roles keep this lightness and move it only as far as each one's contrast rule needs (see `minimalShiftRoles`), so a colour that
+   * already works in a mode is shown as it is.
+   */
+  lightness?: number;
 }
 
 export const ACCENT_SWATCHES: readonly AccentSwatch[] = [
@@ -144,6 +153,7 @@ export interface AccentRoles {
 /** Resolve a swatch to its role colours for one mode. */
 export function accentRoles(swatch: AccentSwatch, mode: ThemeMode): AccentRoles {
   const ramp = deriveRamp(swatch);
+  if (swatch.lightness !== undefined) return minimalShiftRoles(swatch, swatch.lightness, mode, ramp);
   const roles = ROLE_SHADES[mode];
   const primary = ramp[roles.primary];
   const whiteLabel = pickForeground(primary) === "white";
@@ -161,6 +171,61 @@ export function accentRoles(swatch: AccentSwatch, mode: ThemeMode): AccentRoles 
     ring: ramp[roles.ring],
     subtle: ramp[roles.subtle],
     border: ramp[roles.border],
+  };
+}
+
+/** The page the accent sits on, per mode: white, and the near-black the dark theme uses. */
+const SURFACE: Record<ThemeMode, Oklch> = { light: WHITE, dark: { l: 0.145, c: 0, h: 0 } };
+/** The roles keep to this lightness range, so a role is never black or white whatever the brand colour. */
+const ROLE_L_MIN = 0.2;
+const ROLE_L_MAX = 0.92;
+const ROLE_L_STEP = 0.005;
+/** How far the hover fill sits from the primary fill, in lightness. */
+const HOVER_L_STEP = 0.07;
+
+/**
+ * The roles for a swatch that carries its own lightness (a brand colour). Hue and chroma are the colour's own. Each role starts at the colour's own
+ * lightness and moves away from the page (darker on white, lighter on near-black) one small step at a time, stopping as soon as its contrast rule
+ * holds, so a colour that already passes is unchanged and one that does not moves no further than it has to. Compare the fixed shade steps the
+ * stock swatches use, which land the same colour darker (light mode) or paler (dark mode) than any rule needs.
+ *
+ * The rules are the stock ones (themeContrast.test.ts): the fill and the focus ring 3:1 against the page, a link 4.5:1, and the label on both the
+ * fill and its hover 4.5:1. The subtle and border surfaces and the chart series stay on the hue-based ramp, which is what keeps them separable.
+ */
+function minimalShiftRoles(swatch: AccentSwatch, ownLightness: number, mode: ThemeMode, ramp: AccentRamp): AccentRoles {
+  const clampL = (l: number): number => Math.min(ROLE_L_MAX, Math.max(ROLE_L_MIN, l));
+  const at = (l: number): Oklch => clampToGamut({ l, c: swatch.chroma, h: swatch.hue });
+  const away = mode === "light" ? -1 : 1;
+
+  // A role has to hold its contrast on every surface it is drawn on, not only the page.
+  const shifted = (need: number, surfaces: readonly Oklch[] = [SURFACE[mode]]): Oklch => {
+    let l = clampL(ownLightness);
+    for (;;) {
+      const colour = at(l);
+      if (surfaces.every((surface) => contrastRatio(colour, surface) >= need)) return colour;
+      const next = l + away * ROLE_L_STEP;
+      if (next < ROLE_L_MIN || next > ROLE_L_MAX) return colour;
+      l = next;
+    }
+  };
+
+  const subtle = ramp[ROLE_SHADES[mode].subtle];
+  const primary = shifted(CONTRAST_UI);
+  const whiteLabel = pickForeground(primary) === "white";
+  const foreground = whiteLabel ? WHITE : BLACK;
+  // The hover fill is drawn under the same label as the primary fill, so it moves the way that raises the label's contrast: darker under a white
+  // label, lighter under a dark one. That cannot lower it (the label was picked as the better of the two), and the grid test holds it.
+  const primaryHover = at(clampL(primary.l + (whiteLabel ? -1 : 1) * HOVER_L_STEP));
+
+  return {
+    primary,
+    primaryForeground: foreground,
+    primaryHover,
+    // A link is also drawn on the accent's own tint (the sample strip's "Use your own"), which is a little darker than white, so it must hold on both.
+    link: shifted(CONTRAST_TEXT, [SURFACE[mode], subtle]),
+    ring: primary,
+    subtle,
+    border: ramp[ROLE_SHADES[mode].border],
   };
 }
 

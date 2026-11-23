@@ -80,6 +80,7 @@ export function swatchProblems(swatch: AccentSwatch): string[] {
     if (contrastRatio(roles.primary, roles.primaryForeground) < CONTRAST_TEXT) problems.push(`${mode}: button text`);
     if (contrastRatio(roles.primaryHover, roles.primaryForeground) < CONTRAST_TEXT) problems.push(`${mode}: hovered button text`);
     if (contrastRatio(roles.link, surface) < CONTRAST_TEXT) problems.push(`${mode}: link`);
+    if (contrastRatio(roles.link, roles.subtle) < CONTRAST_TEXT) problems.push(`${mode}: link on the accent tint`);
     if (contrastRatio(roles.ring, surface) < CONTRAST_UI) problems.push(`${mode}: focus ring`);
     if (contrastRatio(roles.primary, surface) < CONTRAST_UI) problems.push(`${mode}: primary surface`);
     if (contrastRatio(roles.subtle, mode === "light" ? BLACK : WHITE) < CONTRAST_TEXT) problems.push(`${mode}: subtle background`);
@@ -104,7 +105,12 @@ export function brandSwatch(hex: string): BrandSwatch | null {
     hue: base.h,
     chroma: Math.min(Math.max(base.c, MIN_CHROMA), MAX_CHROMA),
   };
-  const swatch: AccentSwatch = { ...start, chroma: Math.min(start.chroma, clampToGamut({ l: 0.637, c: start.chroma, h: start.hue }).c) };
+  // The colour's own lightness goes with it, so its roles keep that lightness and move only as far as each contrast rule needs (see `minimalShiftRoles`).
+  const swatch: AccentSwatch = {
+    ...start,
+    chroma: Math.min(start.chroma, clampToGamut({ l: 0.637, c: start.chroma, h: start.hue }).c),
+    lightness: base.l,
+  };
   let adjusted = false;
 
   // Hue first (the destructive rule is about hue), nearest step away from red; chroma second.

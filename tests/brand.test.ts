@@ -10,6 +10,7 @@ import {
 import { MAX_PALETTE, brandSwatch, dominantColors, hexToOklch, isHexColor, oklabDistance, oklchToHex, rgbToOklch, swatchProblems } from "@/lib/brand/color";
 import { fitWithin, measureTone, plateFor, sniffImageType } from "@/lib/brand/image";
 import { ACCENT_SWATCHES, accentRoles } from "@/lib/theme/palette";
+import { contrastRatio } from "@/lib/theme/contrast";
 
 afterEach(() => {
   clearBrand();
@@ -77,13 +78,20 @@ describe("brand colour", () => {
     }
   });
 
-  it("keeps a red brand colour away from the destructive red", () => {
-    const { swatch, adjusted } = brandSwatch("#ff0000")!;
-    expect(adjusted).toBe(true);
-    for (const mode of ["light", "dark"] as const) {
-      const destructive = mode === "light" ? { l: 0.577, c: 0.245, h: 27.325 } : { l: 0.704, c: 0.191, h: 22.216 };
-      expect(oklabDistance(accentRoles(swatch, mode).primary, destructive)).toBeGreaterThanOrEqual(8);
+  it("keeps a red brand colour away from the destructive red, adjusting it only when it has to", () => {
+    const destructive = { light: { l: 0.577, c: 0.245, h: 27.325 }, dark: { l: 0.704, c: 0.191, h: 22.216 } };
+    let adjustedAny = false;
+    for (const hex of ["#ff0000", "#dc2626", "#e11d48", "#ef4444", "#f43f5e", "#b91c1c", "#ff3b30", "#ff4500"]) {
+      const { swatch, adjusted } = brandSwatch(hex)!;
+      adjustedAny ||= adjusted;
+      for (const mode of ["light", "dark"] as const) {
+        expect(oklabDistance(accentRoles(swatch, mode).primary, destructive[mode]), `${hex} ${mode}`).toBeGreaterThanOrEqual(8);
+      }
     }
+    // Some reds still sit too close and are moved (and say so); others already clear the bar and are left alone.
+    expect(adjustedAny).toBe(true);
+    expect(brandSwatch("#ef4444")!.adjusted).toBe(true);
+    expect(brandSwatch("#b91c1c")!.adjusted).toBe(false);
   });
 
   it("leaves a colour that already passes alone", () => {
@@ -256,5 +264,63 @@ describe("the stored palette", () => {
     updateBrand({ logo: PNG, palette: ["#2563eb"], name: "Gym" });
     updateBrand({ logo: undefined });
     expect(getBrand()).toEqual({ name: "Gym" });
+  });
+});
+
+describe("a brand colour keeps its own lightness where the rules allow", () => {
+  const PAGE = { light: { l: 1, c: 0, h: 0 }, dark: { l: 0.145, c: 0, h: 0 } };
+  const lightnessOf = (hex: string): number => hexToOklch(hex)!.l;
+
+  it("shows a colour as it is in the mode where it already passes, and no further from it than a rule needs in the other", () => {
+    const raw = hexToOklch("#34bcb4")!;
+    const { swatch } = brandSwatch("#34bcb4")!;
+    // Dark mode: the colour is 8.5:1 on the page, so every role is the colour itself.
+    const dark = accentRoles(swatch, "dark");
+    for (const role of [dark.primary, dark.link, dark.ring]) expect(oklabDistance(role, raw)).toBeLessThan(1);
+    // Light mode: only as dark as the rules need. The fill and the ring are 3:1 on white, the link 4.5:1, and no darker.
+    const light = accentRoles(swatch, "light");
+    expect(contrastRatio(light.primary, PAGE.light)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(light.primary, PAGE.light)).toBeLessThan(3.2);
+    // The link is also drawn on the accent's own tint (a little darker than white), so it is held to 4.5:1 there and no further.
+    expect(contrastRatio(light.link, PAGE.light)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(light.link, light.subtle)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(light.link, light.subtle)).toBeLessThan(4.7);
+    expect(light.primary.l).toBeGreaterThan(light.link.l);
+    expect(light.primary.l).toBeLessThan(raw.l);
+    // Hue and chroma are the colour's own throughout.
+    for (const role of [light.primary, light.link, dark.primary]) {
+      expect(Math.abs(role.h - raw.h)).toBeLessThan(1);
+    }
+  });
+
+  it("lightens a dark colour only in dark mode, and leaves it alone in light mode", () => {
+    const { swatch } = brandSwatch("#0b3a6f")!;
+    const own = lightnessOf("#0b3a6f");
+    expect(accentRoles(swatch, "light").primary.l).toBeCloseTo(own, 2);
+    expect(accentRoles(swatch, "dark").primary.l).toBeGreaterThan(own + 0.05);
+    expect(contrastRatio(accentRoles(swatch, "dark").primary, PAGE.dark)).toBeGreaterThanOrEqual(3);
+  });
+
+  it("holds every rule across a grid of hues, lightnesses and chromas, in both modes", () => {
+    const failures: string[] = [];
+    for (let h = 0; h < 360; h += 20) {
+      for (const l of [0.3, 0.45, 0.6, 0.75, 0.9]) {
+        for (const c of [0.05, 0.12, 0.2]) {
+          const hex = oklchToHex({ l, c, h });
+          const result = brandSwatch(hex);
+          if (!result) continue;
+          const problems = swatchProblems(result.swatch);
+          if (problems.length > 0) failures.push(`${hex}: ${problems.join(", ")}`);
+        }
+      }
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it("leaves the stock accents exactly as they were", () => {
+    for (const swatch of ACCENT_SWATCHES) expect(swatch.lightness, swatch.id).toBeUndefined();
+    const blue = accentRoles(ACCENT_SWATCHES.find((s) => s.id === "blue")!, "light");
+    expect(blue.primary.l).toBeCloseTo(0.556, 3);
+    expect(blue.link.l).toBeCloseTo(0.47, 3);
   });
 });

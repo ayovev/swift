@@ -315,7 +315,7 @@ export interface MonthMix {
   split: ModalitySplit | null;
   /** Classified workouts that month; unclassified ones are excluded, never counted as zeroes. */
   workouts: number;
-  /** Workouts that month with no recognised movement, left out of the split; the panel says how many, beside the chart. */
+  /** Workouts that month with no recognised movement, left out of the split. Kept in the data; the Overview chart does not print it (the modality pages still do). */
   unclassified: number;
   partial: boolean;
 }
