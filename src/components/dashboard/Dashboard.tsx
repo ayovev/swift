@@ -102,7 +102,7 @@ export function Dashboard({
   const [progressSubject, setProgressSubject] = useState<{ key: string; nonce: number } | null>(null);
   const { summary } = insights.dashboard;
   // Overview and the Insights views read the whole history as of today, never
-  // the selected range (see App.tsx and CLAUDE.md, "Architecture: the Overview page").
+  // the selected range (see App.tsx and docs/overview.md).
   const usesRange = sectionOf(tab) !== "Insights" && sectionOf(tab) !== "Overview";
   const today = dayjs().format("YYYY-MM-DD");
   // Only where the whole history is read as of today (Overview, Insights), and only for an

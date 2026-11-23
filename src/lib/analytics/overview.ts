@@ -1,5 +1,5 @@
 /**
- * The numbers behind Overview's totals row (CLAUDE.md, "Architecture: the Overview page"): where things
+ * The numbers behind Overview's totals row (docs/overview.md): where things
  * stand now, from the full history as of today. Pure functions; `today` is
  * always passed in (YYYY-MM-DD), never read from the clock, as in insights/.
  *

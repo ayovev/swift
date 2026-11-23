@@ -8,7 +8,7 @@ import type { DashboardSummary } from "@/types/dashboard";
 import type { SugarWodRow } from "@/types/sugarwod";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
-// Step 1 of CLAUDE.md, "Architecture: the Overview page": the lift, benchmark and PR cards move from
+// Step 1 of docs/overview.md: the lift, benchmark and PR cards move from
 // Overview to Training → Lifts, and Overview's range-scoped training totals
 // get a summary line on Workouts. Nothing is deleted, only moved.
 

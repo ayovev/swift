@@ -6,13 +6,11 @@ dashboard: consistency over time, lift/benchmark progression, PRs, a breakdown a
 TypeScript 7, Tailwind v4, shadcn/ui, Recharts, Vitest. Deployed as a static SPA on Vercel.
 
 This file covers *how* the code works and which parts must not be "improved". `README.md`
-covers what the product is, how to use it, privacy in full and how to run it. Between them
-they are the whole written record: the original v1 requirements document and the separate
-`docs/` pages that followed it (guide, privacy, architecture, classification, testing, the
-Overview and Branding requirements) have been folded into the two, so where a behaviour is
-deliberate, the reason lives here, in a comment or in a test next to it, and never in a spec
-elsewhere. `docs/` now holds only the README's screenshots. Keep it that way: if you change
-something load-bearing, move its reason with it.
+covers what the product is and how to run it, and `docs/` holds the longer reference
+(guide, privacy, architecture, classification, testing). Between them they are now the whole written
+record: the original v1 requirements document has been retired, so where a behaviour is
+deliberate, the reason lives in a comment or a test next to it rather than in a spec
+elsewhere. Keep it that way — if you change something load-bearing, move its reason with it.
 
 ## Commands
 
@@ -29,33 +27,6 @@ npm run typecheck   # tsc -b --noEmit
 
 Run tests from the repo root: `tests/fixtures/sampleRows.ts` resolves the sample CSV from
 `process.cwd()` (not `import.meta.url`, which is an `http://` URL under jsdom).
-
-## Project structure
-
-```
-src/lib/csv/         CSV parsing and validation (PapaParse), with plain-language errors
-src/lib/classify/    the two classifiers and the shared text matcher they both use
-src/lib/analytics/   turns classified rows into everything the charts and tabs need
-src/lib/theme/       the accent-colour system: OKLCH ramp derivation and contrast maths
-src/lib/brand/       a coach's logo, name and colour: localStorage store, logo re-encoding, brand colour to accent
-src/lib/storage/     IndexedDB-backed local persistence for uploaded rows and view preferences
-src/lib/sync/        cross-device sync engine: WebRTC transport, QR pairing codes, wire framing,
-                     and the all-or-nothing transfer plan shared with backup restore
-src/lib/backup/      the backup file: format, serialising and reading it
-src/components/      landing page, dashboard, sync and backup UI, charts, theme controls, shadcn/ui primitives
-src/types/           the SugarWOD row shape, and the domain/modality data contracts
-tests/               vitest suites, plus fixtures including the Python reference output
-public/sample/       the bundled sample export that powers demo mode
-scripts/             dev-only: regenerates the parity fixture (not part of the build)
-docs/images/         the README's screenshots (light and dark pairs)
-```
-
-Data flows through four stages, entirely in the browser: **parse** (`src/lib/csv`), **classify**
-(`src/lib/classify`), **analytics** (`src/lib/analytics`, entered through `buildInsights.ts`, so
-classification runs once per upload however many charts read it) and the **dashboard**
-(`src/components/dashboard`). Local persistence, sync, backup and branding sit alongside that
-pipeline, not inside it; each has its own section below. Stack: Vite, React, TypeScript,
-Tailwind CSS, shadcn/ui, Recharts, PapaParse, dayjs, and the browser's native WebRTC and Web Crypto.
 
 ## Hard constraints — do not break these
 
@@ -680,7 +651,8 @@ home. Read the header comments of the files named here before moving anything be
   Timeline is `timeline`/`TimelineTab.tsx`. Lifts is `lift-history`/`LiftHistoryTab.tsx` (not `lifts`,
   which is Progress's id); its page title is "Lifts and benchmarks". It is the record (every session,
   SugarWOD's PR flag as logged), Progress is the verdict, and neither restates the other.
-  Overview is the full-history front door (the reasons behind it are in "Architecture: the Overview page" below). A totals row (days trained, most recent PR, body weight, the Progress headline), then three
+  Overview is the full-history front door (`docs/overview.md` holds the acceptance criteria and their
+  reasons). A totals row (days trained, most recent PR, body weight, the Progress headline), then three
   panels (`overview/OverviewPanels.tsx`), each the evidence for one stat with a link into its section:
   Training (days trained per calendar month over the last 12 months, the current month drawn with a diagonal hatch and a key,
   then each month's M/W/G split over the same 12 months, column for column under it, from
@@ -716,61 +688,11 @@ confirmation since nothing from the sample is stored. The totals on Overview are
 rather than a card (they're the page's headline, not one panel among several), and a view's
 first card doesn't repeat the page title above it.
 
-## Architecture: the Overview page
-
-The reasons behind the front page (the redesign is built; its acceptance criteria were retired into this section, the code comments and the tests).
-
-- **Full history, as of today; no range or grouping control.** The Progress headline cannot honestly follow a date range (a verdict needs at least 6 sessions and a
-  before and after), so a range-driven page would drop Insights or mix two scopes. The scope sentence names the last logged workout (with the year when it is not
-  this year) so an old export explains its own low recent numbers.
-- **"Recent" is the last 90 days ending today against the 90 before** (`OVERVIEW_RECENT_DAYS`, long enough to absorb a travel week, short enough to show a change),
-  anchored to today and never to the last workout, and never a bare number in a component.
-- **Days trained, not workouts logged**: one session often makes several SugarWOD entries. The "(⟨m⟩ the 90 before)" part is left out when that window is entirely
-  before the first logged workout.
-- **Most recent PR reads SugarWOD's flag.** This is the one deliberate exception to "Progress never reads the PR flag": a PR is a logged fact in the sport's own words,
-  it feeds no verdict, and the code carries a comment saying so. It shows the title as logged, the score with its unit (`withScoreUnit`) and the date; several PRs on the
-  latest day show the first in log order plus "and n more that day"; none reads "No PRs logged". It links to Training → Lifts.
-- **Body weight** is the pooled series (scans and weigh-ins). A change no bigger than `weightBandLb` reads "within normal variation". Only weight appears here, because
-  it is the one body measurement with a noise band; lean mass, fat mass and body fat stay on Body Comp. No readings reads "No body data yet" (linking to Body Comp);
-  one reading shows the reading and its date with no change lines.
-- **The Progress stat is Progress's own label**, computed by the same code. With no label it says why in Progress's words ("No headline yet"). Body weight never feeds it.
-- **Each panel is the evidence for one stat**: one visual, one link, never a repeat of the number. There is no PR panel, because its evidence is the PR timeline on
-  Lifts. Training is full width; Insights and Body sit side by side from `md` up and stack in that order on a phone.
-- **Training panel.** Its caption, "Last 12 months, by month", is the one place the page does not use full history, so it says so. Days-trained bars use neutral ink, not
-  the accent (an accent fill matched one of the M/W/G colours for half the swatches). The current month is a single-direction 45-degree hatch with a key ("This month so
-  far") and "so far" in its tooltip: a pattern, not a lighter shade, so it does not read as a smaller amount or rely on colour (a diamond cross-hatch was busier, a
-  pinstripe blurred to a flat tint at phone width and in the 12px key). Under 12 months of history the bars start at the first logged month, and a bar is never wider than
-  72px on both Training charts, so a short log does not look like two slabs. The M/W/G chart under it covers the same 12 months with the same margins and axis width so each
-  month's column sits under its days bar (an earlier draft compared 90-day windows beside a 12-month chart and was hard to read), draws W, G, M from the baseline with a
-  2px gap, and does not hatch the current month (a partial month's split is a share, not an amount). No 90-day marker (90 days rarely falls on a month boundary, so it
-  would shade a different period from the one the totals count) and no domain list (tried and removed).
-- **Insights panel.** "What moved" lists lifts and benchmarks whose verdict is up or down, including moves up to RX: at most five, most recently logged first, with up to
-  two slots kept for downs so ups can never push a down off the panel; extra downs read "and n more down". An empty state must not claim steadiness nobody measured:
-  "No lift or benchmark has changed enough to call." only once something has a verdict, otherwise "Nothing to compare yet: a lift or benchmark needs 6 sessions." (or
-  the 12-month or none-logged wording). The latest Timeline entry is the most recently started ongoing one, else the most recently ended, with "and n more ongoing".
-- **Body panel.** The pooled weight line over the whole body history; its caption names only the sources the line is drawn from (a weigh-in on a scan day is not used,
-  so it is not a source); one reading reads "One reading so far. A second draws the line."
-- **What left Overview.** Training → Lifts (page title "Lifts and benchmarks", tab id `lift-history`, not `lifts`, which is Progress's id and would mix up `tab_viewed`
-  history) holds What got heavier, Benchmarks revisited and Personal records, and follows the date range. Workouts gets a summary line (workouts logged, % RX, left out
-  when nothing is marked RX or Scaled, and the scaled count). Nothing was deleted.
-- Voice and analytics: statements of fact, empty states say what is missing and where to fix it, and there are no new events (a link fires the existing `tab_viewed`).
-  Sample mode generates InBody readings and Timeline entries in memory (`generateSampleBodyComp`, `generateSampleTimeline`) so every stat and panel has something to show.
-- **Out of scope for now:** least-trained domains, lean mass, fat mass and body fat on Overview, a link from a Lifts chart to its Progress verdict, a third navigation level.
-
 ## Architecture: branding
 
-How the branding feature is built and what not to undo. A coach (Settings, shown only while the audience is `coach`; hidden, not deleted, if the role is switched to athlete)
-can set a gym logo, a name and a brand colour, each optional. Scope decisions, all deliberate:
-
-- **Coach-only and local.** An athlete never sees a coach's brand inside the app by any route (a brand file, sync, a hosted link): each would need sync or a server. Branding
-  shows on the coach's own device, and the app shows it whenever it is set. The Swift mark is always drawn beside it and is not removable (no white-label).
-- **Only a logo, a name and a colour.** No fonts, layout theming, favicon, manifest or `<title>` changes. Sample mode may be branded (it is a preference, not athlete data).
-- **One logo, with an automatic plate** where contrast is poor; no second dark-mode upload. "Remove branding" is a single confirmed action; Start over's copy states it does not
-  remove branding.
-- **Reports and image cards are a separate, unbuilt feature** (nothing in the app prints, exports a PDF or draws a share card yet). It will read the brand only through
-  `useBrand()`, and owns its own content decisions, for example whether body composition belongs in a document a coach shares (it is health data).
-- **Not user-tested yet:** the aim that a coach finishes setup in under two minutes belongs to the usability study (issue #67). Branding sends nothing to the network, and
-  the CSP is unchanged (`img-src 'self' data: blob:` already allows a local logo).
+`docs/branding.md` is the requirements document; this is how it is built and what not to undo. A coach (Settings, shown only while the audience is
+`coach`) can set a gym logo, a name and a brand colour, each optional. Reports and image cards are a separate, unbuilt feature that will read the brand
+through `useBrand()`.
 
 - **A preference, not a dataset.** `lib/brand/brandStore.ts`, `localStorage` key `swift.brand` (try/catch, in memory when storage throws, read through
   `useSyncExternalStore`). It is **not** in IndexedDB, so "Start over" (`idbClearAll()`) leaves it, on purpose: a coach moves from athlete to athlete. It is **not** a
@@ -1012,15 +934,6 @@ through, not a backlog of fixes.
   and the lexicon-integrity block in `tests/modalityClassifier.test.ts` (lowercase phrases,
   no duplicates, valid modality). If you fix a pinned limitation, move the test rather than
   deleting it, and update the parity expectations in the same commit.
-- **Where the tests are**, by area (each file's header says more). Classification: `matcher`, `domainClassifier`, `modalityClassifier` (also pins lexicon integrity, variants,
-  families), `buildModalityData`, `implement`, `movementsView`, and `buildDashboardData.parity` against the Python fixture. Parse and data: `parseCsv`, `parseInBodyCsv`,
-  `scoreUnit`, `extendSample` (the sample's generated tail: only dates after the export, determinism, schema-valid rows, bounded lift growth). Insights: `progressVerdict`,
-  `progressDisplay`, `LiftsTab`, `timeline`, `entryVerdict`, `TimelineTab`, `weighIns`, `weightNoiseBand`, `overview`, `liftHistory`. Persistence and app shell: `idbStore`, the
-  `*Storage` tests, `App` (restore on mount, persisted range, Start over confirmation, Replace file, one sample strip). Sync and backup: `chunking`, `pairingCode`,
-  `fakeSyncTransport`, `syncSession`, `validateReceived`, `receivedDatasets`, `SyncDialog`, `syncAnalytics`, `backup`, `backupEncryption`, `passphrase`, `planTransfer`,
-  `backupRestore`, `backupPassphrase`. Theme and accessibility: `themeContrast`, `positiveColor`, `modalityColors`, `verdictMark`, `forcedColors`, `timeAxis`, `sectionNav`,
-  `settingsSheet`, `domainDefinitions`, `chartTable`. Branding: `brand`, `brandingControls`. Deployment: `securityHeaders`, `lazySplit`, `analytics`.
-  Real two-device WebRTC and camera QR scanning are not automated; they are checked by hand across two devices before a change to sync ships.
 - Known benign divergences from the Python reference, already documented in the parity test:
   `Math.round` vs Python's round-half-even (tenth-of-a-percent cell differences on exact
   `.x5` ties), delta computed from rounded percentages, and pandas' unstable quicksort making

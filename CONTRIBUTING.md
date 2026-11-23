@@ -47,7 +47,7 @@ moves `tests/buildDashboardData.parity.test.ts`. If you touch them:
 - Update `EXPECTED_DIFF` in that test entry by entry, with a reason for each.
 - Do not loosen an assertion or drop a row to make the suite pass.
 
-Read [How classification works](README.md#how-classification-works), the matching-engine section of [CLAUDE.md](CLAUDE.md) and the header comment
+Read [How classification works](docs/classification.md) and the header comment
 in `src/lib/classify/matcher.ts` before starting. Matching is deliberately plain
 substring matching, because SugarWOD glues description lines together without
 separators.
@@ -66,7 +66,7 @@ separators.
 - UI copy is plain and declarative: state what is true, no exclamation points, no
   cheering. Use CrossFit's own vocabulary (RX, Scaled, PR, M/W/G) as it is.
 
-See the project structure and architecture sections of [CLAUDE.md](CLAUDE.md) for how the pieces fit together.
+See [docs/architecture.md](docs/architecture.md) for how the pieces fit together.
 
 ## Reporting bugs
 

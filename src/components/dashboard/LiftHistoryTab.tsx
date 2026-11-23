@@ -56,7 +56,7 @@ function HighlightControl({ value, onChange }: { value: RepMaxHighlight; onChang
  * benchmark session and every PR, for the selected date range.
  *
  * These three cards used to sit on Overview. They moved here when Overview
- * became the full-history front door (CLAUDE.md, "Architecture: the Overview page"): they follow the date
+ * became the full-history front door (docs/overview.md): they follow the date
  * range, and Training is where the range applies. They moved unchanged.
  *
  * This is the record, not the verdict. Progress (Insights, tab id `lifts`) says
