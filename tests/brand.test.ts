@@ -20,7 +20,7 @@ afterEach(() => {
 const PNG = "data:image/png;base64,iVBORw0KGgo=";
 
 describe("logo files", () => {
-  it("recognises PNG, JPEG and WebP by their first bytes, and nothing else", () => {
+  it("recognizes PNG, JPEG and WebP by their first bytes, and nothing else", () => {
     expect(sniffImageType(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe("image/png");
     expect(sniffImageType(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe("image/jpeg");
     const webp = new TextEncoder().encode("RIFF\0\0\0\0WEBPVP8 ");
@@ -59,7 +59,7 @@ describe("logo files", () => {
   });
 });
 
-describe("brand colour", () => {
+describe("brand color", () => {
   it("reads hex into OKLCH", () => {
     expect(hexToOklch("#ffffff")?.l).toBeCloseTo(1, 2);
     expect(hexToOklch("#000000")?.l).toBeCloseTo(0, 3);
@@ -69,7 +69,7 @@ describe("brand colour", () => {
     expect(isHexColor("#12abE")).toBe(false);
   });
 
-  it("holds every colour to the same contrast rules as the stock swatches, in both modes", () => {
+  it("holds every color to the same contrast rules as the stock swatches, in both modes", () => {
     const samples = ["#2563eb", "#ff0000", "#dc2626", "#ffff00", "#00ff00", "#ffffff", "#000000", "#808080", "#7c3aed", "#f97316", "#14b8a6", "#ec4899", "#fef08a", "#1e3a8a"];
     for (const hex of samples) {
       const result = brandSwatch(hex);
@@ -78,7 +78,7 @@ describe("brand colour", () => {
     }
   });
 
-  it("keeps a red brand colour away from the destructive red, adjusting it only when it has to", () => {
+  it("keeps a red brand color away from the destructive red, adjusting it only when it has to", () => {
     const destructive = { light: { l: 0.577, c: 0.245, h: 27.325 }, dark: { l: 0.704, c: 0.191, h: 22.216 } };
     let adjustedAny = false;
     for (const hex of ["#ff0000", "#dc2626", "#e11d48", "#ef4444", "#f43f5e", "#b91c1c", "#ff3b30", "#ff4500"]) {
@@ -94,13 +94,13 @@ describe("brand colour", () => {
     expect(brandSwatch("#b91c1c")!.adjusted).toBe(false);
   });
 
-  it("leaves a colour that already passes alone", () => {
+  it("leaves a color that already passes alone", () => {
     const { swatch, adjusted } = brandSwatch("#2563eb")!;
     expect(adjusted).toBe(false);
     expect(swatch.hue).toBeCloseTo(hexToOklch("#2563eb")!.h, 5);
   });
 
-  it("rejects what is not a hex colour", () => {
+  it("rejects what is not a hex color", () => {
     expect(brandSwatch("blue")).toBeNull();
     expect(brandSwatch("")).toBeNull();
   });
@@ -131,7 +131,7 @@ describe("brand storage", () => {
     expect(localStorage.getItem(BRAND_STORAGE_KEY)).toBeNull();
   });
 
-  it("ignores junk: bad JSON, a non-image data URL, an SVG, a bad colour, an over-long name", () => {
+  it("ignores junk: bad JSON, a non-image data URL, an SVG, a bad color, an over-long name", () => {
     expect(parseBrand("{nope")).toEqual({});
     expect(parseBrand("42")).toEqual({});
     expect(parseBrand(JSON.stringify({ logo: "https://example.com/logo.png" }))).toEqual({});
@@ -159,7 +159,7 @@ function pixels(r: number, g: number, b: number, a: number, count: number): numb
   return Array.from({ length: count }, () => [r, g, b, a]).flat();
 }
 
-describe("colours in a logo", () => {
+describe("colors in a logo", () => {
   const hueOf = (hex: string): number => hexToOklch(hex)!.h;
   const near = (a: number, b: number, within: number): boolean => Math.min(Math.abs(a - b), 360 - Math.abs(a - b)) <= within;
 
@@ -171,7 +171,7 @@ describe("colours in a logo", () => {
     }
   });
 
-  it("finds the colours of a two-colour logo, the larger area first", () => {
+  it("finds the colors of a two-color logo, the larger area first", () => {
     const logo = [...pixels(220, 38, 38, 255, 300), ...pixels(37, 99, 235, 255, 100), ...pixels(255, 255, 255, 255, 600)];
     const found = dominantColors(logo);
     expect(found).toHaveLength(2);
@@ -179,8 +179,8 @@ describe("colours in a logo", () => {
     expect(near(hueOf(found[1]!), hueOf("#2563eb"), 6)).toBe(true);
   });
 
-  it("lets a small vivid mark outweigh a larger, paler area of another colour", () => {
-    // Both are real colours (above the grey floor). The tint covers more than twice the area, but the blue carries more chroma in total,
+  it("lets a small vivid mark outweigh a larger, paler area of another color", () => {
+    // Both are real colors (above the gray floor). The tint covers more than twice the area, but the blue carries more chroma in total,
     // so counting pixels alone would pick the tint.
     const tint = rgbOfHex(oklchToHex({ l: 0.9, c: 0.05, h: 25 }));
     expect(rgbToOklch(...tint).c).toBeGreaterThan(0.04);
@@ -190,7 +190,7 @@ describe("colours in a logo", () => {
     expect(near(hueOf(found[0]!), hueOf("#2563eb"), 6)).toBe(true);
   });
 
-  it("returns nothing for a black, white or grey logo", () => {
+  it("returns nothing for a black, white or gray logo", () => {
     expect(dominantColors([...pixels(0, 0, 0, 255, 300), ...pixels(255, 255, 255, 255, 300), ...pixels(128, 128, 128, 255, 300)])).toEqual([]);
   });
 
@@ -202,12 +202,12 @@ describe("colours in a logo", () => {
     expect(near(hueOf(found[0]!), hueOf("#2563eb"), 6)).toBe(true);
   });
 
-  it("returns nothing when only a few stray pixels are coloured", () => {
+  it("returns nothing when only a few stray pixels are colored", () => {
     expect(dominantColors([...pixels(255, 255, 255, 255, 1000), ...pixels(37, 99, 235, 255, 2)])).toEqual([]);
   });
 
-  it("averages a colour that straddles a hue bucket edge, and one that wraps around red, into one colour", () => {
-    // 13 and 17 degrees fall in neighbouring 15-degree buckets; 358 and 2 fall either side of the wrap. Each pair is one colour, at the middle.
+  it("averages a color that straddles a hue bucket edge, and one that wraps around red, into one color", () => {
+    // 13 and 17 degrees fall in neighboring 15-degree buckets; 358 and 2 fall either side of the wrap. Each pair is one color, at the middle.
     const straddle = [...pixels(...rgbOfHex(oklchToHex({ l: 0.6, c: 0.15, h: 13 })), 255, 200), ...pixels(...rgbOfHex(oklchToHex({ l: 0.6, c: 0.15, h: 17 })), 255, 200)];
     const one = dominantColors(straddle);
     expect(one).toHaveLength(1);
@@ -218,7 +218,7 @@ describe("colours in a logo", () => {
     expect(near(hueOf(two[0]!), 0, 1.5)).toBe(true);
   });
 
-  it("offers at most three, and a colour of negligible share is left out", () => {
+  it("offers at most three, and a color of negligible share is left out", () => {
     const four = [
       ...pixels(220, 38, 38, 255, 400),
       ...pixels(37, 99, 235, 255, 300),
@@ -228,7 +228,7 @@ describe("colours in a logo", () => {
     const found = dominantColors(four);
     expect(found).toHaveLength(MAX_PALETTE);
     expect(new Set(found).size).toBe(MAX_PALETTE);
-    // The fourth colour is the one dropped, and a trace of a second colour does not make a second candidate.
+    // The fourth color is the one dropped, and a trace of a second color does not make a second candidate.
     const trace = [...pixels(220, 38, 38, 255, 1000), ...pixels(37, 99, 235, 255, 20)];
     expect(dominantColors(trace)).toHaveLength(1);
   });
@@ -239,7 +239,7 @@ describe("colours in a logo", () => {
     expect(dominantColors([])).toEqual([]);
   });
 
-  it("feeds a found colour straight into the brand-colour check", () => {
+  it("feeds a found color straight into the brand-color check", () => {
     for (const hex of dominantColors([...pixels(220, 38, 38, 255, 300), ...pixels(245, 158, 11, 255, 200), ...pixels(22, 163, 74, 255, 100)])) {
       const result = brandSwatch(hex);
       expect(result, hex).not.toBeNull();
@@ -249,13 +249,13 @@ describe("colours in a logo", () => {
 });
 
 describe("the stored palette", () => {
-  it("round-trips, lowercases, keeps at most three valid colours and drops junk", () => {
+  it("round-trips, lowercases, keeps at most three valid colors and drops junk", () => {
     updateBrand({ logo: PNG, tone: { luminance: 0.4, transparent: false }, palette: ["#2563EB", "#dc2626"] });
     expect(getBrand().palette).toEqual(["#2563eb", "#dc2626"]);
     expect(parseBrand(JSON.stringify({ logo: PNG, palette: ["#111111", "red", 5, "#222222", "#333333", "#444444"] })).palette).toEqual(["#111111", "#222222", "#333333"]);
   });
 
-  it("keeps an empty palette (a logo with no colour), but not one without a logo", () => {
+  it("keeps an empty palette (a logo with no color), but not one without a logo", () => {
     expect(parseBrand(JSON.stringify({ logo: PNG, palette: [] })).palette).toEqual([]);
     expect(parseBrand(JSON.stringify({ palette: ["#111111"] })).palette).toBeUndefined();
   });
@@ -267,14 +267,14 @@ describe("the stored palette", () => {
   });
 });
 
-describe("a brand colour keeps its own lightness where the rules allow", () => {
+describe("a brand color keeps its own lightness where the rules allow", () => {
   const PAGE = { light: { l: 1, c: 0, h: 0 }, dark: { l: 0.145, c: 0, h: 0 } };
   const lightnessOf = (hex: string): number => hexToOklch(hex)!.l;
 
-  it("shows a colour as it is in the mode where it already passes, and no further from it than a rule needs in the other", () => {
+  it("shows a color as it is in the mode where it already passes, and no further from it than a rule needs in the other", () => {
     const raw = hexToOklch("#34bcb4")!;
     const { swatch } = brandSwatch("#34bcb4")!;
-    // Dark mode: the colour is 8.5:1 on the page, so every role is the colour itself.
+    // Dark mode: the color is 8.5:1 on the page, so every role is the color itself.
     const dark = accentRoles(swatch, "dark");
     for (const role of [dark.primary, dark.link, dark.ring]) expect(oklabDistance(role, raw)).toBeLessThan(1);
     // Light mode: only as dark as the rules need. The fill and the ring are 3:1 on white, the link 4.5:1, and no darker.
@@ -287,13 +287,13 @@ describe("a brand colour keeps its own lightness where the rules allow", () => {
     expect(contrastRatio(light.link, light.subtle)).toBeLessThan(4.7);
     expect(light.primary.l).toBeGreaterThan(light.link.l);
     expect(light.primary.l).toBeLessThan(raw.l);
-    // Hue and chroma are the colour's own throughout.
+    // Hue and chroma are the color's own throughout.
     for (const role of [light.primary, light.link, dark.primary]) {
       expect(Math.abs(role.h - raw.h)).toBeLessThan(1);
     }
   });
 
-  it("lightens a dark colour only in dark mode, and leaves it alone in light mode", () => {
+  it("lightens a dark color only in dark mode, and leaves it alone in light mode", () => {
     const { swatch } = brandSwatch("#0b3a6f")!;
     const own = lightnessOf("#0b3a6f");
     expect(accentRoles(swatch, "light").primary.l).toBeCloseTo(own, 2);

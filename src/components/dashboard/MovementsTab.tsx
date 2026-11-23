@@ -24,7 +24,7 @@ const keyOf = (s: MovementSelection) => `${s.kind}:${s.id}`;
 /**
  * Any one movement, or a whole family of them (every kind of clean), across
  * the log. Movement ids and families come from the lexicon, so what the
- * picker offers is exactly what the classifier can recognise, and a family
+ * picker offers is exactly what the classifier can recognize, and a family
  * counts every one of its variants.
  *
  * The workout list shows the phrase that matched on each row. The matcher is
@@ -67,7 +67,7 @@ export function MovementsTab({
       <Card>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            No movements were recognised in the workouts in this range.
+            No movements were recognized in the workouts in this range.
           </p>
         </CardContent>
       </Card>

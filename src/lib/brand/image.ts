@@ -4,10 +4,10 @@ import { dominantColors } from "./color";
  * Turning a chosen file into the one small, safe image Swift keeps as a logo.
  *
  * The file is decoded and drawn onto a canvas, then written back out, so
- * whatever was in it other than pixels (EXIF, including GPS, a colour profile,
+ * whatever was in it other than pixels (EXIF, including GPS, a color profile,
  * trailing data) is gone. SVG is refused on purpose: it can carry script, and a
  * raster is enough for a logo. The pure parts (type sniffing, sizing, tone) are
- * here for tests; `normaliseLogo` needs a real browser canvas.
+ * here for tests; `normalizeLogo` needs a real browser canvas.
  */
 
 export type LogoType = "image/png" | "image/jpeg" | "image/webp";
@@ -92,7 +92,7 @@ export function measureTone(rgba: ArrayLike<number>): LogoTone {
   };
 }
 
-/** Plate colours; fixed on purpose, since the plate exists to be the opposite of the logo, not of the theme. */
+/** Plate colors; fixed on purpose, since the plate exists to be the opposite of the logo, not of the theme. */
 export type Plate = "light" | "dark";
 
 /** A plate only where the page would swallow the logo: a see-through light logo in light mode, a dark one in dark mode. */
@@ -103,15 +103,15 @@ export function plateFor(tone: LogoTone | undefined, mode: "light" | "dark"): Pl
   return null;
 }
 
-export interface NormalisedLogo {
+export interface NormalizedLogo {
   dataUrl: string;
   tone: LogoTone;
-  /** Up to three colours found in the logo, most prominent first; empty when it has none (a black and white logo). */
+  /** Up to three colors found in the logo, most prominent first; empty when it has none (a black and white logo). */
   palette: string[];
 }
 
 /** Decode, redraw and re-encode. Throws `LogoError`. */
-export async function normaliseLogo(file: File): Promise<NormalisedLogo> {
+export async function normalizeLogo(file: File): Promise<NormalizedLogo> {
   if (file.size > MAX_INPUT_BYTES) throw new LogoError("too_large");
   const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
   if (!sniffImageType(head)) throw new LogoError("not_an_image");

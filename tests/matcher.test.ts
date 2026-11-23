@@ -18,7 +18,7 @@ describe("matcher — substring mode (the default)", () => {
     expect(matches("shoulder presses", { phrase: "press" })).toBe(true);
   });
 
-  it("matches words glued to their neighbours, which real exports are full of", () => {
+  it("matches words glued to their neighbors, which real exports are full of", () => {
     // Verbatim shapes from the validation export — SugarWOD concatenates
     // description lines with no separator. A word-boundary rule would miss
     // every one of these.

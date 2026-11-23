@@ -7,7 +7,7 @@ import { clearBrand, getBrand, updateBrand } from "@/lib/brand/brandStore";
 import { LogoError } from "@/lib/brand/image";
 
 const captured = vi.hoisted(() => ({ calls: [] as unknown[] }));
-const normalise = vi.hoisted(() => vi.fn());
+const normalize = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/posthog", async (orig) => ({
   ...(await orig<typeof import("@/lib/posthog")>()),
@@ -15,14 +15,14 @@ vi.mock("@/lib/posthog", async (orig) => ({
 }));
 vi.mock("@/lib/brand/image", async (orig) => ({
   ...(await orig<typeof import("@/lib/brand/image")>()),
-  normaliseLogo: normalise,
+  normalizeLogo: normalize,
 }));
 
 const PNG = "data:image/png;base64,iVBORw0KGgo=";
 
 beforeEach(() => {
   captured.calls = [];
-  normalise.mockReset();
+  normalize.mockReset();
 });
 afterEach(() => {
   cleanup();
@@ -74,20 +74,20 @@ describe("Branding in Settings", () => {
     expect(JSON.stringify(captured.calls)).not.toContain("Iron");
   });
 
-  it("stores a normalised logo and shows a plain sentence for a file it refuses", async () => {
+  it("stores a normalized logo and shows a plain sentence for a file it refuses", async () => {
     localStorage.setItem("swift.audience", "coach");
     renderSheet();
     const region = await screen.findByRole("region", { name: "Branding" });
     const input = region.querySelector<HTMLInputElement>('input[type="file"]')!;
 
-    normalise.mockRejectedValueOnce(new LogoError("not_an_image"));
+    normalize.mockRejectedValueOnce(new LogoError("not_an_image"));
     await act(async () => {
       fireEvent.change(input, { target: { files: [new File(["x"], "logo.svg", { type: "image/svg+xml" })] } });
     });
     expect(await screen.findByRole("alert")).toHaveTextContent("That file isn't a PNG, JPEG or WebP image.");
     expect(getBrand().logo).toBeUndefined();
 
-    normalise.mockResolvedValueOnce({ dataUrl: PNG, tone: { luminance: 0.5, transparent: false } });
+    normalize.mockResolvedValueOnce({ dataUrl: PNG, tone: { luminance: 0.5, transparent: false } });
     await act(async () => {
       fireEvent.change(input, { target: { files: [new File(["x"], "logo.png", { type: "image/png" })] } });
     });
@@ -96,11 +96,11 @@ describe("Branding in Settings", () => {
     expect(JSON.stringify(captured.calls)).not.toContain("base64");
   });
 
-  it("picking a colour switches the accent to it, and Remove branding clears everything after a confirmation", async () => {
+  it("picking a color switches the accent to it, and Remove branding clears everything after a confirmation", async () => {
     localStorage.setItem("swift.audience", "coach");
     updateBrand({ name: "Iron Works", logo: PNG });
     renderSheet();
-    const color = await screen.findByLabelText("Brand colour");
+    const color = await screen.findByLabelText("Brand color");
     fireEvent.change(color, { target: { value: "#7c3aed" } });
     expect(getBrand().color).toBe("#7c3aed");
     expect(document.documentElement.getAttribute("data-accent")).toBe("brand");
@@ -116,22 +116,22 @@ describe("Branding in Settings", () => {
   });
 });
 
-describe("Colours in the logo", () => {
-  it("offers the colours a new logo is made of, and applies one only when it is picked", async () => {
+describe("Colors in the logo", () => {
+  it("offers the colors a new logo is made of, and applies one only when it is picked", async () => {
     localStorage.setItem("swift.audience", "coach");
     renderSheet();
     const region = await screen.findByRole("region", { name: "Branding" });
     const input = region.querySelector<HTMLInputElement>('input[type="file"]')!;
-    normalise.mockResolvedValueOnce({ dataUrl: PNG, tone: { luminance: 0.5, transparent: false }, palette: ["#dc2626", "#2563eb"] });
+    normalize.mockResolvedValueOnce({ dataUrl: PNG, tone: { luminance: 0.5, transparent: false }, palette: ["#dc2626", "#2563eb"] });
     await act(async () => {
       fireEvent.change(input, { target: { files: [new File(["x"], "logo.png", { type: "image/png" })] } });
     });
     await waitFor(() => expect(getBrand().palette).toEqual(["#dc2626", "#2563eb"]));
-    // Offered, not applied: the colour and the accent are untouched.
+    // Offered, not applied: the color and the accent are untouched.
     expect(getBrand().color).toBeUndefined();
     expect(document.documentElement.getAttribute("data-accent")).toBe("blue");
 
-    const group = within(region).getByRole("group", { name: "Colours in your logo" });
+    const group = within(region).getByRole("group", { name: "Colors in your logo" });
     const [first, second] = within(group).getAllByRole("button");
     expect(first).toHaveTextContent("#dc2626");
     expect(first).toHaveAttribute("aria-pressed", "false");
@@ -141,16 +141,16 @@ describe("Colours in the logo", () => {
     expect(document.documentElement.getAttribute("data-accent")).toBe("brand");
     expect(within(group).getByRole("button", { name: "#2563eb" })).toHaveAttribute("aria-pressed", "true");
     expect(within(group).getByRole("button", { name: "#dc2626" })).toHaveAttribute("aria-pressed", "false");
-    // The pick is reported as a bare save, never the colour.
+    // The pick is reported as a bare save, never the color.
     expect(JSON.stringify(captured.calls)).not.toMatch(/2563eb|dc2626/i);
   });
 
-  it("does not overwrite a colour the coach already chose when a new logo arrives", async () => {
+  it("does not overwrite a color the coach already chose when a new logo arrives", async () => {
     localStorage.setItem("swift.audience", "coach");
     updateBrand({ logo: PNG, color: "#16a34a", palette: [] });
     renderSheet();
     const region = await screen.findByRole("region", { name: "Branding" });
-    normalise.mockResolvedValueOnce({ dataUrl: PNG, tone: { luminance: 0.5, transparent: false }, palette: ["#dc2626"] });
+    normalize.mockResolvedValueOnce({ dataUrl: PNG, tone: { luminance: 0.5, transparent: false }, palette: ["#dc2626"] });
     await act(async () => {
       fireEvent.change(region.querySelector<HTMLInputElement>('input[type="file"]')!, { target: { files: [new File(["x"], "logo.png", { type: "image/png" })] } });
     });
@@ -158,15 +158,15 @@ describe("Colours in the logo", () => {
     expect(getBrand().color).toBe("#16a34a");
   });
 
-  it("says so when the logo has no colour, and shows nothing for a brand saved before suggestions existed", async () => {
+  it("says so when the logo has no color, and shows nothing for a brand saved before suggestions existed", async () => {
     localStorage.setItem("swift.audience", "coach");
     updateBrand({ logo: PNG, palette: [] });
     renderSheet();
     const region = await screen.findByRole("region", { name: "Branding" });
-    expect(region).toHaveTextContent("This logo has no distinct colour to suggest.");
-    expect(within(region).queryByRole("group", { name: "Colours in your logo" })).toBeNull();
+    expect(region).toHaveTextContent("This logo has no distinct color to suggest.");
+    expect(within(region).queryByRole("group", { name: "Colors in your logo" })).toBeNull();
     act(() => updateBrand({ palette: undefined }));
-    await waitFor(() => expect(region).not.toHaveTextContent("no distinct colour"));
+    await waitFor(() => expect(region).not.toHaveTextContent("no distinct color"));
   });
 
   it("takes the suggestions away with the logo", async () => {
@@ -176,17 +176,17 @@ describe("Colours in the logo", () => {
     const region = await screen.findByRole("region", { name: "Branding" });
     fireEvent.click(within(region).getByRole("button", { name: "Remove logo" }));
     expect(getBrand().palette).toBeUndefined();
-    expect(within(region).queryByRole("group", { name: "Colours in your logo" })).toBeNull();
+    expect(within(region).queryByRole("group", { name: "Colors in your logo" })).toBeNull();
   });
 });
 
 describe("Branding buttons say what they act on", () => {
-  it("gives the logo and colour buttons their own names, distinct from Remove branding", async () => {
+  it("gives the logo and color buttons their own names, distinct from Remove branding", async () => {
     localStorage.setItem("swift.audience", "coach");
     updateBrand({ logo: PNG, color: "#7c3aed" });
     renderSheet();
     const region = await screen.findByRole("region", { name: "Branding" });
-    for (const name of ["Remove logo", "Clear brand colour", "Replace logo", "Remove branding"]) {
+    for (const name of ["Remove logo", "Clear brand color", "Replace logo", "Remove branding"]) {
       expect(within(region).getByRole("button", { name })).toBeInTheDocument();
     }
   });

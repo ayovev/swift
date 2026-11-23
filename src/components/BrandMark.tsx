@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * this only adds to it.
  *
  * A see-through logo the page would swallow (a white logo in light mode, a black
- * one in dark mode) sits on a small plate. The plate colours are fixed, not
+ * one in dark mode) sits on a small plate. The plate colors are fixed, not
  * theme tokens: a plate exists to be the opposite of the logo.
  */
 export function BrandMark({ className }: { className?: string }) {

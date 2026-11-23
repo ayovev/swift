@@ -16,7 +16,7 @@ lexicon entry cannot silently join a family. `parseRows()` runs `findMovements` 
 resolve to the same ids, no separate table) and those hits come first, tagged `source: "barbell_lift"`. The text is
 still searched for other movements, but a family's *generic* bare word (`MovementFamily.generic`: "squat",
 "clean", "snatch", ...) is dropped when the typed lift is a more specific member of that family, so a front squat
-session is not also a vague squat. Rows with no recognised typed lift behave exactly as before. Measured on the
+session is not also a vague squat. Rows with no recognized typed lift behave exactly as before. Measured on the
 sample: 279 of 1,209 rows have the field, 25 rows' identities changed and no modality split moved (all typed lifts
 are W). A lift named only as the base of a percentage ("75% of snatch") is not read as that movement: see the next paragraph.
 **Variants are their own ids, and their family keeps them.** CrossFit's movement list separates strict, kipping and
@@ -28,7 +28,7 @@ carry any suffix a shorter phrase could claim (`strict chest-to-bar pull-up`), o
 first and the qualifier is lost. A prefixed complex stays split into its parts via `exclude` (`power clean and push
 jerk` is not a `clean-and-push-jerk`). Measured on the sample: 117 rows' movements changed and 40 modality splits
 moved, from three causes: double counts merged (9), `single-leg squat` read as a pistol and so G rather than W (13),
-and variants newly recognised (18). Dumbbell and kettlebell versions of lifts are deliberately **not** separate ids:
+and variants newly recognized (18). Dumbbell and kettlebell versions of lifts are deliberately **not** separate ids:
 that is an implement axis, not 14 more ids that duplicate the barbell ones.
 A double count is found by auditing the sample for two different movements whose matched text touches (or sits a
 few letters apart) in one row, then asking whether the sport names that as one movement: a farmers carry, a burpee

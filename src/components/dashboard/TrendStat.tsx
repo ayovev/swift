@@ -13,12 +13,12 @@ interface TrendStatProps {
   halves: TrendHalves | null;
 }
 
-/** "Meaningful" here is a judgement call, stated once rather than scattered. */
+/** "Meaningful" here is a judgment call, stated once rather than scattered. */
 export const MEANINGFUL_DELTA = 1;
 
 /**
  * Under this, from the first workout to the last, the two halves are too close together to call a change "over time": a month's
- * range split in two is two fortnights. Days rather than buckets, because the halves are cut by workout count and the grouping
+ * range split in two is two 14-day spans. Days rather than buckets, because the halves are cut by workout count and the grouping
  * never changes them.
  */
 export const TREND_MIN_SPAN_DAYS = 56;

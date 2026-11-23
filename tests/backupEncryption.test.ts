@@ -104,7 +104,7 @@ describe("opening an encrypted backup", () => {
     expect(await readBackup(salted, { passphrase: PASS })).toEqual({ status: "wrong_passphrase" });
   });
 
-  it("won't open a ciphertext lifted out of a differently labelled file", async () => {
+  it("won't open a ciphertext lifted out of a differently labeled file", async () => {
     // Same key, same ciphertext, but sealed against another header.
     const payload = await encryptText(JSON.stringify({ workout: [wRow] }), PASS, "swift-backup:1:plain", FAST);
     const text = JSON.stringify({ format: "swift-backup", version: 1, exportedAt: "", encoding: "aes-256-gcm", ...payload });

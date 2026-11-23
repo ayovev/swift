@@ -37,7 +37,7 @@ function useWidth(): [RefObject<HTMLDivElement | null>, number] {
   return [ref, w];
 }
 const PAD = { l: 52, r: 44, t: 22, b: 30 };
-/** Every dot is the same size: colour alone says which group it is in. */
+/** Every dot is the same size: color alone says which group it is in. */
 const DOT_R = 3.5;
 const DAY_MS = 86_400_000;
 /** Rough size of an 11px label in pixels (one chart unit is a pixel), to tell whether the trend line would run through it. */
@@ -47,7 +47,7 @@ const HIT_R = 9;
 
 /**
  * The chart that opens from a subject's row: one dot per day (the best result of that day, the same series the verdict reads), the
- * previous window's dots dark, the recent window's dots in the accent, every other dot faint grey, all one size. No bands, legend or controls. A dashed
+ * previous window's dots dark, the recent window's dots in the accent, every other dot faint gray, all one size. No bands, legend or controls. A dashed
  * trend line through the best of each quarter appears with four or more quarters and carries no number or direction; rings mark max
  * efforts only for a lift with a `down` or `not tested since` verdict; a record carries a "new best" label on its (ordinary, accent) dot. A subject without a
  * verdict (a facts line) gets the dots alone. The y-axis is a plain number line, larger values on top, for a time as for a load: a faster time is drawn lower.
@@ -101,7 +101,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
     const dates = niceTimeTicks(x0 * DAY_MS, x1 * DAY_MS, Math.max(2, Math.min(AXIS_TICK_COUNT, Math.floor((W - PAD.l - PAD.r) / MIN_TICK_GAP_PX))));
     const xTicks = dates.ticks.map((t) => ({ x: X(t / DAY_MS), label: formatTimeTick(t, dates.unit) }));
     // A value label sits where it covers the least: above its dot, below it, or nudged to either side above it, counting the trend line
-    // and every other dot its box would cross (on a phone the dots are close, and "223" sat on its neighbours). Above wins a tie.
+    // and every other dot its box would cross (on a phone the dots are close, and "223" sat on its neighbors). Above wins a tie.
     const trendAt = (x: number): number | null => {
       if (!trend) return null;
       const ax = X(trend.from.x);
@@ -187,7 +187,7 @@ export function EvidenceChart({ subject, verdict, domain }: { subject: ProgressS
   const rings = verdict && subject.kind === "lift" && (verdict.state === "down" || verdict.state === "not-tested-since");
   const { X, Y } = model;
   const caption = verdict
-    ? `Each dot is the best result of a day. Dark dots are the ${verdict.window} sessions before the recent ${verdict.window}; accent dots are the recent ${verdict.window}, which are compared. Grey dots are other sessions.${model.trend ? " The dashed line is the long-run trend." : ""}${rings ? " Rings mark max efforts." : ""}`
+    ? `Each dot is the best result of a day. Dark dots are the ${verdict.window} sessions before the recent ${verdict.window}; accent dots are the recent ${verdict.window}, which are compared. Gray dots are other sessions.${model.trend ? " The dashed line is the long-run trend." : ""}${rings ? " Rings mark max efforts." : ""}`
     : "Each dot is the best result of a day.";
   // A lift's dots are estimated 1RMs, not loads that were lifted: the axis is titled so and the caption says where they come from.
   const estimated = subject.format === "load";

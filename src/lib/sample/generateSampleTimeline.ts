@@ -15,7 +15,7 @@ import type { EntryArea, Initiation, TimelineEntry } from "@/types/timeline";
  * offset from the athlete's own first logged workout, never a hardcoded
  * calendar date, so this keeps working if the bundled export is swapped. A
  * entry is only used if it fits inside the logged span with a margin before
- * today; nothing is randomised, so reloading demo mode never reshuffles it.
+ * today; nothing is randomized, so reloading demo mode never reshuffles it.
  *
  * An entry says only what the athlete would say — "First cut", "Shoulder tweak" —
  * and never touches a number (see `timeline.ts`), so what the demo's

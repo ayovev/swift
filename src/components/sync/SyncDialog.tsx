@@ -46,7 +46,7 @@ function failureMessage(reason: SyncFailureReason): string {
     case "unsupported_browser":
       return "This browser doesn't support the technology sync needs. Try a different browser.";
     case "declined_overwrite":
-      return "Sync was cancelled.";
+      return "Sync was canceled.";
     case "invalid_data":
       return "The other device sent data this one couldn't read.";
   }

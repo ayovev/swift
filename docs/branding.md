@@ -4,7 +4,7 @@ Status: v0.3, Phase 1 built (FR-1 to FR-12). All open questions resolved (sectio
 
 ## 1. Context
 
-A coach who reviews an athlete's SugarWOD export in Swift today gets the same product an athlete gets; "coach" is only a copy variant (`src/lib/audience.ts`, `Splash.tsx`, `Landing.tsx`, Settings "Role"). This feature lets a coach set a gym logo, name and brand colour once, and have them appear in the web app. It also provides the brand to a future report/image feature, which is specified separately.
+A coach who reviews an athlete's SugarWOD export in Swift today gets the same product an athlete gets; "coach" is only a copy variant (`src/lib/audience.ts`, `Splash.tsx`, `Landing.tsx`, Settings "Role"). This feature lets a coach set a gym logo, name and brand color once, and have them appear in the web app. It also provides the brand to a future report/image feature, which is specified separately.
 
 Two facts shape everything:
 
@@ -17,7 +17,7 @@ Two facts shape everything:
 |---|---|
 | How athletes see the brand | They don't, in-app, ever. Coach-only and local (Q6 dropped athlete in-app viewing entirely). |
 | Report and image material | A separate feature. This PRD covers the brand and the web app only. |
-| Brand scope | Logo, gym name and brand colour. No fonts or layout theming. |
+| Brand scope | Logo, gym name and brand color. No fonts or layout theming. |
 | Dark-mode logos | One upload, with an automatic neutral plate when contrast is poor (Q1). |
 | Swift mark | Never removable (Q2). |
 | Backup and sync | Brand is excluded from both; re-upload on a new browser (Q3). |
@@ -28,8 +28,8 @@ Two facts shape everything:
 Goals
 1. A coach sets up their brand in under two minutes and it persists across visits.
 2. The brand appears in the app header and the landing header.
-3. No change to the privacy promise: no logo, name or colour ever leaves the browser or enters analytics.
-4. No regression in accessibility or contrast; brand colour cannot make the UI unreadable.
+3. No change to the privacy promise: no logo, name or color ever leaves the browser or enters analytics.
+4. No regression in accessibility or contrast; brand color cannot make the UI unreadable.
 5. The brand is exposed through one accessor so a future report feature can use it without new storage work.
 
 Non-goals
@@ -43,38 +43,38 @@ Non-goals
 
 Persona: the coach (`Audience = "coach"`), loading one athlete's export at a time.
 
-1. Coach opens Settings, adds a logo, types the gym name, picks a brand colour. The header shows their logo beside the Swift wordmark and the accent follows the brand colour.
+1. Coach opens Settings, adds a logo, types the gym name, picks a brand color. The header shows their logo beside the Swift wordmark and the accent follows the brand color.
 2. Coach switches athletes (Replace file or Start over); branding is still there.
 3. Coach opens the app in a new browser; branding is not there and is added again.
 4. Coach removes branding; everything returns to stock Swift.
 
 ## 5. Functional requirements
 
-Brand profile = `{ logo (raster, normalised), name (<= 60 chars), color (hex) }`, each optional.
+Brand profile = `{ logo (raster, normalized), name (<= 60 chars), color (hex) }`, each optional.
 
 - **FR-1 Setup** lives in a "Branding" section of `SettingsSheet.tsx`. Shown to coaches; for an athlete audience the section is hidden, not deleted (switching role never loses the brand).
 - **FR-2 Logo upload** accepts PNG, JPEG, WebP, up to 5 MB on input. **SVG is rejected in v1** (script risk if ever inlined; raster is enough). The file is decoded and **re-encoded through a canvas** to a max 512 px long edge, which strips EXIF (including GPS) and bounds storage to well under 100 KB. Errors are plain sentences (e.g. "That file isn't a PNG, JPEG or WebP image"), per the `plainParseMessage()` voice. Use `FilePickerButton` and the `aria-hidden` file-input pattern.
 - **FR-3 Name** is plain text, rendered as text only. It becomes the logo's alt text; with no name, alt is "Gym logo".
-- **FR-4 Colour** is a free hex picker. It feeds the existing accent pipeline (`palette.ts`: `deriveRamp`, `clampToGamut`, `pickForeground`) as a custom swatch. The colour keeps its own hue, chroma (up to the stock ceiling) and lightness: each interactive role (button fill and focus ring 3:1 on the page, link 4.5:1, the label on the fill and its hover 4.5:1) starts at the colour's own lightness and moves away from the page only as far as its rule needs, so a colour that already works in a mode is shown as it is in that mode. If the colour still fails a rule it is adjusted programmatically and the adjustment is shown; thresholds are never lowered. It must stay at least 8 OKLab-x100 from `--destructive` (CLAUDE.md open item). A coach can still choose a stock accent; choosing one replaces the brand colour use, and "Use brand colour" restores it.
+- **FR-4 Color** is a free hex picker. It feeds the existing accent pipeline (`palette.ts`: `deriveRamp`, `clampToGamut`, `pickForeground`) as a custom swatch. The color keeps its own hue, chroma (up to the stock ceiling) and lightness: each interactive role (button fill and focus ring 3:1 on the page, link 4.5:1, the label on the fill and its hover 4.5:1) starts at the color's own lightness and moves away from the page only as far as its rule needs, so a color that already works in a mode is shown as it is in that mode. If the color still fails a rule it is adjusted programmatically and the adjustment is shown; thresholds are never lowered. It must stay at least 8 OKLab-x100 from `--destructive` (CLAUDE.md open item). A coach can still choose a stock accent; choosing one replaces the brand color use, and "Use brand color" restores it.
 - **FR-5 Placement.** Dashboard header lockup (`Dashboard.tsx` ~line 266: logo beside `SwiftMark`, max 40 px tall and 160 px wide so the `lg` three-column grid and section nav do not move) and the landing header for returning visitors. Not in the favicon, manifest or `<title>`.
 - **FR-6 Dark mode.** One logo is uploaded. At upload, measure luminance of its opaque pixels; in the mode where contrast would be poor, draw it on a neutral plate. No second upload.
-- **FR-7 Persistence.** `localStorage` key `swift.brand`, try/catch with an in-memory fallback, same as theme and audience. Reasons: it is a per-device preference, it must be readable before first paint to avoid a colour flash, and it must **survive "Start over"** (which calls `idbClearAll()`), or a coach would re-enter it for every athlete. It is not a `SyncDataset`, so it is never synced or backed up (CLAUDE.md: preferences must not sync). The UI states once: "Branding stays on this device."
+- **FR-7 Persistence.** `localStorage` key `swift.brand`, try/catch with an in-memory fallback, same as theme and audience. Reasons: it is a per-device preference, it must be readable before first paint to avoid a color flash, and it must **survive "Start over"** (which calls `idbClearAll()`), or a coach would re-enter it for every athlete. It is not a `SyncDataset`, so it is never synced or backed up (CLAUDE.md: preferences must not sync). The UI states once: "Branding stays on this device."
 - **FR-8 Remove branding** is a single action with its own confirmation. "Start over" copy is unchanged and states it does not remove branding.
 - **FR-9 Sample mode** may be branded (it is a preference, not athlete data), so coaches can preview before loading a real file.
 - **FR-10 Co-branding rule.** The Swift mark is always present beside the gym logo, and is not removable.
-- **FR-11 Single accessor.** One typed read path (a `useBrand()` hook over `src/lib/brand/`) returns the normalised logo as a data URL, the name and the colour. It is the only way components read the brand, so a future report feature needs no new storage or validation. The report feature owns its own layout, content and print behaviour.
-- **FR-12 Colour suggestions.** When a logo is added, Swift finds the colours it is made of and offers up to three as buttons under the colour field ("Colours in your logo", each with its hex written out, so colour is not the only cue). It is a suggestion, never applied by itself: the dominant colour is a guess at the brand colour, and the accent recolours the whole interface. Picking one is the same as choosing it in the colour field, so FR-4's contrast adjustment and its note apply. It never overwrites a colour the coach already chose. Grey, near-white, near-black, see-through and edge pixels are ignored, so a black and white logo yields nothing and the form says so. The suggestions are kept with the logo (a validated list of at most three hex colours in `swift.brand`) and go when it goes. Everything runs in the browser, on the same pixels the logo's brightness is measured from. A vivid mark counts for more than a larger, paler area, and a colour with a negligible share is left out.
+- **FR-11 Single accessor.** One typed read path (a `useBrand()` hook over `src/lib/brand/`) returns the normalized logo as a data URL, the name and the color. It is the only way components read the brand, so a future report feature needs no new storage or validation. The report feature owns its own layout, content and print behavior.
+- **FR-12 Color suggestions.** When a logo is added, Swift finds the colors it is made of and offers up to three as buttons under the color field ("Colors in your logo", each with its hex written out, so color is not the only cue). It is a suggestion, never applied by itself: the dominant color is a guess at the brand color, and the accent recolors the whole interface. Picking one is the same as choosing it in the color field, so FR-4's contrast adjustment and its note apply. It never overwrites a color the coach already chose. Gray, near-white, near-black, see-through and edge pixels are ignored, so a black and white logo yields nothing and the form says so. The suggestions are kept with the logo (a validated list of at most three hex colors in `swift.brand`) and go when it goes. Everything runs in the browser, on the same pixels the logo's brightness is measured from. A vivid mark counts for more than a larger, paler area, and a color with a negligible share is left out.
 
 ## 6. Accessibility and voice
 
 - axe clean on Settings (with Branding), light and dark; keyboard path for every control; no drag-only interaction.
-- Brand colour is tested like any swatch (FR-4). Forced-colors behaviour checked for the header lockup.
+- Brand color is tested like any swatch (FR-4). Forced-colors behavior checked for the header lockup.
 - Copy follows the voice rules: plain statements, no exclamation points, no "Oops".
 
 ## 7. Privacy, security and analytics
 
-- Logo, name and colour never leave the browser. No upload, no remote logo URLs (the CSP already blocks them: `img-src 'self' data: blob:`). **No CSP change is needed** for local logos; `tests/securityHeaders.test.ts` stays as is.
-- Analytics stay closed-vocabulary. New `SwiftEvent`s, value-free: `brand_saved` and `brand_removed`. No filenames, names, colours or sizes. `tests/analytics.test.ts` is extended to assert no brand value appears in any payload.
+- Logo, name and color never leave the browser. No upload, no remote logo URLs (the CSP already blocks them: `img-src 'self' data: blob:`). **No CSP change is needed** for local logos; `tests/securityHeaders.test.ts` stays as is.
+- Analytics stay closed-vocabulary. New `SwiftEvent`s, value-free: `brand_saved` and `brand_removed`. No filenames, names, colors or sizes. `tests/analytics.test.ts` is extended to assert no brand value appears in any payload.
 - `docs/privacy.md` gains one paragraph on the stored logo and states it is local-only.
 
 ## 8. Success criteria
@@ -89,7 +89,7 @@ One phase: the brand profile and web app (FR-1 to FR-12). It adds no dependency.
 
 ## 10. Implementation notes (for the build phase)
 
-Reuse: `FilePickerButton`, `SettingsSheet.tsx` sections, `palette.ts`/`contrast.ts`, the `useTheme()` and `swift.audience` localStorage pattern, `AlertDialog` for removal. New: `src/lib/brand/` (image normalisation, storage, colour derivation as pure functions, luminance check) and `src/components/BrandMark.tsx`. Tests: pure-function tests for image sizing, luminance and colour adjustment (jsdom has no canvas, so decoding is verified in Chromium), brand storage fallback, themeContrast over brand colours, analytics payload check, lazySplit unchanged.
+Reuse: `FilePickerButton`, `SettingsSheet.tsx` sections, `palette.ts`/`contrast.ts`, the `useTheme()` and `swift.audience` localStorage pattern, `AlertDialog` for removal. New: `src/lib/brand/` (image normalization, storage, color derivation as pure functions, luminance check) and `src/components/BrandMark.tsx`. Tests: pure-function tests for image sizing, luminance and color adjustment (jsdom has no canvas, so decoding is verified in Chromium), brand storage fallback, themeContrast over brand colors, analytics payload check, lazySplit unchanged.
 
 ## 11. Docs to update with the build
 

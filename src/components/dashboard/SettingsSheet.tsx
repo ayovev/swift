@@ -94,7 +94,7 @@ function DatasetRow({ title, detail, action }: { title: string; detail: string; 
  * Everything on the dashboard that is neither navigation nor view scope,
  * in one sheet behind the header's single Settings button: replacing either
  * uploaded file, backing up to or restoring from a file, syncing to or from
- * another device, accent and colour mode, and Start over.
+ * another device, accent and color mode, and Start over.
  *
  * These used to be six separate controls across the header (and "Replace
  * file" for InBody only on the Body Comp tab). They're used monthly at most
@@ -329,7 +329,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
           <Section title="Appearance">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm">Accent</span>
-              <div role="radiogroup" aria-label="Accent colour" className="flex items-center gap-2">
+              <div role="radiogroup" aria-label="Accent color" className="flex items-center gap-2">
                 {ACCENT_SWATCHES.map((swatch) => {
                   const active = swatch.id === accent;
                   // Preview each swatch as it will actually render in this mode.
@@ -366,7 +366,7 @@ export function SettingsSheet(props: SettingsSheetProps) {
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm">Mode</span>
-              <div role="radiogroup" aria-label="Colour mode" className="flex gap-0.5 rounded-md border border-border p-0.5">
+              <div role="radiogroup" aria-label="Color mode" className="flex gap-0.5 rounded-md border border-border p-0.5">
                 {MODES.map(({ value, label, Icon }) => (
                   <Button
                     key={value}

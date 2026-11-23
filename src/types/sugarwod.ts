@@ -21,7 +21,7 @@ export interface SugarWodRow {
   barbell_lift: string;
   /** JSON blob of per-set detail. Unused in v1. */
   set_details: string;
-  /** Free-text athlete notes. Never analysed, never transmitted. */
+  /** Free-text athlete notes. Never analyzed, never transmitted. */
   notes: string;
   /** Literally "RX" or "SCALED"; anything else counts as neither. */
   rx_or_scaled: string;

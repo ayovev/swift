@@ -48,7 +48,7 @@ Movements chart the list below narrows to that month, week or quarter; on
 Overview's months or a lift's dots you get a link to those workouts. You can also
 drag across a chart to set the date range. Every chart has a table version: the
 **Table** switch in a chart's header flips them all. Replacing a file, syncing,
-backup, accent colour, dark mode and Start over are all in **Settings**.
+backup, accent color, dark mode and Start over are all in **Settings**.
 
 **Updating your data.** A fresher export doesn't need a fresh start. In
 **Settings**, **Replace file** next to your workout log swaps in a new SugarWOD
@@ -83,15 +83,15 @@ nothing, with one confirmation if anything would be replaced. See
 
 ## Branding
 
-A coach can add their gym's logo, name and brand colour: **Settings → Branding**,
+A coach can add their gym's logo, name and brand color: **Settings → Branding**,
 shown while the role is set to Coach (change it under **Role**). The logo appears
 beside the Swift mark in the header and on the landing page; Swift's own mark is
-always there too. The colour becomes the accent, adjusted automatically if it
+always there too. The color becomes the accent, adjusted automatically if it
 would be hard to read in either mode, and the form says when it did that. The
 logo can be a PNG, JPEG or WebP up to 5 MB; SVG isn't accepted. A logo that would
 disappear against the page (white on light, black on dark) sits on a small plate.
-When you add a logo, Swift offers up to three of the colours in it under the colour
-field; pick one to use it, or choose your own. It never changes your colour by itself,
+When you add a logo, Swift offers up to three of the colors in it under the color
+field; pick one to use it, or choose your own. It never changes your color by itself,
 and a black and white logo has none to offer.
 Branding stays on this device: it isn't uploaded, synced or included in a backup,
 and **Start over** doesn't remove it, so a coach moving between athletes keeps it.

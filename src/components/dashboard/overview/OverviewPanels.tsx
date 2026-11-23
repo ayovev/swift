@@ -68,7 +68,7 @@ const MAX_BAR_PX = 72;
  * The ink for the days-trained bars: the accent. This was neutral for a time, because the M/W/G chart sits in the same card in fixed red, green
  * and blue, and an accent fill matched one of them for some accents (the default blue is G, green is W, red is M in dark mode), which can tell the
  * reader two different series are one. The owner chose the accent anyway, so that collision is known and accepted; the bars are told apart from
- * the M/W/G chart by the chart, its key and its axis, not by colour alone.
+ * the M/W/G chart by the chart, its key and its axis, not by color alone.
  */
 const DAYS_INK = "var(--primary)";
 /** How strongly a full month's bar is filled. Full strength: the accent is held to 3:1 against the page in both modes (themeContrast.test.ts), and fading it would take it under. */
@@ -78,7 +78,7 @@ const DAYS_FILL_OPACITY = 1;
  * The fill that marks a month still under way: a single-direction 45° hatch in the
  * same ink as the full months, over a faint wash of it. A pattern rather than a lighter shade, so
  * "in progress" reads as a different kind of bar, not a smaller amount, and
- * survives without colour. One direction of lines rather than a cross-hatch: it is
+ * survives without color. One direction of lines rather than a cross-hatch: it is
  * the usual chart mark for "not final", it leaves the bar's top edge easy to
  * read, and its stripes stay distinct at phone width and in a 12px key, where
  * finer pinstripes blurred into a flat tint (compared side by side). One definition serves the bar and its key; `id`
@@ -126,7 +126,7 @@ interface MonthPick {
   pick?: ((month: string | null) => void) | undefined;
 }
 
-/** How much a month that isn't the picked one fades, so the picked column stands out in both charts (emphasis, not a new colour). */
+/** How much a month that isn't the picked one fades, so the picked column stands out in both charts (emphasis, not a new color). */
 const UNPICKED_OPACITY = 0.3;
 
 function MonthlyDaysChart({ months, picked, pick }: { months: MonthDays[] } & MonthPick) {
@@ -251,7 +251,7 @@ function MonthlyMixChart({ mix, picked, pick }: { mix: MonthMix[] } & MonthPick)
             );
           }}
         />
-        {/* Drawn W, G, M from the baseline (MODALITY_DRAW_ORDER), with a 2px card-coloured stroke as the gap between segments,
+        {/* Drawn W, G, M from the baseline (MODALITY_DRAW_ORDER), with a 2px card-colored stroke as the gap between segments,
             so two segments never read as one block. */}
         {MODALITY_DRAW_ORDER.map((m, i) => (
           <Bar

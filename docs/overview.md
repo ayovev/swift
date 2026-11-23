@@ -111,7 +111,7 @@ a phone.
     and some accents (the default blue, green, red in dark mode) sit close to one of those; the owner chose the accent knowing that. The current month's bar is drawn with a diagonal hatch (one direction of 45° lines) in the same ink, outlined, with a small key under the
     chart ("This month so far") and "so far" in its tooltip, so a partial month doesn't read as a drop. A pattern
     rather than a lighter shade, so it reads as a different kind of bar rather than a smaller amount, without relying
-    on colour. One direction of lines was chosen over a diamond cross-hatch (busier, harder to read the bar's top) and a
+    on color. One direction of lines was chosen over a diamond cross-hatch (busier, harder to read the bar's top) and a
     fine pinstripe (blurred into a flat tint at phone width and in the 12px key), after comparing them side by side.
 31. With under 12 months of history, bars start at the first logged month. No empty months are drawn before it. A bar
     is never wider than 72px, on both Training charts, so a two-month log looks like the same chart rather than two
@@ -122,7 +122,7 @@ a phone.
     different period from the one the totals count.
 33. **What it was made of**, a second chart under Showing up: each month's M/W/G split as a stacked bar summing to
     100, over **the same 12 months**, with the same margins and axis width, so each month's column sits under its days
-    bar and the panel reads as one timeline. The bars use the fixed modality colours, stacked W, G, M from the baseline with a
+    bar and the panel reads as one timeline. The bars use the fixed modality colors, stacked W, G, M from the baseline with a
     2px gap between segments, and a three-item key in the same order. Gymnastics sits in the middle so cardio's red never
     touches weightlifting's green, a pair deuteranopia can barely separate (`MODALITY_DRAW_ORDER`, `tests/modalityColors.test.ts`).
     - Why the same window: an earlier draft compared the last 90 days with the 90 before, beside a 12-month chart.
@@ -168,7 +168,7 @@ a phone.
 ## What moves out of Overview
 
 45. **A new Training view, "Lifts"** (page title "Lifts and benchmarks", tab id `lift-history`), placed straight after
-    Workouts in the same unlabelled group.
+    Workouts in the same unlabeled group.
     - It holds three cards moved unchanged, in this order: What got heavier (with its rep-max filter), Benchmarks,
       revisited, and Personal records.
     - It follows the date range, like the rest of Training.

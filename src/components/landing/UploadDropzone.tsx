@@ -120,7 +120,7 @@ export function UploadDropzone({
           className="sr-only"
           tabIndex={-1}
           // The dropzone is the control; this input is only what it clicks. A sibling, not a child: a focusable field inside a
-          // role="button" is a nested control, and left in the tree it is an unlabelled one.
+          // role="button" is a nested control, and left in the tree it is an unlabeled one.
           aria-hidden="true"
           onChange={(e) => {
             const file = e.target.files?.[0];

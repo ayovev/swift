@@ -46,7 +46,7 @@ export const DOMAIN_SHORT_LABELS: Record<Domain, string> = {
  * https://www.crossfit.com/essentials/what-is-fitness-lecture-10-physical-skills
  * Two deliberate differences from that page's list: each definition ends with
  * a full stop, since it's shown as a sentence, and Flexibility's opening "the"
- * is capitalised like the other nine. tests/domainDefinitions.test.tsx pins
+ * is capitalized like the other nine. tests/domainDefinitions.test.tsx pins
  * every definition verbatim.
  */
 export const CROSSFIT_DEFINITIONS: Record<Domain, string> = {

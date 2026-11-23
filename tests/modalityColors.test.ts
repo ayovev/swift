@@ -6,9 +6,9 @@ import { oklchToLinearSrgb, type Oklch, type Rgb } from "@/lib/theme/contrast";
 import { MODALITY_LIST, type Modality } from "@/types/modality";
 
 /**
- * The fixed M/W/G colours are red, green and blue and stay that way (CLAUDE.md, Theming), so what keeps a stack readable for a
- * colour-blind athlete is which colours touch. These tests read the real tokens from index.css in both modes, simulate the three
- * common colour-vision deficiencies (Machado, Oliveira & Fernandes 2009, full severity, on linear sRGB), and measure each adjacent
+ * The fixed M/W/G colors are red, green and blue and stay that way (CLAUDE.md, Theming), so what keeps a stack readable for a
+ * color-blind athlete is which colors touch. These tests read the real tokens from index.css in both modes, simulate the three
+ * common color-vision deficiencies (Machado, Oliveira & Fernandes 2009, full severity, on linear sRGB), and measure each adjacent
  * pair in MODALITY_DRAW_ORDER in OKLab. 8 (OKLab x100) is the separation the dataviz guidance asks of adjacent categorical marks.
  */
 
@@ -94,7 +94,7 @@ describe("the M/W/G draw order", () => {
   });
 
   for (const mode of ["light", "dark"] as const) {
-    it(`keeps every adjacent pair at least 8 apart under each colour-vision deficiency (${mode})`, () => {
+    it(`keeps every adjacent pair at least 8 apart under each color-vision deficiency (${mode})`, () => {
       for (const [a, b] of adjacentPairs(MODALITY_DRAW_ORDER)) {
         const ca = tokens(tokenOf(a))[mode];
         const cb = tokens(tokenOf(b))[mode];
@@ -108,8 +108,8 @@ describe("the M/W/G draw order", () => {
 
     it(`pins the one pair below target: green and blue under tritanopia (${mode})`, () => {
       // Measured about 5.3 (light) and 4.5 (dark). Tritanopia is rare (well under 1 in 1,000), and the 2px gap between segments is
-      // the secondary encoding that carries it. Fixing it means changing a fixed colour, which the owner has kept for now
-      // (CLAUDE.md, "Open items"). If this starts failing upward, the colours changed: move it.
+      // the secondary encoding that carries it. Fixing it means changing a fixed color, which the owner has kept for now
+      // (CLAUDE.md, "Open items"). If this starts failing upward, the colors changed: move it.
       const w = tokens(tokenOf("W"))[mode];
       const g = tokens(tokenOf("G"))[mode];
       const d = deltaE(w, g, SIMULATIONS.tritan!);

@@ -1,12 +1,12 @@
 /**
- * Colour maths for the theming system, and its accessibility guarantees.
+ * Color math for the theming system, and its accessibility guarantees.
  *
- * The accent colour is user-selectable, so "does this have enough contrast?"
+ * The accent color is user-selectable, so "does this have enough contrast?"
  * cannot be settled by eye at design time — it has to hold for every swatch in
  * both light and dark mode. These are pure functions so themeContrast.test.ts
  * can assert exactly that.
  *
- * Colours are authored in OKLCH, which is perceptually uniform: stepping
+ * Colors are authored in OKLCH, which is perceptually uniform: stepping
  * lightness produces an evenly-spaced ramp, which sRGB HSL does not.
  */
 
@@ -60,7 +60,7 @@ export function oklchToRgb(color: Oklch): Rgb {
   };
 }
 
-/** True when the colour falls outside the sRGB gamut and had to be clipped. */
+/** True when the color falls outside the sRGB gamut and had to be clipped. */
 export function isOutOfGamut(color: Oklch): boolean {
   const { r, g, b } = oklchToLinearSrgb(color);
   const slack = 1e-4;
@@ -68,12 +68,12 @@ export function isOutOfGamut(color: Oklch): boolean {
 }
 
 /**
- * Reduce chroma until the colour fits in sRGB, keeping lightness and hue.
+ * Reduce chroma until the color fits in sRGB, keeping lightness and hue.
  *
  * Needed because the gamut is not a box: a very light blue (high L, hue ~256)
  * leaves sRGB at a chroma a mid-tone of the same hue handles easily. Rather
  * than hand-tuning per-swatch constants until nothing clips — which breaks the
- * moment a swatch is added — every derived colour goes through this.
+ * moment a swatch is added — every derived color goes through this.
  *
  * Binary search on chroma; lightness and hue are preserved exactly, so the
  * ramp stays perceptually even.
@@ -98,7 +98,7 @@ function relativeLuminance(color: Oklch): number {
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
-/** WCAG 2.1 contrast ratio between two colours, 1–21. */
+/** WCAG 2.1 contrast ratio between two colors, 1–21. */
 export function contrastRatio(a: Oklch, b: Oklch): number {
   const lumA = relativeLuminance(a);
   const lumB = relativeLuminance(b);
@@ -112,7 +112,7 @@ export const WHITE: Oklch = { l: 1, c: 0, h: 0 };
 
 /**
  * Pick the readable foreground for a filled surface — used for text on an
- * accent-coloured button, where a fixed white would fail on a light swatch
+ * accent-colored button, where a fixed white would fail on a light swatch
  * (yellow) and a fixed black would fail on a dark one.
  */
 export function pickForeground(background: Oklch): "black" | "white" {
@@ -121,7 +121,7 @@ export function pickForeground(background: Oklch): "black" | "white" {
     : "black";
 }
 
-/** Serialise for CSS. */
+/** Serialize for CSS. */
 export function formatOklch({ l, c, h }: Oklch): string {
   const round = (n: number, places: number): number =>
     Math.round(n * 10 ** places) / 10 ** places;

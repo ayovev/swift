@@ -231,13 +231,13 @@ export function SubNav({ value, onValueChange }: { value: string; onValueChange:
         className="flex items-end gap-10 overflow-x-auto overflow-y-hidden border-b border-border lg:gap-6"
       >
         {section.groups.map((g, i) => (
-          // A labelled group puts its label *above* its tabs, as a header —
+          // A labeled group puts its label *above* its tabs, as a header —
           // inline with them it read as one more (dead) tab.
           <div key={g.label ?? i} role="group" aria-label={g.label} className="flex shrink-0 flex-col gap-0.5">
             {g.label ? (
               // Sticky inside the scrolling row, so a group's label stays in view while any of its tabs are: on a phone, scrolled to
               // the modalities, "Modalities" used to scroll away and leave the Cardio modality looking like the Cardio domain. Above
-              // the fade (z-20), on the page colour.
+              // the fade (z-20), on the page color.
               <span aria-hidden="true" data-group-label className="sticky left-0 z-20 self-start bg-background pr-2 text-[11px] font-semibold tracking-[0.08em] text-foreground uppercase">
                 {g.label}
               </span>

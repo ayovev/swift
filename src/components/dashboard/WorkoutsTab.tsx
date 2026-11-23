@@ -145,13 +145,13 @@ export function WorkoutsTab({
                   Every logged workout with its M/W/G split; each row
                   expands to the full description and score
                 </caption>
-                {/* Sticky and opaque, so the colour key over the bars stays in view while the list scrolls. */}
+                {/* Sticky and opaque, so the color key over the bars stays in view while the list scrolls. */}
                 <thead className="sticky top-0 z-10 bg-muted text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     {/* On a phone the date moves under the title, so the three columns don't squeeze the split to a sliver. */}
                     <th scope="col" className="hidden px-3 py-2 text-left font-medium sm:table-cell">Date</th>
                     <th scope="col" className="px-3 py-2 text-left font-medium">Workout</th>
-                    {/* In draw order, as the bar and the text under it run (MODALITY_DRAW_ORDER), each letter after its colour. */}
+                    {/* In draw order, as the bar and the text under it run (MODALITY_DRAW_ORDER), each letter after its color. */}
                     <th scope="col" aria-label="W / G / M" className="w-28 px-3 py-2 text-left font-medium sm:w-64">
                       <ModalityHeaderKey />
                     </th>

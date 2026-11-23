@@ -47,14 +47,14 @@ describe("the positive green", () => {
     });
   }
 
-  it("colours Up and a move up to RX, never the accent; Down stays red, the neutral verdicts grey", () => {
+  it("colors Up and a move up to RX, never the accent; Down stays red, the neutral verdicts gray", () => {
     expect(VERDICT_STYLE.up.pill).toBe("bg-positive-subtle text-positive");
     expect(VERDICT_STYLE["move-up"].pill).toBe("bg-positive-subtle text-positive");
     for (const k of Object.keys(VERDICT_STYLE) as (keyof typeof VERDICT_STYLE)[]) expect(VERDICT_STYLE[k].pill).not.toMatch(/accent/);
     expect(VERDICT_STYLE.down.pill).toBe("bg-negative-subtle text-negative");
   });
 
-  it("colours the Progress headline the same way", () => {
+  it("colors the Progress headline the same way", () => {
     expect(headlineLabelClass("Improving")).toBe("text-positive");
     expect(headlineLabelClass("Declining")).toBe("text-destructive");
     expect(headlineLabelClass("Steady")).toBe("text-foreground");

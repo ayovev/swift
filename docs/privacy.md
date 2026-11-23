@@ -17,7 +17,7 @@ have open. Nothing you upload is sent anywhere.
   mode resets in one click, since nothing from the sample is ever stored).
   Clearing your browser's site data does the same, which is why Settings also has
   a file backup.
-- **Branding (coaches).** A gym logo, name and brand colour are kept in the
+- **Branding (coaches).** A gym logo, name and brand color are kept in the
   browser's localStorage on this device only. The logo is re-drawn in the browser
   so only its pixels are kept, with no embedded location or camera data. None of
   it is uploaded, synced, included in a backup or sent to analytics. **Start

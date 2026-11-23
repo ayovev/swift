@@ -27,7 +27,7 @@ own, so the two can't drift on what a valid row is.
   validation and `planTransfer` are shared. The additional authenticated data
   (`swift-backup:<version>:<encoding>`) binds the ciphertext to its header. The iteration count is stored
   per file and bounds-checked on read (`MAX_KDF_ITERATIONS`) so a crafted file can't hang the tab. The
-  passphrase is NFKC-normalised before deriving (so accents typed on two devices match) and is otherwise
+  passphrase is NFKC-normalized before deriving (so accents typed on two devices match) and is otherwise
   untouched: not trimmed, not case-folded. **The passphrase is never stored, logged, sent or put in
   analytics**: it is a function argument, held in component state only until the download or restore
   finishes. AES-GCM can't tell a wrong passphrase from a damaged or tampered file, so `readBackup`

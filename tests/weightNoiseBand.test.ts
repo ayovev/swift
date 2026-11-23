@@ -101,7 +101,7 @@ describe("getWeightNoiseBand — residual", () => {
 });
 
 describe("getWeightNoiseBand — default and insufficient", () => {
-  it("falls back to the labelled default with a reason", () => {
+  it("falls back to the labeled default with a reason", () => {
     const band = getWeightNoiseBand(every(90, [180, 181, 182]));
     expect(band).toMatchObject({ status: "ok", method: "default", band: NOISE_DEFAULT_WEIGHT_BAND_LB, sampleSize: 3 });
     expect(band.reason).toMatch(/standard band/);
@@ -118,7 +118,7 @@ describe("getWeightNoiseBand — default and insufficient", () => {
     expect(getWeightNoiseBand([]).status).toBe("insufficient");
   });
 
-  it("honours a default override", () => {
+  it("honors a default override", () => {
     const band = getWeightNoiseBand(every(90, [180, 181]), { defaultBand: 9 });
     expect(band.band).toBe(9);
   });

@@ -9,13 +9,13 @@ import { buildProgressSubjects } from "@/lib/analytics/insights/sessions";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
 /**
- * A verdict reads without its colour (verdictMark.tsx): the accent is the athlete's choice, so with the red accent an Up mark marked by
+ * A verdict reads without its color (verdictMark.tsx): the accent is the athlete's choice, so with the red accent an Up mark marked by
  * the accent alone looked like Down.
  */
 const KINDS = Object.keys(VERDICT_STYLE) as VerdictKind[];
 
 describe("verdict marks", () => {
-  it("gives every verdict its own glyph, so none depends on colour", () => {
+  it("gives every verdict its own glyph, so none depends on color", () => {
     // A move up to RX is an Up vote and shares its arrow; its own words ("Moved up to RX") say which.
     const kinds = KINDS.filter((k) => k !== "move-up");
     expect(new Set(kinds.map((k) => VERDICT_STYLE[k].Glyph)).size).toBe(kinds.length);
@@ -49,8 +49,8 @@ describe("verdict marks", () => {
   });
 });
 
-describe("theme colours in components", () => {
-  /** The achromatic base plus one accent (CLAUDE.md, Theming): no component reaches for a Tailwind palette colour. */
+describe("theme colors in components", () => {
+  /** The achromatic base plus one accent (CLAUDE.md, Theming): no component reaches for a Tailwind palette color. */
   const CHROMATIC = /\b(?:bg|text|border|fill|stroke|ring|from|to|via|outline|decoration)-(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/;
 
   function files(dir: string): string[] {

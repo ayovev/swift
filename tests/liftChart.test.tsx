@@ -7,7 +7,7 @@ import type { LiftEntry } from "@/types/dashboard";
 import { loadSampleRows } from "./fixtures/sampleRows";
 
 /**
- * The lift small multiples (LiftChart.tsx): one rep scheme highlighted per chart, every other effort grey, and a chart only for a
+ * The lift small multiples (LiftChart.tsx): one rep scheme highlighted per chart, every other effort gray, and a chart only for a
  * lift with MIN_CHART_EFFORTS efforts. Recharts draws nothing in jsdom, so the marks themselves were checked in a browser; these
  * pin the rules around them.
  */

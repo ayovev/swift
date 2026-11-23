@@ -12,13 +12,13 @@ import { MODALITY_NAMES, type Modality, type ModalityData } from "@/types/modali
  *
  * The two strips deliberately take different forms, because the numbers mean different things:
  * - domains are independent tags (a workout counts in every domain it touches, so they sum to about 300%): separate bars on one
- *   shared 0 to 100% axis, sorted, the current domain in its chart colour and the rest grey;
- * - modalities are one workout's split (they sum to 100): one stacked bar, in the fixed M/W/G colours, the current one at full
+ *   shared 0 to 100% axis, sorted, the current domain in its chart color and the rest gray;
+ * - modalities are one workout's split (they sum to 100): one stacked bar, in the fixed M/W/G colors, the current one at full
  *   strength and the others faded.
  * Each bar is a button to its own view (through the same tab change as the nav, so `tab_viewed` is the only analytics), and the
  * current one carries aria-current. Each also gives its then-to-now change in points (the same halves as "Then versus now"), as a
- * signed number in plain text: a two-tick mark on an 8px bar was too small to read, and an arrow coloured by direction would put
- * status on colour. A range too short to compare halves shows no change at all.
+ * signed number in plain text: a two-tick mark on an 8px bar was too small to read, and an arrow colored by direction would put
+ * status on color. A range too short to compare halves shows no change at all.
  */
 
 function changeText(delta: number, halves: TrendHalves | null): string | null {

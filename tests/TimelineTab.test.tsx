@@ -120,7 +120,7 @@ describe("the Timeline view (A1-TLN-18 to 31)", () => {
 
   it("TLN-27 narrows the range, clipping entries and calling a subject wholly outside it so", () => {
     render(<Harness initial={[cut]} />);
-    // A zoom, labelled as one, so it isn't read as the Training date range the scope line says doesn't apply.
+    // A zoom, labeled as one, so it isn't read as the Training date range the scope line says doesn't apply.
     const zoom = screen.getByRole("group", { name: "Zoom" });
     expect(within(zoom).getAllByRole("button").map((b) => b.textContent)).toEqual(["All", "1 year", "6 months"]);
     fireEvent.click(within(zoom).getByRole("button", { name: "6 months" }));
