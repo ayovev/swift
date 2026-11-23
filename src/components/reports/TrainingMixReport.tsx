@@ -14,18 +14,51 @@ export interface TrainingMixSections {
   movements: boolean;
 }
 
-const monthLabel = (month: string): string => dayjs(`${month}-01`).format("MMM YY");
-const monthName = (month: string, partial: boolean): string => `${monthLabel(month)}${partial ? " (part)" : ""}`;
-const pct = (v: number): string => `${v.toFixed(0)}%`;
+export const monthLabel = (month: string): string => dayjs(`${month}-01`).format("MMM YY");
+export const monthName = (month: string, partial: boolean): string => `${monthLabel(month)}${partial ? " (part)" : ""}`;
+export const pct = (v: number): string => `${v.toFixed(0)}%`;
 
 /** A chart as the report prints it: the chart with its summary as its name, or its table twin, and the summary sentence after either (R-6). */
-function ChartBlock({ title, summary, view, table, children }: { title: string; summary: string; view: ChartView; table: React.ReactNode; children: React.ReactNode }) {
+export function ChartBlock({ title, summary, view, table, children }: { title: string; summary: string; view: ChartView; table: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="report-card">
       <h3 className="report-heading text-lg font-semibold">{title}</h3>
       <div className="mt-2">{view === "table" ? table : <div role="img" aria-label={summary}>{children}</div>}</div>
       <p className="mt-1 text-xs text-muted-foreground">{summary}</p>
     </section>
+  );
+}
+
+/** Days trained per month as a chart, or its table twin, with its summary sentence. Shared by the Training mix and Body and training reports. */
+export function DaysTrainedBlock({ months, view }: { months: TrainingMixData["months"]; view: ChartView }) {
+  const points = months.map((m) => ({ label: monthName(m.month, m.partial), value: m.days }));
+  const summary = seriesSummary("Days trained per month", points, (v) => `${v} ${v === 1 ? "day" : "days"}`);
+  return (
+    <div data-testid="mix-days">
+      <ChartBlock
+        title="Days trained per month"
+        summary={summary}
+        view={view}
+        table={
+          <DataTable
+            caption="Days trained per month"
+            columns={[{ label: "Month" }, { label: "Days trained", numeric: true }]}
+            rows={[...months].reverse().map((m) => [monthName(m.month, m.partial), m.days])}
+          />
+        }
+      >
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={points} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+              <CartesianGrid vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="label" {...TIME_AXIS_PROPS} interval={0} tick={{ fontSize: 10 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+              <Bar dataKey="value" name="Days trained" fill="var(--primary)" isAnimationActive={false} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </ChartBlock>
+    </div>
   );
 }
 
@@ -45,9 +78,6 @@ export function TrainingMixReport({ data, sections, view }: { data: TrainingMixD
     );
   }
 
-  const daysPoints = data.months.map((m) => ({ label: monthName(m.month, m.partial), value: m.days }));
-  const daysSummary = seriesSummary("Days trained per month", daysPoints, (v) => `${v} ${v === 1 ? "day" : "days"}`);
-
   const mixRows = data.mix.map((m) => ({ label: monthName(m.month, m.partial), split: m.split, workouts: m.workouts }));
   const mixSummary = data.split
     ? `Average split of a classified workout, ${span}: ${splitText(data.split)}. Each month adds to 100.`
@@ -65,33 +95,7 @@ export function TrainingMixReport({ data, sections, view }: { data: TrainingMixD
         </p>
       </section>
 
-      {sections.days ? (
-        <div data-testid="mix-days">
-          <ChartBlock
-            title="Days trained per month"
-            summary={daysSummary}
-            view={view}
-            table={
-              <DataTable
-                caption="Days trained per month"
-                columns={[{ label: "Month" }, { label: "Days trained", numeric: true }]}
-                rows={[...data.months].reverse().map((m) => [monthName(m.month, m.partial), m.days])}
-              />
-            }
-          >
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={daysPoints} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
-                  <CartesianGrid vertical={false} stroke="var(--border)" />
-                  <XAxis dataKey="label" {...TIME_AXIS_PROPS} interval={0} tick={{ fontSize: 10 }} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <Bar dataKey="value" name="Days trained" fill="var(--primary)" isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </ChartBlock>
-        </div>
-      ) : null}
+      {sections.days ? <DaysTrainedBlock months={data.months} view={view} /> : null}
 
       {sections.mix ? (
         <div data-testid="mix-modalities">

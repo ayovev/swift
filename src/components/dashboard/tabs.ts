@@ -13,6 +13,8 @@ export const MOVEMENTS_TAB = "movements";
 export const REPORTS_TAB = "report-progress";
 /** Reports → Training mix report. */
 export const TRAINING_MIX_REPORT_TAB = "report-training-mix";
+/** Reports → Body and training report. Needs an InBody file or weigh-ins. */
+export const BODY_TRAINING_REPORT_TAB = "report-body-training";
 
 export interface TabDescriptor {
   value: string;
@@ -36,14 +38,14 @@ export interface TabDescriptor {
  * identity of each view (its value and short label), which analytics
  * (`tab_viewed`) and the tab content in Dashboard.tsx key off.
  *
- * All 22 tabs: Overview, the running Workouts list, Lifts (every lift and
+ * All 23 tabs: Overview, the running Workouts list, Lifts (every lift and
  * benchmark session and every PR, for the selected range; see LiftHistoryTab), ten GPP domains, three
  * modalities, Movements (any one movement, or a family of them, across the
  * log; see MovementsTab), Body Comp — built from a wholly separate InBody upload,
  * always present in the nav even before any InBody data is loaded (see
  * BodyCompTab) — Progress, the verdict on each lift and benchmark (see LiftsTab,
  * `lib/analytics/insights`), and Timeline, the athlete's own entries laid beside
- * those verdicts (see TimelineTab), the Progress report, a printable page of those verdicts (see ReportsTab), and the Training mix report, a printable page of what the training was made of (see TrainingMixTab).
+ * those verdicts (see TimelineTab), the Progress report, a printable page of those verdicts (see ReportsTab), the Training mix report, a printable page of what the training was made of (see TrainingMixTab), and the Body and training report, body readings beside training (see BodyTrainingTab).
  */
 export const ALL_TABS: TabDescriptor[] = [
   { value: OVERVIEW_TAB, label: "Overview", group: "Overview" },
@@ -65,4 +67,5 @@ export const ALL_TABS: TabDescriptor[] = [
   { value: TIMELINE_TAB, label: "Timeline", group: "Timeline" },
   { value: REPORTS_TAB, label: "Progress report", group: "Reports" },
   { value: TRAINING_MIX_REPORT_TAB, label: "Training mix report", group: "Reports" },
+  { value: BODY_TRAINING_REPORT_TAB, label: "Body and training report", group: "Reports" },
 ];

@@ -552,6 +552,8 @@ computes (`src/components/reports/`), reached from the Reports section (one view
   listed only after a chosen date. An entry's note is not printed. A report never computes a verdict of its own.
 - **The Training mix report reads `Insights.allRows`, never a second parse** (`lib/analytics/trainingMix.ts`): it filters the rows to the period once and runs the Training views' own builders over them, so it cannot disagree with them
   (`tests/trainingMix.test.ts`). Its charts follow the app's chart-or-table preference (`useChartView`), and the controls every report shares are in `components/reports/reportShared.tsx`.
+- **The Body and training report shows body data beside training and never relates them** (`lib/analytics/bodyTraining.ts`): weight comes from the pooled series with its noise band, lean and fat mass from scans only
+  (off by default), and the Progress headline is Progress as of the period's end, unchanged by any body reading (`tests/bodyTraining.test.ts`). It needs an InBody file or weigh-ins and says so when there are none.
 - **A report reads the brand through `useBrand()`** and shows it only for the coach audience; the Swift mark is always there. The logo's plate is computed for the light page.
 - **Analytics** are `report_generated` with a fixed kind and the audience, nothing else (`tests/analytics.test.ts`, `tests/ReportsTab.test.tsx`).
 

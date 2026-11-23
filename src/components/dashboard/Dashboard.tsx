@@ -9,7 +9,7 @@ import { SectionLinks, SubNav, pageSubtitleOf, pageTitleOf, sectionOf } from "./
 import { SettingsSheet } from "./SettingsSheet";
 import type { BodyCompState } from "./BodyCompTab";
 import { OverviewTab } from "./OverviewTab";
-import { BodyCompTab, DomainTab, LiftHistoryTab, LiftsTab, ModalityTab, MovementsTab, ReportsTab, TimelineTab, TrainingMixTab, WorkoutsTab, preloadViews } from "./lazyViews";
+import { BodyCompTab, BodyTrainingTab, DomainTab, LiftHistoryTab, LiftsTab, ModalityTab, MovementsTab, ReportsTab, TimelineTab, TrainingMixTab, WorkoutsTab, preloadViews } from "./lazyViews";
 import { LazyView } from "@/components/ui/LazyView";
 import { capturePick } from "./charts/ChartPick";
 import { StaleLogNudge } from "./StaleLogNudge";
@@ -21,6 +21,7 @@ import {
   OVERVIEW_TAB,
   REPORTS_TAB,
   TRAINING_MIX_REPORT_TAB,
+  BODY_TRAINING_REPORT_TAB,
   LIFT_HISTORY_TAB,
   LIFTS_TAB,
   TIMELINE_TAB,
@@ -42,6 +43,9 @@ import type { WeighIn } from "@/types/weighIn";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { DataSource } from "@/App";
+
+// A stable empty, so a missing InBody file does not rebuild the Body and training report on every render.
+const NO_SCANS: InBodyRow[] = [];
 
 interface DashboardProps {
   insights: Insights;
@@ -449,6 +453,12 @@ export function Dashboard({
           <TabsContent value={TRAINING_MIX_REPORT_TAB}>
             <LazyView>
               <TrainingMixTab parsedRows={insights.allRows} />
+            </LazyView>
+          </TabsContent>
+
+          <TabsContent value={BODY_TRAINING_REPORT_TAB}>
+            <LazyView>
+              <BodyTrainingTab parsedRows={insights.allRows} scans={bodyComp.status === "ready" ? bodyComp.rows : NO_SCANS} weighIns={weighIns} timeline={timeline} />
             </LazyView>
           </TabsContent>
 

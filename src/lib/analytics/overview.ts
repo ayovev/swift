@@ -153,7 +153,7 @@ export interface BodyWeightStat {
   sinceFirst: WeightChange | null;
 }
 
-function weightChange(fromLb: number, toLb: number, bandLb: number): WeightChange {
+export function weightChange(fromLb: number, toLb: number, bandLb: number): WeightChange {
   const lb = toLb - fromLb;
   return Math.abs(lb) <= bandLb ? { kind: "within" } : { kind: "change", lb };
 }

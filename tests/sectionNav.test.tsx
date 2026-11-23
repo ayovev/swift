@@ -10,6 +10,7 @@ import {
 import {
   ALL_TABS,
   BODY_COMP_TAB,
+  BODY_TRAINING_REPORT_TAB,
   LIFT_HISTORY_TAB,
   LIFTS_TAB,
   MOVEMENTS_TAB,
@@ -26,8 +27,8 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, Lifts, GPP domain, modality, Movements, Body Comp, Progress, Timeline and the two reports", () => {
-    expect(ALL_TABS).toHaveLength(1 + 1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1 + 2);
+  it("has one entry per Overview, Workouts, Lifts, GPP domain, modality, Movements, Body Comp, Progress, Timeline and the three reports", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1 + 3);
   });
 
   it("never gives two tabs in one group the same label", () => {
@@ -67,6 +68,7 @@ describe("SECTIONS", () => {
     expect(sectionOf(TIMELINE_TAB)).toBe("Insights");
     expect(sectionOf(REPORTS_TAB)).toBe("Reports");
     expect(sectionOf(TRAINING_MIX_REPORT_TAB)).toBe("Reports");
+    expect(sectionOf(BODY_TRAINING_REPORT_TAB)).toBe("Reports");
   });
 });
 
