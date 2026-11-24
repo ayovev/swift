@@ -65,16 +65,16 @@ describe("the Training mix report", () => {
     expect(page.queryAllByRole("img", { name: /^Days trained per month|^Average split|^Share of workouts/ })).toHaveLength(0);
   });
 
-  it("switches every chart to a table with the Charts switch", () => {
+  it("switches every chart to a table with the Display control", () => {
     renderReport();
     expect(within(sheet()).queryByRole("region", { name: "Days trained per month" })).toBeNull();
-    fireEvent.click(within(screen.getByRole("group", { name: "Show charts as" })).getByRole("button", { name: "Table" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Display" })).getByRole("button", { name: "Table" }));
     expect(within(sheet()).getByRole("region", { name: "Days trained per month" })).toBeInTheDocument();
   });
 
   it("offers charts or tables as a segmented control that shows which is selected, and reports only that it was used", () => {
     renderReport();
-    const group = screen.getByRole("group", { name: "Show charts as" });
+    const group = screen.getByRole("group", { name: "Display" });
     const chart = within(group).getByRole("button", { name: "Chart" });
     const table = within(group).getByRole("button", { name: "Table" });
     expect(chart).toHaveAttribute("aria-pressed", "true");

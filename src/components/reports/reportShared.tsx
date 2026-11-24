@@ -33,7 +33,7 @@ export function ChartViewControl() {
   const [view, setView] = useChartView();
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs font-medium text-muted-foreground">Charts</span>
+      <span className="text-xs font-medium text-muted-foreground">Display</span>
       <div className="self-start">
         <SegmentedControl
           value={view}
@@ -43,7 +43,7 @@ export function ChartViewControl() {
             capture({ name: "interaction_used", props: { interaction: "chart_view_toggled" } });
           }}
           options={CHART_VIEW_OPTIONS}
-          ariaLabel="Show charts as"
+          ariaLabel="Display"
         />
       </div>
       <span className="text-xs text-muted-foreground">Applies to every chart, here and elsewhere in Swift. What you see is what prints.</span>
