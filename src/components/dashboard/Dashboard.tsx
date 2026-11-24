@@ -9,7 +9,7 @@ import { SectionLinks, SubNav, pageSubtitleOf, pageTitleOf, sectionOf } from "./
 import { SettingsSheet } from "./SettingsSheet";
 import type { BodyCompState } from "./BodyCompTab";
 import { OverviewTab } from "./OverviewTab";
-import { BodyCompTab, DomainTab, LiftHistoryTab, LiftsTab, ModalityTab, MovementsTab, TimelineTab, WorkoutsTab, preloadViews } from "./lazyViews";
+import { BodyCompTab, BodyTrainingTab, DomainTab, LiftHistoryTab, LiftsTab, ModalityTab, MovementsTab, ReportsTab, SkillsTab, TimelineTab, TrainingMixTab, WorkoutsTab, preloadViews } from "./lazyViews";
 import { LazyView } from "@/components/ui/LazyView";
 import { capturePick } from "./charts/ChartPick";
 import { StaleLogNudge } from "./StaleLogNudge";
@@ -19,6 +19,10 @@ import {
   BODY_COMP_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
+  REPORTS_TAB,
+  TRAINING_MIX_REPORT_TAB,
+  BODY_TRAINING_REPORT_TAB,
+  SKILLS_REPORT_TAB,
   LIFT_HISTORY_TAB,
   LIFTS_TAB,
   TIMELINE_TAB,
@@ -28,6 +32,7 @@ import { formatDate } from "./charts/chartUtils";
 import type { DateRange, DateRangePreset } from "@/lib/analytics/dateRange";
 import { dailyGranularityFits, type Granularity } from "@/lib/analytics/granularity";
 import { capture } from "@/lib/posthog";
+import { cn } from "@/lib/utils";
 import { lastLoggedDate, overviewScopeSentence } from "@/lib/analytics/overview";
 import { logStaleness } from "@/lib/analytics/staleness";
 import type { WorkoutMeta } from "@/lib/storage/workoutStorage";
@@ -39,6 +44,9 @@ import type { WeighIn } from "@/types/weighIn";
 import type { InBodyRow } from "@/types/inbody";
 import type { SugarWodRow } from "@/types/sugarwod";
 import type { DataSource } from "@/App";
+
+// A stable empty, so a missing InBody file does not rebuild the Body and training report on every render.
+const NO_SCANS: InBodyRow[] = [];
 
 interface DashboardProps {
   insights: Insights;
@@ -103,7 +111,9 @@ export function Dashboard({
   const { summary } = insights.dashboard;
   // Overview and the Insights views read the whole history as of today, never
   // the selected range (see App.tsx and docs/overview.md).
-  const usesRange = sectionOf(tab) !== "Insights" && sectionOf(tab) !== "Overview";
+  const usesRange = sectionOf(tab) !== "Insights" && sectionOf(tab) !== "Overview" && sectionOf(tab) !== "Reports";
+  // On the Reports view only the report sheet prints: the app around it is `print:hidden`.
+  const reportPage = sectionOf(tab) === "Reports";
   const today = dayjs().format("YYYY-MM-DD");
   // Only where the whole history is read as of today (Overview, Insights), and only for an
   // athlete's own upload: sample data is generated up to today and is never stored.
@@ -232,7 +242,7 @@ export function Dashboard({
       {source === "sample" ? (
         <div
           role="status"
-          className="flex items-center justify-center gap-2 border-b border-accent-border bg-accent-subtle px-5 py-2 text-center text-sm"
+          className={cn("flex items-center justify-center gap-2 border-b border-accent-border bg-accent-subtle px-5 py-2 text-center text-sm", reportPage && "print:hidden")}
         >
           <FlaskConical className="size-3.5 shrink-0 text-accent-link" aria-hidden="true" />
           {/* One line at phone width: what this is, and the way out. "Use your
@@ -257,7 +267,7 @@ export function Dashboard({
       {/* Two things only: where you are (the wordmark and the four sections)
           and one door to everything else (SettingsSheet). View scope lives
           with the content below; see ScopeLine. */}
-      <header className="border-b border-border">
+      <header className={cn("border-b border-border", reportPage && "print:hidden")}>
         {/* From lg up, a three-column grid with equal outer tracks, so the
             sections sit at the true center of the page whatever the wordmark
             and Settings widths are. Narrower than that there isn't room for
@@ -290,8 +300,8 @@ export function Dashboard({
         </div>
       </header>
 
-      <main id="content" tabIndex={-1} className="mx-auto w-full max-w-7xl px-5 py-8 outline-none sm:px-8 sm:py-12">
-        <div className="mb-8 flex flex-col gap-6">
+      <main id="content" tabIndex={-1} className={cn("mx-auto w-full max-w-7xl px-5 py-8 outline-none sm:px-8 sm:py-12", reportPage && "print:max-w-none print:p-0")}>
+        <div className={cn("mb-8 flex flex-col gap-6", reportPage && "print:hidden")}>
           <div className="flex flex-col gap-2.5">
             <div className="font-mono text-xs tracking-[0.08em] text-muted-foreground uppercase">
               Training log <span className="text-muted-foreground/50">/</span> {sectionOf(tab)}
@@ -334,6 +344,8 @@ export function Dashboard({
               // Overview is where things stand now. The last logged date explains
               // low recent numbers on an old export without a stat of its own.
               <p className="text-base text-muted-foreground">{overviewScopeSentence(insights.allRows, today)}</p>
+            ) : reportPage ? (
+              <p className="text-base text-muted-foreground">Each report sets its own comparison. The Training date range doesn't apply here.</p>
             ) : (
               // Progress and Timeline are computed in App.tsx
               // from the full, unfiltered history as of today — saying so
@@ -433,6 +445,30 @@ export function Dashboard({
             </LazyView>
           </TabsContent>
 
+          <TabsContent value={REPORTS_TAB}>
+            <LazyView>
+              <ReportsTab workouts={workoutRows} timeline={timeline} scans={bodyComp.status === "ready" ? bodyComp.rows : []} weighIns={weighIns} />
+            </LazyView>
+          </TabsContent>
+
+          <TabsContent value={TRAINING_MIX_REPORT_TAB}>
+            <LazyView>
+              <TrainingMixTab parsedRows={insights.allRows} />
+            </LazyView>
+          </TabsContent>
+
+          <TabsContent value={BODY_TRAINING_REPORT_TAB}>
+            <LazyView>
+              <BodyTrainingTab parsedRows={insights.allRows} scans={bodyComp.status === "ready" ? bodyComp.rows : NO_SCANS} weighIns={weighIns} timeline={timeline} />
+            </LazyView>
+          </TabsContent>
+
+          <TabsContent value={SKILLS_REPORT_TAB}>
+            <LazyView>
+              <SkillsTab parsedRows={insights.allRows} />
+            </LazyView>
+          </TabsContent>
+
           <TabsContent value={TIMELINE_TAB}>
             <LazyView>
               <TimelineTab
@@ -450,7 +486,7 @@ export function Dashboard({
           </TabsContent>
         </Tabs>
 
-        <footer className="mt-12 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground">
+        <footer className={cn("mt-12 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground", reportPage && "print:hidden")}>
           <p className="max-w-3xl">
             Workouts are classified automatically from their names and descriptions, so a workout
             can land somewhere surprising if your gym names things unusually — every tab shows its

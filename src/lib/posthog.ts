@@ -1,6 +1,7 @@
 import type { PostHog } from "posthog-js";
 import type { CsvErrorCategory } from "./csv/parseCsv";
 import type { SyncFailureReason } from "./sync/syncSession";
+import type { Audience } from "./audience";
 
 /**
  * Anonymous product analytics.
@@ -63,6 +64,9 @@ export type InteractionName =
   | "brand_saved"
   | "brand_removed";
 
+/** Which report was generated (docs/reports.md). A fixed list, never a title, period or anything from the log. */
+export type ReportKind = "progress" | "training-mix" | "body-training" | "skills";
+
 type SwiftEvent =
   | { name: "app_opened"; props?: undefined }
   | { name: "upload_attempted"; props?: undefined }
@@ -74,6 +78,7 @@ type SwiftEvent =
   | { name: "sync_failed"; props: { role: SyncRole; reason: SyncFailureReason } }
   | { name: "interaction_used"; props: { interaction: InteractionName } }
   | { name: "tab_viewed"; props: { tab: string; source: DataSource } }
+  | { name: "report_generated"; props: { report_kind: ReportKind; audience: Audience } }
   | { name: "theme_changed"; props: { mode?: string; accent?: string } }
   | {
       name: "date_range_changed";

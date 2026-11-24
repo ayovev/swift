@@ -134,7 +134,7 @@ describe("the Insights front door", () => {
     fireEvent.click(screen.getByRole("button", { name: "Last month" }));
     expect(screen.getByText("Showing 5 of 45 subjects.")).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Show lifts and benchmarks last logged in" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    fireEvent.click(screen.getByRole("button", { name: "All time" }));
     expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
   });
 

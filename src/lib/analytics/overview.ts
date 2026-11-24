@@ -153,7 +153,7 @@ export interface BodyWeightStat {
   sinceFirst: WeightChange | null;
 }
 
-function weightChange(fromLb: number, toLb: number, bandLb: number): WeightChange {
+export function weightChange(fromLb: number, toLb: number, bandLb: number): WeightChange {
   const lb = toLb - fromLb;
   return Math.abs(lb) <= bandLb ? { kind: "within" } : { kind: "change", lb };
 }
@@ -282,11 +282,11 @@ export interface MonthDays {
  * current (partial) month. Bars start at the first logged month when the log is
  * younger than that, so no empty months are drawn before training began. The
  * month comes from each row's date, not `ParsedRow.bucket`, which follows the
- * athlete's chosen grouping.
+ * athlete's chosen grouping. `maxMonths` is 12 for Overview; the Training mix report passes the months its period spans.
  */
-export function monthlyDaysTrained(rows: readonly ParsedRow[], today: string): MonthDays[] {
+export function monthlyDaysTrained(rows: readonly ParsedRow[], today: string, maxMonths: number = OVERVIEW_CHART_MONTHS): MonthDays[] {
   const current = dayjs(today).startOf("month");
-  const earliest = current.subtract(OVERVIEW_CHART_MONTHS - 1, "month");
+  const earliest = current.subtract(maxMonths - 1, "month");
   const daysByMonth = new Map<string, Set<string>>();
   let first: string | null = null;
   for (const r of rows) {
@@ -327,8 +327,8 @@ export interface MonthMix {
  * split summed, then normalized to 100); a month with no classified workout has
  * no split rather than a 0/0/0 one.
  */
-export function monthlyModalityMix(rows: readonly ParsedRow[], today: string): MonthMix[] {
-  const months = monthlyDaysTrained(rows, today);
+export function monthlyModalityMix(rows: readonly ParsedRow[], today: string, maxMonths: number = OVERVIEW_CHART_MONTHS): MonthMix[] {
+  const months = monthlyDaysTrained(rows, today, maxMonths);
   if (months.length === 0) return [];
   const byMonth = new Map<string, { weights: Record<Modality, number>; workouts: number }>();
   const unclassified = new Map<string, number>();

@@ -1,0 +1,61 @@
+/*
+ * PROTOTYPE print stylesheet for Reports (docs/reports.md, R-5 to R-8). Dev-only: see src/devReportPrototype.tsx.
+ *
+ * What it tests: Letter paper with real margins, a light sheet whatever the app's mode, rows and cards that do not split across
+ * pages, and a footer repeated on every page. Page numbers use @page margin boxes, which only Chromium honors today.
+ */
+.report-sheet {
+  background: var(--background);
+  color: var(--foreground);
+  color-scheme: light;
+}
+
+.report-card {
+  break-inside: avoid;
+}
+
+.report-row {
+  break-inside: avoid;
+}
+
+.report-heading {
+  break-after: avoid;
+}
+
+@page {
+  size: letter;
+  margin: 0.6in 0.6in 0.8in 0.6in;
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font: 10px/1 system-ui, sans-serif;
+    color: #555;
+  }
+}
+
+@media print {
+  /* A dark app sets color-scheme: dark inline on html, which paints the page margins black. */
+  html {
+    color-scheme: light !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .report-sheet {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 0 !important;
+    max-width: none !important;
+    box-shadow: none !important;
+  }
+  /* A table footer group repeats at the foot of every printed page, and unlike position: fixed it takes up room, so it cannot overlap content. */
+  .report-table {
+    border-collapse: collapse;
+  }
+  .report-table > tfoot {
+    display: table-footer-group;
+  }
+}

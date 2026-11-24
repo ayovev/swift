@@ -11,9 +11,11 @@
  * frame before hydration, and if JavaScript never runs at all.
  */
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* A report sheet (src/components/reports) is always the light page, whatever the app's mode, so a `dark:` class does not apply inside it. */
+@custom-variant dark (&:where(.dark, .dark *):not(:where(.report-sheet, .report-sheet *)));
 
-:root {
+:root,
+.report-sheet {
   --radius: 0.625rem;
 
   /* Achromatic base — light mode. */

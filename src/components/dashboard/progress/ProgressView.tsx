@@ -49,7 +49,7 @@ export function ProgressView({ workouts, scans, weighIns = [], asOf, onSeeOnTime
   const { rows, headline } = useMemo(() => classifySubjects(subjects, today), [subjects, today]);
   const readings = useMemo(() => pooledReadings(readingsFromInBody(scans), weighIns), [scans, weighIns]);
   const band = useMemo(() => weightBandLb(pooledScanRows(scans, weighIns)), [scans, weighIns]);
-  const [preset, setPreset] = useState<PeriodPreset>("all");
+  const [preset, setPreset] = useState<PeriodPreset>("all_time");
   const [custom, setCustom] = useState({ start: "", end: today });
 
   const range = periodRange(preset, today, custom);

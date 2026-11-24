@@ -4,16 +4,18 @@
  * (`computePresetRange`), but this filter has its own state.
  */
 import dayjs from "dayjs";
+import { PRESET_OPTIONS, type DateRangePreset } from "../dateRange";
 import type { ProgressRow } from "./headline";
 
-export type PeriodPreset = "all" | "last_1_month" | "last_3_months" | "last_6_months" | "last_year" | "custom";
+/**
+ * The same presets, ids and words as the Training date range (`PRESET_OPTIONS` in `dateRange.ts`), because there is one set of them
+ * everywhere (tests/presets.test.ts): this list is derived from that one, never retyped, so a preset added or reworded there reaches
+ * every control that offers periods. The Timeline's zoom is the one deliberate exception (see TimelineView.tsx).
+ */
+export type PeriodPreset = DateRangePreset;
 
 export const PERIOD_OPTIONS: { id: PeriodPreset; label: string; months: number | null }[] = [
-  { id: "all", label: "All", months: null },
-  { id: "last_1_month", label: "Last month", months: 1 },
-  { id: "last_3_months", label: "Last 3 months", months: 3 },
-  { id: "last_6_months", label: "Last 6 months", months: 6 },
-  { id: "last_year", label: "Last year", months: 12 },
+  ...PRESET_OPTIONS.map(({ id, label, months }) => ({ id: id as PeriodPreset, label, months })),
   { id: "custom", label: "Custom", months: null },
 ];
 
@@ -25,12 +27,12 @@ export interface PeriodRange {
 
 /** null for All. A custom range with a start after its end is invalid and returns "invalid". */
 export function periodRange(preset: PeriodPreset, today: string, custom?: { start: string; end: string }): PeriodRange | null | "invalid" {
-  if (preset === "all") return null;
+  if (preset === "all_time") return null;
   if (preset === "custom") {
     if (!custom?.start || !custom.end) return null;
     return custom.start > custom.end ? "invalid" : { start: custom.start, end: custom.end };
   }
-  const months = PERIOD_OPTIONS.find((o) => o.id === preset)?.months ?? 0;
+  const months = PRESET_OPTIONS.find((o) => o.id === preset)?.months ?? 0;
   return { start: dayjs(today).subtract(months, "month").format("YYYY-MM-DD"), end: today };
 }
 

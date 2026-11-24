@@ -358,7 +358,10 @@ describe("App — view scope", () => {
     fireEvent.click(screen.getByRole("button", { name: "Insights" }));
     expect(await screen.findByText(/^Verdicts use your full history, as of today\. The Training date range doesn.t apply here\.$/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^Grouped by/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^all time/i })).not.toBeInTheDocument();
+    // The Training range's inline trigger reads "all time" mid-sentence. Progress's own "last logged in" filter now offers the same
+    // presets in the same words (tests/presets.test.ts), so its "All time" segment is there, and is a different control.
+    expect(screen.queryByRole("button", { name: "all time" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Show lifts and benchmarks last logged in" })).toBeInTheDocument();
   });
 });
 

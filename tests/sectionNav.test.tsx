@@ -10,11 +10,15 @@ import {
 import {
   ALL_TABS,
   BODY_COMP_TAB,
+  BODY_TRAINING_REPORT_TAB,
   LIFT_HISTORY_TAB,
   LIFTS_TAB,
   MOVEMENTS_TAB,
   OVERVIEW_TAB,
+  REPORTS_TAB,
+  SKILLS_REPORT_TAB,
   TIMELINE_TAB,
+  TRAINING_MIX_REPORT_TAB,
   WORKOUTS_TAB,
 } from "@/components/dashboard/tabs";
 import { DOMAIN_LIST } from "@/types/dashboard";
@@ -24,8 +28,8 @@ const strengthTab = ALL_TABS.find((t) => t.group === "Domains" && t.label === "S
 const gymnasticsTab = ALL_TABS.find((t) => t.group === "Modalities" && t.label === "Gymnastics")!;
 
 describe("ALL_TABS", () => {
-  it("has one entry per Overview, Workouts, Lifts, GPP domain, modality, Movements, Body Comp, Progress and Timeline", () => {
-    expect(ALL_TABS).toHaveLength(1 + 1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1);
+  it("has one entry per Overview, Workouts, Lifts, GPP domain, modality, Movements, Body Comp, Progress, Timeline and the four reports", () => {
+    expect(ALL_TABS).toHaveLength(1 + 1 + 1 + DOMAIN_LIST.length + MODALITY_LIST.length + 1 + 1 + 1 + 1 + 4);
   });
 
   it("never gives two tabs in one group the same label", () => {
@@ -63,6 +67,10 @@ describe("SECTIONS", () => {
     expect(sectionOf(BODY_COMP_TAB)).toBe("Body");
     expect(sectionOf(LIFTS_TAB)).toBe("Insights");
     expect(sectionOf(TIMELINE_TAB)).toBe("Insights");
+    expect(sectionOf(REPORTS_TAB)).toBe("Reports");
+    expect(sectionOf(TRAINING_MIX_REPORT_TAB)).toBe("Reports");
+    expect(sectionOf(BODY_TRAINING_REPORT_TAB)).toBe("Reports");
+    expect(sectionOf(SKILLS_REPORT_TAB)).toBe("Reports");
   });
 });
 
@@ -90,6 +98,7 @@ describe("SectionLinks", () => {
       "Training",
       "Body",
       "Insights",
+      "Reports",
     ]);
     expect(screen.getByRole("button", { name: "Training" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("button", { name: "Overview" })).not.toHaveAttribute("aria-current");
@@ -103,6 +112,8 @@ describe("SectionLinks", () => {
     expect(onValueChange).toHaveBeenCalledWith(LIFTS_TAB);
     fireEvent.click(screen.getByRole("button", { name: "Body" }));
     expect(onValueChange).toHaveBeenCalledWith(BODY_COMP_TAB);
+    fireEvent.click(screen.getByRole("button", { name: "Reports" }));
+    expect(onValueChange).toHaveBeenCalledWith(REPORTS_TAB);
   });
 });
 

@@ -179,7 +179,7 @@ undoes any of it. The rules that hold everywhere (the full account, with the mea
   Workouts, Lifts (`LiftHistoryTab.tsx`, tab id `lift-history`: the lift, benchmark and PR cards,
   for the selected range), the ten GPP domains, the three modalities, Movements, Body Comp, and the Insights views
   (Progress, Timeline), grouped for navigation into
-  four sections (see "Architecture: dashboard layout" below). A
+  five sections (see "Architecture: dashboard layout" below). A
   single `DomainTab` drives all ten domain tabs and a single `ModalityTab` all three modality
   tabs — they differ in data, not structure. Body Comp is its own component (`BodyCompTab.tsx`),
   always present in the nav even before any InBody data is loaded, and Progress and Timeline follow
@@ -280,6 +280,7 @@ sample is in `docs/movement-lexicon.md`; read it before changing `movementLexico
 - **Implement is a label on a movement, not a movement** (`MovementHit.implement`, read from the words directly before the first mention). It never adds a movement or moves a split.
 - **A double count is found by auditing the sample**, then asking whether the sport names the touching pair as one movement; a `+` complex and glued lines stay several. Measure every change against the
   sample export and record the effect, as the parity workflow requires.
+- **A movement may carry a skill** (`MovementEntry.skill`, `SKILLS`; "Skills" in `docs/movement-lexicon.md`): `skill: SKILLS.pullUps`, or `null` for "decided, not a skill". It changes nothing about matching, so it never moves the parity fixture. A new variant in a family that has a skill fails `tests/skills.test.ts` until it decides.
 - Movement and family labels are sentence case (pinned in `tests/modalityClassifier.test.ts`); inside a sentence use `labelInSentence()` (`buildMovementData.ts`), never `toLowerCase()`.
 
 Order *is* significant in `DOMAIN_KEYWORDS` (`domainKeywords.ts`): the keyword reported as
@@ -447,12 +448,12 @@ validators and `planTransfer()` rather than growing its own. The format, the enc
 The dashboard's controls are sorted by how often an athlete touches them, and each tier has one
 home. Read the header comments of the files named here before moving anything between tiers.
 
-- **Navigate** (every visit) — `SectionNav.tsx`. Four sections in the page header, at its true
+- **Navigate** (every visit) — `SectionNav.tsx`. Five sections in the page header, at its true
   center from `lg` up (a three-column grid with equal outer tracks; narrower screens wrap them
   onto their own row). Overview (the front page, on its own), Training (Workouts and Lifts, then the ten GPP
   domains, three modalities and Movements — a classification of those same workouts, not separate
   data, which is what their group headers are there to say), Body (Body Comp) and Insights
-  (Progress, Timeline). The views
+  (Progress, Timeline) and Reports (the Progress report, a printable page; see "Architecture: reports"). The views
   inside a section are a plain row of tabs under the page title, never a dropdown, so every
   sibling is visible; a one-view section shows no second row. Where a section mixes two kinds of
   view (Training's Domains and Modalities), each group's label sits *above* its tabs as a
@@ -509,7 +510,7 @@ first card doesn't repeat the page title above it.
 ## Architecture: branding
 
 `docs/branding.md` is the requirements document; this is how it is built and what not to undo. A coach (Settings, shown only while the audience is
-`coach`) can set a gym logo, a name and a brand color, each optional. Reports and image cards are a separate, unbuilt feature that will read the brand
+`coach`) can set a gym logo, a name and a brand color, each optional. Reports (see "Architecture: reports") read the brand; image cards are a separate, unbuilt feature that will also read the brand
 through `useBrand()`.
 
 - **A preference, not a dataset.** `lib/brand/brandStore.ts`, `localStorage` key `swift.brand` (try/catch, in memory when storage throws, read through
@@ -530,6 +531,34 @@ through `useBrand()`.
 - **The Swift mark is never removable.** `BrandMark.tsx` only adds a logo beside `SwiftMark` (Dashboard and Landing headers); alt text is the gym name, else "Gym logo". A see-through
   logo the page would swallow sits on a fixed light or dark plate (`plateFor`, from a tone measured at upload).
 - **Analytics:** `brand_saved` and `brand_removed` are bare `interaction_used` names; no logo, name or color, and not which field.
+
+## Architecture: reports
+
+`docs/reports.md` is the requirements document and its "Build status" says what is built; read it before changing anything here. A report is a printable page built from data the dashboard already
+computes (`src/components/reports/`), reached from the Reports section (one view, so no second row; `REPORTS_TAB`). The rules that apply everywhere:
+
+- **Print-to-PDF, no dependency.** `ReportsTab.tsx` calls `window.print()`; the browser saves the PDF. `Dashboard.tsx` marks its own chrome `print:hidden` on the Reports view, so only the sheet prints. A PDF
+  or canvas library is a new decision, not a default.
+- **A report is always the light page**, whatever the app's mode, in the preview as in print: `.report-sheet` shares the `:root` token block in `index.css`, the `dark` variant is switched off inside it
+  (`@custom-variant dark`), the accent comes from `accentCssVars(swatch, "light")`, and `report.css` resets `color-scheme` for print. Anything inside the sheet that needs a mode must follow the sheet, not the app.
+- **The footer is a table footer group** (`ReportSheet.tsx`), because `position: fixed` overlapped content on page two and a table footer repeats on every printed page. Page numbers use `@page` margin boxes,
+  which only Chromium honors, so nothing depends on them.
+- **Nothing about a report is stored or synced.** The comparison date is chosen each time, the coach note is state in the view, and neither reaches storage, sync, backup or analytics. A stored "last report" date
+  was rejected because an export carries no athlete id, so it could attach to the wrong athlete (see "Decided" in `docs/reports.md`).
+- **A report's period uses the app's one set of date presets** (`PRESET_OPTIONS` in `lib/analytics/dateRange.ts`, through `insights/period.ts` and `insights/reportPeriod.ts`): a preset ends today, a custom period has a From and a To and may end
+  in the past, and All time means no comparison. The Progress "last logged in" filter derives from the same list. Never retype a preset; `tests/presets.test.ts` fails if a list drifts. The Timeline zoom is the one deliberate exception.
+- **Progress as of a date is the verdict engine with a past reference date** (`insights/sinceDate.ts`). `classifySubjects` finds move-ups over the sessions up to that date only; before, a later move up to RX
+  voted Up at an earlier date. `tests/asOfDate.test.ts` sweeps the sample export and fails if the future leaks into the past: keep it passing, and do not read anything dated after the reference date.
+- **Changes you made and PRs reuse existing engines** (`insights/progressReport.ts`): `entryVerdict` for the Timeline's before and after, `entryBodyWeightLine` for body weight (off by default in a report), and SugarWOD's PR flag as logged,
+  listed only after a chosen date. An entry's note is not printed. A report never computes a verdict of its own.
+- **The Training mix report reads `Insights.allRows`, never a second parse** (`lib/analytics/trainingMix.ts`): it filters the rows to the period once and runs the Training views' own builders over them, so it cannot disagree with them
+  (`tests/trainingMix.test.ts`). Its charts follow the app's chart-or-table preference (`useChartView`), set in a report's controls panel with a segmented Chart / Table control (`ChartViewControl`, built on the app's `SegmentedControl`) rather than the compact header button, because in a panel both choices should show at once. The controls every report shares are in `components/reports/reportShared.tsx`.
+- **The Body and training report shows body data beside training and never relates them** (`lib/analytics/bodyTraining.ts`): weight comes from the pooled series with its noise band, lean and fat mass from scans only
+  (off by default), and the Progress headline is Progress as of the period's end, unchanged by any body reading (`tests/bodyTraining.test.ts`). It needs an InBody file or weigh-ins and says so when there are none.
+- **The Skills report counts only an RX workout** (`lib/analytics/skills.ts`, with the skills defined in `SKILLS` in `movementLexicon.ts` and carried on the entries as `MovementEntry.skill`, so there is no second list): a skill is done when the earliest workout flagged RX that includes one of its movement ids falls on or before the period's end; a SCALED or unflagged workout never counts,
+  an RX workout that spells out several versions is read for its RX version only (`lib/analytics/rxVersion.ts`; a movement named only in an easier version was not prescribed), and the check names the workout behind it. The levels are a judgment, not computed; `tests/skills.test.ts` pins that every alias of an id agrees, that a skill's movements share a modality, and that a movement in a family with a skill must decide (a skill, or `null`) so a new variant is never missed silently. It shows counts only, never a score, grade or badge.
+- **A report reads the brand through `useBrand()`** and shows it only for the coach audience; the Swift mark is always there. The logo's plate is computed for the light page.
+- **Analytics** are `report_generated` with a fixed kind and the audience, nothing else (`tests/analytics.test.ts`, `tests/ReportsTab.test.tsx`).
 
 ## Architecture: the stale-log nudge
 
@@ -690,7 +719,8 @@ states, not only each view's default, because the defaults missed real findings.
 - **Forced colors** drops fills, box-shadows and the page's colors, which is how "selected", "pressed" and "focused" were drawn. `index.css` ends with a
   `forced-colors: active` block (a pressed toggle is Highlight on HighlightText with `forced-color-adjust: none`, because left to the browser the text gets a
   white backplate and vanishes; keyboard focus is a Highlight outline), and per-component `forced-colors:` classes cover the tab underlines (a transparent
-  border is forced visible, so an unselected sub-tab sets its own to Canvas), Timeline's entry bars (a border) and the accent swatches (`forced-color-adjust-none`).
+  border is forced visible, so an unselected sub-tab sets its own to Canvas), Timeline's entry bars (a border), the accent swatches (`forced-color-adjust-none`) and the filled `Button` variants (default, secondary and
+  destructive carry a `ButtonText` border, because a fill alone is just text there; ghost and link stay text on purpose).
   `tests/forcedColors.test.ts` pins them; jsdom cannot render the mode, so a change here is checked in Chromium with `forcedColors: "active"`.
 - Still decorative in forced colors, and safe because the value is also text: the M/W/G bars on Workouts rows and the verdict pills' tint.
 

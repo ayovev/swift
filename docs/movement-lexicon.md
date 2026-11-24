@@ -58,3 +58,17 @@ field is barbell. It never adds a movement and never moves a modality split. The
 with `MovementSelection.implement` (the "Implement" control appears only when a workout names one for the selection;
 `implement_selected` is the value-free analytics name). Measured on the sample: 127 dumbbell, 66 kettlebell and 6
 barbell labels from the text (one of the dumbbell labels is a stray "carry" in "use two dbs for the carry").
+
+## Skills
+
+The Skills report (`docs/reports.md`) counts a movement toward a skill, and the decision lives on the lexicon's own entries so there is one list. `MovementEntry.skill` is a `SkillRef` from the `SKILLS` table at the top of `movementLexicon.ts` (`skill: SKILLS.pullUps`), or `null` for "decided, not a skill". Absent means no decision, which is fine for a movement no skill is near. A skill's label and level are defined once in `SKILLS` and referenced, never retyped, and `skills.ts` derives the report's list from the entries.
+
+What to do when you add a movement:
+
+- **A new alias of an existing movement:** copy the other aliases' `skill`. Every alias of one id carries the same value (`tests/skills.test.ts`).
+- **A new variant in a family that has a skill** (a new muscle-up, a new pull-up): `tests/skills.test.ts` fails until you give it `skill: SKILLS.x` (it counts toward that skill) or `skill: null` (it does not). The test is the reminder; nothing else needs updating.
+- **Deciding for a variant:** the rule considered was "a variant counts when it is the same movement at equal or greater difficulty, and an easier, assistive or different movement does not". It was applied to the 38 family-mates of a skill, and the owner chose to count none of them for now (the candidates were `split-clean`, `l-pull-ups`, `toes-to-rings`, the grip deadlifts, the lunge variants, `ring-push-ups` and a few more), so each carries `skill: null` and a variant counts only when it is listed under the skill. A combined movement (`power-clean-and-jerk`, `burpee-pull-ups`) is several movements and stays `skill: null`. Flip a `null` to a skill only as a deliberate change here.
+- **A movement that is a skill of its own:** add it to `SKILLS` with its level, and reference it. A skill's movements must share one modality.
+- **Anything else:** leave `skill` off.
+
+Levels are a judgment, not computed from the sample. A skill never changes how a workout is matched, so none of this moves the parity fixture.

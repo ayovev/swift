@@ -216,7 +216,7 @@ describe("the Logged in filter (A1-FLT)", () => {
   });
 
   it("FLT-01 All lists everything", () => {
-    expect(filterRowsByPeriod(rows, periodRange("all", "2026-09-09"))).toHaveLength(4);
+    expect(filterRowsByPeriod(rows, periodRange("all_time", "2026-09-09"))).toHaveLength(4);
   });
 
   it("FLT-12 a custom range is inclusive, and a start after the end is invalid", () => {

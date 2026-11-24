@@ -29,6 +29,16 @@ describe("forced colors", () => {
     expect(read("src/components/dashboard/timeline/TimelineChart.tsx")).toContain("forced-colors:border-[CanvasText]");
   });
 
+  it("keeps every filled button a button: default, secondary and destructive carry a border, ghost and link stay text", () => {
+    const button = read("src/components/ui/button.tsx");
+    const variants = button.slice(button.indexOf("variant: {"), button.indexOf("size: {"));
+    const line = (name: string) => variants.split("\n").filter((l) => !l.trim().startsWith("//")).join("\n").match(new RegExp(`${name}:\\s*"[^"]*"`, "s"))?.[0] ?? "";
+    for (const filled of ["default", "destructive", "secondary"]) {
+      expect(line(filled), filled).toContain("forced-colors:border forced-colors:border-[ButtonText]");
+    }
+    for (const text of ["ghost", "link"]) expect(line(text), text).not.toContain("forced-colors:");
+  });
+
   it("keeps the accent swatches visible", () => {
     for (const f of ["src/components/theme/ThemeControls.tsx", "src/components/dashboard/SettingsSheet.tsx"]) {
       expect(read(f)).toContain("forced-colors:forced-color-adjust-none");

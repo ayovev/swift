@@ -17,6 +17,10 @@ const modality = lazyComponent(() => import("./ModalityTab").then((m) => ({ defa
 const movements = lazyComponent(() => import("./MovementsTab").then((m) => ({ default: m.MovementsTab })));
 const bodyComp = lazyComponent(() => import("./BodyCompTab").then((m) => ({ default: m.BodyCompTab })));
 const progress = lazyComponent(() => import("./LiftsTab").then((m) => ({ default: m.LiftsTab })));
+const reports = lazyComponent(() => import("@/components/reports/ReportsTab").then((m) => ({ default: m.ReportsTab })));
+const trainingMixReport = lazyComponent(() => import("@/components/reports/TrainingMixTab").then((m) => ({ default: m.TrainingMixTab })));
+const bodyTrainingReport = lazyComponent(() => import("@/components/reports/BodyTrainingTab").then((m) => ({ default: m.BodyTrainingTab })));
+const skillsReport = lazyComponent(() => import("@/components/reports/SkillsTab").then((m) => ({ default: m.SkillsTab })));
 const timeline = lazyComponent(() => import("./TimelineTab").then((m) => ({ default: m.TimelineTab })));
 
 export const WorkoutsTab = workouts.Component;
@@ -27,8 +31,12 @@ export const MovementsTab = movements.Component;
 export const BodyCompTab = bodyComp.Component;
 export const LiftsTab = progress.Component;
 export const TimelineTab = timeline.Component;
+export const ReportsTab = reports.Component;
+export const TrainingMixTab = trainingMixReport.Component;
+export const BodyTrainingTab = bodyTrainingReport.Component;
+export const SkillsTab = skillsReport.Component;
 
-const ALL = [workouts, liftHistory, domain, modality, movements, bodyComp, progress, timeline];
+const ALL = [workouts, liftHistory, domain, modality, movements, bodyComp, progress, timeline, reports, trainingMixReport, bodyTrainingReport, skillsReport];
 
 let preloading = false;
 

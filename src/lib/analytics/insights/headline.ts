@@ -104,7 +104,9 @@ export function findMoveUps(subjects: readonly ProgressSubject[]): Map<string, M
 }
 
 export function classifySubjects(subjects: readonly ProgressSubject[], asOf: string): { rows: ProgressRow[]; headline: ProgressHeadline } {
-  const moves = findMoveUps(subjects);
+  // Move-ups are found over the sessions up to the reference date only. Over the whole history a move up to RX that happens after
+  // `asOf` was reported (and could vote Up) in a past-dated Progress, which a report "as of then" must never show (tests/asOfDate.test.ts).
+  const moves = findMoveUps(subjects.map((s) => ({ ...s, sessions: s.sessions.filter((x) => x.date <= asOf) })));
   const rows: ProgressRow[] = [];
   let up = 0, down = 0, noClearChange = 0, moveUps = 0, under6 = 0, notRecent = 0, notTested = 0, longGaps = 0;
   for (const subject of subjects) {
