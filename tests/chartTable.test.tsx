@@ -41,12 +41,14 @@ describe("the chart or table preference", () => {
       </>
     );
     expect(screen.getByTestId("a")).toHaveTextContent("chart");
-    fireEvent.click(screen.getByRole("button", { name: "Table, show charts as tables" }));
+    fireEvent.click(screen.getByRole("button", { name: "Table" }));
     expect(screen.getByTestId("a")).toHaveTextContent("table");
     expect(screen.getByTestId("b")).toHaveTextContent("table");
     expect(window.localStorage.getItem("swift.chartView")).toBe("table");
-    const back = screen.getByRole("button", { name: "Chart, show charts" });
-    expect(back).toHaveAttribute("aria-pressed", "true");
+    // Both choices are always visible and the current one is marked.
+    expect(screen.getByRole("button", { name: "Table" })).toHaveAttribute("aria-pressed", "true");
+    const back = screen.getByRole("button", { name: "Chart" });
+    expect(back).toHaveAttribute("aria-pressed", "false");
     fireEvent.click(back);
     expect(screen.getByTestId("b")).toHaveTextContent("chart");
   });
@@ -64,16 +66,28 @@ describe("the chart or table preference", () => {
         <View id="a" />
       </>
     );
-    fireEvent.click(screen.getByRole("button", { name: "Table, show charts as tables" }));
+    fireEvent.click(screen.getByRole("button", { name: "Table" }));
     expect(screen.getByTestId("a")).toHaveTextContent("table");
     act(() => {
-      fireEvent.click(screen.getByRole("button", { name: "Chart, show charts" }));
+      fireEvent.click(screen.getByRole("button", { name: "Chart" }));
     });
   });
 
-  it("tells analytics only that it was used", () => {
+  it("shows an icon with each option, drops the words on a phone only where asked, and keeps the names", () => {
+    const { unmount } = render(<ChartViewToggle />);
+    expect(screen.getByRole("button", { name: "Chart" }).querySelector("span")?.className).toMatch(/max-sm:sr-only/);
+    expect(screen.getByRole("button", { name: "Table" }).querySelector("svg")).not.toBeNull();
+    unmount();
+    // A panel with room for the words keeps them at every width.
+    render(<ChartViewToggle alwaysLabeled />);
+    expect(screen.getByRole("button", { name: "Chart" }).querySelector("span")?.className ?? "").not.toMatch(/sr-only/);
+  });
+
+  it("tells analytics only that it was used, and nothing when the selected option is chosen again", () => {
     render(<ChartViewToggle />);
-    fireEvent.click(screen.getByRole("button", { name: "Table, show charts as tables" }));
+    fireEvent.click(screen.getByRole("button", { name: "Chart" }));
+    expect(posthog.capture.mock.calls).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "Table" }));
     expect(posthog.capture.mock.calls).toEqual([[{ name: "interaction_used", props: { interaction: "chart_view_toggled" } }]]);
   });
 });

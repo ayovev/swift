@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -5,6 +6,10 @@ import { cn } from "@/lib/utils";
 export interface SegmentedControlOption<T extends string> {
   id: T;
   label: string;
+  /** A leading icon (decorative: the label still names the option). */
+  icon?: ReactNode;
+  /** Below `sm` only the icon shows; the label stays as the accessible name. Only meaningful with an icon. */
+  collapseLabel?: boolean;
   disabled?: boolean;
   /** Shown in a popover on hover/focus of a disabled option — explains *why* it's unavailable. */
   title?: string;
@@ -59,7 +64,8 @@ export function SegmentedControl<T extends string>({
               aria-pressed={value === option.id}
               className={cn("h-7 px-2.5 text-xs", value === option.id && ACTIVE_SEGMENT_CLASSES)}
             >
-              {option.label}
+              {option.icon}
+              <span className={cn(option.collapseLabel && option.icon && "max-sm:sr-only")}>{option.label}</span>
             </Button>
           );
 

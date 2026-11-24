@@ -235,7 +235,7 @@ buckets the chart is a sentence. The grouping menu says weekly is noisy over a r
 grouping gets finer, and one angle on every chart (flat labels were tried and dropped); `tests/timeAxis.test.ts`
 fails if an `<XAxis>` sets its own angle or leaves the shared setting out.
 
-**Every chart has a table twin and a text alternative** (`charts/ChartTable.tsx`). One "Table" switch, shown in each chart card's
+**Every chart has a table twin and a text alternative** (`charts/ChartTable.tsx`). One segmented Chart / Table switch (`ChartViewToggle`, built on `SegmentedControl`, so both choices show and the current one is marked; each option has an icon, and below `sm` the words give way to the icons while staying the accessible names, except where `alwaysLabeled`), shown in each chart card's
 header, flips every chart to its table at once, because whoever wants tables wants them everywhere; it is a per-device preference in
 `localStorage` (`swift.chartView`, try/catch, in-memory only when storage throws), never synced or backed up, and its analytics name
 `chart_view_toggled` says only that it was used. Tables list their newest row first. Each chart's accessible name (and svg `title` or
@@ -552,7 +552,7 @@ computes (`src/components/reports/`), reached from the Reports section (one view
 - **Changes you made and PRs reuse existing engines** (`insights/progressReport.ts`): `entryVerdict` for the Timeline's before and after, `entryBodyWeightLine` for body weight (off by default in a report), and SugarWOD's PR flag as logged,
   listed only after a chosen date. An entry's note is not printed. A report never computes a verdict of its own.
 - **The Training mix report reads `Insights.allRows`, never a second parse** (`lib/analytics/trainingMix.ts`): it filters the rows to the period once and runs the Training views' own builders over them, so it cannot disagree with them
-  (`tests/trainingMix.test.ts`). Its charts follow the app's chart-or-table preference (`useChartView`), set in a report's controls panel with a segmented Chart / Table control (`ChartViewControl`, built on the app's `SegmentedControl`) rather than the compact header button, because in a panel both choices should show at once. The controls every report shares are in `components/reports/reportShared.tsx`.
+  (`tests/trainingMix.test.ts`). Its charts follow the app's chart-or-table preference (`useChartView`), set in a report's controls panel by `ChartViewControl`, which is the same `ChartViewToggle` as in the chart card headers under a "Display" label and a line saying what it covers. The controls every report shares are in `components/reports/reportShared.tsx`.
 - **The Body and training report shows body data beside training and never relates them** (`lib/analytics/bodyTraining.ts`): weight comes from the pooled series with its noise band, lean and fat mass from scans only
   (off by default), and the Progress headline is Progress as of the period's end, unchanged by any body reading (`tests/bodyTraining.test.ts`). It needs an InBody file or weigh-ins and says so when there are none.
 - **The Skills report counts only an RX workout** (`lib/analytics/skills.ts`, with the skills defined in `SKILLS` in `movementLexicon.ts` and carried on the entries as `MovementEntry.skill`, so there is no second list): a skill is done when the earliest workout flagged RX that includes one of its movement ids falls on or before the period's end; a SCALED or unflagged workout never counts,

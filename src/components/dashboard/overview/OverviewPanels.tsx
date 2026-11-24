@@ -45,11 +45,12 @@ function PanelLink({ label, onClick }: { label: string; onClick?: (() => void) |
 
 function PanelHeader({ title, caption, toggle = false }: { title: string; caption?: string; toggle?: boolean }) {
   return (
-    <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-2">
+    <CardHeader className="flex flex-row flex-wrap items-baseline justify-between gap-x-3 gap-y-1 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <span className="flex items-baseline gap-4">
-        {caption ? <span className="text-xs text-muted-foreground">{caption}</span> : null}
-        {toggle ? <ChartViewToggle /> : null}
+      {/* On a phone the caption drops to its own line under the title and the switch stays on the title's line, instead of the caption squeezing between them. */}
+      <span className="flex items-baseline gap-4 max-sm:contents">
+        {caption ? <span className="text-xs text-muted-foreground max-sm:order-last max-sm:basis-full">{caption}</span> : null}
+        {toggle ? <ChartViewToggle className="max-sm:ml-auto" /> : null}
       </span>
     </CardHeader>
   );
