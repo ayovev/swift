@@ -1,7 +1,7 @@
 import { useSyncExternalStore, type ReactNode } from "react";
-import { BarChart3, Table2 } from "lucide-react";
 import { capture } from "@/lib/posthog";
 import { cn } from "@/lib/utils";
+import { SegmentedControl } from "../SegmentedControl";
 
 /**
  * Every chart's table twin (WCAG 1.1.1 and 1.3.1: the values a chart draws are also reachable as text, without hovering or seeing it).
@@ -55,29 +55,31 @@ export function useChartView(): [ChartView, (view: ChartView) => void] {
   return [view, write];
 }
 
-/** The switch, for a chart card's header: "Table" while charts show, "Chart" while tables do. */
+const CHART_VIEW_OPTIONS: readonly { id: ChartView; label: string }[] = [
+  { id: "chart", label: "Chart" },
+  { id: "table", label: "Table" },
+];
+
+/**
+ * The switch, for a chart card's header and a report's controls: a segmented Chart / Table control, so both choices are visible and the
+ * current one is marked (a single word with an icon read as a label, not as a switch). It is the one preference every chart follows, so
+ * clicking either option changes every chart; choosing the one already selected does nothing and records nothing.
+ */
 export function ChartViewToggle({ className }: { className?: string }) {
   const [view, setView] = useChartView();
-  const table = view === "table";
-  const Icon = table ? BarChart3 : Table2;
   return (
-    <button
-      type="button"
-      aria-pressed={table}
-      // The name starts with the visible word, so it holds for someone who speaks the button's text (WCAG 2.5.3).
-      aria-label={table ? "Chart, show charts" : "Table, show charts as tables"}
-      onClick={() => {
-        setView(table ? "chart" : "table");
-        capture({ name: "interaction_used", props: { interaction: "chart_view_toggled" } });
-      }}
-      className={cn(
-        "inline-flex min-h-11 shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground sm:min-h-7",
-        className
-      )}
-    >
-      <Icon className="size-3.5" aria-hidden />
-      {table ? "Chart" : "Table"}
-    </button>
+    <div className={cn("shrink-0", className)}>
+      <SegmentedControl
+        value={view}
+        onChange={(next) => {
+          if (next === view) return;
+          setView(next);
+          capture({ name: "interaction_used", props: { interaction: "chart_view_toggled" } });
+        }}
+        options={CHART_VIEW_OPTIONS}
+        ariaLabel="Display"
+      />
+    </div>
   );
 }
 
