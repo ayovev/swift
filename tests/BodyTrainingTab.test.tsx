@@ -117,7 +117,7 @@ describe("the Body and training report", () => {
   });
 
   it("shows tables, with the entries listed, when the chart preference is Table", () => {
-    fireEvent.click(screen.getByRole("button", { name: "Table, show charts as tables" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Show charts as" })).getByRole("button", { name: "Table" }));
     const page = within(sheet());
     expect(page.getByRole("region", { name: "Body weight readings" })).toBeInTheDocument();
     expect(page.getByRole("region", { name: "Days trained per month" })).toBeInTheDocument();

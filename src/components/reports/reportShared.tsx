@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/dashboard/SegmentedControl";
+import { useChartView, type ChartView } from "@/components/dashboard/charts/ChartTable";
 import { readAudience, type Audience } from "@/lib/audience";
 import { PERIOD_OPTIONS, type PeriodPreset } from "@/lib/analytics/insights/period";
 import { reportPeriod } from "@/lib/analytics/insights/reportPeriod";
@@ -17,6 +18,38 @@ import { COACH_NOTE_MAX } from "./reportNote";
  */
 
 export const fmtDate = (iso: string): string => dayjs(iso).format("MMM D, YYYY");
+
+const CHART_VIEW_OPTIONS: readonly { id: ChartView; label: string }[] = [
+  { id: "chart", label: "Chart" },
+  { id: "table", label: "Table" },
+];
+
+/**
+ * The charts-or-tables setting as a segmented control, for a report's controls panel where it is a labeled setting and both choices should
+ * be visible at once (the compact "Table" button suits a chart card's header, not a panel). It is the same per-device preference every
+ * chart follows, so the sheet below it changes as it is switched, and analytics hear only that it was used.
+ */
+export function ChartViewControl() {
+  const [view, setView] = useChartView();
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-medium text-muted-foreground">Charts</span>
+      <div className="self-start">
+        <SegmentedControl
+          value={view}
+          onChange={(next) => {
+            if (next === view) return;
+            setView(next);
+            capture({ name: "interaction_used", props: { interaction: "chart_view_toggled" } });
+          }}
+          options={CHART_VIEW_OPTIONS}
+          ariaLabel="Show charts as"
+        />
+      </div>
+      <span className="text-xs text-muted-foreground">Applies to every chart, here and elsewhere in Swift. What you see is what prints.</span>
+    </div>
+  );
+}
 
 /** The report date (today, unless a test says otherwise), the audience, and the sheet's light-mode accent. */
 export function useReportContext(asOf?: string): { today: string; audience: Audience; sheetAccent: CSSProperties } {

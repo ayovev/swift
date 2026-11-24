@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { ChartViewToggle, useChartView } from "@/components/dashboard/charts/ChartTable";
+import { useChartView } from "@/components/dashboard/charts/ChartTable";
 import type { ParsedRow } from "@/lib/analytics/buildDashboardData";
 import { buildTrainingMix } from "@/lib/analytics/trainingMix";
 import { ReportSheet } from "./ReportSheet";
 import { TrainingMixReport, type TrainingMixSections } from "./TrainingMixReport";
-import { CoachNoteField, PeriodControl, PrintRow, basisText, fmtDate, useReportContext, useReportPeriod } from "./reportShared";
+import { ChartViewControl, CoachNoteField, PeriodControl, PrintRow, basisText, fmtDate, useReportContext, useReportPeriod } from "./reportShared";
 
 interface TrainingMixTabProps {
   /** Every parsed row, oldest first (`Insights.allRows`): the same parse as every other view, never a second `parseRows()`. */
@@ -55,11 +55,7 @@ export function TrainingMixTab({ parsedRows, asOf }: TrainingMixTabProps) {
           </label>
         </fieldset>
 
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted-foreground">Charts</span>
-          <ChartViewToggle className="self-start" />
-          <span className="text-xs text-muted-foreground">Shows every chart, here and elsewhere in Swift, as a table. What you see is what prints.</span>
-        </div>
+        <ChartViewControl />
 
         {audience === "coach" ? <CoachNoteField value={note} onChange={setNote} /> : null}
 

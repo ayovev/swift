@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChartViewToggle, useChartView } from "@/components/dashboard/charts/ChartTable";
+import { useChartView } from "@/components/dashboard/charts/ChartTable";
 import type { ParsedRow } from "@/lib/analytics/buildDashboardData";
 import { buildBodyTraining, hasBodyReadings } from "@/lib/analytics/bodyTraining";
 import type { InBodyRow } from "@/types/inbody";
@@ -7,7 +7,7 @@ import type { TimelineEntry } from "@/types/timeline";
 import type { WeighIn } from "@/types/weighIn";
 import { BodyTrainingReport, type BodyTrainingSections } from "./BodyTrainingReport";
 import { ReportSheet } from "./ReportSheet";
-import { CoachNoteField, PeriodControl, PrintRow, fmtDate, useReportContext, useReportPeriod } from "./reportShared";
+import { ChartViewControl, CoachNoteField, PeriodControl, PrintRow, fmtDate, useReportContext, useReportPeriod } from "./reportShared";
 
 interface BodyTrainingTabProps {
   /** Every parsed row, oldest first (`Insights.allRows`): the same parse as every other view. */
@@ -82,11 +82,7 @@ export function BodyTrainingTab({ parsedRows, scans, weighIns, timeline, asOf }:
           </label>
         </fieldset>
 
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-muted-foreground">Charts</span>
-          <ChartViewToggle className="self-start" />
-          <span className="text-xs text-muted-foreground">Shows every chart, here and elsewhere in Swift, as a table. What you see is what prints.</span>
-        </div>
+        <ChartViewControl />
 
         {audience === "coach" ? <CoachNoteField value={note} onChange={setNote} /> : null}
 

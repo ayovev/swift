@@ -68,8 +68,23 @@ describe("the Training mix report", () => {
   it("switches every chart to a table with the Charts switch", () => {
     renderReport();
     expect(within(sheet()).queryByRole("region", { name: "Days trained per month" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Table, show charts as tables" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Show charts as" })).getByRole("button", { name: "Table" }));
     expect(within(sheet()).getByRole("region", { name: "Days trained per month" })).toBeInTheDocument();
+  });
+
+  it("offers charts or tables as a segmented control that shows which is selected, and reports only that it was used", () => {
+    renderReport();
+    const group = screen.getByRole("group", { name: "Show charts as" });
+    const chart = within(group).getByRole("button", { name: "Chart" });
+    const table = within(group).getByRole("button", { name: "Table" });
+    expect(chart).toHaveAttribute("aria-pressed", "true");
+    expect(table).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(table);
+    expect(table).toHaveAttribute("aria-pressed", "true");
+    expect(chart).toHaveAttribute("aria-pressed", "false");
+    // Choosing the one already selected changes nothing and sends nothing more.
+    fireEvent.click(table);
+    expect(capture.mock.calls.filter(([e]) => (e as { props?: { interaction?: string } }).props?.interaction === "chart_view_toggled")).toHaveLength(1);
   });
 
   it("says once how many entries sit outside the M/W/G split", () => {
