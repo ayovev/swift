@@ -90,6 +90,8 @@ describe("the Progress report", () => {
     fireEvent.change(screen.getByLabelText("To"), { target: { value: "2025-06-30" } });
     const page = within(sheet());
     expect(page.getByTestId("report-period")).toHaveTextContent("Jan 6, 2025 – Jun 30, 2025");
+    // The full-history caveat lives in the body now, under the headline, not in the header.
+    expect(page.getByTestId("report-history-note")).toHaveTextContent("Verdicts use your full history, up to Jun 30, 2025, not only the period.");
     expect(page.getByText("Compared from Jan 6, 2025 to Jun 30, 2025.")).toBeInTheDocument();
     expect(page.getByRole("heading", { name: "From Jan 6, 2025 to Jun 30, 2025" })).toBeInTheDocument();
     expect(page.getByText(/Report covers through Jun 30, 2025\./)).toBeInTheDocument();

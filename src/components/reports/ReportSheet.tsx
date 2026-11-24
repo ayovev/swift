@@ -18,8 +18,6 @@ export interface ReportSheetProps {
   title: string;
   /** The dates the report covers, one unbreakable phrase: "Jan 1, 2023 – Dec 31, 2023", or "All time, through Dec 31, 2023". */
   period: string;
-  /** An optional quieter line under the period: what the report counts and how. */
-  subtitle?: string;
   audience: Audience;
   /** YYYY-MM-DD, the report date. */
   today: string;
@@ -32,7 +30,7 @@ export interface ReportSheetProps {
   children: ReactNode;
 }
 
-export function ReportSheet({ title, period, subtitle, audience, today, basis, note, style, children }: ReportSheetProps) {
+export function ReportSheet({ title, period, audience, today, basis, note, style, children }: ReportSheetProps) {
   const { logo, name, tone } = useBrand();
   // Only a coach's report carries the gym's brand; an athlete's has the Swift mark alone.
   const branded = audience === "coach" && (logo || name);
@@ -71,7 +69,6 @@ export function ReportSheet({ title, period, subtitle, audience, today, basis, n
                   <p className="font-medium" data-testid="report-period">{period}</p>
                   <p className="text-muted-foreground" data-testid="report-prepared">Prepared {dayjs(today).format("MMM D, YYYY")}</p>
                 </div>
-                {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
               </header>
               <div className="mt-5 flex flex-col gap-6">{children}</div>
               {trimmed ? (

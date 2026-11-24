@@ -83,6 +83,10 @@ export function ProgressReport({ data, since, endsToday, sections }: { data: Pro
           {headline.label ? headlineSentence(headline.label, headline.up, headline.down, headline.noClearChange) : noHeadlineText(headline)}
         </p>
         {since ? <p className="mt-1 text-sm text-muted-foreground">Compared {span(since)}.</p> : null}
+        {/* The caveat that used to sit in the header: a verdict is read over the whole history, whatever period the report covers. */}
+        <p className="mt-1 text-sm text-muted-foreground" data-testid="report-history-note">
+          Verdicts use your full history{since ? `, up to ${longDate(end)}, not only the period` : `, as of ${longDate(end)}`}.
+        </p>
       </section>
 
       {comparison && sections.since ? (

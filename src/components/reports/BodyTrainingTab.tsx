@@ -45,7 +45,6 @@ export function BodyTrainingTab({ parsedRows, scans, weighIns, timeline, asOf }:
   }
 
   const periodLabel = start ? `${fmtDate(start)} – ${fmtDate(end)}` : `All time, through ${fmtDate(end)}`;
-  const subtitle = "Body readings and training, side by side.";
   const basis = [
     data.mix.lastLogged ? `Workout log through ${fmtDate(data.mix.lastLogged)}.` : "Workout log is empty.",
     data.lastScan ? `InBody scans through ${fmtDate(data.lastScan)}.` : null,
@@ -95,7 +94,7 @@ export function BodyTrainingTab({ parsedRows, scans, weighIns, timeline, asOf }:
         <PrintRow kind="body-training" audience={audience} />
       </div>
 
-      <ReportSheet title="Body and training report" period={periodLabel} subtitle={subtitle} audience={audience} today={today} basis={basis} note={audience === "coach" ? note : ""} style={sheetAccent}>
+      <ReportSheet title="Body and training report" period={periodLabel} audience={audience} today={today} basis={basis} note={audience === "coach" ? note : ""} style={sheetAccent}>
         <BodyTrainingReport data={data} sections={sections} view={view} />
       </ReportSheet>
     </div>
