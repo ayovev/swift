@@ -73,6 +73,16 @@ describe("the chart or table preference", () => {
     });
   });
 
+  it("shows an icon with each option, drops the words on a phone only where asked, and keeps the names", () => {
+    const { unmount } = render(<ChartViewToggle />);
+    expect(screen.getByRole("button", { name: "Chart" }).querySelector("span")?.className).toMatch(/max-sm:sr-only/);
+    expect(screen.getByRole("button", { name: "Table" }).querySelector("svg")).not.toBeNull();
+    unmount();
+    // A panel with room for the words keeps them at every width.
+    render(<ChartViewToggle alwaysLabeled />);
+    expect(screen.getByRole("button", { name: "Chart" }).querySelector("span")?.className ?? "").not.toMatch(/sr-only/);
+  });
+
   it("tells analytics only that it was used, and nothing when the selected option is chosen again", () => {
     render(<ChartViewToggle />);
     fireEvent.click(screen.getByRole("button", { name: "Chart" }));

@@ -27,7 +27,7 @@ export function ChartViewControl() {
   return (
     <div className="flex flex-col gap-1">
       <span className="text-xs font-medium text-muted-foreground">Display</span>
-      <ChartViewToggle className="self-start" />
+      <ChartViewToggle className="self-start" alwaysLabeled />
       <span className="text-xs text-muted-foreground">Applies to every chart, here and elsewhere in Swift. What you see is what prints.</span>
     </div>
   );

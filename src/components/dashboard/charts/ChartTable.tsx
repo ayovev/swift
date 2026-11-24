@@ -1,7 +1,8 @@
 import { useSyncExternalStore, type ReactNode } from "react";
 import { capture } from "@/lib/posthog";
 import { cn } from "@/lib/utils";
-import { SegmentedControl } from "../SegmentedControl";
+import { BarChart3, Table2 } from "lucide-react";
+import { SegmentedControl, type SegmentedControlOption } from "../SegmentedControl";
 
 /**
  * Every chart's table twin (WCAG 1.1.1 and 1.3.1: the values a chart draws are also reachable as text, without hovering or seeing it).
@@ -55,17 +56,22 @@ export function useChartView(): [ChartView, (view: ChartView) => void] {
   return [view, write];
 }
 
-const CHART_VIEW_OPTIONS: readonly { id: ChartView; label: string }[] = [
-  { id: "chart", label: "Chart" },
-  { id: "table", label: "Table" },
+const ICON = "size-3.5";
+const viewOptions = (collapseLabel: boolean): readonly SegmentedControlOption<ChartView>[] => [
+  { id: "chart", label: "Chart", icon: <BarChart3 className={ICON} aria-hidden />, collapseLabel },
+  { id: "table", label: "Table", icon: <Table2 className={ICON} aria-hidden />, collapseLabel },
 ];
+const OPTIONS_COLLAPSING = viewOptions(true);
+const OPTIONS_LABELED = viewOptions(false);
 
 /**
  * The switch, for a chart card's header and a report's controls: a segmented Chart / Table control, so both choices are visible and the
  * current one is marked (a single word with an icon read as a label, not as a switch). It is the one preference every chart follows, so
- * clicking either option changes every chart; choosing the one already selected does nothing and records nothing.
+ * clicking either option changes every chart; choosing the one already selected does nothing and records nothing. Each option has an icon,
+ * and on a phone the words give way to the icons (they stay as the accessible names) so the control takes less of a narrow header; a panel
+ * with room for the words passes `alwaysLabeled`.
  */
-export function ChartViewToggle({ className }: { className?: string }) {
+export function ChartViewToggle({ className, alwaysLabeled = false }: { className?: string; alwaysLabeled?: boolean }) {
   const [view, setView] = useChartView();
   return (
     <div className={cn("shrink-0", className)}>
@@ -76,7 +82,7 @@ export function ChartViewToggle({ className }: { className?: string }) {
           setView(next);
           capture({ name: "interaction_used", props: { interaction: "chart_view_toggled" } });
         }}
-        options={CHART_VIEW_OPTIONS}
+        options={alwaysLabeled ? OPTIONS_LABELED : OPTIONS_COLLAPSING}
         ariaLabel="Display"
       />
     </div>

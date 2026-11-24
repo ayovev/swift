@@ -19,6 +19,24 @@ const OPTIONS: readonly SegmentedControlOption<Choice>[] = [
 ];
 
 describe("SegmentedControl", () => {
+  it("can collapse an option's label to its icon on a phone and keep the label as the accessible name", () => {
+    render(
+      <SegmentedControl
+        value="a"
+        onChange={vi.fn()}
+        options={[
+          { id: "a", label: "A", icon: <svg data-testid="icon-a" aria-hidden="true" />, collapseLabel: true },
+          { id: "b", label: "B", icon: <svg data-testid="icon-b" aria-hidden="true" /> },
+        ]}
+        ariaLabel="Choice"
+      />
+    );
+    // The name is the label either way; only the collapsing option's text is visually hidden below sm.
+    expect(screen.getByRole("button", { name: "A" }).querySelector("span")?.className).toMatch(/max-sm:sr-only/);
+    expect(screen.getByRole("button", { name: "B" }).querySelector("span")?.className ?? "").not.toMatch(/sr-only/);
+    expect(screen.getByTestId("icon-a")).toBeInTheDocument();
+  });
+
   it("renders a disabled option as an unclickable button", () => {
     const onChange = vi.fn();
     render(<SegmentedControl value="a" onChange={onChange} options={OPTIONS} ariaLabel="Choice" />);

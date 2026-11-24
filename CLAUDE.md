@@ -235,7 +235,7 @@ buckets the chart is a sentence. The grouping menu says weekly is noisy over a r
 grouping gets finer, and one angle on every chart (flat labels were tried and dropped); `tests/timeAxis.test.ts`
 fails if an `<XAxis>` sets its own angle or leaves the shared setting out.
 
-**Every chart has a table twin and a text alternative** (`charts/ChartTable.tsx`). One segmented Chart / Table switch (`ChartViewToggle`, built on `SegmentedControl`, so both choices show and the current one is marked), shown in each chart card's
+**Every chart has a table twin and a text alternative** (`charts/ChartTable.tsx`). One segmented Chart / Table switch (`ChartViewToggle`, built on `SegmentedControl`, so both choices show and the current one is marked; each option has an icon, and below `sm` the words give way to the icons while staying the accessible names, except where `alwaysLabeled`), shown in each chart card's
 header, flips every chart to its table at once, because whoever wants tables wants them everywhere; it is a per-device preference in
 `localStorage` (`swift.chartView`, try/catch, in-memory only when storage throws), never synced or backed up, and its analytics name
 `chart_view_toggled` says only that it was used. Tables list their newest row first. Each chart's accessible name (and svg `title` or
