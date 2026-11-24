@@ -58,6 +58,8 @@ describe("when there is nothing to report on", () => {
   it("runs on weigh-ins alone", () => {
     renderReport({ scans: [], weighIns });
     expect(within(sheet()).getByTestId("body-weight")).toBeInTheDocument();
+    // No scans: lean and fat mass start off, and cannot be switched on.
+    expect(screen.getByRole("checkbox", { name: /^Lean and fat mass/ })).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: /^Lean and fat mass/ })).toBeDisabled();
   });
 });
@@ -75,10 +77,11 @@ describe("the Body and training report", () => {
     expect(body.getByText(/A change of [\d.]+ lb or less between readings is within normal variation\./)).toBeInTheDocument();
   });
 
-  it("prints lean and fat mass only when that section is switched on, since they are off by default", () => {
-    expect(within(sheet()).queryByTestId("body-leanfat")).toBeNull();
-    fireEvent.click(screen.getByRole("checkbox", { name: /^Lean and fat mass/ }));
+  it("starts with lean and fat mass on for an athlete who has InBody scans, and the switch turns it off", () => {
+    expect(screen.getByRole("checkbox", { name: /^Lean and fat mass/ })).toBeChecked();
     expect(within(sheet()).getByTestId("body-leanfat")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Lean and fat mass/ }));
+    expect(within(sheet()).queryByTestId("body-leanfat")).toBeNull();
   });
 
   it("puts days trained per month beside the body data, over the same period", () => {

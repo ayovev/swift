@@ -22,13 +22,13 @@ interface BodyTrainingTabProps {
 /**
  * The Body and training report (docs/reports.md): body weight, lean and fat mass, days trained and the Progress headline for a period,
  * side by side. It needs an InBody file or weigh-ins, and says so when there are none. Choosing this report is the opt-in to print body
- * weight; lean and fat mass are a separate section and off by default (R-3). Nothing here relates body to training.
+ * weight; lean and fat mass are a separate section that starts on when the athlete has InBody scans and off when they have none (R-3). Nothing here relates body to training.
  */
 export function BodyTrainingTab({ parsedRows, scans, weighIns, timeline, asOf }: BodyTrainingTabProps) {
   const { today, audience, sheetAccent } = useReportContext(asOf);
   const period = useReportPeriod(today);
   const { start, end, endsToday } = period;
-  const [sections, setSections] = useState<BodyTrainingSections>({ weight: true, leanFat: false, days: true, headline: true, entries: true });
+  const [sections, setSections] = useState<BodyTrainingSections>(() => ({ weight: true, leanFat: scans.length > 0, days: true, headline: true, entries: true }));
   const [note, setNote] = useState("");
   const [view] = useChartView();
 

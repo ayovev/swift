@@ -13,7 +13,7 @@ import { ChartBlock, DaysTrainedBlock } from "./TrainingMixReport";
 /** Which sections of the Body and training report are printed (docs/reports.md, R-3). */
 export interface BodyTrainingSections {
   weight: boolean;
-  /** Lean and fat mass: scans only, and off by default. */
+  /** Lean and fat mass: scans only; starts on when the athlete has scans. */
   leanFat: boolean;
   days: boolean;
   headline: boolean;

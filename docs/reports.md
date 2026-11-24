@@ -114,7 +114,7 @@ The order is by value to the person receiving it. Progress is the one report onl
 
 - **R-1** A "Reports" entry in the dashboard header lists the reports, with those that need unavailable data shown disabled and a plain reason ("Needs an InBody file or weigh-ins").
 - **R-2** Choosing a report opens a preview in the app. One period control serves every report, and it offers the app's own presets and nothing else: All time, Last month, Last 3 months, Last 6 months, Last 9 months, Last year, and Custom with a From and a To (the same list as the Training date range and the Progress filter; `tests/presets.test.ts` pins it). A preset ends today; a custom period may end earlier, so a closed block can be reported on after the fact. The period is the report's own: it is not the Training range, and it is not stored. On Progress it frames what changed (R-14); verdicts always use history up to the end of the period.
-- **R-3** Each section has an on/off switch. Body composition sections are **off by default** in every report that can include them.
+- **R-3** Each section has an on/off switch. Body composition sections are **off by default** in every report that can include them, with one exception decided with the owner: on Body and training, lean and fat mass start **on** when the athlete has InBody scans (the data only exists then, and choosing the report is the opt-in) and **off** when they have none.
 - **R-4** An optional coach note (plain text, up to 500 characters) appears at the **end** of the report, after the data, under a "Coach note" heading. It is never stored, synced or backed up, and never enters analytics. It always starts empty.
 
 **Progress report: period and changes**
@@ -205,7 +205,7 @@ Not built yet:
 **Phasing**
 
 1. Report shell (menu, preview, print stylesheet, brand header, footer, coach note, analytics) with the Progress report, including the period, the chosen comparison date and Changes you made. Gate: axe clean and print checked in Chromium.
-2. Training mix report, then Body and training report. Gate: body sections off by default and covered by tests.
+2. Training mix report, then Body and training report. Gate: body sections defaulted as R-3 says and covered by tests.
 3. Image cards for a single stat (canvas export). Gate: v1 usage shows demand.
 
 **Risks**
@@ -226,7 +226,7 @@ Not built yet:
 - v1 is a beta tested with gym members. Checking the Progress thresholds on a second athlete's export is deferred until a wider release.
 - A coach-typed athlete label that remembers a date per athlete is deferred, not built.
 - On the Skills report, a variant counts toward a skill only when it is listed under it. The 38 movements that share a family with a skill, harder variants included (`split-clean`, `l-pull-ups`, `toes-to-rings`, the grip deadlifts, the lunge variants and so on), were reviewed and all kept as not a skill; combined movements are several movements and stay not a skill. Counting a harder variant toward the easier skill is a deliberate later change.
-- On Body and training, choosing the report is the opt-in to print body weight, so weight is on by default; lean and fat mass, which are more sensitive, are a separate section and off by default. This reads R-3 as "a body section a coach has not asked for is off", and can be tightened to weight off by default if you prefer.
+- On Body and training, choosing the report is the opt-in to print body weight, so weight is on by default; lean and fat mass are a separate section that starts on when the athlete has InBody scans and off when they have none (decided with the owner). Both can be switched off before printing.
 
 **Open questions**
 
